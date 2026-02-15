@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · loading animation · text size matched</title>
+    <title>Cream Black · search dropdown · autorenew animation</title>
     
     <!-- Preconnect + Google Fonts at TOP of head with display=block -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,7 +115,7 @@
             font-variation-settings: 'FILL' 1, 'wght' 500;
         }
 
-        /* Loading animation for search icon */
+        /* Loading animation for search icon - now using autorenew icon */
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -372,11 +372,12 @@
             35%, 100% { transform: translateX(0); }
         }
 
-        /* --- SEARCH --- */
+        /* --- SEARCH DROPDOWN --- */
         .search-container {
             width: 100%;
             max-width: 750px;
             margin-bottom: 0.5rem;
+            position: relative;
         }
         .search-wrapper {
             position: relative;
@@ -387,7 +388,7 @@
             padding: 1.2rem 2.2rem;
             border: 1px solid #045B92;
             border-radius: 55px !important;
-            font-size: 0.95rem; /* Matched to announcement bar text size */
+            font-size: 0.95rem;
             color: #1a1a1a;
             background: white;
             outline: none;
@@ -400,7 +401,7 @@
             opacity: 1;
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
             font-weight: normal;
-            font-size: 0.95rem; /* Matched to announcement bar text size */
+            font-size: 0.95rem;
         }
         .search-input:focus {
             box-shadow: 0 0 0 3px rgba(4, 91, 146, 0.1);
@@ -424,6 +425,54 @@
         }
         .search-circle-btn:hover {
             background-color: rgba(4, 91, 146, 0.2);
+        }
+
+        /* Search results dropdown */
+        .search-results-panel {
+            width: 100%;
+            max-width: 750px;
+            background: white;
+            border: 1px solid #045B92;
+            border-radius: 5px; /* Same as buttons */
+            margin-top: 8px;
+            padding: 1.5rem;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            z-index: 15;
+        }
+        
+        .search-results-panel.active {
+            display: block;
+        }
+        
+        .result-message {
+            font-family: 'Codec Cold News', 'Roboto', sans-serif;
+            color: #045B92;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0.5rem 0;
+        }
+        
+        .result-icon .material-symbols-outlined {
+            color: #FF286F !important;
+            font-size: 36px !important;
+            animation: spin 1.5s linear infinite;
+        }
+        
+        .result-note {
+            font-family: 'Codec Cold News', 'Roboto', sans-serif;
+            color: #045B92;
+            opacity: 0.7;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
         }
 
         .location-link {
@@ -722,6 +771,7 @@
                 font-size: 0.95rem;
             }
             .search-circle-btn { width: 54px; height: 54px; right: 10px; }
+            .search-results-panel { max-width: 750px; }
             .hamburger { display: none; }
             .desktop-cta { display: flex; }
             .announcement-nav { margin-right: 0; }
@@ -745,6 +795,7 @@
                 font-size: 0.85rem;
             }
             .search-circle-btn { width: 44px; height: 44px; right: 6px; }
+            .search-results-panel { max-width: 100%; }
             .location-link { font-size: 0.9rem; }
             .modal-card { max-width: 400px; padding: 1.5rem 1.2rem; }
             .modal-icon { width: 56px; height: 56px; }
@@ -770,6 +821,7 @@
                 font-size: 0.8rem;
             }
             .search-circle-btn { width: 40px; height: 40px; right: 5px; }
+            .search-results-panel { padding: 1rem; }
             .location-link { font-size: 0.85rem; }
             .logo-container { margin-left: -3px; }
             .hamburger { margin-right: -3px; }
@@ -839,9 +891,19 @@
                     id="searchInputField"
                 >
                 <button class="search-circle-btn" id="searchIconBtn" aria-label="Search">
-                    <span class="material-symbols-outlined" aria-hidden="true">arrow_forward_ios</span>
+                    <span class="material-symbols-outlined" aria-hidden="true">autorenew</span>
                 </button>
             </div>
+            
+            <!-- Search Results Dropdown Panel -->
+            <div class="search-results-panel" id="searchResultsPanel">
+                <div class="result-message">working on it</div>
+                <div class="result-icon">
+                    <span class="material-symbols-outlined">autorenew</span>
+                </div>
+                <div class="result-note">searching for tasks near you</div>
+            </div>
+            
             <a href="#" class="location-link" id="currentLocationLink">
                 <span class="material-symbols-outlined" aria-hidden="true">explore_nearby</span>
                 or use current location
@@ -987,41 +1049,77 @@
             window.addEventListener('scroll', handleScroll);
             handleScroll();
 
-            // Search redirect function with loading animation
-            function handleSearchRedirect() {
-                const searchInput = document.getElementById('searchInputField');
+            // Search dropdown elements
+            const searchInput = document.getElementById('searchInputField');
+            const searchIconBtn = document.getElementById('searchIconBtn');
+            const searchResultsPanel = document.getElementById('searchResultsPanel');
+
+            // Function to show search results
+            function showSearchResults() {
                 const searchTerm = searchInput.value.trim();
-                const searchIconBtn = document.getElementById('searchIconBtn');
                 
-                // Add loading class to start spinning animation
+                // Add loading class to icon
                 if (searchIconBtn) {
                     searchIconBtn.classList.add('loading');
                 }
                 
-                // In a real implementation, you'd make an API call here
-                // For now, we'll just let it spin continuously
-                console.log('Searching for:', searchTerm);
+                // Show the results panel
+                if (searchResultsPanel) {
+                    searchResultsPanel.classList.add('active');
+                }
                 
-                // Note: We're not removing the loading class, so it spins forever
-                // as requested: "it tries to search the whatever using those coordinates right... 
-                // just make it search continuously"
+                // Update message based on whether there's a search term
+                const resultMessage = document.querySelector('.result-message');
+                if (resultMessage) {
+                    if (searchTerm) {
+                        resultMessage.textContent = `working on "${searchTerm}"`;
+                    } else {
+                        resultMessage.textContent = 'working on it';
+                    }
+                }
+                
+                console.log('Searching for:', searchTerm);
             }
 
-            const searchInput = document.getElementById('searchInputField');
+            // Hide search results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (searchResultsPanel && searchResultsPanel.classList.contains('active')) {
+                    const isClickInside = searchInput?.contains(e.target) || 
+                                         searchIconBtn?.contains(e.target) || 
+                                         searchResultsPanel.contains(e.target);
+                    
+                    if (!isClickInside) {
+                        searchResultsPanel.classList.remove('active');
+                        if (searchIconBtn) {
+                            searchIconBtn.classList.remove('loading');
+                        }
+                    }
+                }
+            });
+
+            // Enter key on search input
             if (searchInput) {
                 searchInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        handleSearchRedirect();
+                        showSearchResults();
+                    }
+                });
+                
+                // Also show results when input gains focus (optional)
+                searchInput.addEventListener('focus', function() {
+                    // Only show if there's already a search term or if we want to show recent searches
+                    if (searchInput.value.trim()) {
+                        showSearchResults();
                     }
                 });
             }
 
-            const searchIconBtn = document.getElementById('searchIconBtn');
+            // Search icon button click
             if (searchIconBtn) {
                 searchIconBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    handleSearchRedirect();
+                    showSearchResults();
                 });
             }
 
@@ -1045,6 +1143,9 @@
                                     searchInput.value = coordinates;
                                     // Apply system font to the input value
                                     searchInput.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+                                    
+                                    // Automatically show search results with coordinates
+                                    showSearchResults();
                                 }
                             },
                             // Error callback (permission denied or other error)
