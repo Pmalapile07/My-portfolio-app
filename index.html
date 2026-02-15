@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · search with sync · results panel</title>
+    <title>Cream Black · search modal · three-dot loader</title>
     
     <!-- Preconnect + Google Fonts at TOP of head with display=block -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,7 +53,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- MATERIAL ICONS PRODUCTION FIX (with original colors) --- */
+        /* --- MATERIAL ICONS PRODUCTION FIX --- */
         .material-symbols-outlined {
             font-family: 'Material Symbols Outlined' !important;
             font-weight: normal !important;
@@ -79,7 +79,7 @@
             visibility: visible;
         }
 
-        /* Restore original icon colors */
+        /* Icon colors */
         .hamburger .material-symbols-outlined {
             color: #FFFCF5 !important;
             font-size: 32px !important;
@@ -114,22 +114,6 @@
             font-variation-settings: 'FILL' 1, 'wght' 500;
         }
 
-        /* Loading animation for search icon */
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .search-circle-btn.loading .material-symbols-outlined {
-            animation: spin 1s linear infinite;
-        }
-        
-        .search-circle-btn.disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
         /* Ensure inline-flex containers remain stable */
         .search-circle-btn,
         .location-link,
@@ -141,6 +125,47 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+        }
+
+        /* --- THREE-DOT LOADER ANIMATION --- */
+        .dot-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #FF286F;
+            opacity: 0.3;
+            animation: dotPulse 1.5s infinite ease-in-out;
+        }
+        
+        .dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes dotPulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-8px);
+            }
         }
 
         /* --- ANNOUNCEMENT BAR --- */
@@ -377,7 +402,7 @@
             35%, 100% { transform: translateX(0); }
         }
 
-        /* --- SEARCH DROPDOWN --- */
+        /* --- SEARCH --- */
         .search-container {
             width: 100%;
             max-width: 750px;
@@ -431,64 +456,14 @@
         .search-circle-btn:hover {
             background-color: rgba(4, 91, 146, 0.2);
         }
-
-        /* Search results dropdown */
-        .search-results-panel {
-            width: 100%;
-            max-width: 750px;
-            background: white;
-            border: 1px solid #045B92;
-            border-radius: 5px;
-            margin-top: 8px;
-            padding: 1.5rem;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            text-align: center;
-            position: relative;
-            z-index: 15;
+        
+        .search-circle-btn.loading .material-symbols-outlined {
+            animation: spin 1s linear infinite;
         }
         
-        .search-results-panel.active {
-            display: block;
-        }
-        
-        .result-message {
-            font-family: 'Codec Cold News', 'Roboto', sans-serif;
-            color: #045B92;
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .result-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0.5rem 0;
-        }
-        
-        .result-icon .material-symbols-outlined {
-            color: #FF286F !important;
-            font-size: 36px !important;
-            animation: spin 1.5s linear infinite;
-        }
-        
-        .result-coordinates {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #045B92;
-            font-size: 1rem;
-            margin: 0.5rem 0;
-            padding: 0.5rem;
-            background: rgba(4, 91, 146, 0.05);
-            border-radius: 5px;
-            word-break: break-word;
-        }
-        
-        .result-note {
-            font-family: 'Codec Cold News', 'Roboto', sans-serif;
-            color: #045B92;
-            opacity: 0.7;
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .location-link {
@@ -507,7 +482,61 @@
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
         }
 
-        /* --- MODAL STYLES --- */
+        /* --- SEARCH RESULTS MODAL --- */
+        .search-modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .search-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .search-modal-card {
+            background: white;
+            border-radius: 20px;
+            max-width: 520px;
+            width: 90%;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            position: relative;
+            text-align: center;
+        }
+        .search-modal-close {
+            position: absolute;
+            top: 12px; right: 16px;
+            background: transparent;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #FF286F;
+        }
+        .search-modal-message {
+            font-family: 'Codec Cold News', 'Roboto', sans-serif;
+            color: #045B92;
+            font-size: 1.2rem;
+            margin: 1rem 0 0.5rem;
+        }
+        .search-modal-coordinates {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #045B92;
+            font-size: 1rem;
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background: rgba(4, 91, 146, 0.05);
+            border-radius: 5px;
+            word-break: break-word;
+        }
+
+        /* --- MODAL STYLES (existing) --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -621,6 +650,9 @@
             margin-top: 0.5rem;
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
         }
+        .modal-submit:hover {
+            background: #d61e5b;
+        }
         .promise-text {
             font-size: 0.85rem;
             color: #045B92;
@@ -691,8 +723,11 @@
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
             font-weight: normal;
         }
+        .success-close-btn:hover {
+            background: rgba(4,91,146,0.05);
+        }
 
-        /* --- MOBILE NAV OVERLAY (with shaking button) --- */
+        /* --- MOBILE NAV OVERLAY --- */
         .nav-overlay {
             position: fixed;
             top: 0;
@@ -787,7 +822,6 @@
                 font-size: 0.95rem;
             }
             .search-circle-btn { width: 54px; height: 54px; right: 10px; }
-            .search-results-panel { max-width: 750px; }
             .hamburger { display: none; }
             .desktop-cta { display: flex; }
             .announcement-nav { margin-right: 0; }
@@ -811,7 +845,6 @@
                 font-size: 0.85rem;
             }
             .search-circle-btn { width: 44px; height: 44px; right: 6px; }
-            .search-results-panel { max-width: 100%; }
             .location-link { font-size: 0.9rem; }
             .modal-card { max-width: 400px; padding: 1.5rem 1.2rem; }
             .modal-icon { width: 56px; height: 56px; }
@@ -837,7 +870,6 @@
                 font-size: 0.8rem;
             }
             .search-circle-btn { width: 40px; height: 40px; right: 5px; }
-            .search-results-panel { padding: 1rem; }
             .location-link { font-size: 0.85rem; }
             .logo-container { margin-left: -3px; }
             .hamburger { margin-right: -3px; }
@@ -911,22 +943,29 @@
                 </button>
             </div>
             
-            <!-- Search Results Dropdown Panel -->
-            <div class="search-results-panel" id="searchResultsPanel">
-                <div class="result-message" id="resultMessage">Searching for tasks near you</div>
-                <div class="result-icon">
-                    <span class="material-symbols-outlined">sync</span>
-                </div>
-                <div class="result-coordinates" id="resultCoordinates"></div>
-                <div class="result-note">searching continuously</div>
-            </div>
-            
             <a href="#" class="location-link" id="currentLocationLink">
                 <span class="material-symbols-outlined" aria-hidden="true">explore_nearby</span>
                 or use current location
             </a>
         </div>
     </section>
+
+    <!-- SEARCH RESULTS MODAL -->
+    <div class="search-modal-overlay" id="searchModal">
+        <div class="search-modal-card">
+            <button class="search-modal-close" id="closeSearchModalBtn">&times;</button>
+            <div class="search-modal-message" id="searchModalMessage">Searching for tasks near you</div>
+            
+            <!-- Three-dot loader -->
+            <div class="dot-loader">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            
+            <div class="search-modal-coordinates" id="searchModalCoordinates"></div>
+        </div>
+    </div>
 
     <!-- MODAL A: Join waitlist -->
     <div class="modal-overlay" id="waitlistModal">
@@ -1066,66 +1105,87 @@
             window.addEventListener('scroll', handleScroll);
             handleScroll();
 
-            // Search dropdown elements
+            // Search modal elements
             const searchInput = document.getElementById('searchInputField');
             const searchIconBtn = document.getElementById('searchIconBtn');
-            const searchResultsPanel = document.getElementById('searchResultsPanel');
-            const resultMessage = document.getElementById('resultMessage');
-            const resultCoordinates = document.getElementById('resultCoordinates');
+            const searchModal = document.getElementById('searchModal');
+            const searchModalMessage = document.getElementById('searchModalMessage');
+            const searchModalCoordinates = document.getElementById('searchModalCoordinates');
+            const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
             
-            // Store current coordinates if any
+            // Store current coordinates
             let currentCoordinates = '';
 
-            // Function to start search with loading state
-            function startSearch() {
+            // Function to open search modal and perform search
+            function performSearch() {
                 const searchTerm = searchInput.value.trim();
                 
-                // Change icon to sync and add loading animation
+                // Change icon to sync and add loading animation briefly
                 const iconSpan = searchIconBtn.querySelector('.material-symbols-outlined');
                 if (iconSpan) {
                     iconSpan.textContent = 'sync';
                 }
-                searchIconBtn.classList.add('loading', 'disabled');
+                searchIconBtn.classList.add('loading');
                 
-                // Update panel message
+                // Update modal message
                 if (searchTerm) {
-                    resultMessage.textContent = `Searching for "${searchTerm}"`;
+                    searchModalMessage.textContent = `Searching for "${searchTerm}"`;
                 } else {
-                    resultMessage.textContent = 'Searching for tasks near you';
+                    searchModalMessage.textContent = 'Searching for tasks near you';
                 }
                 
                 // Show coordinates if we have them
                 if (currentCoordinates) {
-                    resultCoordinates.textContent = currentCoordinates;
-                    resultCoordinates.style.display = 'block';
+                    searchModalCoordinates.textContent = currentCoordinates;
+                    searchModalCoordinates.style.display = 'block';
                 } else {
-                    resultCoordinates.style.display = 'none';
+                    searchModalCoordinates.style.display = 'none';
                 }
                 
-                // Show the panel
-                searchResultsPanel.classList.add('active');
+                // Open the modal
+                searchModal.classList.add('active');
+                
+                // After a brief delay, revert the icon back to chevron_right
+                setTimeout(() => {
+                    if (iconSpan) {
+                        iconSpan.textContent = 'chevron_right';
+                    }
+                    searchIconBtn.classList.remove('loading');
+                }, 500);
             }
 
-            // Hide search results (but we never hide while searching)
-            // For this implementation, we'll keep it visible once searching starts
+            // Close search modal
+            function closeSearchModal() {
+                searchModal.classList.remove('active');
+            }
 
-            // Enter key on search input
+            // Event listeners for search
             if (searchInput) {
                 searchInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        startSearch();
+                        performSearch();
                     }
                 });
             }
 
-            // Search icon button click
             if (searchIconBtn) {
                 searchIconBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    startSearch();
+                    performSearch();
                 });
             }
+
+            if (closeSearchModalBtn) {
+                closeSearchModalBtn.addEventListener('click', closeSearchModal);
+            }
+
+            // Close modal when clicking overlay
+            searchModal.addEventListener('click', function(e) {
+                if (e.target === searchModal) {
+                    closeSearchModal();
+                }
+            });
 
             // GEOLOCATION FEATURE
             const locationLink = document.getElementById('currentLocationLink');
@@ -1147,24 +1207,22 @@
                                     // Apply system font to the input value
                                     searchInput.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
                                     
-                                    // Automatically start search with coordinates
-                                    startSearch();
+                                    // Automatically perform search with coordinates
+                                    performSearch();
                                 }
                             },
-                            // Error callback (permission denied or other error)
+                            // Error callback
                             function(error) {
-                                // Do nothing - permission denied or error
                                 console.log('Location access denied or error occurred');
                             }
                         );
                     } else {
-                        // Geolocation not supported - do nothing
                         console.log('Geolocation is not supported by this browser');
                     }
                 });
             }
 
-            // MODAL A
+            // MODAL A (join waitlist)
             const modalA = document.getElementById('waitlistModal');
             const joinBtn = document.getElementById('joinWaitlistBtn');
             const desktopJoinBtn = document.getElementById('desktopJoinBtn');
