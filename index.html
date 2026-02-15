@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · search modal · three-dot loader</title>
+    <title>Cream Black · search validation · city field · survey CTA</title>
     
     <!-- Preconnect + Google Fonts at TOP of head with display=block -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -535,6 +535,37 @@
             border-radius: 5px;
             word-break: break-word;
         }
+        .search-modal-cta {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(4, 91, 146, 0.2);
+        }
+        .search-modal-cta p {
+            font-family: 'Codec Cold News', 'Roboto', sans-serif;
+            color: #045B92;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+        .search-modal-cta button {
+            background: #FF286F;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Codec Cold News', 'Roboto', sans-serif;
+            transition: background 0.2s;
+        }
+        .search-modal-cta button:hover {
+            background: #d61e5b;
+        }
+        .empty-search-message {
+            font-family: 'Codec Cold News', 'Roboto', sans-serif;
+            color: #045B92;
+            font-size: 1.1rem;
+            margin: 2rem 0;
+        }
 
         /* --- MODAL STYLES (existing) --- */
         .modal-overlay {
@@ -954,20 +985,11 @@
     <div class="search-modal-overlay" id="searchModal">
         <div class="search-modal-card">
             <button class="search-modal-close" id="closeSearchModalBtn">&times;</button>
-            <div class="search-modal-message" id="searchModalMessage">Searching for tasks near you</div>
-            
-            <!-- Three-dot loader -->
-            <div class="dot-loader">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-            
-            <div class="search-modal-coordinates" id="searchModalCoordinates"></div>
+            <div id="searchModalContent"></div>
         </div>
     </div>
 
-    <!-- MODAL A: Join waitlist -->
+    <!-- MODAL A: Join waitlist with city field -->
     <div class="modal-overlay" id="waitlistModal">
         <div class="modal-card" id="modalACard">
             <div id="modalAForm" class="form-container">
@@ -976,7 +998,7 @@
                     <span class="material-symbols-outlined">mail</span>
                 </div>
                 <h2>Join the waitlist</h2>
-                <p>Be the first to know when we launch.</p>
+                <p>Be the first to know when we launch in your city.</p>
                 <form action="https://formspree.io/f/xlgwjajb" method="POST" id="formA">
                     <input type="text" name="fullname" placeholder="Full name" required>
                     <input type="email" name="email" placeholder="Email address" required>
@@ -988,6 +1010,9 @@
                         <option value="hire">I'm looking to hire</option>
                         <option value="exploring">Just exploring</option>
                     </select>
+                    
+                    <div class="dropdown-label">Your city</div>
+                    <input type="text" name="city" placeholder="e.g., New York, London, Tokyo" required>
 
                     <button type="submit" class="modal-submit">Sign up</button>
                     <div class="promise-text">no spam, we promise ✨</div>
@@ -999,7 +1024,7 @@
                     <span class="material-symbols-outlined">check</span>
                 </div>
                 <h3>form submitted</h3>
-                <p>We will let you know when we have launched.</p>
+                <p>We will let you know when we have launched in your city.</p>
                 <button class="success-close-btn" id="closeSuccessBtnA">close</button>
             </div>
         </div>
@@ -1018,6 +1043,8 @@
                 <form action="#" method="POST" id="formB" onsubmit="event.preventDefault(); return false;">
                     <input type="text" name="fullname" placeholder="Full name" required>
                     <input type="email" name="email" placeholder="Email address" required>
+                    <div class="dropdown-label">Your city</div>
+                    <input type="text" name="city" placeholder="e.g., New York, London, Tokyo" required>
                     <button type="submit" class="modal-submit">Sign up</button>
                 </form>
             </div>
@@ -1027,7 +1054,7 @@
                     <span class="material-symbols-outlined">check</span>
                 </div>
                 <h3>form submitted</h3>
-                <p>We will let you know when we have launched.</p>
+                <p>We will let you know when we have launched in your city.</p>
                 <button class="success-close-btn" id="closeSuccessBtnB">close</button>
             </div>
         </div>
@@ -1109,43 +1136,55 @@
             const searchInput = document.getElementById('searchInputField');
             const searchIconBtn = document.getElementById('searchIconBtn');
             const searchModal = document.getElementById('searchModal');
-            const searchModalMessage = document.getElementById('searchModalMessage');
-            const searchModalCoordinates = document.getElementById('searchModalCoordinates');
+            const searchModalContent = document.getElementById('searchModalContent');
             const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
             
             // Store current coordinates
             let currentCoordinates = '';
 
-            // Function to open search modal and perform search
+            // Function to open search modal with appropriate content
             function performSearch() {
                 const searchTerm = searchInput.value.trim();
                 
-                // Change icon to sync and add loading animation briefly
+                // Change icon to sync briefly
                 const iconSpan = searchIconBtn.querySelector('.material-symbols-outlined');
                 if (iconSpan) {
                     iconSpan.textContent = 'sync';
                 }
                 searchIconBtn.classList.add('loading');
                 
-                // Update modal message
-                if (searchTerm) {
-                    searchModalMessage.textContent = `Searching for "${searchTerm}"`;
+                // Prepare modal content based on search term
+                let modalHtml = '';
+                
+                if (!searchTerm) {
+                    // Empty search
+                    modalHtml = `
+                        <div class="empty-search-message">Please type something to search 🔍</div>
+                    `;
                 } else {
-                    searchModalMessage.textContent = 'Searching for tasks near you';
+                    // Valid search - show coordinates if available, otherwise show the search term
+                    const displayTerm = currentCoordinates || searchTerm;
+                    
+                    modalHtml = `
+                        <div class="search-modal-message">Searching for tasks near you</div>
+                        <div class="dot-loader">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <div class="search-modal-coordinates">${displayTerm}</div>
+                        <div class="search-modal-cta">
+                            <p>✨ We're working on bringing tasks to your city ✨</p>
+                            <p>Help us get there faster — take our quick survey</p>
+                            <button onclick="document.getElementById('waitlistModal').classList.add('active'); document.getElementById('searchModal').classList.remove('active');">Take the survey →</button>
+                        </div>
+                    `;
                 }
                 
-                // Show coordinates if we have them
-                if (currentCoordinates) {
-                    searchModalCoordinates.textContent = currentCoordinates;
-                    searchModalCoordinates.style.display = 'block';
-                } else {
-                    searchModalCoordinates.style.display = 'none';
-                }
-                
-                // Open the modal
+                searchModalContent.innerHTML = modalHtml;
                 searchModal.classList.add('active');
                 
-                // After a brief delay, revert the icon back to chevron_right
+                // Revert icon after a brief delay
                 setTimeout(() => {
                     if (iconSpan) {
                         iconSpan.textContent = 'chevron_right';
