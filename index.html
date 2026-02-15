@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · search validation · city field · survey CTA</title>
+    <title>Cream Black · clean validation · survey redirect</title>
     
     <!-- Preconnect + Google Fonts at TOP of head with display=block -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -436,6 +436,12 @@
         .search-input:focus {
             box-shadow: 0 0 0 3px rgba(4, 91, 146, 0.1);
         }
+        
+        .search-input.error {
+            border-color: #FF286F;
+            background-color: rgba(255, 40, 111, 0.03);
+            animation: shake 0.5s ease;
+        }
 
         .search-circle-btn {
             position: absolute;
@@ -546,10 +552,11 @@
             font-size: 0.95rem;
             margin-bottom: 1rem;
         }
-        .search-modal-cta button {
+        .search-modal-cta a {
+            display: inline-block;
             background: #FF286F;
             color: white;
-            border: none;
+            text-decoration: none;
             padding: 0.8rem 2rem;
             font-size: 1rem;
             border-radius: 5px;
@@ -557,14 +564,8 @@
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
             transition: background 0.2s;
         }
-        .search-modal-cta button:hover {
+        .search-modal-cta a:hover {
             background: #d61e5b;
-        }
-        .empty-search-message {
-            font-family: 'Codec Cold News', 'Roboto', sans-serif;
-            color: #045B92;
-            font-size: 1.1rem;
-            margin: 2rem 0;
         }
 
         /* --- MODAL STYLES (existing) --- */
@@ -989,7 +990,7 @@
         </div>
     </div>
 
-    <!-- MODAL A: Join waitlist with city field -->
+    <!-- MODAL A: Join waitlist (city field removed) -->
     <div class="modal-overlay" id="waitlistModal">
         <div class="modal-card" id="modalACard">
             <div id="modalAForm" class="form-container">
@@ -1010,9 +1011,6 @@
                         <option value="hire">I'm looking to hire</option>
                         <option value="exploring">Just exploring</option>
                     </select>
-                    
-                    <div class="dropdown-label">Your city</div>
-                    <input type="text" name="city" placeholder="e.g., New York, London, Tokyo" required>
 
                     <button type="submit" class="modal-submit">Sign up</button>
                     <div class="promise-text">no spam, we promise ✨</div>
@@ -1030,7 +1028,7 @@
         </div>
     </div>
 
-    <!-- MODAL B: Tasks in your area -->
+    <!-- MODAL B: Tasks in your area (city field removed) -->
     <div class="modal-overlay" id="areaModal">
         <div class="modal-card" id="modalBCard">
             <div id="modalBForm" class="form-container">
@@ -1043,8 +1041,13 @@
                 <form action="#" method="POST" id="formB" onsubmit="event.preventDefault(); return false;">
                     <input type="text" name="fullname" placeholder="Full name" required>
                     <input type="email" name="email" placeholder="Email address" required>
-                    <div class="dropdown-label">Your city</div>
-                    <input type="text" name="city" placeholder="e.g., New York, London, Tokyo" required>
+                    <div class="dropdown-label">How will you use TaskMart?</div>
+                    <select name="usage" required>
+                        <option value="" disabled selected>Select an option</option>
+                        <option value="find work">I want to find work</option>
+                        <option value="hire">I'm looking to hire</option>
+                        <option value="exploring">Just exploring</option>
+                    </select>
                     <button type="submit" class="modal-submit">Sign up</button>
                 </form>
             </div>
@@ -1142,9 +1145,41 @@
             // Store current coordinates
             let currentCoordinates = '';
 
+            // Function to show inline error
+            function showEmptySearchError() {
+                searchInput.classList.add('error');
+                searchInput.placeholder = 'Please type something to search';
+                
+                // Remove error after 2 seconds
+                setTimeout(() => {
+                    searchInput.classList.remove('error');
+                    searchInput.placeholder = 'Search task by city or postal code';
+                }, 2000);
+                
+                // Briefly show sync icon
+                const iconSpan = searchIconBtn.querySelector('.material-symbols-outlined');
+                if (iconSpan) {
+                    iconSpan.textContent = 'sync';
+                }
+                searchIconBtn.classList.add('loading');
+                
+                setTimeout(() => {
+                    if (iconSpan) {
+                        iconSpan.textContent = 'chevron_right';
+                    }
+                    searchIconBtn.classList.remove('loading');
+                }, 500);
+            }
+
             // Function to open search modal with appropriate content
-            function performSearch() {
+            function performSearch(isFromLocation = false) {
                 const searchTerm = searchInput.value.trim();
+                
+                // If search is empty and not from location, show inline error
+                if (!searchTerm && !isFromLocation) {
+                    showEmptySearchError();
+                    return;
+                }
                 
                 // Change icon to sync briefly
                 const iconSpan = searchIconBtn.querySelector('.material-symbols-outlined');
@@ -1153,16 +1188,25 @@
                 }
                 searchIconBtn.classList.add('loading');
                 
-                // Prepare modal content based on search term
+                // Prepare modal content
                 let modalHtml = '';
                 
-                if (!searchTerm) {
-                    // Empty search
+                if (isFromLocation) {
+                    // Location-based search - show clean version
                     modalHtml = `
-                        <div class="empty-search-message">Please type something to search 🔍</div>
+                        <div class="dot-loader">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <div class="search-modal-cta" style="border-top: none;">
+                            <p>Help us get there faster.</p>
+                            <p>Take our quick survey</p>
+                            <a href="survey.html">Take the survey →</a>
+                        </div>
                     `;
                 } else {
-                    // Valid search - show coordinates if available, otherwise show the search term
+                    // Regular search - show coordinates or search term
                     const displayTerm = currentCoordinates || searchTerm;
                     
                     modalHtml = `
@@ -1176,7 +1220,7 @@
                         <div class="search-modal-cta">
                             <p>✨ We're working on bringing tasks to your city ✨</p>
                             <p>Help us get there faster — take our quick survey</p>
-                            <button onclick="document.getElementById('waitlistModal').classList.add('active'); document.getElementById('searchModal').classList.remove('active');">Take the survey →</button>
+                            <a href="survey.html">Take the survey →</a>
                         </div>
                     `;
                 }
@@ -1203,7 +1247,7 @@
                 searchInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        performSearch();
+                        performSearch(false);
                     }
                 });
             }
@@ -1211,7 +1255,7 @@
             if (searchIconBtn) {
                 searchIconBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    performSearch();
+                    performSearch(false);
                 });
             }
 
@@ -1246,8 +1290,8 @@
                                     // Apply system font to the input value
                                     searchInput.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
                                     
-                                    // Automatically perform search with coordinates
-                                    performSearch();
+                                    // Automatically perform search with location flag
+                                    performSearch(true);
                                 }
                             },
                             // Error callback
