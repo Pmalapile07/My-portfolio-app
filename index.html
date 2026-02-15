@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · reverse geocoding with Nominatim</title>
+    <title>Cream Black · reverse geocoding · city names only</title>
     
     <!-- Preconnect + Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1126,7 +1126,7 @@
             const searchModalContent = document.getElementById('searchModalContent');
             const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
             
-            // Store current coordinates
+            // Store current coordinates (used internally only)
             let currentCoordinates = '';
 
             // Function to show inline error
@@ -1156,18 +1156,19 @@
             // Function to get location name from coordinates using Nominatim
             async function getLocationName(lat, lon) {
                 try {
-                    // Using OpenStreetMap's Nominatim service (free, no API key required)
                     const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
                     const data = await response.json();
                     
                     if (data && data.address) {
-                        // Try to get city, town, or village
+                        // Get city, town, or village - clean and simple
                         const city = data.address.city || 
                                     data.address.town || 
                                     data.address.village || 
                                     data.address.county || 
                                     data.address.state;
-                        return city || 'Unknown location';
+                        
+                        // Return just the city name, nothing else
+                        return city || 'your area';
                     }
                     return null;
                 } catch (error) {
@@ -1192,58 +1193,44 @@
                 searchIconBtn.classList.add('loading');
                 
                 let modalHtml = '';
+                let locationDisplay = '';
                 
                 if (isFromLocation && currentCoordinates) {
-                    // Parse coordinates
+                    // Parse coordinates internally
                     const [lat, lon] = currentCoordinates.split(',').map(coord => parseFloat(coord.trim()));
                     
-                    // Get location name
+                    // Get location name (coordinates are never shown to user)
                     const locationName = await getLocationName(lat, lon);
+                    locationDisplay = locationName || 'your area';
                     
-                    if (locationName) {
-                        modalHtml = `
-                            <div class="search-modal-message">📍 You're in</div>
-                            <div class="search-modal-location">${locationName}</div>
-                            <div class="dot-loader">
-                                <div class="dot"></div>
-                                <div class="dot"></div>
-                                <div class="dot"></div>
-                            </div>
-                            <div class="search-modal-cta">
-                                <p>✨ We're working on bringing tasks to ${locationName} ✨</p>
-                                <p>Help us get there faster — take our quick survey</p>
-                                <a href="survey.html">Take the survey →</a>
-                            </div>
-                        `;
-                    } else {
-                        // Fallback to coordinates if location name not found
-                        modalHtml = `
-                            <div class="search-modal-message">Searching for tasks near</div>
-                            <div class="search-modal-location">${currentCoordinates}</div>
-                            <div class="dot-loader">
-                                <div class="dot"></div>
-                                <div class="dot"></div>
-                                <div class="dot"></div>
-                            </div>
-                            <div class="search-modal-cta">
-                                <p>✨ We're working on bringing tasks to your area ✨</p>
-                                <p>Help us get there faster — take our quick survey</p>
-                                <a href="survey.html">Take the survey →</a>
-                            </div>
-                        `;
-                    }
-                } else {
-                    // Regular text search
                     modalHtml = `
-                        <div class="search-modal-message">Searching for tasks near</div>
-                        <div class="search-modal-location">${searchTerm}</div>
+                        <div class="search-modal-message">📍 You're in</div>
+                        <div class="search-modal-location">${locationDisplay}</div>
                         <div class="dot-loader">
                             <div class="dot"></div>
                             <div class="dot"></div>
                             <div class="dot"></div>
                         </div>
                         <div class="search-modal-cta">
-                            <p>✨ We're working on bringing tasks to your area ✨</p>
+                            <p>✨ We're working on bringing tasks to ${locationDisplay} ✨</p>
+                            <p>Help us get there faster — take our quick survey</p>
+                            <a href="survey.html">Take the survey →</a>
+                        </div>
+                    `;
+                } else {
+                    // Regular text search - use what user typed
+                    locationDisplay = searchTerm;
+                    
+                    modalHtml = `
+                        <div class="search-modal-message">Searching for tasks near</div>
+                        <div class="search-modal-location">${locationDisplay}</div>
+                        <div class="dot-loader">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <div class="search-modal-cta">
+                            <p>✨ We're working on bringing tasks to ${locationDisplay} ✨</p>
                             <p>Help us get there faster — take our quick survey</p>
                             <a href="survey.html">Take the survey →</a>
                         </div>
@@ -1291,7 +1278,7 @@
                 }
             });
 
-            // GEOLOCATION FEATURE with reverse geocoding
+            // GEOLOCATION FEATURE with reverse geocoding - coordinates are used internally only
             const locationLink = document.getElementById('currentLocationLink');
             if (locationLink) {
                 locationLink.addEventListener('click', function(e) {
@@ -1302,10 +1289,16 @@
                             async function(position) {
                                 const latitude = position.coords.latitude;
                                 const longitude = position.coords.longitude;
+                                
+                                // Store coordinates internally (never displayed)
                                 currentCoordinates = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
                                 
+                                // Get location name first so we can display it in the input
+                                const locationName = await getLocationName(latitude, longitude);
+                                
                                 if (searchInput) {
-                                    searchInput.value = currentCoordinates;
+                                    // Show the city name in the search bar, not coordinates
+                                    searchInput.value = locationName || 'Your location';
                                     searchInput.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
                                     
                                     // Perform search with location flag
