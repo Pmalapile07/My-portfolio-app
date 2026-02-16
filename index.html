@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · final behavior · correct autofill</title>
+    <title>Cream Black · bottom sheet · location panel</title>
     
     <!-- Preconnect + Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -336,7 +336,7 @@
             font-family: 'Unbounded', sans-serif;
             font-size: clamp(2.5rem, 8vw, 4.5rem);
             font-weight: 400;
-            color: #045B92; /* Original blue color for the whole heading */
+            color: #045B92;
             margin-bottom: 1rem;
             max-width: 1000px;
             line-height: 1.2;
@@ -348,7 +348,6 @@
             text-transform: uppercase;
         }
         
-        /* Only "nearby help" gets the pink color */
         .hero h1 .pink-text {
             color: #FF286F;
         }
@@ -508,56 +507,58 @@
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
         }
 
-        /* --- LOCATION PAGE OVERLAY --- */
-        .location-overlay {
+        /* --- LOCATION BOTTOM SHEET --- */
+        .location-sheet-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: white;
+            background-color: rgba(0, 0, 0, 0.4);
             z-index: 1000;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            align-items: flex-end;
+            justify-content: center;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
-            overflow-y: auto;
         }
-        .location-overlay.active {
+        .location-sheet-overlay.active {
             opacity: 1;
             visibility: visible;
         }
-        .location-container {
+        
+        .location-sheet {
+            background: white;
             width: 100%;
-            max-width: 500px;
-            padding: 2rem 20px;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            max-width: 600px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 2rem 1.5rem 2.5rem;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
             position: relative;
         }
-        .location-header {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 2rem;
+        .location-sheet-overlay.active .location-sheet {
+            transform: translateY(0);
         }
-        .close-location-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 5px;
+        
+        .sheet-handle {
             display: flex;
-            align-items: center;
             justify-content: center;
-            transition: background-color 0.2s;
-            margin-right: -3px;
-            z-index: 10;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
         }
-        .close-location-btn:hover {
-            background-color: rgba(255, 40, 111, 0.05);
+        .handle-bar {
+            width: 40px;
+            height: 4px;
+            background-color: rgba(4, 91, 146, 0.3);
+            border-radius: 2px;
+            transition: background-color 0.2s;
+        }
+        .handle-bar:hover {
+            background-color: rgba(4, 91, 146, 0.5);
         }
         
         .location-section-heading {
@@ -612,21 +613,20 @@
         }
         
         .floating-next-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
+            position: static;
+            width: 100%;
             background-color: #FF286F;
             color: white;
             border: none;
             border-radius: 5px !important;
-            padding: 1rem 2.5rem;
+            padding: 1rem 2rem;
             font-family: 'Codec Cold News', 'Roboto', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 500;
             cursor: pointer;
             transition: background-color 0.2s;
-            z-index: 1002;
             letter-spacing: 0.5px;
+            margin-top: 1rem;
             box-shadow: none;
         }
         .floating-next-btn:hover {
@@ -1032,6 +1032,7 @@
             .hamburger { display: none; }
             .desktop-cta { display: flex; }
             .announcement-nav { margin-right: 0; }
+            .location-sheet { max-width: 500px; }
         }
 
         @media (max-width: 768px) {
@@ -1062,12 +1063,7 @@
                 font-size: 1.1rem;
                 animation: shake 1.5s infinite ease-in-out;
             }
-            .floating-next-btn {
-                bottom: 20px;
-                right: 20px;
-                padding: 0.8rem 2rem;
-                font-size: 1rem;
-            }
+            .location-sheet { padding: 1.5rem 1rem 2rem; }
         }
 
         @media (max-width: 480px) {
@@ -1163,13 +1159,11 @@
         </div>
     </section>
 
-    <!-- LOCATION PAGE OVERLAY -->
-    <div class="location-overlay" id="locationOverlay" aria-hidden="true">
-        <div class="location-container">
-            <div class="location-header">
-                <button class="close-location-btn" id="closeLocationBtn" aria-label="Close location page">
-                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-                </button>
+    <!-- LOCATION BOTTOM SHEET -->
+    <div class="location-sheet-overlay" id="locationSheetOverlay">
+        <div class="location-sheet" id="locationSheet">
+            <div class="sheet-handle" id="sheetHandle">
+                <div class="handle-bar"></div>
             </div>
             
             <div class="location-section-heading">My location</div>
@@ -1185,9 +1179,9 @@
                 rows="4"
             ></textarea>
             <div class="suggestions-container" id="suggestionsContainer"></div>
+            
+            <button class="floating-next-btn" id="nextButton">Next →</button>
         </div>
-        
-        <button class="floating-next-btn" id="nextButton">Next →</button>
     </div>
 
     <!-- SEARCH RESULTS MODAL -->
@@ -1365,30 +1359,6 @@
             let currentLocationName = '';
             let currentNeedDescription = '';
 
-            // Function to show inline error
-            function showEmptySearchError() {
-                searchInput.classList.add('error');
-                searchInput.placeholder = 'Please type something to search';
-                
-                setTimeout(() => {
-                    searchInput.classList.remove('error');
-                    searchInput.placeholder = 'I need help with...';
-                }, 2000);
-                
-                const iconSpan = searchIconBtn.querySelector('.material-symbols-outlined');
-                if (iconSpan) {
-                    iconSpan.textContent = 'sync';
-                }
-                searchIconBtn.classList.add('loading');
-                
-                setTimeout(() => {
-                    if (iconSpan) {
-                        iconSpan.textContent = 'chevron_right';
-                    }
-                    searchIconBtn.classList.remove('loading');
-                }, 500);
-            }
-
             // Function to get location name from coordinates using Nominatim
             async function getLocationName(lat, lon) {
                 try {
@@ -1425,25 +1395,22 @@
                 }
             });
 
-            // LOCATION PAGE FUNCTIONALITY
-            const locationOverlay = document.getElementById('locationOverlay');
-            const closeLocationBtn = document.getElementById('closeLocationBtn');
+            // LOCATION BOTTOM SHEET
+            const sheetOverlay = document.getElementById('locationSheetOverlay');
             const locationCard = document.getElementById('locationCard');
             const needField = document.getElementById('needField');
             const nextButton = document.getElementById('nextButton');
             const suggestionsContainer = document.getElementById('suggestionsContainer');
+            const sheetHandle = document.getElementById('sheetHandle');
 
             const suggestions = [
                 'cleaning', 'moving', 'repairs', 'gardening', 'tutoring', 
                 'pet sitting', 'delivery', 'handyman', 'painting', 'assembly'
             ];
 
-            function openLocationPage() {
-                locationOverlay.classList.add('active');
-                locationOverlay.setAttribute('aria-hidden', 'false');
+            function openLocationSheet() {
+                sheetOverlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
-                document.body.style.position = 'fixed';
-                document.body.style.width = '100%';
                 
                 // Auto-fill location if we have it
                 if (currentLocationName) {
@@ -1464,15 +1431,12 @@
                 }
             }
 
-            function closeLocationPage() {
-                locationOverlay.classList.remove('active');
-                locationOverlay.setAttribute('aria-hidden', 'true');
+            function closeLocationSheet() {
+                sheetOverlay.classList.remove('active');
                 document.body.style.overflow = '';
-                document.body.style.position = '';
-                document.body.style.width = '';
             }
 
-            // GEOLOCATION FEATURE - only updates search bar, doesn't open page
+            // GEOLOCATION FEATURE - now opens the sheet immediately
             const locationLink = document.getElementById('currentLocationLink');
             if (locationLink) {
                 locationLink.addEventListener('click', function(e) {
@@ -1488,54 +1452,53 @@
                                 const locationName = await getLocationName(latitude, longitude);
                                 currentLocationName = locationName || 'your location';
                                 
-                                // Only update search bar with location, don't open page
-                                if (searchInput) {
-                                    searchInput.value = currentLocationName;
-                                }
+                                // Open the sheet immediately
+                                openLocationSheet();
                             },
                             function(error) {
                                 console.log('Location access denied');
+                                // Still open the sheet even if location fails
+                                openLocationSheet();
                             }
                         );
                     } else {
                         console.log('Geolocation is not supported');
+                        openLocationSheet();
                     }
                 });
             }
 
-            // Search icon button - opens location page and autofills need from search bar
+            // Search icon button - opens sheet only if user typed something
             if (searchIconBtn) {
                 searchIconBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     
-                    // Store what user typed in search bar (this is the need description, not location)
+                    // Store what user typed in search bar
                     currentNeedDescription = searchInput.value.trim();
                     
-                    // Open location page (will autofill need from currentNeedDescription)
-                    openLocationPage();
+                    // Only open sheet if user typed something
+                    if (currentNeedDescription) {
+                        openLocationSheet();
+                    } else {
+                        // Optional: show a small error or just do nothing
+                        searchInput.classList.add('error');
+                        setTimeout(() => {
+                            searchInput.classList.remove('error');
+                        }, 500);
+                    }
                 });
             }
 
-            // Ensure close button works reliably
-            if (closeLocationBtn) {
-                closeLocationBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeLocationPage();
-                });
-                
-                closeLocationBtn.addEventListener('touchstart', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeLocationPage();
-                });
-            }
-
-            // Also close when clicking overlay background
-            locationOverlay.addEventListener('click', function(e) {
-                if (e.target === locationOverlay) {
-                    closeLocationPage();
+            // Close sheet when clicking overlay
+            sheetOverlay.addEventListener('click', function(e) {
+                if (e.target === sheetOverlay) {
+                    closeLocationSheet();
                 }
+            });
+
+            // Close sheet when dragging handle down (simple version)
+            sheetHandle.addEventListener('click', function() {
+                closeLocationSheet();
             });
 
             // Next button functionality
@@ -1543,7 +1506,7 @@
                 nextButton.addEventListener('click', function() {
                     // Store the need description and close
                     currentNeedDescription = needField.value;
-                    closeLocationPage();
+                    closeLocationSheet();
                 });
             }
 
@@ -1602,8 +1565,8 @@
                 if (navOverlay && navOverlay.classList.contains('active')) {
                     closeMenu();
                 }
-                if (locationOverlay && locationOverlay.classList.contains('active')) {
-                    closeLocationPage();
+                if (sheetOverlay && sheetOverlay.classList.contains('active')) {
+                    closeLocationSheet();
                 }
             }
 
@@ -1715,7 +1678,7 @@
             }
 
             window.closeMenu = closeMenu;
-            window.closeLocationPage = closeLocationPage;
+            window.closeLocationSheet = closeLocationSheet;
         })();
     </script>
 </body>
