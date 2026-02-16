@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cream Black · final refinements · working close</title>
+    <title>Cream Black · final behavior · correct autofill</title>
     
     <!-- Preconnect + Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -124,7 +124,7 @@
             justify-content: center;
         }
 
-        /* Consistent border radius - 5px (matching nav join button) */
+        /* Consistent border radius */
         .btn, .desktop-cta-btn, .nav-join-btn, .modal-card, .search-modal-card,
         .location-card, .need-input-large, .floating-next-btn, .password-card,
         .modal-submit, .success-close-btn {
@@ -136,7 +136,7 @@
             border-radius: 55px !important;
         }
         
-        /* Icon inside search bar - restore 50% border radius */
+        /* Icon inside search bar - 50% border radius */
         .search-circle-btn {
             border-radius: 50% !important;
         }
@@ -336,7 +336,7 @@
             font-family: 'Unbounded', sans-serif;
             font-size: clamp(2.5rem, 8vw, 4.5rem);
             font-weight: 400;
-            color: #FF286F; /* Changed to header pink color */
+            color: #045B92; /* Original blue color for the whole heading */
             margin-bottom: 1rem;
             max-width: 1000px;
             line-height: 1.2;
@@ -346,6 +346,11 @@
         }
         .hero h1::first-letter {
             text-transform: uppercase;
+        }
+        
+        /* Only "nearby help" gets the pink color */
+        .hero h1 .pink-text {
+            color: #FF286F;
         }
 
         .hero-subhead {
@@ -465,7 +470,7 @@
             width: 48px;
             height: 48px;
             background-color: rgba(4, 91, 146, 0.12);
-            border-radius: 50% !important; /* Restored 50% radius */
+            border-radius: 50% !important;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1129,7 +1134,7 @@
 
     <!-- HERO -->
     <section class="hero">
-        <h1>Can't do it yourself?<br>Find nearby help.</h1>
+        <h1>Can't do it yourself?<br>Find <span class="pink-text">nearby help</span>.</h1>
         <p class="hero-subhead">Post a task, get local helpers, and relax while it's taken care of.</p>
 
         <div class="button-group">
@@ -1406,118 +1411,8 @@
                 }
             }
 
-            // Function to open search modal
-            async function performSearch(isFromLocation = false) {
-                const searchTerm = searchInput.value.trim();
-                
-                if (!searchTerm && !isFromLocation) {
-                    showEmptySearchError();
-                    return;
-                }
-                
-                const iconSpan = searchIconBtn.querySelector('.material-symbols-outlined');
-                if (iconSpan) {
-                    iconSpan.textContent = 'sync';
-                }
-                searchIconBtn.classList.add('loading');
-                
-                let modalHtml = '';
-                let locationDisplay = '';
-                
-                if (isFromLocation && currentCoordinates) {
-                    const [lat, lon] = currentCoordinates.split(',').map(coord => parseFloat(coord.trim()));
-                    const locationName = await getLocationName(lat, lon);
-                    locationDisplay = locationName || 'your area';
-                    
-                    modalHtml = `
-                        <div class="search-modal-location">${locationDisplay}</div>
-                        <div class="dot-loader">
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                        </div>
-                        <div class="search-modal-message">we're coming soon</div>
-                        <div class="search-modal-cta">
-                            <p>take a quick survey to help us get here faster.</p>
-                            <a href="survey.html">take the survey</a>
-                        </div>
-                    `;
-                } else {
-                    locationDisplay = searchTerm;
-                    
-                    modalHtml = `
-                        <div class="search-modal-location">${locationDisplay}</div>
-                        <div class="dot-loader">
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                            <div class="dot"></div>
-                        </div>
-                        <div class="search-modal-message">we're coming soon</div>
-                        <div class="search-modal-cta">
-                            <p>take a quick survey to help us get here faster.</p>
-                            <a href="survey.html">take the survey</a>
-                        </div>
-                    `;
-                }
-                
-                searchModalContent.innerHTML = modalHtml;
-                searchModal.classList.add('active');
-                
-                setTimeout(() => {
-                    if (iconSpan) {
-                        iconSpan.textContent = 'chevron_right';
-                    }
-                    searchIconBtn.classList.remove('loading');
-                }, 500);
-            }
-
             function closeSearchModal() {
                 searchModal.classList.remove('active');
-            }
-
-            if (searchInput) {
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        // Only populate location if using current location
-                        // Don't trigger search on Enter
-                    }
-                });
-            }
-
-            // Search icon button - now only opens location page with auto-filled need
-            if (searchIconBtn) {
-                searchIconBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Store what user typed in search bar
-                    currentNeedDescription = searchInput.value.trim();
-                    
-                    // Open location page
-                    if (currentCoordinates) {
-                        openLocationPage();
-                    } else {
-                        // Try to get location first
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(
-                                async function(position) {
-                                    const latitude = position.coords.latitude;
-                                    const longitude = position.coords.longitude;
-                                    currentCoordinates = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-                                    const locationName = await getLocationName(latitude, longitude);
-                                    currentLocationName = locationName || 'your location';
-                                    openLocationPage();
-                                },
-                                function(error) {
-                                    console.log('Location access denied');
-                                    openLocationPage();
-                                }
-                            );
-                        } else {
-                            openLocationPage();
-                        }
-                    }
-                });
             }
 
             if (closeSearchModalBtn) {
@@ -1563,7 +1458,7 @@
                     locationCard.textContent = 'detecting location...';
                 }
                 
-                // Auto-fill need description from search bar
+                // Auto-fill need description from what user typed in search bar
                 if (currentNeedDescription) {
                     needField.value = currentNeedDescription;
                 }
@@ -1577,7 +1472,7 @@
                 document.body.style.width = '';
             }
 
-            // GEOLOCATION FEATURE
+            // GEOLOCATION FEATURE - only updates search bar, doesn't open page
             const locationLink = document.getElementById('currentLocationLink');
             if (locationLink) {
                 locationLink.addEventListener('click', function(e) {
@@ -1593,39 +1488,43 @@
                                 const locationName = await getLocationName(latitude, longitude);
                                 currentLocationName = locationName || 'your location';
                                 
-                                // Update search bar with location name
+                                // Only update search bar with location, don't open page
                                 if (searchInput) {
                                     searchInput.value = currentLocationName;
                                 }
-                                
-                                // Open location page
-                                openLocationPage();
                             },
                             function(error) {
                                 console.log('Location access denied');
-                                openLocationPage();
                             }
                         );
                     } else {
                         console.log('Geolocation is not supported');
-                        openLocationPage();
                     }
+                });
+            }
+
+            // Search icon button - opens location page and autofills need from search bar
+            if (searchIconBtn) {
+                searchIconBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Store what user typed in search bar (this is the need description, not location)
+                    currentNeedDescription = searchInput.value.trim();
+                    
+                    // Open location page (will autofill need from currentNeedDescription)
+                    openLocationPage();
                 });
             }
 
             // Ensure close button works reliably
             if (closeLocationBtn) {
-                // Remove any existing listeners and add fresh ones
-                closeLocationBtn.replaceWith(closeLocationBtn.cloneNode(true));
-                const newCloseBtn = document.getElementById('closeLocationBtn');
-                
-                newCloseBtn.addEventListener('click', function(e) {
+                closeLocationBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     closeLocationPage();
                 });
                 
-                newCloseBtn.addEventListener('touchstart', function(e) {
+                closeLocationBtn.addEventListener('touchstart', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     closeLocationPage();
@@ -1645,7 +1544,6 @@
                     // Store the need description and close
                     currentNeedDescription = needField.value;
                     closeLocationPage();
-                    // You could add more functionality here later
                 });
             }
 
