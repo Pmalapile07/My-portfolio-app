@@ -34,6 +34,7 @@
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
             position: relative;
+            width: 100%;
         }
 
         button, a {
@@ -739,17 +740,23 @@
             margin: 0.8rem 0;
         }
 
-        /* Planner iframe */
+        /* Planner iframe - fixed positioning */
         #taskPlannerFrame {
             display: none;
-            width: 100%;
-            height: 100vh;
-            border: none;
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 2000;
-            background: white;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 999998;
+            background: transparent;
+            pointer-events: auto;
+        }
+
+        /* Ensure content behind is visible but not interactive */
+        body.planner-open {
+            overflow: hidden;
         }
 
         @media (min-width: 1024px) {
@@ -1060,45 +1067,40 @@
 
             // Planner iframe functions
             const plannerFrame = document.getElementById('taskPlannerFrame');
+            const body = document.body;
 
             function openTaskPlanner() {
                 plannerFrame.style.display = 'block';
-                document.body.style.overflow = 'hidden';
+                body.classList.add('planner-open');
                 
                 // Wait for iframe to load then send data
-                plannerFrame.onload = function() {
-                    plannerFrame.contentWindow.postMessage({
-                        type: 'OPEN_PLANNER',
-                        location: currentLocationName,
-                        coordinates: currentCoordinates,
-                        taskDescription: taskDescription
-                    }, '*');
+                const sendDataToFrame = () => {
+                    if (plannerFrame.contentWindow) {
+                        plannerFrame.contentWindow.postMessage({
+                            type: 'OPEN_PLANNER',
+                            location: currentLocationName,
+                            coordinates: currentCoordinates,
+                            taskDescription: taskDescription
+                        }, '*');
+                    }
                 };
                 
-                // If already loaded, send immediately
-                if (plannerFrame.contentDocument.readyState === 'complete') {
-                    plannerFrame.contentWindow.postMessage({
-                        type: 'OPEN_PLANNER',
-                        location: currentLocationName,
-                        coordinates: currentCoordinates,
-                        taskDescription: taskDescription
-                    }, '*');
+                if (plannerFrame.contentDocument?.readyState === 'complete') {
+                    sendDataToFrame();
+                } else {
+                    plannerFrame.onload = sendDataToFrame;
                 }
             }
 
             function closeTaskPlanner() {
                 plannerFrame.style.display = 'none';
-                document.body.style.overflow = '';
+                body.classList.remove('planner-open');
             }
 
             // Listen for messages from iframe
             window.addEventListener('message', function(event) {
                 if (event.data.type === 'CLOSE_PLANNER') {
                     closeTaskPlanner();
-                }
-                if (event.data.type === 'SHOW_PREVIEW') {
-                    console.log('Preview data:', event.data.data);
-                    // You can handle preview data here if needed
                 }
             });
 
