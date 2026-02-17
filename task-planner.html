@@ -173,12 +173,13 @@
             font-family: 'Manrope', sans-serif !important;
         }
         
-        /* Label with tooltip */
+        /* Label with tooltip - aligned properly */
         .label-with-tooltip {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             margin-bottom: 0.5rem;
+            flex-wrap: wrap;
         }
         
         .tooltip-icon {
@@ -191,6 +192,7 @@
             justify-content: center;
             cursor: pointer;
             position: relative;
+            flex-shrink: 0;
         }
         
         .tooltip-icon .material-symbols-outlined {
@@ -212,13 +214,17 @@
             background: #045B92;
             color: white;
             font-size: 0.8rem;
-            padding: 0.5rem 0.75rem;
+            padding: 0.75rem;
             border-radius: 5px;
-            white-space: nowrap;
+            width: 200px;
+            white-space: normal;
+            word-wrap: break-word;
             margin-bottom: 0.5rem;
             font-family: 'Manrope', sans-serif !important;
             font-weight: 300 !important;
             z-index: 10;
+            text-align: center;
+            line-height: 1.4;
         }
         
         .tooltip-content::after {
@@ -232,9 +238,9 @@
             border-color: #045B92 transparent transparent transparent;
         }
         
-        /* Tip banner - pink with white text */
+        /* Tip banner - now matching preview style (light blue background with blue text) */
         .tip-banner {
-            background: #FF286F;
+            background: rgba(4, 91, 146, 0.08);
             padding: 1.25rem;
             border-radius: 5px !important;
             display: flex;
@@ -247,7 +253,7 @@
         .tip-banner-icon {
             width: 32px;
             height: 32px;
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(4, 91, 146, 0.12);
             border-radius: 5px !important;
             display: flex;
             align-items: center;
@@ -255,14 +261,14 @@
             flex-shrink: 0;
         }
         .tip-banner-icon .material-symbols-outlined {
-            color: white !important;
+            color: #045B92 !important;
             font-size: 20px !important;
         }
         
         .tip-banner-text {
             flex: 1;
             font-size: 0.9rem;
-            color: white;
+            color: #045B92;
             line-height: 1.5;
             font-weight: 300;
             font-family: 'Manrope', sans-serif !important;
@@ -282,7 +288,8 @@
         }
         
         .location-field-wrapper,
-        .task-field-wrapper {
+        .task-field-wrapper,
+        .budget-field-wrapper {
             position: relative;
             width: 100%;
         }
@@ -301,6 +308,29 @@
             font-size: 1rem !important;
             outline: none;
             transition: border-color 0.2s;
+        }
+        
+        /* Budget input with R currency symbol */
+        .budget-field-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        
+        .budget-input {
+            padding-left: 2.5rem;
+        }
+        
+        .currency-symbol {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #045B92;
+            font-weight: 500;
+            font-size: 1rem;
+            font-family: 'Manrope', sans-serif !important;
+            z-index: 1;
+            pointer-events: none;
         }
         
         /* Ensure text doesn't go under icon */
@@ -468,6 +498,10 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 1.5rem;
+            background: rgba(4, 91, 146, 0.08);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(4, 91, 146, 0.15);
         }
         
         .profile-avatar {
@@ -478,7 +512,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
         }
         .profile-avatar .material-symbols-outlined {
             color: #045B92 !important;
@@ -489,7 +523,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.35rem;
         }
         
         .profile-name {
@@ -532,13 +566,14 @@
             font-family: 'Manrope', sans-serif !important;
         }
         
-        /* Preview items with icons - icons in blue, labels in same font as questions */
+        /* Preview items - white with blue text */
         .preview-items {
-            background: rgba(4, 91, 146, 0.03);
+            background: white;
             border: 1px solid rgba(4, 91, 146, 0.1);
             padding: 1.5rem;
             border-radius: 5px !important;
             margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
         }
         
         .preview-item {
@@ -814,6 +849,9 @@
                 width: 56px;
                 height: 56px;
             }
+            .tooltip-content {
+                width: 180px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -849,6 +887,10 @@
                 flex-direction: column;
                 gap: 0.5rem;
             }
+            .tooltip-content {
+                width: 160px;
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>
@@ -866,7 +908,7 @@
             
             <!-- Scrollable Content -->
             <div class="sheet-content" id="locationContent">
-                <!-- Tip banner - right under the border line with proper spacing -->
+                <!-- Tip banner - now matching preview style (light blue with blue text) -->
                 <div class="tip-banner">
                     <div class="tip-banner-icon">
                         <span class="material-symbols-outlined">lightbulb</span>
@@ -923,7 +965,9 @@
                         <label class="section-label">What's your budget?</label>
                         <span class="tooltip-icon" id="budgetTooltip">
                             <span class="material-symbols-outlined">info</span>
-                            <span class="tooltip-content" id="budgetTooltipContent">This amount will be released after the task is completed successfully</span>
+                            <span class="tooltip-content" id="budgetTooltipContent">
+                                This amount will be released after the task is completed successfully. You only pay when you're satisfied with the work.
+                            </span>
                         </span>
                     </div>
                     <div class="budget-options">
@@ -931,7 +975,10 @@
                         <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
                     </div>
                     <div id="fixedBudgetInput" style="display: none;">
-                        <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount in Rands (e.g. 500)" inputmode="numeric" pattern="[0-9]*">
+                        <div class="budget-field-wrapper">
+                            <span class="currency-symbol">R</span>
+                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount (e.g. 500)" inputmode="numeric" pattern="[0-9]*">
+                        </div>
                         <div class="field-error" id="budgetError">Please enter a budget amount</div>
                     </div>
                 </div>
@@ -962,7 +1009,7 @@
             </div>
             
             <div class="sheet-content" id="previewContent">
-                <!-- Profile section - vertical layout with proper alignment -->
+                <!-- Profile section - faded blue with shadow -->
                 <div class="preview-header">
                     <div class="profile-avatar">
                         <span class="material-symbols-outlined">person</span>
@@ -981,7 +1028,7 @@
                     </div>
                 </div>
 
-                <!-- Preview items with icons - icons in blue, labels in question font -->
+                <!-- Preview items - white with blue text -->
                 <div class="preview-items">
                     <!-- Task location -->
                     <div class="preview-item">
