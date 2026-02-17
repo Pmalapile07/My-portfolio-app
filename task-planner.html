@@ -26,7 +26,6 @@
             color: #1a1a1a;
             background-color: transparent;
             min-height: 100vh;
-            overflow: hidden;
         }
 
         .material-symbols-outlined {
@@ -59,7 +58,9 @@
             max-width: 600px;
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
-            max-height: 90vh; /* Increased from 85vh */
+            height: 90vh;
+            height: 90dvh;
+            max-height: 90vh;
             display: flex;
             flex-direction: column;
             position: relative;
@@ -107,6 +108,7 @@
             padding: 1.5rem 1.5rem 1rem;
             scrollbar-width: thin;
             scrollbar-color: #FF286F rgba(4, 91, 146, 0.1);
+            -webkit-overflow-scrolling: touch;
         }
         
         .sheet-content::-webkit-scrollbar {
@@ -666,9 +668,27 @@
             let budgetType = 'fixed';
             let currentCoordinates = '';
             let currentLocationName = '';
+            let scrollPosition = 0;
 
             // Initialize
             previewSheet.style.display = 'none';
+
+            // Body scroll lock management
+            function lockBodyScroll() {
+                scrollPosition = window.scrollY;
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+                document.body.style.top = `-${scrollPosition}px`;
+                document.body.style.overflow = 'hidden';
+            }
+
+            function unlockBodyScroll() {
+                document.body.style.position = '';
+                document.body.style.width = '';
+                document.body.style.top = '';
+                document.body.style.overflow = '';
+                window.scrollTo(0, scrollPosition);
+            }
 
             // Scroll to element with proper offset
             function scrollToElement(element) {
@@ -752,6 +772,7 @@
                     
                     clearErrors();
                     locationSheet.style.display = 'flex';
+                    lockBodyScroll();
                     
                     // Reset scroll position
                     if (locationContent) {
@@ -763,6 +784,7 @@
             // Close planner
             function closePlanner() {
                 locationSheet.style.display = 'none';
+                unlockBodyScroll();
                 window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
             }
 
@@ -875,6 +897,7 @@
             previewBackBtn.addEventListener('click', function() {
                 previewSheet.style.display = 'none';
                 locationSheet.style.display = 'flex';
+                lockBodyScroll();
                 if (locationContent) {
                     locationContent.scrollTop = 0;
                 }
@@ -886,6 +909,7 @@
             postButton.addEventListener('click', function() {
                 alert('Task would be posted to backend');
                 previewSheet.style.display = 'none';
+                unlockBodyScroll();
                 window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
             });
 
@@ -897,8 +921,22 @@
             previewSheet.addEventListener('click', function(e) {
                 if (e.target === previewSheet) {
                     previewSheet.style.display = 'none';
+                    unlockBodyScroll();
                 }
             });
+
+            // Prevent touch events from bubbling
+            locationSheet.addEventListener('touchstart', function(e) {
+                if (e.target === locationSheet) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            previewSheet.addEventListener('touchstart', function(e) {
+                if (e.target === previewSheet) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
         })();
     </script>
 </body>
