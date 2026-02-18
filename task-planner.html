@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
 
     <style>
+        /* ALL YOUR EXISTING CSS STYLES HERE - EXACTLY AS YOU HAVE THEM */
         @font-face {
             font-family: 'Codec Cold News';
             src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
@@ -1395,9 +1396,6 @@
         (function() {
             'use strict';
             
-            // Initialize Mapbox with your API key
-            mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sczVoMDg0MDJrbzNsczllbHJ3dGR2cCJ9.SjhCyODnmvACaY3AHz-HTw';
-            
             // Get elements
             const locationSheet = document.getElementById('locationSheet');
             const previewSheet = document.getElementById('previewSheet');
@@ -1462,6 +1460,11 @@
             let currentCoordinates = '';
             let currentLocationName = '';
             let scrollPosition = 0;
+
+            // API endpoint - this will be set by your backend on Render
+            const API_BASE_URL = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000'  // Local development
+                : 'https://your-backend.onrender.com';  // Replace with your actual Render URL
 
             // Character count for task field
             function updateCharCount() {
@@ -1576,52 +1579,46 @@
                 return isValid;
             }
 
-            // Function to get location name from coordinates using Mapbox reverse geocoding
+            // Function to get location name from coordinates using backend proxy
             async function getLocationName(lat, lon) {
                 try {
                     const response = await fetch(
-                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&types=place,locality,neighborhood&language=en`
+                        `${API_BASE_URL}/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
                     );
                     const data = await response.json();
-                    
-                    if (data && data.features && data.features.length > 0) {
-                        // Get the most relevant place name (city/town)
-                        return data.features[0].text || null;
-                    }
-                    return null;
+                    return data.name || null;
                 } catch (error) {
-                    console.log('Mapbox reverse geocoding failed:', error);
+                    console.log('Reverse geocoding failed:', error);
                     return null;
                 }
             }
 
-            // Function to get full address from coordinates using Mapbox
+            // Function to get full address from coordinates using backend proxy
             async function getFullAddress(lat, lon) {
                 try {
                     const response = await fetch(
-                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=en`
+                        `${API_BASE_URL}/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
                     );
                     const data = await response.json();
-                    
-                    if (data && data.features && data.features.length > 0) {
-                        return data.features[0].place_name;
-                    }
-                    return null;
+                    return data.address || null;
                 } catch (error) {
-                    console.log('Mapbox reverse geocoding failed:', error);
+                    console.log('Reverse geocoding failed:', error);
                     return null;
                 }
             }
 
-            // Initialize map with Mapbox
-            function initMap(lat, lng) {
+            // Initialize map with Mapbox - using backend proxy for style
+            async function initMap(lat, lng) {
                 if (map) {
                     map.remove();
                 }
                 
+                // Get map style URL from backend
+                const styleUrl = `${API_BASE_URL}/api/map/style`;
+                
                 map = new mapboxgl.Map({
                     container: 'map',
-                    style: 'mapbox://styles/mapbox/streets-v12',
+                    style: styleUrl,
                     center: [lng, lat],
                     zoom: 15
                 });
@@ -1630,12 +1627,6 @@
                 map.addControl(new mapboxgl.NavigationControl(), 'top-right');
                 
                 // Create a draggable marker
-                const el = document.createElement('div');
-                el.className = 'custom-marker';
-                el.innerHTML = '📍';
-                el.style.fontSize = '30px';
-                el.style.cursor = 'pointer';
-                
                 marker = new mapboxgl.Marker({
                     draggable: true,
                     color: '#FF286F'
