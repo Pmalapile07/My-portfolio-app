@@ -21,7 +21,6 @@
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
 
     <style>
-        /* ALL YOUR EXISTING CSS STYLES HERE - EXACTLY AS YOU HAVE THEM */
         @font-face {
             font-family: 'Codec Cold News';
             src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
@@ -1396,6 +1395,12 @@
         (function() {
             'use strict';
             
+            // Your Render backend URL
+            const API_BASE_URL = 'https://my-portfolio-app-xtoy.onrender.com';
+            
+            // Initialize Mapbox with a placeholder - actual map will load via proxy
+            mapboxgl.accessToken = 'placeholder'; // This will be overridden by the proxy
+            
             // Get elements
             const locationSheet = document.getElementById('locationSheet');
             const previewSheet = document.getElementById('previewSheet');
@@ -1460,11 +1465,6 @@
             let currentCoordinates = '';
             let currentLocationName = '';
             let scrollPosition = 0;
-
-            // API endpoint - this will be set by your backend on Render
-            const API_BASE_URL = window.location.hostname === 'localhost' 
-                ? 'http://localhost:3000'  // Local development
-                : 'https://your-backend.onrender.com';  // Replace with your actual Render URL
 
             // Character count for task field
             function updateCharCount() {
@@ -1613,50 +1613,69 @@
                     map.remove();
                 }
                 
-                // Get map style URL from backend
-                const styleUrl = `${API_BASE_URL}/api/map/style`;
-                
-                map = new mapboxgl.Map({
-                    container: 'map',
-                    style: styleUrl,
-                    center: [lng, lat],
-                    zoom: 15
-                });
-                
-                // Add navigation controls
-                map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-                
-                // Create a draggable marker
-                marker = new mapboxgl.Marker({
-                    draggable: true,
-                    color: '#FF286F'
-                })
-                    .setLngLat([lng, lat])
-                    .addTo(map);
-                
-                // Update location info when marker is dragged
-                marker.on('dragend', async function() {
-                    const lngLat = marker.getLngLat();
-                    selectedLat = lngLat.lat;
-                    selectedLng = lngLat.lng;
+                // Get map style from backend
+                try {
+                    const styleResponse = await fetch(`${API_BASE_URL}/api/map/style`);
+                    const mapStyle = await styleResponse.json();
                     
-                    // Get address for the new location
-                    const address = await getFullAddress(selectedLat, selectedLng);
-                    if (address) {
-                        locationInfo.textContent = address;
-                        selectedAddress = address;
-                    } else {
-                        locationInfo.textContent = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
-                    }
-                });
-                
-                // Get initial address
-                getFullAddress(lat, lng).then(address => {
-                    if (address) {
-                        locationInfo.textContent = address;
-                        selectedAddress = address;
-                    }
-                });
+                    map = new mapboxgl.Map({
+                        container: 'map',
+                        style: mapStyle,
+                        center: [lng, lat],
+                        zoom: 15
+                    });
+                    
+                    // Add navigation controls
+                    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+                    
+                    // Create a draggable marker
+                    marker = new mapboxgl.Marker({
+                        draggable: true,
+                        color: '#FF286F'
+                    })
+                        .setLngLat([lng, lat])
+                        .addTo(map);
+                    
+                    // Update location info when marker is dragged
+                    marker.on('dragend', async function() {
+                        const lngLat = marker.getLngLat();
+                        selectedLat = lngLat.lat;
+                        selectedLng = lngLat.lng;
+                        
+                        // Get address for the new location
+                        const address = await getFullAddress(selectedLat, selectedLng);
+                        if (address) {
+                            locationInfo.textContent = address;
+                            selectedAddress = address;
+                        } else {
+                            locationInfo.textContent = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
+                        }
+                    });
+                    
+                    // Get initial address
+                    getFullAddress(lat, lng).then(address => {
+                        if (address) {
+                            locationInfo.textContent = address;
+                            selectedAddress = address;
+                        }
+                    });
+                } catch (error) {
+                    console.error('Failed to load map style:', error);
+                    // Fallback to a basic map if proxy fails
+                    map = new mapboxgl.Map({
+                        container: 'map',
+                        style: 'mapbox://styles/mapbox/streets-v12',
+                        center: [lng, lat],
+                        zoom: 15
+                    });
+                    
+                    marker = new mapboxgl.Marker({
+                        draggable: true,
+                        color: '#FF286F'
+                    })
+                        .setLngLat([lng, lat])
+                        .addTo(map);
+                }
             }
 
             // Open map modal
