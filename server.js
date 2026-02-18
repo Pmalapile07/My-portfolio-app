@@ -15,10 +15,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Serve config.js with the Mapbox token - FIXED VARIABLE NAME
+// Serve config.js with the Mapbox token from your environment variable
 app.get('/config.js', (req, res) => {
     res.type('application/javascript');
-    // Use MAPBOX_ACCESS_TOKEN instead of MAPBOX_TOKEN
+    // This uses your actual environment variable name: MAPBOX_ACCESS_TOKEN
     res.send(`window.MAPBOX_TOKEN = '${process.env.MAPBOX_ACCESS_TOKEN}';`);
 });
 
