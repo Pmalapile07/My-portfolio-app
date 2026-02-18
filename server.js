@@ -7,12 +7,24 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); // This serves your HTML file!
+app.use(express.static(__dirname));
 
-// Mapbox API key from environment variable
-const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
+// Config endpoint to inject Mapbox token safely
+app.get('/config.js', (req, res) => {
+    res.type('application/javascript');
+    res.send(`window.MAPBOX_TOKEN = '${process.env.MAPBOX_TOKEN}';`);
+});
 
-// Serve your HTML page
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        message: 'Server is running',
+        mapbox_token_set: !!process.env.MAPBOX_TOKEN 
+    });
+});
+
+// Serve your HTML
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
@@ -26,6 +38,10 @@ app.get('/api/geocode/reverse', async (req, res) => {
             return res.status(400).json({ error: 'Missing lat or lon parameters' });
         }
 
+        if (!process.env.MAPBOX_TOKEN) {
+            return res.status(500).json({ error: 'Mapbox token not configured' });
+        }
+
         let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json`;
         
         if (type === 'place') {
@@ -34,7 +50,7 @@ app.get('/api/geocode/reverse', async (req, res) => {
             url += '?types=address&language=en';
         }
         
-        url += `&access_token=${MAPBOX_ACCESS_TOKEN}`;
+        url += `&access_token=${process.env.MAPBOX_TOKEN}`;
         
         const response = await axios.get(url);
         
@@ -48,16 +64,15 @@ app.get('/api/geocode/reverse', async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('Geocoding error:', error);
-        res.status(500).json({ error: 'Failed to geocode' });
+        console.error('Geocoding error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to geocode',
+            details: error.message 
+        });
     }
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK' });
 });
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    console.log(`Mapbox token configured: ${!!process.env.MAPBOX_TOKEN}`);
 });
