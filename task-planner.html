@@ -12,14 +12,10 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;800&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&display=swap">
     
-    <!-- Mapbox GL JS and CSS -->
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <!-- Load Mapbox through your proxy to avoid CORS -->
+    <script src="/mapbox-gl.js"></script>
+    <link href="/mapbox-gl.css" rel='stylesheet' />
     
-    <!-- Mapbox Geocoder for reverse geocoding -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
-
     <!-- Config file that will inject the API key from Render -->
     <script src="/config.js"></script>
 
@@ -1403,23 +1399,20 @@
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             
             // Wait for config to load, then set the token
-            let mapToken = window.MAPBOX_TOKEN;
-            
-            // If token not loaded yet, wait a bit
-            if (!mapToken) {
+            function initMapbox() {
+                if (window.MAPBOX_TOKEN) {
+                    mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                    console.log('Mapbox token loaded successfully');
+                    return true;
+                }
+                return false;
+            }
+
+            // Try to initialize immediately
+            if (!initMapbox()) {
                 console.log('Waiting for Mapbox token...');
-                // Try to get it after a short delay
-                setTimeout(() => {
-                    mapToken = window.MAPBOX_TOKEN;
-                    if (mapToken) {
-                        mapboxgl.accessToken = mapToken;
-                        console.log('Mapbox token loaded');
-                    } else {
-                        console.error('Mapbox token not found!');
-                    }
-                }, 500);
-            } else {
-                mapboxgl.accessToken = mapToken;
+                // Try again after a short delay
+                setTimeout(initMapbox, 500);
             }
             
             // Get elements
@@ -1635,8 +1628,14 @@
                 }
                 
                 // Make sure we have the token
-                if (!mapboxgl.accessToken) {
+                if (!mapboxgl.accessToken && window.MAPBOX_TOKEN) {
                     mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                }
+                
+                if (!mapboxgl.accessToken) {
+                    console.error('No Mapbox token available');
+                    alert('Mapbox token not loaded. Please refresh the page.');
+                    return;
                 }
                 
                 try {
