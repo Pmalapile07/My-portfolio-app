@@ -15,17 +15,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Serve config.js with the Mapbox token
+// Serve config.js with the Mapbox token - FIXED VARIABLE NAME
 app.get('/config.js', (req, res) => {
     res.type('application/javascript');
-    res.send(`window.MAPBOX_TOKEN = '${process.env.MAPBOX_TOKEN}';`);
+    // Use MAPBOX_ACCESS_TOKEN instead of MAPBOX_TOKEN
+    res.send(`window.MAPBOX_TOKEN = '${process.env.MAPBOX_ACCESS_TOKEN}';`);
 });
 
 // Health check
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
-        token_set: !!process.env.MAPBOX_TOKEN 
+        token_set: !!process.env.MAPBOX_ACCESS_TOKEN 
     });
 });
 
@@ -43,7 +44,7 @@ app.get('/api/geocode/reverse', async (req, res) => {
             return res.status(400).json({ error: 'Missing parameters' });
         }
 
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=${type === 'place' ? 'place,locality,neighborhood' : 'address'}&access_token=${process.env.MAPBOX_TOKEN}`;
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=${type === 'place' ? 'place,locality,neighborhood' : 'address'}&access_token=${process.env.MAPBOX_ACCESS_TOKEN}`;
         
         const response = await axios.get(url);
         
@@ -60,5 +61,5 @@ app.get('/api/geocode/reverse', async (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`Mapbox token configured: ${!!process.env.MAPBOX_TOKEN}`);
+    console.log(`Mapbox token configured: ${!!process.env.MAPBOX_ACCESS_TOKEN}`);
 });
