@@ -7,29 +7,14 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static('.')); // This serves your HTML file!
 
-// Mapbox API key from environment variable (you already added this in Render)
+// Mapbox API key from environment variable
 const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
-// Proxy for Mapbox styles
-app.get('/api/map/style', (req, res) => {
-    res.json({
-        version: 8,
-        name: 'Mapbox Streets',
-        sources: {
-            'mapbox': {
-                type: 'vector',
-                url: `mapbox://mapbox.mapbox-streets-v8`
-            }
-        },
-        layers: [{
-            id: 'background',
-            type: 'background',
-            paint: {
-                'background-color': '#f8f4f0'
-            }
-        }]
-    });
+// Serve your HTML page
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
 });
 
 // Reverse geocoding endpoint
