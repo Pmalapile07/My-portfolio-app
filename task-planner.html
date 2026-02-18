@@ -1402,9 +1402,25 @@
             // Your Render backend URL
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             
-            // Get the Mapbox token from the config file (injected by Render)
-            // If window.MAPBOX_TOKEN is not available, use a placeholder
-            mapboxgl.accessToken = window.MAPBOX_TOKEN || 'YOUR_NEW_API_KEY_HERE';
+            // Wait for config to load, then set the token
+            let mapToken = window.MAPBOX_TOKEN;
+            
+            // If token not loaded yet, wait a bit
+            if (!mapToken) {
+                console.log('Waiting for Mapbox token...');
+                // Try to get it after a short delay
+                setTimeout(() => {
+                    mapToken = window.MAPBOX_TOKEN;
+                    if (mapToken) {
+                        mapboxgl.accessToken = mapToken;
+                        console.log('Mapbox token loaded');
+                    } else {
+                        console.error('Mapbox token not found!');
+                    }
+                }, 500);
+            } else {
+                mapboxgl.accessToken = mapToken;
+            }
             
             // Get elements
             const locationSheet = document.getElementById('locationSheet');
@@ -1612,14 +1628,19 @@
                 }
             }
 
-            // Initialize map with Mapbox - SIMPLIFIED VERSION THAT WORKS
+            // Initialize map with Mapbox
             function initMap(lat, lng) {
                 if (map) {
                     map.remove();
                 }
                 
+                // Make sure we have the token
+                if (!mapboxgl.accessToken) {
+                    mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                }
+                
                 try {
-                    // Create map directly with the access token from window object
+                    // Create map directly with the access token
                     map = new mapboxgl.Map({
                         container: 'map',
                         style: 'mapbox://styles/mapbox/streets-v12',
