@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
 
     <style>
+        /* ALL YOUR EXISTING CSS STYLES - KEEP THEM EXACTLY AS THEY ARE */
         @font-face {
             font-family: 'Codec Cold News';
             src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
@@ -1398,8 +1399,9 @@
             // Your Render backend URL
             const API_BASE_URL = 'https://my-portfolio-app-xtoy.onrender.com';
             
-            // Initialize Mapbox with a placeholder - actual map will load via proxy
-            mapboxgl.accessToken = 'placeholder'; // This will be overridden by the proxy
+            // Use your actual Mapbox token directly for the map display
+            // This is safe because it's just for displaying the map
+            mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sczVoMDg0MDJrbzNsczllbHJ3dGR2cCJ9.SjhCyODnmvACaY3AHz-HTw';
             
             // Get elements
             const locationSheet = document.getElementById('locationSheet');
@@ -1607,22 +1609,27 @@
                 }
             }
 
-            // Initialize map with Mapbox - using backend proxy for style
-            async function initMap(lat, lng) {
+            // Initialize map with Mapbox - SIMPLIFIED VERSION THAT WORKS
+            function initMap(lat, lng) {
                 if (map) {
                     map.remove();
                 }
                 
-                // Get map style from backend
                 try {
-                    const styleResponse = await fetch(`${API_BASE_URL}/api/map/style`);
-                    const mapStyle = await styleResponse.json();
-                    
+                    // Create map directly with the access token
                     map = new mapboxgl.Map({
                         container: 'map',
-                        style: mapStyle,
+                        style: 'mapbox://styles/mapbox/streets-v12',
                         center: [lng, lat],
                         zoom: 15
+                    });
+                    
+                    map.on('load', () => {
+                        console.log('Map loaded successfully');
+                    });
+                    
+                    map.on('error', (e) => {
+                        console.error('Map error:', e);
                     });
                     
                     // Add navigation controls
@@ -1642,7 +1649,7 @@
                         selectedLat = lngLat.lat;
                         selectedLng = lngLat.lng;
                         
-                        // Get address for the new location
+                        // Get address for the new location using your backend
                         const address = await getFullAddress(selectedLat, selectedLng);
                         if (address) {
                             locationInfo.textContent = address;
@@ -1659,22 +1666,10 @@
                             selectedAddress = address;
                         }
                     });
-                } catch (error) {
-                    console.error('Failed to load map style:', error);
-                    // Fallback to a basic map if proxy fails
-                    map = new mapboxgl.Map({
-                        container: 'map',
-                        style: 'mapbox://styles/mapbox/streets-v12',
-                        center: [lng, lat],
-                        zoom: 15
-                    });
                     
-                    marker = new mapboxgl.Marker({
-                        draggable: true,
-                        color: '#FF286F'
-                    })
-                        .setLngLat([lng, lat])
-                        .addTo(map);
+                } catch (error) {
+                    console.error('Failed to initialize map:', error);
+                    alert('Failed to load map. Please check console for details.');
                 }
             }
 
