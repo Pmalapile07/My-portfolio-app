@@ -571,7 +571,7 @@
             border-top: 1px solid rgba(4, 91, 146, 0.1);
         }
         
-        /* Payment confirmation window (placeholder) */
+        /* Payment confirmation window (placeholder) - now used for online payment on post */
         .payment-confirm-window {
             position: fixed;
             bottom: 0;
@@ -650,7 +650,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            border: none; /* Remove default border */
+            border: none;
         }
         
         .when-option.active,
@@ -670,8 +670,12 @@
         
         /* Remove blue border on inactive payment option hover */
         .payment-option.inactive:hover {
-            background: rgba(4, 91, 146, 0.05);
+            background: #FF286F;
             border: 1px solid #FF286F;
+            color: white;
+        }
+        .payment-option.inactive:hover .custom-icon {
+            filter: brightness(0) invert(1);
         }
         
         /* Ensure icons in payment options behave */
@@ -1390,9 +1394,9 @@
                     <div id="fixedBudgetInput" style="display: block;">
                         <div class="budget-field-wrapper">
                             <span class="currency-symbol">R</span>
-                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount (min R20)" inputmode="numeric" pattern="[0-9]*">
+                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount" inputmode="numeric" pattern="[0-9]*">
                         </div>
-                        <div class="field-error" id="budgetError">Please enter a budget amount (minimum R20)</div>
+                        <div class="field-error" id="budgetError">Please enter a budget amount</div>
                     </div>
                     
                     <!-- Payment method selector - Cash or Online payment -->
@@ -1528,7 +1532,7 @@
                     <div class="helper-icon">
                         <span class="material-symbols-outlined">check</span>
                     </div>
-                    <div class="helper-text">
+                    <div class="helper-text" id="helperText">
                         Your task will be visible to nearby helpers. You will receive offers and can choose who to work with.
                     </div>
                 </div>
@@ -1545,7 +1549,7 @@
             <div class="sheet-footer">
                 <div class="post-btn-container">
                     <button class="post-button" id="postButton" disabled>Post task</button>
-                    <div class="free-text">Free to post • no upfront payment</div>
+                    <div class="free-text" id="freeText">Free to post • no upfront payment</div>
                 </div>
             </div>
         </div>
@@ -1571,13 +1575,24 @@
     <!-- CONFIRMATION MODAL -->
     <div class="confirm-modal-overlay" id="confirmModal">
         <div class="confirm-modal">
-            <h3>Ready to post?</h3>
-            <p>We're about to post your task. Are you sure you want to continue?</p>
+            <h3 id="confirmTitle">Ready to post?</h3>
+            <p id="confirmMessage">We're about to post your task. Are you sure you want to continue?</p>
             <div class="confirm-buttons">
                 <button class="confirm-btn yes" id="confirmYesBtn">Yes, post it</button>
                 <button class="confirm-btn cancel" id="confirmCancelBtn">Cancel</button>
             </div>
         </div>
+    </div>
+
+    <!-- PAYMENT WINDOW (for online payment) -->
+    <div class="payment-confirm-window" id="paymentWindow">
+        <div class="payment-header">Secure payment</div>
+        <div class="payment-content">
+            <p>We'll securely hold your payment until the task is completed.</p>
+            <p>You only pay when you're satisfied with the work.</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">This is a placeholder - payment integration coming soon.</p>
+        </div>
+        <div class="payment-close" id="closePaymentWindow">Continue</div>
     </div>
 
     <!-- CAMERA/GALLERY SELECTION MENU -->
@@ -1592,16 +1607,6 @@
             <span>Choose from gallery</span>
         </div>
         <div class="menu-cancel" id="cancelImageMenu">Cancel</div>
-    </div>
-
-    <!-- PAYMENT CONFIRMATION WINDOW (Placeholder) -->
-    <div class="payment-confirm-window" id="paymentConfirmWindow">
-        <div class="payment-header">Confirm online payment</div>
-        <div class="payment-content">
-            <p>Online payment integration will be added soon.</p>
-            <p>This is a placeholder window.</p>
-        </div>
-        <div class="payment-close" id="closePaymentWindow">Close</div>
     </div>
 
     <script>
@@ -1623,6 +1628,10 @@
             const locationSheet = document.getElementById('locationSheet');
             const previewSheet = document.getElementById('previewSheet');
             const confirmModal = document.getElementById('confirmModal');
+            const confirmTitle = document.getElementById('confirmTitle');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmYesBtn = document.getElementById('confirmYesBtn');
+            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
             const mapModal = document.getElementById('mapModal');
             const mapModalCloseBtn = document.getElementById('mapModalCloseBtn');
             const mapConfirmBtn = document.getElementById('mapConfirmBtn');
@@ -1654,8 +1663,12 @@
             // Payment method elements
             const cashBtn = document.getElementById('cashBtn');
             const onlineBtn = document.getElementById('onlineBtn');
-            const paymentConfirmWindow = document.getElementById('paymentConfirmWindow');
+            const paymentWindow = document.getElementById('paymentWindow');
             const closePaymentWindow = document.getElementById('closePaymentWindow');
+            
+            // Helper text and free text
+            const helperText = document.getElementById('helperText');
+            const freeText = document.getElementById('freeText');
             
             // Image source menu
             const imageSourceMenu = document.getElementById('imageSourceMenu');
@@ -1684,10 +1697,6 @@
             const previewWhen = document.getElementById('previewWhen');
             const postButton = document.getElementById('postButton');
             const termsCheckbox = document.getElementById('termsCheckbox');
-
-            // Confirmation modal elements
-            const confirmYesBtn = document.getElementById('confirmYesBtn');
-            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
 
             // Map variables
             let map = null;
@@ -1817,25 +1826,33 @@
                 selectedPayment = 'cash';
                 cashBtn.className = 'payment-option active';
                 onlineBtn.className = 'payment-option inactive';
+                
+                // Update post button and messaging
+                postButton.textContent = 'Post task';
+                freeText.textContent = 'Cash payment in person • No upfront payment';
+                helperText.textContent = 'You will pay the helper directly in cash when the task is complete.';
             });
             
             onlineBtn.addEventListener('click', function() {
                 selectedPayment = 'online';
                 onlineBtn.className = 'payment-option active';
                 cashBtn.className = 'payment-option inactive';
-                // Show payment confirmation window (placeholder)
-                paymentConfirmWindow.classList.add('active');
+                
+                // Update post button and messaging
+                postButton.textContent = 'Pay & post task';
+                freeText.textContent = 'Zero fees • We securely hold funds until task is complete';
+                helperText.textContent = 'Your payment is held securely and only released when you approve the work.';
             });
 
             // Close payment window
             closePaymentWindow.addEventListener('click', function() {
-                paymentConfirmWindow.classList.remove('active');
+                paymentWindow.classList.remove('active');
             });
 
             // Click outside to close payment window
             document.addEventListener('click', function(e) {
-                if (!paymentConfirmWindow.contains(e.target) && !onlineBtn.contains(e.target)) {
-                    paymentConfirmWindow.classList.remove('active');
+                if (!paymentWindow.contains(e.target) && paymentWindow.classList.contains('active')) {
+                    paymentWindow.classList.remove('active');
                 }
             });
 
@@ -1907,8 +1924,7 @@
                 }
                 
                 if (budgetType === 'fixed' && fixedBudgetInput.style.display === 'block') {
-                    const amount = parseInt(budgetAmountInput.value, 10);
-                    if (!budgetAmountInput.value || isNaN(amount) || amount < 20) {
+                    if (!budgetAmountInput.value) {
                         budgetError.classList.add('visible');
                         budgetAmountInput.classList.add('error');
                         if (!firstError) firstError = budgetAmountInput;
@@ -2212,15 +2228,8 @@
                 budgetAmountInput.addEventListener('input', function() {
                     this.value = this.value.replace(/[^0-9]/g, '');
                     if (this.value) {
-                        const amount = parseInt(this.value, 10);
-                        if (amount < 20) {
-                            budgetError.textContent = 'Minimum amount is R20';
-                            budgetError.classList.add('visible');
-                            this.classList.add('error');
-                        } else {
-                            this.classList.remove('error');
-                            if (budgetError) budgetError.classList.remove('visible');
-                        }
+                        this.classList.remove('error');
+                        if (budgetError) budgetError.classList.remove('visible');
                     }
                 });
             }
@@ -2283,7 +2292,17 @@
 
             postButton.addEventListener('click', function() {
                 if (postButton.disabled) return;
-                confirmModal.classList.add('active');
+                
+                if (selectedPayment === 'cash') {
+                    // For cash, show the ready to post confirmation
+                    confirmTitle.textContent = 'Ready to post?';
+                    confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
+                    confirmYesBtn.textContent = 'Yes, post it';
+                    confirmModal.classList.add('active');
+                } else {
+                    // For online payment, show payment window first
+                    paymentWindow.classList.add('active');
+                }
             });
 
             confirmYesBtn.addEventListener('click', function() {
