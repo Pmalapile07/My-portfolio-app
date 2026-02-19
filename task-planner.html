@@ -456,7 +456,7 @@
             transition: filter 0.3s ease-in-out;
         }
         
-        /* Upload icon with shake */
+        /* Upload icon with shake - now wraps a file input */
         .upload-icon {
             position: absolute;
             right: 8px;
@@ -475,6 +475,7 @@
             pointer-events: auto;
             z-index: 2;
             animation: shake 1.5s infinite ease-in-out;
+            overflow: hidden;
         }
         .upload-icon:hover {
             background-color: #FF286F !important;
@@ -486,6 +487,17 @@
             width: 24px;
             height: 24px;
             transition: filter 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        /* Hidden file input */
+        .file-input-hidden {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            left: 0;
+            top: 0;
         }
         
         /* Character count */
@@ -559,6 +571,7 @@
             cursor: pointer;
             background: white;
             transition: all 0.3s ease-in-out;
+            position: relative;
         }
         .date-time-box:hover {
             border-color: #FF286F;
@@ -1142,6 +1155,36 @@
                 height: 200px;
             }
         }
+
+        /* Image preview styling */
+        .image-preview-container {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .image-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            object-fit: cover;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+        .remove-image {
+            background: #FF286F;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: -15px;
+            margin-top: -5px;
+        }
     </style>
 </head>
 <body>
@@ -1220,10 +1263,13 @@
                         <input type="text" class="task-field" id="taskField" placeholder="In words or upload an image" maxlength="50" value="">
                         <span class="upload-icon" id="uploadIcon">
                             <span class="custom-icon image-icon"></span>
+                            <input type="file" id="imageUploadInput" accept="image/*" capture="environment" class="file-input-hidden">
                         </span>
                     </div>
                     <div class="char-count" id="taskCharCount">0/50</div>
                     <div class="field-error" id="taskError">Please describe your task</div>
+                    <!-- Image preview container -->
+                    <div id="imagePreviewContainer" class="image-preview-container"></div>
                 </div>
 
                 <div class="form-section">
@@ -1454,6 +1500,8 @@
             const taskField = document.getElementById('taskField');
             const taskCharCount = document.getElementById('taskCharCount');
             const uploadIcon = document.getElementById('uploadIcon');
+            const imageUploadInput = document.getElementById('imageUploadInput');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
             const moreDetailsField = document.getElementById('moreDetailsField');
             const nextButton = document.getElementById('nextButton');
             
@@ -1498,6 +1546,8 @@
             // New state for date/time
             let selectedDate = null;
             let selectedTime = null;
+            // Store uploaded images as data URLs (frontend only)
+            let uploadedImages = [];
 
             // Character count for task field
             function updateCharCount() {
@@ -1518,6 +1568,48 @@
                 taskError.classList.remove('visible');
                 taskField.classList.remove('error');
             });
+
+            // Image upload handling
+            imageUploadInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            uploadedImages.push(event.target.result);
+                            displayImagePreviews();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                // Clear input so same file can be selected again
+                imageUploadInput.value = '';
+            });
+
+            function displayImagePreviews() {
+                imagePreviewContainer.innerHTML = '';
+                uploadedImages.forEach((imgData, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.style.display = 'inline-block';
+                    
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.className = 'image-preview';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = '×';
+                    removeBtn.className = 'remove-image';
+                    removeBtn.onclick = () => {
+                        uploadedImages.splice(index, 1);
+                        displayImagePreviews();
+                    };
+                    
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    imagePreviewContainer.appendChild(wrapper);
+                });
+            }
 
             // Initialize
             previewSheet.style.display = 'none';
@@ -1783,16 +1875,21 @@
 
             // Make sure the box clicks also trigger the native picker
             pickDateBtn.addEventListener('click', function(e) {
-                // If the click is not directly on the input, trigger it
-                if (e.target !== nativeDatePicker) {
-                    nativeDatePicker.showPicker();
-                }
+                e.preventDefault();
+                nativeDatePicker.showPicker();
             });
 
             pickTimeBtn.addEventListener('click', function(e) {
-                if (e.target !== nativeTimePicker) {
-                    nativeTimePicker.showPicker();
-                }
+                e.preventDefault();
+                nativeTimePicker.showPicker();
+            });
+
+            // Also make the inputs themselves clickable (they are invisible but cover the area)
+            nativeDatePicker.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            nativeTimePicker.addEventListener('click', function(e) {
+                e.stopPropagation();
             });
 
             function openPreview() {
@@ -1920,10 +2017,6 @@
                 }
             });
 
-            uploadIcon.addEventListener('click', () => {
-                alert('Image upload will be implemented soon');
-            });
-
             sheetBackBtn.addEventListener('click', closePlanner);
             
             previewBackBtn.addEventListener('click', function() {
@@ -1943,7 +2036,7 @@
             });
 
             confirmYesBtn.addEventListener('click', function() {
-                alert('Task would be posted to backend');
+                alert('Task would be posted to backend with ' + uploadedImages.length + ' image(s)');
                 confirmModal.classList.remove('active');
                 previewSheet.style.display = 'none';
                 unlockBodyScroll();
