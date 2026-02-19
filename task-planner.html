@@ -741,11 +741,7 @@
             line-height: 1.4;
             word-break: break-word;
             font-family: 'Manrope', sans-serif !important;
-            text-transform: capitalize;
-        }
-        
-        .preview-value::first-letter {
-            text-transform: uppercase;
+            /* Remove global capitalize, we'll handle via JS */
         }
         
         /* Preview values in pink */
@@ -1183,11 +1179,11 @@
                     <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
                         <div class="date-time-box" id="pickDateBtn">
                             <span class="custom-icon check-icon"></span>
-                            <span>Pick a date</span>
+                            <span id="dateDisplay">Pick a date</span>
                         </div>
                         <div class="date-time-box" id="pickTimeBtn">
                             <span class="custom-icon clock-icon"></span>
-                            <span>Pick a time</span>
+                            <span id="timeDisplay">Pick a time</span>
                         </div>
                     </div>
                 </div>
@@ -1425,6 +1421,8 @@
             const dateTimePickers = document.getElementById('dateTimePickers');
             const pickDateBtn = document.getElementById('pickDateBtn');
             const pickTimeBtn = document.getElementById('pickTimeBtn');
+            const dateDisplay = document.getElementById('dateDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
             const taskField = document.getElementById('taskField');
             const taskCharCount = document.getElementById('taskCharCount');
             const uploadIcon = document.getElementById('uploadIcon');
@@ -1469,6 +1467,9 @@
             let currentCoordinates = '';
             let currentLocationName = '';
             let scrollPosition = 0;
+            // New state for date/time
+            let selectedDate = null;
+            let selectedTime = null;
 
             // Character count for task field
             function updateCharCount() {
@@ -1712,14 +1713,20 @@
                 window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
             }
 
+            // Helper: capitalize first letter of a sentence
+            function capitalizeSentence(str) {
+                if (!str) return str;
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
             function openPreview() {
                 if (!validateForm()) {
                     return;
                 }
                 
-                previewLocation.textContent = locationField.value || 'Your location';
-                previewStreet.textContent = streetField.value || 'Not provided';
-                previewTask.textContent = taskField.value || 'Not specified';
+                previewLocation.textContent = capitalizeSentence(locationField.value || 'Your location');
+                previewStreet.textContent = streetField.value ? capitalizeSentence(streetField.value) : 'Not provided';
+                previewTask.textContent = capitalizeSentence(taskField.value || 'Not specified');
                 
                 if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
                     previewBudget.textContent = `R ${budgetAmountInput.value}`;
@@ -1727,8 +1734,19 @@
                     previewBudget.textContent = 'Open to offers';
                 }
                 
-                previewDetails.textContent = moreDetailsField.value || 'None provided';
-                previewWhen.textContent = selectedWhen === 'now' ? 'Now' : 'Later';
+                previewDetails.textContent = moreDetailsField.value ? capitalizeSentence(moreDetailsField.value) : 'None provided';
+                
+                // Show date/time if later and both selected
+                if (selectedWhen === 'later' && selectedDate && selectedTime) {
+                    previewWhen.textContent = `${selectedDate} at ${selectedTime}`;
+                } else if (selectedWhen === 'later' && (selectedDate || selectedTime)) {
+                    let whenStr = '';
+                    if (selectedDate) whenStr += selectedDate;
+                    if (selectedTime) whenStr += (whenStr ? ' at ' : '') + selectedTime;
+                    previewWhen.textContent = whenStr;
+                } else {
+                    previewWhen.textContent = 'Now';
+                }
                 
                 termsCheckbox.checked = false;
                 updatePostButtonState();
@@ -1828,12 +1846,22 @@
                 }
             });
 
+            // Date picker (simple prompt for demo)
             pickDateBtn.addEventListener('click', () => {
-                alert('Date picker will be implemented soon');
+                const dateStr = prompt('Enter date (e.g., 2025-04-15 or "tomorrow"):', '2025-04-15');
+                if (dateStr && dateStr.trim()) {
+                    selectedDate = dateStr.trim();
+                    dateDisplay.textContent = selectedDate;
+                }
             });
             
+            // Time picker (simple prompt)
             pickTimeBtn.addEventListener('click', () => {
-                alert('Time picker will be implemented soon');
+                const timeStr = prompt('Enter time (e.g., 14:30 or "3pm"):', '14:30');
+                if (timeStr && timeStr.trim()) {
+                    selectedTime = timeStr.trim();
+                    timeDisplay.textContent = selectedTime;
+                }
             });
             
             uploadIcon.addEventListener('click', () => {
