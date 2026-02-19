@@ -267,6 +267,14 @@
             color: white !important;
         }
         
+        /* Payment option hover - ensure icon turns white */
+        .payment-option:hover .custom-icon {
+            filter: brightness(0) invert(1) !important;
+        }
+        .payment-option:hover span:not(.custom-icon) {
+            color: white !important;
+        }
+        
         /* No hover effects on preview */
         #previewSheet .preview-icon:hover,
         #previewSheet .helper-icon:hover {
@@ -412,10 +420,10 @@
         
         /* Payment method icons */
         .cash-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/wallet.png'); /* Using wallet as placeholder */
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/wallet.png');
         }
-        .eft-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/check-mark.png'); /* Using check as placeholder */
+        .online-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/check-mark.png');
         }
         
         /* Shake animation */
@@ -563,6 +571,47 @@
             border-top: 1px solid rgba(4, 91, 146, 0.1);
         }
         
+        /* Payment confirmation window (placeholder) */
+        .payment-confirm-window {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
+            z-index: 10000000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-width: 600px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+        }
+        .payment-confirm-window.active {
+            transform: translateX(-50%) translateY(0);
+        }
+        .payment-header {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            color: #045B92;
+            font-weight: 500;
+        }
+        .payment-content {
+            padding: 2rem;
+            text-align: center;
+            color: #045B92;
+        }
+        .payment-close {
+            padding: 1rem;
+            text-align: center;
+            color: #FF286F;
+            font-weight: 500;
+            cursor: pointer;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+        
         /* Character count */
         .char-count {
             text-align: right;
@@ -601,6 +650,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            border: none; /* Remove default border */
         }
         
         .when-option.active,
@@ -608,7 +658,6 @@
         .payment-option.active {
             background: #FF286F;
             color: white;
-            border: none;
         }
         
         .when-option.inactive,
@@ -619,15 +668,17 @@
             border: 1px solid #045B92;
         }
         
-        .when-option.inactive:hover,
-        .budget-option.inactive:hover,
+        /* Remove blue border on inactive payment option hover */
         .payment-option.inactive:hover {
             background: rgba(4, 91, 146, 0.05);
+            border: 1px solid #FF286F;
         }
         
+        /* Ensure icons in payment options behave */
         .payment-option .custom-icon {
             width: 20px;
             height: 20px;
+            transition: filter 0.3s ease-in-out;
         }
         
         .date-time-pickers {
@@ -1319,7 +1370,7 @@
                 <div class="form-section">
                     <label class="section-label">Describe your task</label>
                     <div class="task-field-wrapper">
-                        <input type="text" class="task-field" id="taskField" placeholder="In words or upload an image" maxlength="50" value="">
+                        <input type="text" class="task-field" id="taskField" placeholder="Describe your task or upload an image" maxlength="50" value="">
                         <span class="upload-icon" id="uploadIcon">
                             <span class="custom-icon image-icon"></span>
                         </span>
@@ -1339,12 +1390,12 @@
                     <div id="fixedBudgetInput" style="display: block;">
                         <div class="budget-field-wrapper">
                             <span class="currency-symbol">R</span>
-                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount (e.g. 500)" inputmode="numeric" pattern="[0-9]*">
+                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount (min R20)" inputmode="numeric" pattern="[0-9]*">
                         </div>
-                        <div class="field-error" id="budgetError">Please enter a budget amount</div>
+                        <div class="field-error" id="budgetError">Please enter a budget amount (minimum R20)</div>
                     </div>
                     
-                    <!-- Payment method selector - only cash or EFT -->
+                    <!-- Payment method selector - Cash or Online payment -->
                     <div style="margin-top: 0.75rem;">
                         <label class="section-label">Payment method</label>
                         <div class="payment-options">
@@ -1352,9 +1403,9 @@
                                 <span class="custom-icon wallet-icon"></span>
                                 <span>Cash</span>
                             </button>
-                            <button class="payment-option inactive" id="eftBtn">
+                            <button class="payment-option inactive" id="onlineBtn">
                                 <span class="custom-icon check-icon"></span>
-                                <span>EFT</span>
+                                <span>Online payment</span>
                             </button>
                         </div>
                     </div>
@@ -1543,6 +1594,16 @@
         <div class="menu-cancel" id="cancelImageMenu">Cancel</div>
     </div>
 
+    <!-- PAYMENT CONFIRMATION WINDOW (Placeholder) -->
+    <div class="payment-confirm-window" id="paymentConfirmWindow">
+        <div class="payment-header">Confirm online payment</div>
+        <div class="payment-content">
+            <p>Online payment integration will be added soon.</p>
+            <p>This is a placeholder window.</p>
+        </div>
+        <div class="payment-close" id="closePaymentWindow">Close</div>
+    </div>
+
     <script>
         (function() {
             'use strict';
@@ -1592,7 +1653,9 @@
             
             // Payment method elements
             const cashBtn = document.getElementById('cashBtn');
-            const eftBtn = document.getElementById('eftBtn');
+            const onlineBtn = document.getElementById('onlineBtn');
+            const paymentConfirmWindow = document.getElementById('paymentConfirmWindow');
+            const closePaymentWindow = document.getElementById('closePaymentWindow');
             
             // Image source menu
             const imageSourceMenu = document.getElementById('imageSourceMenu');
@@ -1753,12 +1816,27 @@
             cashBtn.addEventListener('click', function() {
                 selectedPayment = 'cash';
                 cashBtn.className = 'payment-option active';
-                eftBtn.className = 'payment-option inactive';
+                onlineBtn.className = 'payment-option inactive';
             });
-            eftBtn.addEventListener('click', function() {
-                selectedPayment = 'eft';
-                eftBtn.className = 'payment-option active';
+            
+            onlineBtn.addEventListener('click', function() {
+                selectedPayment = 'online';
+                onlineBtn.className = 'payment-option active';
                 cashBtn.className = 'payment-option inactive';
+                // Show payment confirmation window (placeholder)
+                paymentConfirmWindow.classList.add('active');
+            });
+
+            // Close payment window
+            closePaymentWindow.addEventListener('click', function() {
+                paymentConfirmWindow.classList.remove('active');
+            });
+
+            // Click outside to close payment window
+            document.addEventListener('click', function(e) {
+                if (!paymentConfirmWindow.contains(e.target) && !onlineBtn.contains(e.target)) {
+                    paymentConfirmWindow.classList.remove('active');
+                }
             });
 
             // Initialize
@@ -1829,7 +1907,8 @@
                 }
                 
                 if (budgetType === 'fixed' && fixedBudgetInput.style.display === 'block') {
-                    if (!budgetAmountInput.value) {
+                    const amount = parseInt(budgetAmountInput.value, 10);
+                    if (!budgetAmountInput.value || isNaN(amount) || amount < 20) {
                         budgetError.classList.add('visible');
                         budgetAmountInput.classList.add('error');
                         if (!firstError) firstError = budgetAmountInput;
@@ -2063,7 +2142,7 @@
                 }
                 
                 if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
-                    let paymentText = selectedPayment === 'cash' ? 'Cash' : 'EFT';
+                    let paymentText = selectedPayment === 'cash' ? 'Cash' : 'Online payment';
                     
                     previewBudget.textContent = `R ${budgetAmountInput.value}`;
                     previewPayment.textContent = `Payment: ${paymentText}`;
@@ -2133,8 +2212,15 @@
                 budgetAmountInput.addEventListener('input', function() {
                     this.value = this.value.replace(/[^0-9]/g, '');
                     if (this.value) {
-                        this.classList.remove('error');
-                        if (budgetError) budgetError.classList.remove('visible');
+                        const amount = parseInt(this.value, 10);
+                        if (amount < 20) {
+                            budgetError.textContent = 'Minimum amount is R20';
+                            budgetError.classList.add('visible');
+                            this.classList.add('error');
+                        } else {
+                            this.classList.remove('error');
+                            if (budgetError) budgetError.classList.remove('visible');
+                        }
                     }
                 });
             }
