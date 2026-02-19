@@ -688,28 +688,7 @@
             font-size: 18px !important;
         }
         
-        .rating-row {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .rating-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .rating-icon .material-symbols-outlined {
-            color: #FF286F !important;
-            font-size: 16px !important;
-        }
-        
-        .rating-text {
-            font-size: 0.8rem;
-            color: rgba(4, 91, 146, 0.5);
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
-        }
+        /* Rating row removed - star and text removed */
         
         /* Preview items - white with blue text */
         .preview-items {
@@ -776,7 +755,6 @@
             line-height: 1.4;
             word-break: break-word;
             font-family: 'Manrope', sans-serif !important;
-            /* Remove global capitalize, we handle via JS */
         }
         
         /* Preview values in pink */
@@ -795,6 +773,21 @@
         .preview-value.details-text {
             color: #FF286F;
             font-weight: 500 !important;
+        }
+        
+        /* Image previews in preview sheet */
+        .preview-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .preview-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
+            border: 1px solid rgba(4, 91, 146, 0.2);
         }
         
         .preview-divider {
@@ -1263,7 +1256,7 @@
                         <input type="text" class="task-field" id="taskField" placeholder="In words or upload an image" maxlength="50" value="">
                         <span class="upload-icon" id="uploadIcon">
                             <span class="custom-icon image-icon"></span>
-                            <input type="file" id="imageUploadInput" accept="image/*" capture="environment" class="file-input-hidden">
+                            <input type="file" id="imageUploadInput" accept="image/*" capture="environment" multiple class="file-input-hidden">
                         </span>
                     </div>
                     <div class="char-count" id="taskCharCount">0/50</div>
@@ -1324,12 +1317,7 @@
                             <span class="material-symbols-outlined">verified</span>
                         </span>
                     </div>
-                    <div class="rating-row">
-                        <span class="rating-icon">
-                            <span class="material-symbols-outlined">star</span>
-                        </span>
-                        <span class="rating-text">New on Taskmart</span>
-                    </div>
+                    <!-- Rating row removed -->
                 </div>
 
                 <!-- Preview items - all user input in pink -->
@@ -1375,6 +1363,8 @@
                         <div class="preview-content">
                             <div class="preview-label">Your task</div>
                             <div class="preview-value task-text" id="previewTask">Loading...</div>
+                            <!-- Image previews will be added here dynamically -->
+                            <div id="previewImagesContainer" class="preview-images"></div>
                         </div>
                     </div>
 
@@ -1502,6 +1492,7 @@
             const uploadIcon = document.getElementById('uploadIcon');
             const imageUploadInput = document.getElementById('imageUploadInput');
             const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const previewImagesContainer = document.getElementById('previewImagesContainer');
             const moreDetailsField = document.getElementById('moreDetailsField');
             const nextButton = document.getElementById('nextButton');
             
@@ -1900,6 +1891,17 @@
                 previewLocation.textContent = capitalizeSentence(locationField.value || 'Your location');
                 previewStreet.textContent = streetField.value ? capitalizeSentence(streetField.value) : 'Not provided';
                 previewTask.textContent = capitalizeSentence(taskField.value || 'Not specified');
+                
+                // Display uploaded images in preview
+                previewImagesContainer.innerHTML = '';
+                if (uploadedImages.length > 0) {
+                    uploadedImages.forEach(imgData => {
+                        const img = document.createElement('img');
+                        img.src = imgData;
+                        img.className = 'preview-thumb';
+                        previewImagesContainer.appendChild(img);
+                    });
+                }
                 
                 if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
                     previewBudget.textContent = `R ${budgetAmountInput.value}`;
