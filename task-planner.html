@@ -1702,7 +1702,7 @@
             'use strict';
             
             // Your Render backend URL
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            const API_BASE_URL = ''; // Empty for relative URLs, will use current domain
             
             // Set the Mapbox token from the config (as per Mapbox tutorial)
             if (window.MAPBOX_TOKEN) {
@@ -2050,7 +2050,7 @@
             async function getLocationName(lat, lon) {
                 try {
                     const response = await fetch(
-                        `${API_BASE_URL}/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
+                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
                     );
                     const data = await response.json();
                     return data.name || null;
@@ -2063,7 +2063,7 @@
             async function getFullAddress(lat, lon) {
                 try {
                     const response = await fetch(
-                        `${API_BASE_URL}/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
+                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
                     );
                     const data = await response.json();
                     return data.address || null;
@@ -2398,6 +2398,34 @@
             
             nextButton.addEventListener('click', openPreview);
 
+            // ===== MONGODB SAVE FUNCTIONALITY =====
+            
+            // Add this function to save tasks to MongoDB
+            async function saveTaskToMongoDB(taskData) {
+                try {
+                    const response = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to save task');
+                    }
+                    
+                    const savedTask = await response.json();
+                    console.log('✅ Task saved to MongoDB:', savedTask);
+                    return savedTask;
+                } catch (error) {
+                    console.error('❌ Error saving task:', error);
+                    alert('Failed to save task. Please try again.');
+                    return null;
+                }
+            }
+
+            // Replace the existing postButton click handler
             postButton.addEventListener('click', function() {
                 if (postButton.disabled) return;
                 
@@ -2413,13 +2441,48 @@
                 }
             });
 
-            confirmYesBtn.addEventListener('click', function() {
-                alert('Task would be posted to backend with ' + uploadedImages.length + ' image(s)');
-                confirmModal.classList.remove('active');
-                previewSheet.style.display = 'none';
-                unlockBodyScroll();
-                window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
+            // Replace the existing confirmYesBtn click handler
+            confirmYesBtn.addEventListener('click', async function() {
+                // Prepare task data from your form
+                const taskData = {
+                    location: locationField.value,
+                    coordinates: currentCoordinates || '',
+                    streetName: streetField.value || '',
+                    when: selectedWhen,
+                    scheduledDate: selectedDate,
+                    scheduledTime: selectedTime,
+                    taskDescription: taskField.value,
+                    budgetType: budgetType,
+                    budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
+                    paymentMethod: selectedPayment,
+                    moreDetails: moreDetailsField.value || '',
+                    images: uploadedImages, // Your base64 images
+                    status: 'posted'
+                };
+                
+                // Save to MongoDB
+                const savedTask = await saveTaskToMongoDB(taskData);
+                
+                if (savedTask) {
+                    alert('✅ Task posted successfully! Task ID: ' + savedTask._id);
+                    confirmModal.classList.remove('active');
+                    previewSheet.style.display = 'none';
+                    unlockBodyScroll();
+                    window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
+                    
+                    // Optional: Reset form
+                    locationField.value = 'detecting location...';
+                    streetField.value = '';
+                    taskField.value = '';
+                    budgetAmountInput.value = '';
+                    moreDetailsField.value = '';
+                    uploadedImages = [];
+                    imagePreviewContainer.innerHTML = '';
+                    updateCharCount();
+                }
             });
+
+            // ===== END MONGODB SAVE FUNCTIONALITY =====
 
             confirmCancelBtn.addEventListener('click', function() {
                 confirmModal.classList.remove('active');
