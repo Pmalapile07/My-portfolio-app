@@ -246,7 +246,7 @@
         /* Hover effect for icons on Plan Your Task only */
         .form-section .location-icon:hover,
         .form-section .upload-icon:hover,
-        .form-section .date-time-box:hover .custom-icon,
+        .form-section .date-time-box:hover,
         .form-section .tip-banner-icon:hover {
             background-color: #FF286F !important;
             transition: background-color 0.3s ease-in-out;
@@ -258,6 +258,11 @@
         .form-section .tip-banner-icon:hover .material-symbols-outlined {
             filter: brightness(0) invert(1);
             transition: filter 0.3s ease-in-out;
+        }
+        
+        /* Also target the span inside date-time-box for hover */
+        .date-time-box:hover span:not(.custom-icon) {
+            color: white !important;
         }
         
         /* No hover effects on preview */
@@ -557,6 +562,7 @@
         }
         .date-time-box:hover {
             border-color: #FF286F;
+            background-color: #FF286F;
         }
         
         .date-time-box .custom-icon {
@@ -569,12 +575,8 @@
             filter: brightness(0) invert(1);
         }
         
-        .date-time-box:hover {
-            background-color: #FF286F;
-        }
-        
         .date-time-box:hover span {
-            color: white;
+            color: white !important;
         }
         
         .date-time-box span {
@@ -583,6 +585,26 @@
             font-family: 'Manrope', sans-serif !important;
             font-weight: 400 !important;
             transition: color 0.3s ease-in-out;
+        }
+        
+        /* Native date/time input styling - hidden but functional */
+        .native-datetime-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .native-date-input,
+        .native-time-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            left: 0;
+            top: 0;
         }
         
         .more-details-field {
@@ -741,7 +763,7 @@
             line-height: 1.4;
             word-break: break-word;
             font-family: 'Manrope', sans-serif !important;
-            /* Remove global capitalize, we'll handle via JS */
+            /* Remove global capitalize, we handle via JS */
         }
         
         /* Preview values in pink */
@@ -1177,13 +1199,17 @@
                     </div>
                     
                     <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
+                        <!-- Date picker box with native input -->
                         <div class="date-time-box" id="pickDateBtn">
                             <span class="custom-icon check-icon"></span>
                             <span id="dateDisplay">Pick a date</span>
+                            <input type="date" id="nativeDatePicker" class="native-date-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
                         </div>
+                        <!-- Time picker box with native input -->
                         <div class="date-time-box" id="pickTimeBtn">
                             <span class="custom-icon clock-icon"></span>
                             <span id="timeDisplay">Pick a time</span>
+                            <input type="time" id="nativeTimePicker" class="native-time-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
                         </div>
                     </div>
                 </div>
@@ -1423,6 +1449,8 @@
             const pickTimeBtn = document.getElementById('pickTimeBtn');
             const dateDisplay = document.getElementById('dateDisplay');
             const timeDisplay = document.getElementById('timeDisplay');
+            const nativeDatePicker = document.getElementById('nativeDatePicker');
+            const nativeTimePicker = document.getElementById('nativeTimePicker');
             const taskField = document.getElementById('taskField');
             const taskCharCount = document.getElementById('taskCharCount');
             const uploadIcon = document.getElementById('uploadIcon');
@@ -1719,6 +1747,54 @@
                 return str.charAt(0).toUpperCase() + str.slice(1);
             }
 
+            // Format date for South Africa (YYYY-MM-DD) and display as DD/MM/YYYY
+            function formatDateForDisplay(dateString) {
+                if (!dateString) return null;
+                // dateString from input is YYYY-MM-DD
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+                }
+                return dateString;
+            }
+
+            // Format time for South Africa (24-hour)
+            function formatTimeForDisplay(timeString) {
+                if (!timeString) return null;
+                // timeString from input is HH:MM (24-hour)
+                return timeString; // already 24-hour format
+            }
+
+            // Handle native date picker
+            nativeDatePicker.addEventListener('change', function(e) {
+                if (this.value) {
+                    selectedDate = this.value; // YYYY-MM-DD
+                    dateDisplay.textContent = formatDateForDisplay(this.value);
+                }
+            });
+
+            // Handle native time picker
+            nativeTimePicker.addEventListener('change', function(e) {
+                if (this.value) {
+                    selectedTime = this.value; // HH:MM (24-hour)
+                    timeDisplay.textContent = formatTimeForDisplay(this.value);
+                }
+            });
+
+            // Make sure the box clicks also trigger the native picker
+            pickDateBtn.addEventListener('click', function(e) {
+                // If the click is not directly on the input, trigger it
+                if (e.target !== nativeDatePicker) {
+                    nativeDatePicker.showPicker();
+                }
+            });
+
+            pickTimeBtn.addEventListener('click', function(e) {
+                if (e.target !== nativeTimePicker) {
+                    nativeTimePicker.showPicker();
+                }
+            });
+
             function openPreview() {
                 if (!validateForm()) {
                     return;
@@ -1736,13 +1812,11 @@
                 
                 previewDetails.textContent = moreDetailsField.value ? capitalizeSentence(moreDetailsField.value) : 'None provided';
                 
-                // Show date/time if later and both selected
-                if (selectedWhen === 'later' && selectedDate && selectedTime) {
-                    previewWhen.textContent = `${selectedDate} at ${selectedTime}`;
-                } else if (selectedWhen === 'later' && (selectedDate || selectedTime)) {
+                // Show date/time if later and both selected (in SA format)
+                if (selectedWhen === 'later' && (selectedDate || selectedTime)) {
                     let whenStr = '';
-                    if (selectedDate) whenStr += selectedDate;
-                    if (selectedTime) whenStr += (whenStr ? ' at ' : '') + selectedTime;
+                    if (selectedDate) whenStr += formatDateForDisplay(selectedDate);
+                    if (selectedTime) whenStr += (whenStr ? ' at ' : '') + formatTimeForDisplay(selectedTime);
                     previewWhen.textContent = whenStr;
                 } else {
                     previewWhen.textContent = 'Now';
@@ -1846,24 +1920,6 @@
                 }
             });
 
-            // Date picker (simple prompt for demo)
-            pickDateBtn.addEventListener('click', () => {
-                const dateStr = prompt('Enter date (e.g., 2025-04-15 or "tomorrow"):', '2025-04-15');
-                if (dateStr && dateStr.trim()) {
-                    selectedDate = dateStr.trim();
-                    dateDisplay.textContent = selectedDate;
-                }
-            });
-            
-            // Time picker (simple prompt)
-            pickTimeBtn.addEventListener('click', () => {
-                const timeStr = prompt('Enter time (e.g., 14:30 or "3pm"):', '14:30');
-                if (timeStr && timeStr.trim()) {
-                    selectedTime = timeStr.trim();
-                    timeDisplay.textContent = selectedTime;
-                }
-            });
-            
             uploadIcon.addEventListener('click', () => {
                 alert('Image upload will be implemented soon');
             });
