@@ -631,8 +631,8 @@
             background: rgba(4, 91, 146, 0.05);
         }
         
-        /* Loading overlay */
-        .loading-overlay {
+        /* Post-loading overlay (for when saving takes time) */
+        .post-loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -641,7 +641,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            z-index: 10000001;
+            z-index: 10000003;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -649,11 +649,11 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .loading-overlay.active {
+        .post-loading-overlay.active {
             opacity: 1;
             visibility: visible;
         }
-        .loading-content {
+        .post-loading-content {
             background: white;
             padding: 2rem;
             border-radius: 12px;
@@ -661,38 +661,29 @@
             max-width: 300px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
-        .loading-spinner {
+        .post-loading-spinner {
             display: flex;
             justify-content: center;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
         }
-        .loading-spinner .dot {
+        .post-loading-spinner .dot {
             width: 12px;
             height: 12px;
             background: #FF286F;
             border-radius: 50%;
             animation: pulse 1.5s infinite ease-in-out;
         }
-        .loading-spinner .dot:nth-child(2) {
+        .post-loading-spinner .dot:nth-child(2) {
             animation-delay: 0.2s;
         }
-        .loading-spinner .dot:nth-child(3) {
+        .post-loading-spinner .dot:nth-child(3) {
             animation-delay: 0.4s;
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-        }
-        .loading-text {
+        .post-loading-text {
             color: #045B92;
             font-size: 1.1rem;
             font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-        .loading-subtext {
-            color: rgba(4, 91, 146, 0.7);
-            font-size: 0.9rem;
         }
         
         /* Character count */
@@ -757,7 +748,7 @@
             border-color: #FF286F;
         }
         
-        /* Payment options - both look normal but online is disabled */
+        /* Payment options - Cash active, Online disabled & faint */
         .payment-option.active {
             background: #FF286F;
             color: white;
@@ -776,11 +767,13 @@
             border-color: #FF286F;
         }
         
-        /* Online payment button - disabled but looks normal */
+        /* Online payment button - disabled, faint, and unclickable */
         #onlineBtn {
+            opacity: 0.5;
             cursor: not-allowed;
-            opacity: 1;
-            pointer-events: none; /* This makes it unclickable */
+            pointer-events: none;
+            border-color: rgba(4, 91, 146, 0.2);
+            color: rgba(4, 91, 146, 0.5);
         }
         
         .date-time-pickers {
@@ -965,14 +958,23 @@
             margin-bottom: 1rem;
             font-family: 'Manrope', sans-serif;
         }
+        .success-title strong {
+            font-weight: 700;
+        }
         
         .success-message {
-            color: rgba(4, 91, 146, 0.8);
+            color: #045B92;
             font-size: 1.1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
             line-height: 1.6;
             font-family: 'Manrope', sans-serif;
-            max-width: 300px;
+        }
+        
+        .success-sub-message {
+            color: rgba(4, 91, 146, 0.5);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Manrope', sans-serif;
         }
         
         .task-id {
@@ -1716,15 +1718,25 @@
                     <div class="success-check">
                         <span class="material-symbols-outlined">check</span>
                     </div>
-                    <div class="success-title">Success!</div>
-                    <div class="success-message">
-                        Your task has been posted.<br>
-                        Now sit back and wait for taskers to find you.
-                    </div>
-                    <div class="task-id" id="successTaskId">Task ID: loading...</div>
-                    <button class="done-btn" id="doneBtn">Awesome!</button>
+                    <div class="success-title"><strong>Success!</strong></div>
+                    <div class="success-message">Your task has been posted.</div>
+                    <div class="success-sub-message">Other taskers can now view and respond to your task.</div>
+                    <div class="task-id" id="successTaskId">Task ID: #loading...</div>
+                    <button class="done-btn" id="doneBtn">Go to task</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- POST LOADING OVERLAY (for when saving takes time) -->
+    <div class="post-loading-overlay" id="postLoadingOverlay">
+        <div class="post-loading-content">
+            <div class="post-loading-spinner">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div class="post-loading-text">Posting your task...</div>
         </div>
     </div>
 
@@ -1759,7 +1771,7 @@
         </div>
     </div>
 
-    <!-- LOADING OVERLAY -->
+    <!-- LOADING OVERLAY (for simulated payment) -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
             <div class="loading-spinner">
@@ -1824,6 +1836,7 @@
             const locationSheet = document.getElementById('locationSheet');
             const previewSheet = document.getElementById('previewSheet');
             const successSheet = document.getElementById('successSheet');
+            const postLoadingOverlay = document.getElementById('postLoadingOverlay');
             const confirmModal = document.getElementById('confirmModal');
             const confirmTitle = document.getElementById('confirmTitle');
             const confirmMessage = document.getElementById('confirmMessage');
@@ -1872,7 +1885,7 @@
             const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
             const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
             
-            // Loading overlay
+            // Loading overlay (for payment simulation)
             const loadingOverlay = document.getElementById('loadingOverlay');
             
             // Helper text and free text
@@ -2537,6 +2550,9 @@
                 try {
                     console.log('Saving task to:', `${BASE_URL}/api/tasks`);
                     
+                    // Show loading overlay
+                    postLoadingOverlay.classList.add('active');
+                    
                     const response = await fetch(`${BASE_URL}/api/tasks`, {
                         method: 'POST',
                         headers: {
@@ -2545,21 +2561,35 @@
                         body: JSON.stringify(taskData)
                     });
                     
+                    // Hide loading overlay
+                    postLoadingOverlay.classList.remove('active');
+                    
                     if (!response.ok) {
-                        throw new Error('Failed to save task');
+                        // Try to get error message from response
+                        let errorMsg = 'Failed to save task';
+                        try {
+                            const errorData = await response.json();
+                            errorMsg = errorData.error || errorMsg;
+                        } catch (e) {
+                            // Ignore
+                        }
+                        throw new Error(errorMsg);
                     }
                     
                     const savedTask = await response.json();
                     console.log('✅ Task saved to MongoDB:', savedTask);
                     return savedTask;
                 } catch (error) {
+                    // Hide loading overlay in case of error
+                    postLoadingOverlay.classList.remove('active');
+                    
                     console.error('❌ Error saving task:', error);
-                    alert('Failed to save task. Please try again.');
+                    alert('Failed to save task. Please try again. ' + error.message);
                     return null;
                 }
             }
 
-            // Confetti function
+            // Confetti function (canvas-confetti)
             function fireConfetti() {
                 // Multiple bursts for a bigger celebration
                 confetti({
@@ -2630,12 +2660,14 @@
                 const savedTask = await saveTaskToMongoDB(taskData);
                 
                 if (savedTask) {
-                    // Hide preview and confirmation
+                    // Hide confirmation modal
                     confirmModal.classList.remove('active');
+                    
+                    // Hide preview sheet
                     previewSheet.style.display = 'none';
                     
                     // Show success sheet
-                    successTaskId.textContent = `Task ID: ${savedTask._id}`;
+                    successTaskId.textContent = `Task ID: #${savedTask._id}`;
                     successSheet.style.display = 'flex';
                     
                     // Fire confetti!
