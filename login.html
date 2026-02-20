@@ -380,6 +380,9 @@
     </div>
 
     <script>
+        // Your Render backend URL - update this with your actual Render URL
+        const BASE_URL = window.location.origin;
+        
         // Toggle between login and signup tabs
         document.querySelectorAll('.auth-tab').forEach(tab => {
             tab.addEventListener('click', function() {
@@ -436,9 +439,10 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
-        // Simulate API call
-        function simulateApiCall(delay = 1500) {
-            return new Promise(resolve => setTimeout(resolve, delay));
+        // Get return URL from query parameters
+        function getReturnUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('returnTo') || '/task-planner.html';
         }
 
         // Handle Login
@@ -472,33 +476,37 @@
             // Show loading
             document.getElementById('loadingOverlay').classList.add('active');
 
-            // Simulate login API call
-            await simulateApiCall();
+            try {
+                // Simulate API call for demo
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Demo credentials check
-            if (email === 'pearl@example.com' && password === 'password123') {
-                // Create user session
-                const user = {
-                    name: 'Pearl Smith',
-                    email: email,
-                    initials: 'PS',
-                    loggedIn: true,
-                    loginTime: new Date().toISOString()
-                };
-                
-                // Save to localStorage
-                localStorage.setItem('taskmart_user', JSON.stringify(user));
-                
-                // Check if we were redirected from task planner
-                const returnUrl = sessionStorage.getItem('returnUrl') || '/task-planner.html';
-                sessionStorage.removeItem('returnUrl');
-                
-                // Redirect
-                window.location.href = returnUrl;
-            } else {
-                // Hide loading
+                // Demo credentials check
+                if (email === 'pearl@example.com' && password === 'password123') {
+                    // Create user session
+                    const user = {
+                        name: 'Pearl Smith',
+                        email: email,
+                        initials: 'PS',
+                        loggedIn: true,
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    // Save to localStorage
+                    localStorage.setItem('taskmart_user', JSON.stringify(user));
+                    
+                    // Get return URL
+                    const returnUrl = getReturnUrl();
+                    
+                    // Redirect back to task planner
+                    window.location.href = returnUrl;
+                } else {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    showError('loginEmail', 'Invalid email or password');
+                }
+            } catch (error) {
                 document.getElementById('loadingOverlay').classList.remove('active');
-                showError('loginEmail', 'Invalid email or password');
+                showError('loginEmail', 'Login failed. Please try again.');
+                console.error('Login error:', error);
             }
         });
 
@@ -548,27 +556,33 @@
             // Show loading
             document.getElementById('loadingOverlay').classList.add('active');
 
-            // Simulate signup API call
-            await simulateApiCall();
+            try {
+                // Simulate API call for demo
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Create new user (in real app, this would be saved to database)
-            const user = {
-                name: name,
-                email: email,
-                initials: name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
-                loggedIn: true,
-                signupTime: new Date().toISOString()
-            };
-            
-            // Save to localStorage
-            localStorage.setItem('taskmart_user', JSON.stringify(user));
-            
-            // Check if we were redirected from task planner
-            const returnUrl = sessionStorage.getItem('returnUrl') || '/task-planner.html';
-            sessionStorage.removeItem('returnUrl');
-            
-            // Redirect
-            window.location.href = returnUrl;
+                // Create new user
+                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                const user = {
+                    name: name,
+                    email: email,
+                    initials: initials || 'U',
+                    loggedIn: true,
+                    signupTime: new Date().toISOString()
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify(user));
+                
+                // Get return URL
+                const returnUrl = getReturnUrl();
+                
+                // Redirect back to task planner
+                window.location.href = returnUrl;
+            } catch (error) {
+                document.getElementById('loadingOverlay').classList.remove('active');
+                showError('signupEmail', 'Signup failed. Please try again.');
+                console.error('Signup error:', error);
+            }
         });
 
         // Handle Forgot Password
@@ -578,22 +592,28 @@
         });
 
         // Check if user is already logged in
-        const user = localStorage.getItem('taskmart_user');
-        if (user) {
-            // If already logged in and trying to access login page, redirect back
-            const returnUrl = sessionStorage.getItem('returnUrl');
-            if (returnUrl) {
-                sessionStorage.removeItem('returnUrl');
+        function checkExistingLogin() {
+            const user = localStorage.getItem('taskmart_user');
+            const returnUrl = getReturnUrl();
+            
+            if (user && returnUrl !== '/login.html') {
+                // If already logged in and trying to access login page, redirect back
                 window.location.href = returnUrl;
             }
         }
 
-        // Check for return URL in query parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const returnTo = urlParams.get('returnTo');
-        if (returnTo) {
-            sessionStorage.setItem('returnUrl', returnTo);
+        // Store return URL from query parameters
+        function storeReturnUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const returnTo = urlParams.get('returnTo');
+            if (returnTo) {
+                sessionStorage.setItem('returnUrl', returnTo);
+            }
         }
+
+        // Initialize
+        storeReturnUrl();
+        checkExistingLogin();
     </script>
 </body>
 </html>
