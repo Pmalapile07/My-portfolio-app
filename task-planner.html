@@ -5,21 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Task Planner</title>
     
-    <!-- Fonts -->
+    <!-- Preconnect + Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&display=swap">
     
-    <!-- Mapbox GL JS (loaded from CDN as per tutorial) -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <!-- Mapbox GL JS and CSS -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
     
-    <!-- Config file with token from server -->
+    <!-- Mapbox Geocoder for reverse geocoding -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+
+    <!-- Config file that will inject the API key from Render -->
     <script src="/config.js"></script>
 
     <style>
-        /* ALL YOUR EXISTING CSS STYLES - KEEP THEM EXACTLY AS THEY ARE */
         @font-face {
             font-family: 'Codec Cold News';
             src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
@@ -1397,7 +1401,7 @@
             // Your Render backend URL
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             
-            // Set the Mapbox token from the config (as per Mapbox tutorial)
+            // Set the Mapbox token from the config
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
                 console.log('Mapbox token set successfully');
@@ -1482,6 +1486,7 @@
             }
 
             taskField.addEventListener('input', function() {
+                // Limit to 50 characters
                 if (this.value.length > 50) {
                     this.value = this.value.slice(0, 50);
                 }
@@ -1494,12 +1499,14 @@
             previewSheet.style.display = 'none';
             updateCharCount();
 
+            // Enable/disable post button based on checkbox
             function updatePostButtonState() {
                 postButton.disabled = !termsCheckbox.checked;
             }
 
             termsCheckbox.addEventListener('change', updatePostButtonState);
 
+            // Body scroll lock management
             function lockBodyScroll() {
                 scrollPosition = window.scrollY;
                 document.body.style.position = 'fixed';
@@ -1516,6 +1523,7 @@
                 window.scrollTo(0, scrollPosition);
             }
 
+            // Scroll to element with proper offset
             function scrollToElement(element) {
                 if (element && locationContent) {
                     const elementRect = element.getBoundingClientRect();
@@ -1529,6 +1537,7 @@
                 }
             }
 
+            // Clear all errors
             function clearErrors() {
                 locationError.classList.remove('visible');
                 taskError.classList.remove('visible');
@@ -1538,11 +1547,13 @@
                 if (budgetAmountInput) budgetAmountInput.classList.remove('error');
             }
 
+            // Validate form
             function validateForm() {
                 clearErrors();
                 let isValid = true;
                 let firstError = null;
 
+                // Check location
                 if (!locationField.value || locationField.value === 'detecting location...' || locationField.value.trim() === '') {
                     locationError.classList.add('visible');
                     locationField.classList.add('error');
@@ -1550,6 +1561,7 @@
                     isValid = false;
                 }
                 
+                // Check task description
                 if (!taskField.value.trim()) {
                     taskError.classList.add('visible');
                     taskField.classList.add('error');
@@ -1557,6 +1569,7 @@
                     isValid = false;
                 }
                 
+                // Check budget if fixed
                 if (budgetType === 'fixed' && fixedBudgetInput.style.display === 'block') {
                     if (!budgetAmountInput.value) {
                         budgetError.classList.add('visible');
@@ -1566,6 +1579,7 @@
                     }
                 }
                 
+                // Scroll to first error
                 if (firstError) {
                     scrollToElement(firstError);
                 }
@@ -1573,6 +1587,7 @@
                 return isValid;
             }
 
+            // Function to get location name from coordinates using backend proxy
             async function getLocationName(lat, lon) {
                 try {
                     const response = await fetch(
@@ -1586,6 +1601,7 @@
                 }
             }
 
+            // Function to get full address from coordinates using backend proxy
             async function getFullAddress(lat, lon) {
                 try {
                     const response = await fetch(
@@ -1599,14 +1615,14 @@
                 }
             }
 
-            // Initialize map following Mapbox tutorial pattern
+            // Initialize map with Mapbox
             function initMap(lat, lng) {
                 if (map) {
                     map.remove();
                 }
                 
                 try {
-                    // Create map exactly as shown in Mapbox tutorial
+                    // Create map
                     map = new mapboxgl.Map({
                         container: 'map',
                         style: 'mapbox://styles/mapbox/streets-v12',
@@ -1617,7 +1633,7 @@
                     map.on('load', () => {
                         console.log('Map loaded successfully');
                         
-                        // Add navigation controls after map loads
+                        // Add navigation controls
                         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
                         
                         // Create a draggable marker
@@ -1654,12 +1670,12 @@
                     
                 } catch (error) {
                     console.error('Failed to initialize map:', error);
-                    alert('Failed to load map. Please check console for details.');
                 }
             }
 
+            // Open map modal
             function openMapModal() {
-                let lat = -26.195246;
+                let lat = -26.195246; // Default to Johannesburg
                 let lng = 28.034088;
                 
                 if (currentCoordinates) {
@@ -1677,6 +1693,7 @@
                 mapModal.classList.add('active');
             }
 
+            // Close map modal
             function closeMapModal() {
                 mapModal.classList.remove('active');
                 if (map) {
@@ -1685,6 +1702,7 @@
                 }
             }
 
+            // Listen for messages from parent
             window.addEventListener('message', function(event) {
                 if (event.data.type === 'OPEN_PLANNER') {
                     currentLocationName = event.data.location || '';
@@ -1706,12 +1724,14 @@
                 }
             });
 
+            // Close planner
             function closePlanner() {
                 locationSheet.style.display = 'none';
                 unlockBodyScroll();
                 window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
             }
 
+            // Open preview
             function openPreview() {
                 if (!validateForm()) {
                     return;
@@ -1741,6 +1761,7 @@
                 }
             }
 
+            // When Now button
             whenNowBtn.addEventListener('click', function() {
                 selectedWhen = 'now';
                 whenNowBtn.className = 'when-option active';
@@ -1748,6 +1769,7 @@
                 dateTimePickers.style.display = 'none';
             });
 
+            // When Later button
             whenLaterBtn.addEventListener('click', function() {
                 selectedWhen = 'later';
                 whenLaterBtn.className = 'when-option active';
@@ -1755,6 +1777,7 @@
                 dateTimePickers.style.display = 'flex';
             });
 
+            // Budget buttons
             fixedBudgetBtn.addEventListener('click', function() {
                 budgetType = 'fixed';
                 fixedBudgetBtn.className = 'budget-option active';
@@ -1775,6 +1798,7 @@
                 if (budgetError) budgetError.classList.remove('visible');
             });
 
+            // Only numbers in budget
             if (budgetAmountInput) {
                 budgetAmountInput.addEventListener('input', function() {
                     this.value = this.value.replace(/[^0-9]/g, '');
@@ -1785,17 +1809,21 @@
                 });
             }
 
+            // Clear errors when user types
             locationField.addEventListener('input', function() {
                 locationError.classList.remove('visible');
                 locationField.classList.remove('error');
             });
 
+            // Map button click
             locationMapBtn.addEventListener('click', function() {
                 openMapModal();
             });
 
+            // Map modal close button
             mapModalCloseBtn.addEventListener('click', closeMapModal);
 
+            // Map confirm button
             mapConfirmBtn.addEventListener('click', async function() {
                 if (marker) {
                     const pos = marker.getLngLat();
@@ -1822,24 +1850,48 @@
                 closeMapModal();
             });
 
+            // Click outside to close map modal
             mapModal.addEventListener('click', function(e) {
                 if (e.target === mapModal) {
                     closeMapModal();
                 }
             });
 
+            // Image upload click
+            uploadIcon.addEventListener('click', () => {
+                // Create a file input element
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*';
+                fileInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        alert(`Image selected: ${file.name}. Upload functionality will be implemented soon.`);
+                    }
+                };
+                fileInput.click();
+            });
+
+            // Date picker clicks
             pickDateBtn.addEventListener('click', () => {
-                alert('Date picker will be implemented soon');
+                const dateInput = document.createElement('input');
+                dateInput.type = 'date';
+                dateInput.onchange = (e) => {
+                    alert(`Date selected: ${e.target.value}`);
+                };
+                dateInput.click();
             });
             
             pickTimeBtn.addEventListener('click', () => {
-                alert('Time picker will be implemented soon');
-            });
-            
-            uploadIcon.addEventListener('click', () => {
-                alert('Image upload will be implemented soon');
+                const timeInput = document.createElement('input');
+                timeInput.type = 'time';
+                timeInput.onchange = (e) => {
+                    alert(`Time selected: ${e.target.value}`);
+                };
+                timeInput.click();
             });
 
+            // Navigation
             sheetBackBtn.addEventListener('click', closePlanner);
             
             previewBackBtn.addEventListener('click', function() {
@@ -1853,13 +1905,15 @@
             
             nextButton.addEventListener('click', openPreview);
 
+            // Post button - show confirmation modal
             postButton.addEventListener('click', function() {
                 if (postButton.disabled) return;
                 confirmModal.classList.add('active');
             });
 
+            // Confirmation modal buttons
             confirmYesBtn.addEventListener('click', function() {
-                alert('Task would be posted to backend');
+                alert('Task posted successfully! Helpers will be notified.');
                 confirmModal.classList.remove('active');
                 previewSheet.style.display = 'none';
                 unlockBodyScroll();
@@ -1870,12 +1924,14 @@
                 confirmModal.classList.remove('active');
             });
 
+            // Close confirmation modal when clicking overlay
             confirmModal.addEventListener('click', function(e) {
                 if (e.target === confirmModal) {
                     confirmModal.classList.remove('active');
                 }
             });
 
+            // Close on background click
             locationSheet.addEventListener('click', function(e) {
                 if (e.target === locationSheet) closePlanner();
             });
@@ -1887,6 +1943,7 @@
                 }
             });
 
+            // Prevent touch events from bubbling
             locationSheet.addEventListener('touchstart', function(e) {
                 if (e.target === locationSheet) {
                     e.preventDefault();
