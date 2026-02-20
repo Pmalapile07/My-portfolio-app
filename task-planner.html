@@ -924,7 +924,7 @@
             font-size: 18px !important;
         }
         
-        /* Success content */
+        /* Success content - UPDATED to match requested changes */
         .success-content {
             display: flex;
             flex-direction: column;
@@ -937,13 +937,15 @@
         .success-check {
             width: 100px;
             height: 100px;
-            background: #4CAF50;
+            background: #8BC34A;  /* faded green */
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 2rem;
             animation: popIn 0.5s ease;
+            position: relative; /* for confetti canvas */
+            z-index: 10;
         }
         
         .success-check .material-symbols-outlined {
@@ -951,44 +953,50 @@
             font-size: 60px !important;
         }
         
-        .success-title {
-            font-size: 2rem;
-            color: #045B92;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            font-family: 'Manrope', sans-serif;
+        /* Container for confetti canvas - absolute behind icon */
+        #confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
         }
-        .success-title strong {
-            font-weight: 700;
+        
+        .success-title {
+            font-size: 1.1rem;        /* same as sheet-title */
+            color: #045B92;
+            font-weight: 500 !important;  /* same as Plan your task */
+            margin-bottom: 0.25rem;
+            font-family: 'Manrope', sans-serif !important;
+            text-transform: lowercase;
+        }
+        .success-title::first-letter {
+            text-transform: uppercase;
         }
         
         .success-message {
-            color: #045B92;
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-            line-height: 1.6;
-            font-family: 'Manrope', sans-serif;
-        }
-        
-        .success-sub-message {
-            color: rgba(4, 91, 146, 0.5);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            font-family: 'Manrope', sans-serif;
-        }
-        
-        .task-id {
-            background: rgba(4, 91, 146, 0.08);
-            padding: 0.75rem 1.5rem;
-            border-radius: 30px;
-            color: #045B92;
+            color: rgba(4, 91, 146, 0.5);  /* faded grey */
             font-size: 0.9rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .task-id-small {
+            background: transparent;
+            color: rgba(4, 91, 146, 0.4);  /* grey faint text */
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+            margin-bottom: 1rem;
             font-family: monospace;
             word-break: break-all;
+            font-weight: 300;
         }
         
-        .done-btn {
+        .go-to-task-btn {
             background: #FF286F;
             color: white;
             border: none;
@@ -1001,8 +1009,9 @@
             font-family: 'Manrope', sans-serif;
             font-weight: 500;
             transition: background-color 0.2s;
+            margin-bottom: 0.5rem;
         }
-        .done-btn:hover {
+        .go-to-task-btn:hover {
             background: #d61e5b;
         }
         
@@ -1706,7 +1715,7 @@
         </div>
     </div>
 
-    <!-- SUCCESS SHEET -->
+    <!-- SUCCESS SHEET - UPDATED with confetti, faded green, new layout -->
     <div class="sheet-container" id="successSheet">
         <div class="sheet">
             <div class="sheet-header">
@@ -1715,14 +1724,18 @@
             
             <div class="sheet-content" id="successContent">
                 <div class="success-content">
-                    <div class="success-check">
+                    <div class="success-check" id="successCheckIcon">
                         <span class="material-symbols-outlined">check</span>
+                        <!-- canvas for confetti will be injected here -->
                     </div>
-                    <div class="success-title"><strong>Success!</strong></div>
-                    <div class="success-message">Your task has been posted.</div>
-                    <div class="success-sub-message">Other taskers can now view and respond to your task.</div>
-                    <div class="task-id" id="successTaskId">Task ID: #loading...</div>
-                    <button class="done-btn" id="doneBtn">Go to task</button>
+                    <!-- Same line as Plan your task font -->
+                    <div class="success-title">Success! task has been posted</div>
+                    <!-- faded grey text underneath -->
+                    <div class="success-message">Taskers can now view and respond to your task.</div>
+                    <!-- full width button -->
+                    <button class="go-to-task-btn" id="doneBtn">Go to task</button>
+                    <!-- grey faint text with task ID starting with # -->
+                    <div class="task-id-small" id="successTaskId">#loading...</div>
                 </div>
             </div>
         </div>
@@ -1877,6 +1890,7 @@
             // Success elements
             const successTaskId = document.getElementById('successTaskId');
             const doneBtn = document.getElementById('doneBtn');
+            const successCheckIcon = document.getElementById('successCheckIcon');
             
             // Payment method elements
             const cashBtn = document.getElementById('cashBtn');
@@ -2589,38 +2603,42 @@
                 }
             }
 
-            // Confetti function (canvas-confetti)
-            function fireConfetti() {
-                // Multiple bursts for a bigger celebration
+            // Confetti function (canvas-confetti) - surrounds the green icon
+            function fireConfettiAroundIcon() {
+                if (!successCheckIcon) return;
+                
+                const rect = successCheckIcon.getBoundingClientRect();
+                const x = (rect.left + rect.width / 2) / window.innerWidth;
+                const y = (rect.top + rect.height / 2) / window.innerHeight;
+                
+                // Multiple bursts from the icon position
                 confetti({
-                    particleCount: 150,
+                    particleCount: 120,
                     spread: 100,
-                    origin: { y: 0.6 }
+                    origin: { x, y },
+                    startVelocity: 20,
+                    colors: ['#8BC34A', '#FFC107', '#FF286F', '#045B92']
                 });
                 
                 setTimeout(() => {
                     confetti({
-                        particleCount: 100,
+                        particleCount: 80,
                         spread: 70,
-                        origin: { y: 0.5, x: 0.2 }
+                        origin: { x, y },
+                        startVelocity: 25,
+                        colors: ['#8BC34A', '#FFC107', '#045B92']
                     });
-                }, 250);
+                }, 200);
                 
                 setTimeout(() => {
                     confetti({
                         particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.5, x: 0.8 }
+                        spread: 120,
+                        origin: { x, y },
+                        startVelocity: 15,
+                        colors: ['#FF286F', '#8BC34A', '#FFC107']
                     });
                 }, 400);
-                
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 200,
-                        spread: 120,
-                        origin: { y: 0.6 }
-                    });
-                }, 600);
             }
 
             postButton.addEventListener('click', function() {
@@ -2666,12 +2684,12 @@
                     // Hide preview sheet
                     previewSheet.style.display = 'none';
                     
-                    // Show success sheet
-                    successTaskId.textContent = `Task ID: #${savedTask._id}`;
+                    // Show success sheet with new layout
+                    successTaskId.textContent = `#${savedTask._id}`;
                     successSheet.style.display = 'flex';
                     
-                    // Fire confetti!
-                    fireConfetti();
+                    // Fire confetti around the green icon!
+                    fireConfettiAroundIcon();
                     
                     // Reset form
                     locationField.value = 'detecting location...';
