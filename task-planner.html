@@ -2528,24 +2528,19 @@
                         body: JSON.stringify(taskData)
                     });
                     
-                    postLoadingOverlay.classList.remove('active');
-                    
                     if (!response.ok) {
-                        let errorMsg = 'Failed to save task';
-                        try {
-                            const errorData = await response.json();
-                            errorMsg = errorData.error || errorMsg;
-                        } catch (e) {}
-                        throw new Error(errorMsg);
+                        throw new Error('Failed to save task');
                     }
                     
                     const savedTask = await response.json();
                     console.log('✅ Task saved to MongoDB:', savedTask);
+                    
+                    postLoadingOverlay.classList.remove('active');
                     return savedTask;
                 } catch (error) {
                     postLoadingOverlay.classList.remove('active');
                     console.error('❌ Error saving task:', error);
-                    alert('Failed to save task. Please try again. ' + error.message);
+                    alert('Failed to save task. Please try again.');
                     return null;
                 }
             }
@@ -2586,11 +2581,13 @@
                 }, 400);
             }
 
-            // Post button click handler with login check
+            // ===== POST BUTTON CLICK HANDLER =====
             postButton.addEventListener('click', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 console.log('Post button clicked');
                 
+                // Check if button is disabled
                 if (postButton.disabled) {
                     console.log('Post button is disabled');
                     return;
@@ -2603,6 +2600,7 @@
                 if (!user) {
                     console.log('No user logged in, redirecting to login');
                     
+                    // Save current task data
                     const taskData = {
                         location: locationField.value,
                         streetName: streetField.value,
@@ -2618,28 +2616,27 @@
                     };
                     sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
                     
+                    // Redirect to login
                     const returnUrl = encodeURIComponent(window.location.href);
                     window.location.href = '/login.html?returnTo=' + returnUrl;
                     return;
                 }
                 
-                console.log('User is logged in, proceeding to post');
-                
-                currentUser.name = user.name;
-                currentUser.initials = user.initials;
-                updateUserProfile();
-                
-                if (selectedPayment === 'cash') {
-                    confirmTitle.textContent = 'Ready to post?';
-                    confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
-                    confirmYesBtn.textContent = 'Yes, post it';
-                    confirmModal.classList.add('active');
-                }
+                // User is logged in - show confirmation modal
+                console.log('User is logged in, showing confirmation');
+                confirmTitle.textContent = 'Ready to post?';
+                confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
+                confirmYesBtn.textContent = 'Yes, post it';
+                confirmModal.classList.add('active');
             });
 
+            // ===== CONFIRM YES BUTTON HANDLER =====
             confirmYesBtn.addEventListener('click', async function() {
+                console.log('Confirm Yes clicked');
+                
                 const user = isUserLoggedIn();
                 
+                // Prepare task data
                 const taskData = {
                     location: locationField.value,
                     coordinates: currentCoordinates || '',
@@ -2658,15 +2655,24 @@
                     userName: user ? user.name : currentUser.name
                 };
                 
+                // Save to MongoDB
                 const savedTask = await saveTaskToMongoDB(taskData);
                 
                 if (savedTask) {
+                    // Hide confirmation modal
                     confirmModal.classList.remove('active');
+                    
+                    // Hide preview sheet
                     previewSheet.style.display = 'none';
+                    
+                    // Show success sheet
                     successTaskId.textContent = `#${savedTask._id}`;
                     successSheet.style.display = 'flex';
+                    
+                    // Fire confetti
                     fireConfettiAroundIcon();
                     
+                    // Reset form
                     locationField.value = 'detecting location...';
                     streetField.value = '';
                     taskField.value = '';
