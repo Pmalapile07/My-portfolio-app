@@ -5,25 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Task Planner</title>
     
-    <!-- Preconnect + Google Fonts -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;800&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&display=swap">
     
-    <!-- Mapbox GL JS and CSS -->
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <!-- Mapbox GL JS (loaded from CDN as per tutorial) -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Mapbox Geocoder for reverse geocoding -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
-
-    <!-- Config file that will inject the API key from Render -->
+    <!-- Config file with token from server -->
     <script src="/config.js"></script>
 
     <style>
+        /* ALL YOUR EXISTING CSS STYLES - KEEP THEM EXACTLY AS THEY ARE */
         @font-face {
             font-family: 'Codec Cold News';
             src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
@@ -250,18 +246,23 @@
         /* Hover effect for icons on Plan Your Task only */
         .form-section .location-icon:hover,
         .form-section .upload-icon:hover,
-        .form-section .date-time-box:hover .custom-icon,
+        .form-section .date-time-box:hover,
         .form-section .tip-banner-icon:hover {
             background-color: #FF286F !important;
             transition: background-color 0.3s ease-in-out;
         }
         
         .form-section .location-icon:hover .custom-icon,
-        .form-section .upload-icon:hover .custom-icon,
+        .form-section .upload-icon:hover .material-symbols-outlined,
         .form-section .date-time-box:hover .custom-icon,
         .form-section .tip-banner-icon:hover .material-symbols-outlined {
             filter: brightness(0) invert(1);
             transition: filter 0.3s ease-in-out;
+        }
+        
+        /* Also target the span inside date-time-box for hover */
+        .date-time-box:hover span:not(.custom-icon) {
+            color: white !important;
         }
         
         /* No hover effects on preview */
@@ -374,7 +375,7 @@
             display: inline-block;
         }
         
-        /* Icon definitions */
+        /* Icon definitions - ALL YOUR ORIGINAL ICONS plus new street icon */
         .location-3-icon {
             background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/location%203.png');
         }
@@ -405,6 +406,16 @@
         
         .wallet-icon {
             background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/wallet.png');
+        }
+        
+        /* New street name icon - replace with your IMG_5019.png */
+        .street-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/IMG_5019.png');
+            width: 24px;
+            height: 24px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
         }
         
         /* Shake animation */
@@ -455,7 +466,7 @@
             transition: filter 0.3s ease-in-out;
         }
         
-        /* Upload icon with shake */
+        /* Upload icon with plus - now uses Google Material Add icon */
         .upload-icon {
             position: absolute;
             right: 8px;
@@ -474,17 +485,211 @@
             pointer-events: auto;
             z-index: 2;
             animation: shake 1.5s infinite ease-in-out;
+            overflow: hidden;
         }
         .upload-icon:hover {
             background-color: #FF286F !important;
         }
-        .upload-icon:hover .custom-icon {
-            filter: brightness(0) invert(1);
+        .upload-icon:hover .material-symbols-outlined {
+            color: white !important;
         }
-        .upload-icon .custom-icon {
-            width: 24px;
-            height: 24px;
-            transition: filter 0.3s ease-in-out;
+        .upload-icon .material-symbols-outlined {
+            color: #045B92;
+            font-size: 24px !important;
+            transition: color 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        /* Hidden file input */
+        .file-input-hidden {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            left: 0;
+            top: 0;
+        }
+        
+        /* Camera/gallery selection menu */
+        .image-source-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
+            z-index: 10000000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-width: 600px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+        }
+        .image-source-menu.active {
+            transform: translateX(-50%) translateY(0);
+        }
+        .menu-header {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            color: #045B92;
+            font-weight: 500;
+        }
+        .menu-option {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.05);
+        }
+        .menu-option:hover {
+            background: rgba(4, 91, 146, 0.05);
+        }
+        .menu-option .material-symbols-outlined {
+            color: #FF286F;
+        }
+        .menu-option span {
+            color: #045B92;
+        }
+        .menu-cancel {
+            padding: 1rem;
+            text-align: center;
+            color: #FF286F;
+            font-weight: 500;
+            cursor: pointer;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+        
+        /* Payment window (for online payment) */
+        .payment-window {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
+            z-index: 10000000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-width: 600px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+        }
+        .payment-window.active {
+            transform: translateX(-50%) translateY(0);
+        }
+        .payment-header {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            color: #045B92;
+            font-weight: 500;
+        }
+        .payment-content {
+            padding: 2rem;
+            text-align: center;
+            color: #045B92;
+        }
+        .payment-buttons {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+        .payment-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .payment-btn.primary {
+            background: #FF286F;
+            color: white;
+        }
+        .payment-btn.primary:hover {
+            background: #d61e5b;
+        }
+        .payment-btn.secondary {
+            background: transparent;
+            color: #045B92;
+            border: 1px solid #045B92;
+        }
+        .payment-btn.secondary:hover {
+            background: rgba(4, 91, 146, 0.05);
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .loading-spinner .dot {
+            width: 12px;
+            height: 12px;
+            background: #FF286F;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        .loading-spinner .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading-spinner .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        .loading-text {
+            color: #045B92;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .loading-subtext {
+            color: rgba(4, 91, 146, 0.7);
+            font-size: 0.9rem;
         }
         
         /* Character count */
@@ -502,14 +707,16 @@
         }
         
         .when-options,
-        .budget-options {
+        .budget-options,
+        .payment-options {
             display: flex;
             gap: 1rem;
             margin-bottom: 0.75rem;
         }
         
         .when-option,
-        .budget-option {
+        .budget-option,
+        .payment-option {
             flex: 1;
             padding: 0.75rem 0;
             font-size: 0.9rem;
@@ -519,25 +726,40 @@
             transition: all 0.2s;
             font-family: 'Manrope', sans-serif !important;
             font-weight: 500 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid transparent;
         }
         
         .when-option.active,
-        .budget-option.active {
+        .budget-option.active,
+        .payment-option.active {
             background: #FF286F;
             color: white;
             border: none;
         }
         
         .when-option.inactive,
-        .budget-option.inactive {
+        .budget-option.inactive,
+        .payment-option.inactive {
             background: transparent;
             color: #045B92;
             border: 1px solid #045B92;
         }
         
         .when-option.inactive:hover,
-        .budget-option.inactive:hover {
-            background: rgba(4, 91, 146, 0.05);
+        .budget-option.inactive:hover,
+        .payment-option.inactive:hover {
+            background: #FF286F;
+            color: white;
+            border-color: #FF286F;
+        }
+        
+        /* Remove icons from payment options */
+        .payment-option .material-symbols-outlined {
+            display: none;
         }
         
         .date-time-pickers {
@@ -558,9 +780,11 @@
             cursor: pointer;
             background: white;
             transition: all 0.3s ease-in-out;
+            position: relative;
         }
         .date-time-box:hover {
             border-color: #FF286F;
+            background-color: #FF286F;
         }
         
         .date-time-box .custom-icon {
@@ -573,12 +797,8 @@
             filter: brightness(0) invert(1);
         }
         
-        .date-time-box:hover {
-            background-color: #FF286F;
-        }
-        
         .date-time-box:hover span {
-            color: white;
+            color: white !important;
         }
         
         .date-time-box span {
@@ -587,6 +807,26 @@
             font-family: 'Manrope', sans-serif !important;
             font-weight: 400 !important;
             transition: color 0.3s ease-in-out;
+        }
+        
+        /* Native date/time input styling - hidden but functional */
+        .native-datetime-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .native-date-input,
+        .native-time-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            left: 0;
+            top: 0;
         }
         
         .more-details-field {
@@ -618,6 +858,7 @@
             box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
         }
         
+        /* New JS initials avatar */
         .profile-avatar {
             width: 64px;
             height: 64px;
@@ -627,10 +868,10 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 0.75rem;
-        }
-        .profile-avatar .material-symbols-outlined {
-            color: #045B92 !important;
-            font-size: 32px !important;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            font-size: 24px;
+            color: #045B92;
         }
         
         .profile-info-row {
@@ -657,28 +898,7 @@
             font-size: 18px !important;
         }
         
-        .rating-row {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .rating-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .rating-icon .material-symbols-outlined {
-            color: #FF286F !important;
-            font-size: 16px !important;
-        }
-        
-        .rating-text {
-            font-size: 0.8rem;
-            color: rgba(4, 91, 146, 0.5);
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
-        }
+        /* Rating row removed - star and text removed */
         
         /* Preview items - white with blue text */
         .preview-items {
@@ -717,9 +937,9 @@
             height: 20px;
         }
         
-        .preview-icon .material-symbols-outlined {
-            font-size: 20px !important;
-            color: #045B92 !important;
+        .preview-icon .street-icon {
+            width: 20px;
+            height: 20px;
         }
         
         .preview-content {
@@ -745,29 +965,27 @@
             line-height: 1.4;
             word-break: break-word;
             font-family: 'Manrope', sans-serif !important;
-            text-transform: capitalize;
         }
         
-        .preview-value::first-letter {
-            text-transform: uppercase;
-        }
-        
-        /* Preview values in pink */
+        /* Preview values in pink - only specific ones */
         .preview-value.pink-text {
             color: #FF286F;
             font-weight: 500 !important;
         }
         
-        .preview-value.price-text {
-            color: #FF286F;
-            font-weight: 500 !important;
+        /* Image previews in preview sheet */
+        .preview-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
         }
-        
-        .preview-value.location-text,
-        .preview-value.task-text,
-        .preview-value.details-text {
-            color: #FF286F;
-            font-weight: 500 !important;
+        .preview-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
+            border: 1px solid rgba(4, 91, 146, 0.2);
         }
         
         .preview-divider {
@@ -1097,7 +1315,8 @@
                 padding: 0.5rem 1rem 1rem;
             }
             .when-options,
-            .budget-options {
+            .budget-options,
+            .payment-options {
                 gap: 0.5rem;
             }
             .date-time-pickers {
@@ -1107,9 +1326,7 @@
             .profile-avatar {
                 width: 48px;
                 height: 48px;
-            }
-            .profile-avatar .material-symbols-outlined {
-                font-size: 28px !important;
+                font-size: 20px;
             }
             .helper-message {
                 padding: 1rem;
@@ -1127,6 +1344,36 @@
             .map-container {
                 height: 200px;
             }
+        }
+
+        /* Image preview styling */
+        .image-preview-container {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .image-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            object-fit: cover;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+        .remove-image {
+            background: #FF286F;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: -15px;
+            margin-top: -5px;
         }
     </style>
 </head>
@@ -1185,13 +1432,17 @@
                     </div>
                     
                     <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
+                        <!-- Date picker box with native input -->
                         <div class="date-time-box" id="pickDateBtn">
                             <span class="custom-icon check-icon"></span>
-                            <span>Pick a date</span>
+                            <span id="dateDisplay">Pick a date</span>
+                            <input type="date" id="nativeDatePicker" class="native-date-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
                         </div>
+                        <!-- Time picker box with native input -->
                         <div class="date-time-box" id="pickTimeBtn">
                             <span class="custom-icon clock-icon"></span>
-                            <span>Pick a time</span>
+                            <span id="timeDisplay">Pick a time</span>
+                            <input type="time" id="nativeTimePicker" class="native-time-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
                         </div>
                     </div>
                 </div>
@@ -1199,13 +1450,15 @@
                 <div class="form-section">
                     <label class="section-label">Describe your task</label>
                     <div class="task-field-wrapper">
-                        <input type="text" class="task-field" id="taskField" placeholder="In words or upload an image" maxlength="50" value="">
+                        <input type="text" class="task-field" id="taskField" placeholder="Describe your task or upload an image" maxlength="50" value="">
                         <span class="upload-icon" id="uploadIcon">
-                            <span class="custom-icon image-icon"></span>
+                            <span class="material-symbols-outlined">add</span>
                         </span>
                     </div>
                     <div class="char-count" id="taskCharCount">0/50</div>
                     <div class="field-error" id="taskError">Please describe your task</div>
+                    <!-- Image preview container -->
+                    <div id="imagePreviewContainer" class="image-preview-container"></div>
                 </div>
 
                 <div class="form-section">
@@ -1214,12 +1467,25 @@
                         <button class="budget-option active" id="fixedBudgetBtn">Fixed</button>
                         <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
                     </div>
-                    <div id="fixedBudgetInput" style="display: none;">
+                    <div id="fixedBudgetInput" style="display: block;">
                         <div class="budget-field-wrapper">
                             <span class="currency-symbol">R</span>
-                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount (e.g. 500)" inputmode="numeric" pattern="[0-9]*">
+                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount" inputmode="numeric" pattern="[0-9]*">
                         </div>
                         <div class="field-error" id="budgetError">Please enter a budget amount</div>
+                    </div>
+                    
+                    <!-- Payment method selector - Cash or Online payment (no icons) -->
+                    <div style="margin-top: 0.75rem;">
+                        <label class="section-label">Payment method</label>
+                        <div class="payment-options">
+                            <button class="payment-option active" id="cashBtn">
+                                <span>Cash</span>
+                            </button>
+                            <button class="payment-option inactive" id="onlineBtn">
+                                <span>Online payment</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -1249,50 +1515,43 @@
             </div>
             
             <div class="sheet-content" id="previewContent">
-                <!-- Profile section - white background -->
+                <!-- Profile section - white background with JS initials -->
                 <div class="preview-header">
-                    <div class="profile-avatar">
-                        <span class="material-symbols-outlined">person</span>
-                    </div>
+                    <div class="profile-avatar">JS</div>
                     <div class="profile-info-row">
                         <span class="profile-name">John Smith</span>
                         <span class="verified-icon">
                             <span class="material-symbols-outlined">verified</span>
                         </span>
                     </div>
-                    <div class="rating-row">
-                        <span class="rating-icon">
-                            <span class="material-symbols-outlined">star</span>
-                        </span>
-                        <span class="rating-text">New on Taskmart</span>
-                    </div>
+                    <!-- Rating row removed -->
                 </div>
 
                 <!-- Preview items - all user input in pink -->
                 <div class="preview-items">
-                    <!-- Task location - using same icon as plan your task -->
+                    <!-- Task location - using same icon as plan your task (BLUE) -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon location-pin-icon"></span>
                         </div>
                         <div class="preview-content">
                             <div class="preview-label">Task location</div>
-                            <div class="preview-value location-text" id="previewLocation">loading...</div>
+                            <div class="preview-value" id="previewLocation">loading...</div>
                         </div>
                     </div>
 
-                    <!-- Street name - using explore nearby icon (same as current location button) -->
+                    <!-- Street name - NEW ICON (PINK) -->
                     <div class="preview-item">
                         <div class="preview-icon">
-                            <span class="material-symbols-outlined">explore_nearby</span>
+                            <span class="street-icon"></span>
                         </div>
                         <div class="preview-content">
                             <div class="preview-label">Street name</div>
-                            <div class="preview-value location-text" id="previewStreet">Not provided</div>
+                            <div class="preview-value pink-text" id="previewStreet">Not provided</div>
                         </div>
                     </div>
 
-                    <!-- Date & time -->
+                    <!-- Date & time - PINK -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon calendar-icon"></span>
@@ -1303,36 +1562,39 @@
                         </div>
                     </div>
 
-                    <!-- Task -->
+                    <!-- Task - PINK (with images) -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon checklist-icon"></span>
                         </div>
                         <div class="preview-content">
                             <div class="preview-label">Your task</div>
-                            <div class="preview-value task-text" id="previewTask">Loading...</div>
+                            <div class="preview-value pink-text" id="previewTask">Loading...</div>
+                            <!-- Image previews will be added here dynamically -->
+                            <div id="previewImagesContainer" class="preview-images"></div>
                         </div>
                     </div>
 
-                    <!-- Budget -->
+                    <!-- Budget - PINK (with payment method) -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon wallet-icon"></span>
                         </div>
                         <div class="preview-content">
                             <div class="preview-label">Budget</div>
-                            <div class="preview-value price-text" id="previewBudget">Not set</div>
+                            <div class="preview-value pink-text" id="previewBudget">Not set</div>
+                            <div class="preview-value" id="previewPayment" style="font-size:0.85rem; color:#045B92; margin-top:0.25rem;"></div>
                         </div>
                     </div>
 
-                    <!-- Additional details -->
+                    <!-- Additional details - BLUE -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="material-symbols-outlined">more_horiz</span>
                         </div>
                         <div class="preview-content">
                             <div class="preview-label">More details</div>
-                            <div class="preview-value details-text" id="previewDetails">None provided</div>
+                            <div class="preview-value" id="previewDetails">None provided</div>
                         </div>
                     </div>
                 </div>
@@ -1342,7 +1604,7 @@
                     <div class="helper-icon">
                         <span class="material-symbols-outlined">check</span>
                     </div>
-                    <div class="helper-text">
+                    <div class="helper-text" id="helperText">
                         Your task will be visible to nearby helpers. You will receive offers and can choose who to work with.
                     </div>
                 </div>
@@ -1359,7 +1621,7 @@
             <div class="sheet-footer">
                 <div class="post-btn-container">
                     <button class="post-button" id="postButton" disabled>Post task</button>
-                    <div class="free-text">Free to post • no upfront payment</div>
+                    <div class="free-text" id="freeText">Free to post • no upfront payment</div>
                 </div>
             </div>
         </div>
@@ -1382,11 +1644,38 @@
         </div>
     </div>
 
+    <!-- PAYMENT WINDOW (for online payment) -->
+    <div class="payment-window" id="paymentWindow">
+        <div class="payment-header">Secure payment</div>
+        <div class="payment-content">
+            <p>We'll securely hold your payment until the task is completed.</p>
+            <p>You only pay when you're satisfied with the work.</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">This is a placeholder - payment integration coming soon.</p>
+        </div>
+        <div class="payment-buttons">
+            <button class="payment-btn secondary" id="cancelPaymentBtn">Cancel</button>
+            <button class="payment-btn primary" id="confirmPaymentBtn">Continue to payment</button>
+        </div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div class="loading-text">Taking you to payment</div>
+            <div class="loading-subtext">Please wait while we redirect you...</div>
+        </div>
+    </div>
+
     <!-- CONFIRMATION MODAL -->
     <div class="confirm-modal-overlay" id="confirmModal">
         <div class="confirm-modal">
-            <h3>Ready to post?</h3>
-            <p>We're about to post your task. Are you sure you want to continue?</p>
+            <h3 id="confirmTitle">Ready to post?</h3>
+            <p id="confirmMessage">We're about to post your task. Are you sure you want to continue?</p>
             <div class="confirm-buttons">
                 <button class="confirm-btn yes" id="confirmYesBtn">Yes, post it</button>
                 <button class="confirm-btn cancel" id="confirmCancelBtn">Cancel</button>
@@ -1394,14 +1683,28 @@
         </div>
     </div>
 
+    <!-- CAMERA/GALLERY SELECTION MENU -->
+    <div class="image-source-menu" id="imageSourceMenu">
+        <div class="menu-header">Choose image source</div>
+        <div class="menu-option" id="takePhotoOption">
+            <span class="material-symbols-outlined">photo_camera</span>
+            <span>Take photo</span>
+        </div>
+        <div class="menu-option" id="chooseFromGalleryOption">
+            <span class="material-symbols-outlined">photo_library</span>
+            <span>Choose from gallery</span>
+        </div>
+        <div class="menu-cancel" id="cancelImageMenu">Cancel</div>
+    </div>
+
     <script>
         (function() {
             'use strict';
             
             // Your Render backend URL
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            const API_BASE_URL = ''; // Empty for relative URLs, will use current domain
             
-            // Set the Mapbox token from the config
+            // Set the Mapbox token from the config (as per Mapbox tutorial)
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
                 console.log('Mapbox token set successfully');
@@ -1413,6 +1716,10 @@
             const locationSheet = document.getElementById('locationSheet');
             const previewSheet = document.getElementById('previewSheet');
             const confirmModal = document.getElementById('confirmModal');
+            const confirmTitle = document.getElementById('confirmTitle');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmYesBtn = document.getElementById('confirmYesBtn');
+            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
             const mapModal = document.getElementById('mapModal');
             const mapModalCloseBtn = document.getElementById('mapModalCloseBtn');
             const mapConfirmBtn = document.getElementById('mapConfirmBtn');
@@ -1429,11 +1736,37 @@
             const dateTimePickers = document.getElementById('dateTimePickers');
             const pickDateBtn = document.getElementById('pickDateBtn');
             const pickTimeBtn = document.getElementById('pickTimeBtn');
+            const dateDisplay = document.getElementById('dateDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const nativeDatePicker = document.getElementById('nativeDatePicker');
+            const nativeTimePicker = document.getElementById('nativeTimePicker');
             const taskField = document.getElementById('taskField');
             const taskCharCount = document.getElementById('taskCharCount');
             const uploadIcon = document.getElementById('uploadIcon');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const previewImagesContainer = document.getElementById('previewImagesContainer');
             const moreDetailsField = document.getElementById('moreDetailsField');
             const nextButton = document.getElementById('nextButton');
+            
+            // Payment method elements
+            const cashBtn = document.getElementById('cashBtn');
+            const onlineBtn = document.getElementById('onlineBtn');
+            const paymentWindow = document.getElementById('paymentWindow');
+            const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+            const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+            
+            // Loading overlay
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            // Helper text and free text
+            const helperText = document.getElementById('helperText');
+            const freeText = document.getElementById('freeText');
+            
+            // Image source menu
+            const imageSourceMenu = document.getElementById('imageSourceMenu');
+            const takePhotoOption = document.getElementById('takePhotoOption');
+            const chooseFromGalleryOption = document.getElementById('chooseFromGalleryOption');
+            const cancelImageMenu = document.getElementById('cancelImageMenu');
             
             // Error elements
             const locationError = document.getElementById('locationError');
@@ -1451,14 +1784,11 @@
             const previewStreet = document.getElementById('previewStreet');
             const previewTask = document.getElementById('previewTask');
             const previewBudget = document.getElementById('previewBudget');
+            const previewPayment = document.getElementById('previewPayment');
             const previewDetails = document.getElementById('previewDetails');
             const previewWhen = document.getElementById('previewWhen');
             const postButton = document.getElementById('postButton');
             const termsCheckbox = document.getElementById('termsCheckbox');
-
-            // Confirmation modal elements
-            const confirmYesBtn = document.getElementById('confirmYesBtn');
-            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
 
             // Map variables
             let map = null;
@@ -1473,6 +1803,13 @@
             let currentCoordinates = '';
             let currentLocationName = '';
             let scrollPosition = 0;
+            // New state for date/time
+            let selectedDate = null;
+            let selectedTime = null;
+            // Payment method state
+            let selectedPayment = 'cash';
+            // Store uploaded images as data URLs (frontend only)
+            let uploadedImages = [];
 
             // Character count for task field
             function updateCharCount() {
@@ -1486,7 +1823,6 @@
             }
 
             taskField.addEventListener('input', function() {
-                // Limit to 50 characters
                 if (this.value.length > 50) {
                     this.value = this.value.slice(0, 50);
                 }
@@ -1495,18 +1831,149 @@
                 taskField.classList.remove('error');
             });
 
+            // Image upload handling with menu
+            uploadIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                imageSourceMenu.classList.add('active');
+            });
+
+            function createFileInput(accept, capture) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = accept;
+                if (capture) input.capture = capture;
+                input.multiple = true;
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                input.style.pointerEvents = 'none';
+                input.style.top = '-100px';
+                document.body.appendChild(input);
+                
+                input.addEventListener('change', function(e) {
+                    const files = Array.from(e.target.files);
+                    files.forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                uploadedImages.push(event.target.result);
+                                displayImagePreviews();
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                    document.body.removeChild(input);
+                });
+                
+                input.click();
+            }
+
+            takePhotoOption.addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+                createFileInput('image/*', 'environment');
+            });
+
+            chooseFromGalleryOption.addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+                createFileInput('image/*', null);
+            });
+
+            cancelImageMenu.addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!imageSourceMenu.contains(e.target) && !uploadIcon.contains(e.target)) {
+                    imageSourceMenu.classList.remove('active');
+                }
+            });
+
+            function displayImagePreviews() {
+                imagePreviewContainer.innerHTML = '';
+                uploadedImages.forEach((imgData, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.style.display = 'inline-block';
+                    
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.className = 'image-preview';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = '×';
+                    removeBtn.className = 'remove-image';
+                    removeBtn.onclick = () => {
+                        uploadedImages.splice(index, 1);
+                        displayImagePreviews();
+                    };
+                    
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    imagePreviewContainer.appendChild(wrapper);
+                });
+            }
+
+            // Payment method handlers
+            cashBtn.addEventListener('click', function() {
+                selectedPayment = 'cash';
+                cashBtn.className = 'payment-option active';
+                onlineBtn.className = 'payment-option inactive';
+                
+                // Update post button and messaging
+                postButton.textContent = 'Post task';
+                freeText.textContent = 'Cash payment in person • No upfront payment';
+                helperText.textContent = 'You will pay the helper directly in cash when the task is complete.';
+            });
+            
+            onlineBtn.addEventListener('click', function() {
+                selectedPayment = 'online';
+                onlineBtn.className = 'payment-option active';
+                cashBtn.className = 'payment-option inactive';
+                
+                // Update post button and messaging
+                postButton.textContent = 'Post task';
+                freeText.textContent = 'Zero fees • We securely hold funds until task is complete';
+                helperText.textContent = 'Your payment is held securely and only released when you approve the work.';
+            });
+
+            // Payment window handlers
+            cancelPaymentBtn.addEventListener('click', function() {
+                paymentWindow.classList.remove('active');
+            });
+
+            confirmPaymentBtn.addEventListener('click', function() {
+                paymentWindow.classList.remove('active');
+                // Show loading overlay
+                loadingOverlay.classList.add('active');
+                
+                // Simulate payment processing
+                setTimeout(() => {
+                    loadingOverlay.classList.remove('active');
+                    // Show confirmation modal after payment
+                    confirmTitle.textContent = 'Payment successful';
+                    confirmMessage.textContent = 'Your payment has been processed. Would you like to post your task now?';
+                    confirmYesBtn.textContent = 'Yes, post task';
+                    confirmModal.classList.add('active');
+                }, 3000);
+            });
+
+            // Close payment window when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!paymentWindow.contains(e.target) && paymentWindow.classList.contains('active')) {
+                    paymentWindow.classList.remove('active');
+                }
+            });
+
             // Initialize
             previewSheet.style.display = 'none';
             updateCharCount();
 
-            // Enable/disable post button based on checkbox
             function updatePostButtonState() {
                 postButton.disabled = !termsCheckbox.checked;
             }
 
             termsCheckbox.addEventListener('change', updatePostButtonState);
 
-            // Body scroll lock management
             function lockBodyScroll() {
                 scrollPosition = window.scrollY;
                 document.body.style.position = 'fixed';
@@ -1523,7 +1990,6 @@
                 window.scrollTo(0, scrollPosition);
             }
 
-            // Scroll to element with proper offset
             function scrollToElement(element) {
                 if (element && locationContent) {
                     const elementRect = element.getBoundingClientRect();
@@ -1537,7 +2003,6 @@
                 }
             }
 
-            // Clear all errors
             function clearErrors() {
                 locationError.classList.remove('visible');
                 taskError.classList.remove('visible');
@@ -1547,13 +2012,11 @@
                 if (budgetAmountInput) budgetAmountInput.classList.remove('error');
             }
 
-            // Validate form
             function validateForm() {
                 clearErrors();
                 let isValid = true;
                 let firstError = null;
 
-                // Check location
                 if (!locationField.value || locationField.value === 'detecting location...' || locationField.value.trim() === '') {
                     locationError.classList.add('visible');
                     locationField.classList.add('error');
@@ -1561,7 +2024,6 @@
                     isValid = false;
                 }
                 
-                // Check task description
                 if (!taskField.value.trim()) {
                     taskError.classList.add('visible');
                     taskField.classList.add('error');
@@ -1569,7 +2031,6 @@
                     isValid = false;
                 }
                 
-                // Check budget if fixed
                 if (budgetType === 'fixed' && fixedBudgetInput.style.display === 'block') {
                     if (!budgetAmountInput.value) {
                         budgetError.classList.add('visible');
@@ -1579,7 +2040,6 @@
                     }
                 }
                 
-                // Scroll to first error
                 if (firstError) {
                     scrollToElement(firstError);
                 }
@@ -1587,11 +2047,10 @@
                 return isValid;
             }
 
-            // Function to get location name from coordinates using backend proxy
             async function getLocationName(lat, lon) {
                 try {
                     const response = await fetch(
-                        `${API_BASE_URL}/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
+                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
                     );
                     const data = await response.json();
                     return data.name || null;
@@ -1601,11 +2060,10 @@
                 }
             }
 
-            // Function to get full address from coordinates using backend proxy
             async function getFullAddress(lat, lon) {
                 try {
                     const response = await fetch(
-                        `${API_BASE_URL}/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
+                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
                     );
                     const data = await response.json();
                     return data.address || null;
@@ -1615,14 +2073,14 @@
                 }
             }
 
-            // Initialize map with Mapbox
+            // Initialize map following Mapbox tutorial pattern
             function initMap(lat, lng) {
                 if (map) {
                     map.remove();
                 }
                 
                 try {
-                    // Create map
+                    // Create map exactly as shown in Mapbox tutorial
                     map = new mapboxgl.Map({
                         container: 'map',
                         style: 'mapbox://styles/mapbox/streets-v12',
@@ -1633,7 +2091,7 @@
                     map.on('load', () => {
                         console.log('Map loaded successfully');
                         
-                        // Add navigation controls
+                        // Add navigation controls after map loads
                         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
                         
                         // Create a draggable marker
@@ -1670,12 +2128,12 @@
                     
                 } catch (error) {
                     console.error('Failed to initialize map:', error);
+                    alert('Failed to load map. Please check console for details.');
                 }
             }
 
-            // Open map modal
             function openMapModal() {
-                let lat = -26.195246; // Default to Johannesburg
+                let lat = -26.195246;
                 let lng = 28.034088;
                 
                 if (currentCoordinates) {
@@ -1693,7 +2151,6 @@
                 mapModal.classList.add('active');
             }
 
-            // Close map modal
             function closeMapModal() {
                 mapModal.classList.remove('active');
                 if (map) {
@@ -1702,7 +2159,6 @@
                 }
             }
 
-            // Listen for messages from parent
             window.addEventListener('message', function(event) {
                 if (event.data.type === 'OPEN_PLANNER') {
                     currentLocationName = event.data.location || '';
@@ -1724,31 +2180,112 @@
                 }
             });
 
-            // Close planner
             function closePlanner() {
                 locationSheet.style.display = 'none';
                 unlockBodyScroll();
                 window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
             }
 
-            // Open preview
+            // Helper: capitalize first letter of a sentence
+            function capitalizeSentence(str) {
+                if (!str) return str;
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
+            // Format date for South Africa (YYYY-MM-DD) and display as DD/MM/YYYY
+            function formatDateForDisplay(dateString) {
+                if (!dateString) return null;
+                // dateString from input is YYYY-MM-DD
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+                }
+                return dateString;
+            }
+
+            // Format time for South Africa (24-hour)
+            function formatTimeForDisplay(timeString) {
+                if (!timeString) return null;
+                // timeString from input is HH:MM (24-hour)
+                return timeString; // already 24-hour format
+            }
+
+            // Handle native date picker
+            nativeDatePicker.addEventListener('change', function(e) {
+                if (this.value) {
+                    selectedDate = this.value; // YYYY-MM-DD
+                    dateDisplay.textContent = formatDateForDisplay(this.value);
+                }
+            });
+
+            // Handle native time picker
+            nativeTimePicker.addEventListener('change', function(e) {
+                if (this.value) {
+                    selectedTime = this.value; // HH:MM (24-hour)
+                    timeDisplay.textContent = formatTimeForDisplay(this.value);
+                }
+            });
+
+            // Make sure the box clicks also trigger the native picker
+            pickDateBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                nativeDatePicker.showPicker();
+            });
+
+            pickTimeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                nativeTimePicker.showPicker();
+            });
+
+            // Also make the inputs themselves clickable (they are invisible but cover the area)
+            nativeDatePicker.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            nativeTimePicker.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
             function openPreview() {
                 if (!validateForm()) {
                     return;
                 }
                 
-                previewLocation.textContent = locationField.value || 'Your location';
-                previewStreet.textContent = streetField.value || 'Not provided';
-                previewTask.textContent = taskField.value || 'Not specified';
+                previewLocation.textContent = capitalizeSentence(locationField.value || 'Your location');
+                previewStreet.textContent = streetField.value ? capitalizeSentence(streetField.value) : 'Not provided';
+                previewTask.textContent = capitalizeSentence(taskField.value || 'Not specified');
                 
-                if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
-                    previewBudget.textContent = `R ${budgetAmountInput.value}`;
-                } else {
-                    previewBudget.textContent = 'Open to offers';
+                // Display uploaded images in preview
+                previewImagesContainer.innerHTML = '';
+                if (uploadedImages.length > 0) {
+                    uploadedImages.forEach(imgData => {
+                        const img = document.createElement('img');
+                        img.src = imgData;
+                        img.className = 'preview-thumb';
+                        previewImagesContainer.appendChild(img);
+                    });
                 }
                 
-                previewDetails.textContent = moreDetailsField.value || 'None provided';
-                previewWhen.textContent = selectedWhen === 'now' ? 'Now' : 'Later';
+                if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
+                    let paymentText = selectedPayment === 'cash' ? 'Cash' : 'Online payment';
+                    
+                    previewBudget.textContent = `R ${budgetAmountInput.value}`;
+                    previewPayment.textContent = `Payment: ${paymentText}`;
+                } else {
+                    previewBudget.textContent = 'Open to offers';
+                    previewPayment.textContent = '';
+                }
+                
+                previewDetails.textContent = moreDetailsField.value ? capitalizeSentence(moreDetailsField.value) : 'None provided';
+                
+                // Show date/time if later and both selected (in SA format)
+                if (selectedWhen === 'later' && (selectedDate || selectedTime)) {
+                    let whenStr = '';
+                    if (selectedDate) whenStr += formatDateForDisplay(selectedDate);
+                    if (selectedTime) whenStr += (whenStr ? ' at ' : '') + formatTimeForDisplay(selectedTime);
+                    previewWhen.textContent = whenStr;
+                } else {
+                    previewWhen.textContent = 'Now';
+                }
                 
                 termsCheckbox.checked = false;
                 updatePostButtonState();
@@ -1761,7 +2298,6 @@
                 }
             }
 
-            // When Now button
             whenNowBtn.addEventListener('click', function() {
                 selectedWhen = 'now';
                 whenNowBtn.className = 'when-option active';
@@ -1769,7 +2305,6 @@
                 dateTimePickers.style.display = 'none';
             });
 
-            // When Later button
             whenLaterBtn.addEventListener('click', function() {
                 selectedWhen = 'later';
                 whenLaterBtn.className = 'when-option active';
@@ -1777,7 +2312,6 @@
                 dateTimePickers.style.display = 'flex';
             });
 
-            // Budget buttons
             fixedBudgetBtn.addEventListener('click', function() {
                 budgetType = 'fixed';
                 fixedBudgetBtn.className = 'budget-option active';
@@ -1798,7 +2332,6 @@
                 if (budgetError) budgetError.classList.remove('visible');
             });
 
-            // Only numbers in budget
             if (budgetAmountInput) {
                 budgetAmountInput.addEventListener('input', function() {
                     this.value = this.value.replace(/[^0-9]/g, '');
@@ -1809,21 +2342,17 @@
                 });
             }
 
-            // Clear errors when user types
             locationField.addEventListener('input', function() {
                 locationError.classList.remove('visible');
                 locationField.classList.remove('error');
             });
 
-            // Map button click
             locationMapBtn.addEventListener('click', function() {
                 openMapModal();
             });
 
-            // Map modal close button
             mapModalCloseBtn.addEventListener('click', closeMapModal);
 
-            // Map confirm button
             mapConfirmBtn.addEventListener('click', async function() {
                 if (marker) {
                     const pos = marker.getLngLat();
@@ -1850,48 +2379,12 @@
                 closeMapModal();
             });
 
-            // Click outside to close map modal
             mapModal.addEventListener('click', function(e) {
                 if (e.target === mapModal) {
                     closeMapModal();
                 }
             });
 
-            // Image upload click
-            uploadIcon.addEventListener('click', () => {
-                // Create a file input element
-                const fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.accept = 'image/*';
-                fileInput.onchange = (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        alert(`Image selected: ${file.name}. Upload functionality will be implemented soon.`);
-                    }
-                };
-                fileInput.click();
-            });
-
-            // Date picker clicks
-            pickDateBtn.addEventListener('click', () => {
-                const dateInput = document.createElement('input');
-                dateInput.type = 'date';
-                dateInput.onchange = (e) => {
-                    alert(`Date selected: ${e.target.value}`);
-                };
-                dateInput.click();
-            });
-            
-            pickTimeBtn.addEventListener('click', () => {
-                const timeInput = document.createElement('input');
-                timeInput.type = 'time';
-                timeInput.onchange = (e) => {
-                    alert(`Time selected: ${e.target.value}`);
-                };
-                timeInput.click();
-            });
-
-            // Navigation
             sheetBackBtn.addEventListener('click', closePlanner);
             
             previewBackBtn.addEventListener('click', function() {
@@ -1905,33 +2398,102 @@
             
             nextButton.addEventListener('click', openPreview);
 
-            // Post button - show confirmation modal
+            // ===== MONGODB SAVE FUNCTIONALITY =====
+            
+            // Add this function to save tasks to MongoDB
+            async function saveTaskToMongoDB(taskData) {
+                try {
+                    const response = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to save task');
+                    }
+                    
+                    const savedTask = await response.json();
+                    console.log('✅ Task saved to MongoDB:', savedTask);
+                    return savedTask;
+                } catch (error) {
+                    console.error('❌ Error saving task:', error);
+                    alert('Failed to save task. Please try again.');
+                    return null;
+                }
+            }
+
+            // Replace the existing postButton click handler
             postButton.addEventListener('click', function() {
                 if (postButton.disabled) return;
-                confirmModal.classList.add('active');
+                
+                if (selectedPayment === 'cash') {
+                    // For cash, show the ready to post confirmation
+                    confirmTitle.textContent = 'Ready to post?';
+                    confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
+                    confirmYesBtn.textContent = 'Yes, post it';
+                    confirmModal.classList.add('active');
+                } else {
+                    // For online payment, show payment window first
+                    paymentWindow.classList.add('active');
+                }
             });
 
-            // Confirmation modal buttons
-            confirmYesBtn.addEventListener('click', function() {
-                alert('Task posted successfully! Helpers will be notified.');
-                confirmModal.classList.remove('active');
-                previewSheet.style.display = 'none';
-                unlockBodyScroll();
-                window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
+            // Replace the existing confirmYesBtn click handler
+            confirmYesBtn.addEventListener('click', async function() {
+                // Prepare task data from your form
+                const taskData = {
+                    location: locationField.value,
+                    coordinates: currentCoordinates || '',
+                    streetName: streetField.value || '',
+                    when: selectedWhen,
+                    scheduledDate: selectedDate,
+                    scheduledTime: selectedTime,
+                    taskDescription: taskField.value,
+                    budgetType: budgetType,
+                    budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
+                    paymentMethod: selectedPayment,
+                    moreDetails: moreDetailsField.value || '',
+                    images: uploadedImages, // Your base64 images
+                    status: 'posted'
+                };
+                
+                // Save to MongoDB
+                const savedTask = await saveTaskToMongoDB(taskData);
+                
+                if (savedTask) {
+                    alert('✅ Task posted successfully! Task ID: ' + savedTask._id);
+                    confirmModal.classList.remove('active');
+                    previewSheet.style.display = 'none';
+                    unlockBodyScroll();
+                    window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
+                    
+                    // Optional: Reset form
+                    locationField.value = 'detecting location...';
+                    streetField.value = '';
+                    taskField.value = '';
+                    budgetAmountInput.value = '';
+                    moreDetailsField.value = '';
+                    uploadedImages = [];
+                    imagePreviewContainer.innerHTML = '';
+                    updateCharCount();
+                }
             });
+
+            // ===== END MONGODB SAVE FUNCTIONALITY =====
 
             confirmCancelBtn.addEventListener('click', function() {
                 confirmModal.classList.remove('active');
             });
 
-            // Close confirmation modal when clicking overlay
             confirmModal.addEventListener('click', function(e) {
                 if (e.target === confirmModal) {
                     confirmModal.classList.remove('active');
                 }
             });
 
-            // Close on background click
             locationSheet.addEventListener('click', function(e) {
                 if (e.target === locationSheet) closePlanner();
             });
@@ -1943,7 +2505,6 @@
                 }
             });
 
-            // Prevent touch events from bubbling
             locationSheet.addEventListener('touchstart', function(e) {
                 if (e.target === locationSheet) {
                     e.preventDefault();
