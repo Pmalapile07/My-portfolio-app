@@ -1826,109 +1826,6 @@
     <script>
         (function() {
             'use strict';
-            // Check if user is logged in
-function isUserLoggedIn() {
-    const user = localStorage.getItem('taskmart_user');
-    return user ? JSON.parse(user) : null;
-}
-
-// Update the postButton click handler (replace the existing one)
-postButton.addEventListener('click', function() {
-    if (postButton.disabled) return;
-    
-    // Check if user is logged in
-    const user = isUserLoggedIn();
-    if (!user) {
-        // Save current task data to session storage
-        const taskData = {
-            location: locationField.value,
-            streetName: streetField.value,
-            taskDescription: taskField.value,
-            budgetType: budgetType,
-            budgetAmount: budgetAmountInput.value,
-            selectedWhen: selectedWhen,
-            selectedDate: selectedDate,
-            selectedTime: selectedTime,
-            selectedPayment: selectedPayment,
-            moreDetails: moreDetailsField.value,
-            uploadedImages: uploadedImages
-        };
-        sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
-        
-        // Redirect to login page with return URL
-        const returnUrl = encodeURIComponent(window.location.href);
-        window.location.href = '/login.html?returnTo=' + returnUrl;
-        return;
-    }
-    
-    // Update user info from logged in user
-    currentUser.name = user.name;
-    currentUser.initials = user.initials;
-    updateUserProfile();
-    
-    if (selectedPayment === 'cash') {
-        confirmTitle.textContent = 'Ready to post?';
-        confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
-        confirmYesBtn.textContent = 'Yes, post it';
-        confirmModal.classList.add('active');
-    }
-});
-
-// Check for pending task after login
-window.addEventListener('load', function() {
-    const user = isUserLoggedIn();
-    if (user) {
-        currentUser.name = user.name;
-        currentUser.initials = user.initials;
-        updateUserProfile();
-    }
-    
-    // Check if there's a pending task from before login
-    const pendingTask = sessionStorage.getItem('pendingTask');
-    if (pendingTask) {
-        const task = JSON.parse(pendingTask);
-        
-        // Restore task data
-        if (task.location) locationField.value = task.location;
-        if (task.streetName) streetField.value = task.streetName;
-        if (task.taskDescription) {
-            taskField.value = task.taskDescription;
-            updateCharCount();
-        }
-        if (task.budgetType) {
-            if (task.budgetType === 'fixed') {
-                fixedBudgetBtn.click();
-                if (task.budgetAmount) budgetAmountInput.value = task.budgetAmount;
-            } else {
-                openBudgetBtn.click();
-            }
-        }
-        if (task.selectedWhen) {
-            if (task.selectedWhen === 'later') {
-                whenLaterBtn.click();
-                if (task.selectedDate) {
-                    selectedDate = task.selectedDate;
-                    dateDisplay.textContent = formatDateForDisplay(task.selectedDate);
-                }
-                if (task.selectedTime) {
-                    selectedTime = task.selectedTime;
-                    timeDisplay.textContent = formatTimeForDisplay(task.selectedTime);
-                }
-            }
-        }
-        if (task.selectedPayment) {
-            if (task.selectedPayment === 'cash') cashBtn.click();
-        }
-        if (task.moreDetails) moreDetailsField.value = task.moreDetails;
-        if (task.uploadedImages && task.uploadedImages.length > 0) {
-            uploadedImages = task.uploadedImages;
-            displayImagePreviews();
-        }
-        
-        // Clear pending task
-        sessionStorage.removeItem('pendingTask');
-    }
-});
             
             // Your Render backend URL
             const BASE_URL = window.location.origin;
@@ -2057,6 +1954,70 @@ window.addEventListener('load', function() {
             let selectedPayment = 'cash';
             // Store uploaded images as data URLs (frontend only)
             let uploadedImages = [];
+
+            // ===== LOGIN CHECK FUNCTIONS =====
+            // Check if user is logged in
+            function isUserLoggedIn() {
+                const user = localStorage.getItem('taskmart_user');
+                return user ? JSON.parse(user) : null;
+            }
+
+            // Check for pending task after login
+            function checkForPendingTask() {
+                const user = isUserLoggedIn();
+                if (user) {
+                    currentUser.name = user.name;
+                    currentUser.initials = user.initials;
+                    updateUserProfile();
+                }
+                
+                // Check if there's a pending task from before login
+                const pendingTask = sessionStorage.getItem('pendingTask');
+                if (pendingTask) {
+                    const task = JSON.parse(pendingTask);
+                    
+                    // Restore task data
+                    if (task.location) locationField.value = task.location;
+                    if (task.streetName) streetField.value = task.streetName;
+                    if (task.taskDescription) {
+                        taskField.value = task.taskDescription;
+                        updateCharCount();
+                    }
+                    if (task.budgetType) {
+                        if (task.budgetType === 'fixed') {
+                            fixedBudgetBtn.click();
+                            if (task.budgetAmount) budgetAmountInput.value = task.budgetAmount;
+                        } else {
+                            openBudgetBtn.click();
+                        }
+                    }
+                    if (task.selectedWhen) {
+                        if (task.selectedWhen === 'later') {
+                            whenLaterBtn.click();
+                            if (task.selectedDate) {
+                                selectedDate = task.selectedDate;
+                                dateDisplay.textContent = formatDateForDisplay(task.selectedDate);
+                            }
+                            if (task.selectedTime) {
+                                selectedTime = task.selectedTime;
+                                timeDisplay.textContent = formatTimeForDisplay(task.selectedTime);
+                            }
+                        }
+                    }
+                    if (task.selectedPayment) {
+                        if (task.selectedPayment === 'cash') cashBtn.click();
+                    }
+                    if (task.moreDetails) moreDetailsField.value = task.moreDetails;
+                    if (task.uploadedImages && task.uploadedImages.length > 0) {
+                        uploadedImages = task.uploadedImages;
+                        displayImagePreviews();
+                    }
+                    
+                    // Clear pending task
+                    sessionStorage.removeItem('pendingTask');
+                }
+            }
+            // ===== END LOGIN CHECK FUNCTIONS =====
 
             // Set user profile data
             function updateUserProfile() {
@@ -2744,8 +2705,39 @@ window.addEventListener('load', function() {
                 }, 400);
             }
 
+            // Update the postButton click handler with login check
             postButton.addEventListener('click', function() {
                 if (postButton.disabled) return;
+                
+                // Check if user is logged in
+                const user = isUserLoggedIn();
+                if (!user) {
+                    // Save current task data to session storage
+                    const taskData = {
+                        location: locationField.value,
+                        streetName: streetField.value,
+                        taskDescription: taskField.value,
+                        budgetType: budgetType,
+                        budgetAmount: budgetAmountInput.value,
+                        selectedWhen: selectedWhen,
+                        selectedDate: selectedDate,
+                        selectedTime: selectedTime,
+                        selectedPayment: selectedPayment,
+                        moreDetails: moreDetailsField.value,
+                        uploadedImages: uploadedImages
+                    };
+                    sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
+                    
+                    // Redirect to login page with return URL
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    window.location.href = '/login.html?returnTo=' + returnUrl;
+                    return;
+                }
+                
+                // Update user info from logged in user
+                currentUser.name = user.name;
+                currentUser.initials = user.initials;
+                updateUserProfile();
                 
                 if (selectedPayment === 'cash') {
                     // For cash, show the ready to post confirmation
@@ -2840,6 +2832,9 @@ window.addEventListener('load', function() {
                     e.preventDefault();
                 }
             }, { passive: false });
+
+            // Check for pending task on load
+            checkForPendingTask();
         })();
     </script>
 </body>
