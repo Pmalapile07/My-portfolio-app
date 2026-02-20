@@ -858,7 +858,7 @@
             box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
         }
         
-        /* New JS initials avatar */
+        /* Dynamic user avatar - will be updated via JS */
         .profile-avatar {
             width: 64px;
             height: 64px;
@@ -872,6 +872,13 @@
             font-weight: 500;
             font-size: 24px;
             color: #045B92;
+            overflow: hidden;
+        }
+        
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .profile-info-row {
@@ -948,14 +955,12 @@
         
         .preview-label {
             font-size: 0.75rem;
-            color: #045B92;
+            color: rgba(4, 91, 146, 0.5); /* Grey color same as checkbox circle */
             margin-bottom: 0.15rem;
-            text-transform: lowercase;
+            text-transform: uppercase; /* Capital letters */
             font-family: 'Manrope', sans-serif !important;
             font-weight: 500 !important;
-        }
-        .preview-label::first-letter {
-            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         
         .preview-value {
@@ -971,6 +976,15 @@
         .preview-value.pink-text {
             color: #FF286F;
             font-weight: 500 !important;
+        }
+        
+        /* Budget hint text */
+        .budget-hint {
+            font-size: 0.7rem;
+            color: rgba(4, 91, 146, 0.5);
+            margin-left: 0.5rem;
+            font-weight: 300;
+            text-transform: none;
         }
         
         /* Image previews in preview sheet */
@@ -994,7 +1008,7 @@
             margin: 1rem 0;
         }
         
-        /* Helper message box - no hover effects */
+        /* Helper message box - no hover effects - keep the icon */
         .helper-message {
             background: rgba(4, 91, 146, 0.08);
             padding: 1.25rem;
@@ -1515,11 +1529,11 @@
             </div>
             
             <div class="sheet-content" id="previewContent">
-                <!-- Profile section - white background with JS initials -->
+                <!-- Profile section - white background with dynamic user data -->
                 <div class="preview-header">
-                    <div class="profile-avatar">JS</div>
+                    <div class="profile-avatar" id="profileAvatar">JS</div>
                     <div class="profile-info-row">
-                        <span class="profile-name">John Smith</span>
+                        <span class="profile-name" id="profileName">John Smith</span>
                         <span class="verified-icon">
                             <span class="material-symbols-outlined">verified</span>
                         </span>
@@ -1527,79 +1541,79 @@
                     <!-- Rating row removed -->
                 </div>
 
-                <!-- Preview items - all user input in pink -->
+                <!-- Preview items - all user input in pink with grey uppercase labels -->
                 <div class="preview-items">
-                    <!-- Task location - using same icon as plan your task (BLUE) -->
+                    <!-- Task location -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon location-pin-icon"></span>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-label">Task location</div>
+                            <div class="preview-label">TASK LOCATION</div>
                             <div class="preview-value" id="previewLocation">loading...</div>
                         </div>
                     </div>
 
-                    <!-- Street name - NEW ICON (PINK) -->
+                    <!-- Street name -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="street-icon"></span>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-label">Street name</div>
+                            <div class="preview-label">STREET NAME</div>
                             <div class="preview-value pink-text" id="previewStreet">Not provided</div>
                         </div>
                     </div>
 
-                    <!-- Date & time - PINK -->
+                    <!-- Date & time -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon calendar-icon"></span>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-label">Date and time</div>
+                            <div class="preview-label">DATE AND TIME</div>
                             <div class="preview-value pink-text" id="previewWhen">Now</div>
                         </div>
                     </div>
 
-                    <!-- Task - PINK (with images) -->
+                    <!-- Task -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon checklist-icon"></span>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-label">Your task</div>
+                            <div class="preview-label">YOUR TASK</div>
                             <div class="preview-value pink-text" id="previewTask">Loading...</div>
                             <!-- Image previews will be added here dynamically -->
                             <div id="previewImagesContainer" class="preview-images"></div>
                         </div>
                     </div>
 
-                    <!-- Budget - PINK (with payment method) -->
+                    <!-- Budget (with per task hint) -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="custom-icon wallet-icon"></span>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-label">Budget</div>
+                            <div class="preview-label">BUDGET <span class="budget-hint">(per task)</span></div>
                             <div class="preview-value pink-text" id="previewBudget">Not set</div>
                             <div class="preview-value" id="previewPayment" style="font-size:0.85rem; color:#045B92; margin-top:0.25rem;"></div>
                         </div>
                     </div>
 
-                    <!-- Additional details - BLUE -->
+                    <!-- Additional details -->
                     <div class="preview-item">
                         <div class="preview-icon">
                             <span class="material-symbols-outlined">more_horiz</span>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-label">More details</div>
+                            <div class="preview-label">MORE DETAILS</div>
                             <div class="preview-value" id="previewDetails">None provided</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Helper message -->
+                <!-- Helper message - keep the icon -->
                 <div class="helper-message">
                     <div class="helper-icon">
                         <span class="material-symbols-outlined">check</span>
@@ -1702,7 +1716,14 @@
             'use strict';
             
             // Your Render backend URL
-            const API_BASE_URL = ''; // Empty for relative URLs, will use current domain
+            const BASE_URL = window.location.origin;
+            
+            // Mock user data - this will come from your login system later
+            const currentUser = {
+                name: 'Pearl Smith',
+                initials: 'PS',
+                avatar: null // Will be updated when you add Cloudinary
+            };
             
             // Set the Mapbox token from the config (as per Mapbox tutorial)
             if (window.MAPBOX_TOKEN) {
@@ -1747,6 +1768,10 @@
             const previewImagesContainer = document.getElementById('previewImagesContainer');
             const moreDetailsField = document.getElementById('moreDetailsField');
             const nextButton = document.getElementById('nextButton');
+            
+            // Profile elements
+            const profileAvatar = document.getElementById('profileAvatar');
+            const profileName = document.getElementById('profileName');
             
             // Payment method elements
             const cashBtn = document.getElementById('cashBtn');
@@ -1810,6 +1835,22 @@
             let selectedPayment = 'cash';
             // Store uploaded images as data URLs (frontend only)
             let uploadedImages = [];
+
+            // Set user profile data
+            function updateUserProfile() {
+                profileName.textContent = currentUser.name;
+                
+                if (currentUser.avatar) {
+                    // If user has avatar image, show it
+                    profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
+                } else {
+                    // Otherwise show initials
+                    profileAvatar.textContent = currentUser.initials;
+                }
+            }
+            
+            // Call it initially
+            updateUserProfile();
 
             // Character count for task field
             function updateCharCount() {
@@ -2400,10 +2441,11 @@
 
             // ===== MONGODB SAVE FUNCTIONALITY =====
             
-            // Add this function to save tasks to MongoDB
             async function saveTaskToMongoDB(taskData) {
                 try {
-                    const response = await fetch('/api/tasks', {
+                    console.log('Saving task to:', `${BASE_URL}/api/tasks`);
+                    
+                    const response = await fetch(`${BASE_URL}/api/tasks`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2425,7 +2467,6 @@
                 }
             }
 
-            // Replace the existing postButton click handler
             postButton.addEventListener('click', function() {
                 if (postButton.disabled) return;
                 
@@ -2441,7 +2482,6 @@
                 }
             });
 
-            // Replace the existing confirmYesBtn click handler
             confirmYesBtn.addEventListener('click', async function() {
                 // Prepare task data from your form
                 const taskData = {
@@ -2456,8 +2496,10 @@
                     budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
                     paymentMethod: selectedPayment,
                     moreDetails: moreDetailsField.value || '',
-                    images: uploadedImages, // Your base64 images
-                    status: 'posted'
+                    images: uploadedImages,
+                    status: 'posted',
+                    userId: 'guest', // Will be replaced with actual user ID when login is ready
+                    userName: currentUser.name
                 };
                 
                 // Save to MongoDB
@@ -2470,7 +2512,7 @@
                     unlockBodyScroll();
                     window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
                     
-                    // Optional: Reset form
+                    // Reset form
                     locationField.value = 'detecting location...';
                     streetField.value = '';
                     taskField.value = '';
