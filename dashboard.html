@@ -477,6 +477,11 @@
             color: #ef4444;
         }
 
+        .status-badge.verified {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
         .task-actions {
             display: flex;
             gap: 0.75rem;
@@ -1004,11 +1009,46 @@
             margin-bottom: 1rem;
         }
 
-        /* Settings Section in Edit Profile */
+        /* Settings Section in Edit Profile - Collapsible */
         .settings-section {
             margin-top: 2rem;
-            padding-top: 1.5rem;
             border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 0 1rem;
+            cursor: pointer;
+        }
+
+        .settings-header h3 {
+            color: #045B92;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .settings-header .material-symbols-outlined {
+            color: #FF286F;
+            transition: transform 0.3s ease;
+        }
+
+        .settings-header.collapsed .material-symbols-outlined {
+            transform: rotate(-90deg);
+        }
+
+        .settings-content {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .settings-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
         }
 
         .settings-item {
@@ -1437,7 +1477,7 @@
             <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
             <div class="notification-bell" onclick="openNotifications()">
                 <span class="material-symbols-outlined">notifications</span>
-                <span class="notification-badge" id="notificationBadge">3</span>
+                <span class="notification-badge" id="notificationBadge">0</span>
             </div>
         </div>
 
@@ -1615,65 +1655,12 @@
                 </button>
             </div>
             <div class="notifications-list" id="notificationsList">
-                <!-- Sample notifications for demonstration -->
-                <div class="notification-item">
-                    <div class="notification-icon">
-                        <span class="material-symbols-outlined">handshake</span>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">
-                            New Offer Received
-                            <span class="notification-badge-new">New</span>
-                        </div>
-                        <div class="notification-desc">Mike offered R450 for "Fix leaking faucet"</div>
-                        <div class="notification-time">2 minutes ago</div>
-                    </div>
-                </div>
-                <div class="notification-item">
-                    <div class="notification-icon">
-                        <span class="material-symbols-outlined">edit</span>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">Task Updated</div>
-                        <div class="notification-desc">You edited "Fix leaking faucet"</div>
-                        <div class="notification-time">15 minutes ago</div>
-                    </div>
-                </div>
-                <div class="notification-item">
-                    <div class="notification-icon">
-                        <span class="material-symbols-outlined">check_circle</span>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">Task Completed</div>
-                        <div class="notification-desc">"Clean garage" marked as completed</div>
-                        <div class="notification-time">1 hour ago</div>
-                    </div>
-                </div>
-                <div class="notification-item">
-                    <div class="notification-icon">
-                        <span class="material-symbols-outlined">star</span>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">New Review</div>
-                        <div class="notification-desc">You received a 5-star rating</div>
-                        <div class="notification-time">2 hours ago</div>
-                    </div>
-                </div>
-                <div class="notification-item">
-                    <div class="notification-icon">
-                        <span class="material-symbols-outlined">chat</span>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">New Message</div>
-                        <div class="notification-desc">Sarah asked about your task</div>
-                        <div class="notification-time">3 hours ago</div>
-                    </div>
-                </div>
+                <!-- Dynamically populated -->
             </div>
         </div>
     </div>
 
-    <!-- Edit Profile Modal with Settings Section -->
+    <!-- Edit Profile Modal with Collapsible Settings Section -->
     <div class="modal-overlay" id="editProfileModal">
         <div class="edit-profile-modal">
             <div class="edit-profile-content">
@@ -1693,7 +1680,7 @@
                         </div>
                     </div>
                     <input type="file" id="profilePicInput" class="hidden-input" accept="image/*" onchange="previewImage(this)">
-                    <p style="font-size: 0.8rem; color: #64748b;">Click to upload profile picture (saved locally)</p>
+                    <p style="font-size: 0.8rem; color: #64748b;">Click to upload profile picture</p>
                 </div>
 
                 <div class="form-group">
@@ -1747,48 +1734,52 @@
                     </div>
                 </div>
 
-                <!-- Settings Section -->
+                <!-- Settings Section - Collapsible -->
                 <div class="settings-section">
-                    <h3 style="color: #045B92; margin-bottom: 1rem; font-size: 1rem;">Settings</h3>
-                    
-                    <div class="settings-item" onclick="window.location.href='/settings.html'">
-                        <div class="settings-item-left">
-                            <div class="settings-icon">
-                                <span class="material-symbols-outlined">settings</span>
-                            </div>
-                            <div class="settings-text">Settings</div>
-                        </div>
-                        <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                    <div class="settings-header" id="settingsHeader" onclick="toggleSettings()">
+                        <h3>Settings</h3>
+                        <span class="material-symbols-outlined">expand_less</span>
                     </div>
-                    
-                    <div class="settings-item" onclick="window.location.href='/help.html'">
-                        <div class="settings-item-left">
-                            <div class="settings-icon">
-                                <span class="material-symbols-outlined">help</span>
+                    <div class="settings-content" id="settingsContent">
+                        <div class="settings-item" onclick="window.location.href='/settings.html'">
+                            <div class="settings-item-left">
+                                <div class="settings-icon">
+                                    <span class="material-symbols-outlined">settings</span>
+                                </div>
+                                <div class="settings-text">Settings</div>
                             </div>
-                            <div class="settings-text">Help & Support</div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
                         </div>
-                        <span class="settings-arrow material-symbols-outlined">chevron_right</span>
-                    </div>
-                    
-                    <div class="settings-item" onclick="confirmDeleteAccount()">
-                        <div class="settings-item-left">
-                            <div class="settings-icon delete">
-                                <span class="material-symbols-outlined">delete_forever</span>
+                        
+                        <div class="settings-item" onclick="window.location.href='/help.html'">
+                            <div class="settings-item-left">
+                                <div class="settings-icon">
+                                    <span class="material-symbols-outlined">help</span>
+                                </div>
+                                <div class="settings-text">Help & Support</div>
                             </div>
-                            <div class="settings-text delete">Delete Account</div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
                         </div>
-                        <span class="settings-arrow material-symbols-outlined">chevron_right</span>
-                    </div>
-                    
-                    <div class="settings-item" onclick="logout()">
-                        <div class="settings-item-left">
-                            <div class="settings-icon logout">
-                                <span class="material-symbols-outlined">logout</span>
+                        
+                        <div class="settings-item" onclick="confirmDeleteAccount()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon delete">
+                                    <span class="material-symbols-outlined">delete_forever</span>
+                                </div>
+                                <div class="settings-text delete">Delete Account</div>
                             </div>
-                            <div class="settings-text delete">Logout</div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
                         </div>
-                        <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                        
+                        <div class="settings-item" onclick="logout()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon logout">
+                                    <span class="material-symbols-outlined">logout</span>
+                                </div>
+                                <div class="settings-text delete">Logout</div>
+                            </div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1807,6 +1798,7 @@
         let profileImage = null;
         let currentTaskId = null;
         let notifications = [];
+        let settingsCollapsed = false;
 
         // ==================== DEBUG FUNCTIONS ====================
         function addDebug(message, data = null) {
@@ -1841,6 +1833,10 @@
             }
         }
 
+        function getAuthToken() {
+            return localStorage.getItem('auth_token');
+        }
+
         function isUserLoggedIn() {
             return !!localStorage.getItem('taskmart_user');
         }
@@ -1858,10 +1854,13 @@
             };
             
             notifications.unshift(notification);
-            updateNotificationBadge();
             
-            // In a real app, you'd also send this to the backend
-            // saveNotificationsToStorage();
+            // Save to localStorage
+            if (currentUser?.email) {
+                localStorage.setItem(`notifications_${currentUser.email}`, JSON.stringify(notifications));
+            }
+            
+            updateNotificationBadge();
         }
 
         function updateNotificationBadge() {
@@ -1875,9 +1874,82 @@
             }
         }
 
+        function loadNotifications() {
+            if (currentUser?.email) {
+                const saved = localStorage.getItem(`notifications_${currentUser.email}`);
+                if (saved) {
+                    notifications = JSON.parse(saved);
+                } else {
+                    // Sample notifications
+                    notifications = [
+                        {
+                            id: 1,
+                            type: 'offer',
+                            title: 'New Offer Received',
+                            description: 'Mike offered R450 for "Fix leaking faucet"',
+                            time: new Date(Date.now() - 2 * 60000).toISOString(),
+                            read: false
+                        },
+                        {
+                            id: 2,
+                            type: 'edit',
+                            title: 'Task Updated',
+                            description: 'You edited "Fix leaking faucet"',
+                            time: new Date(Date.now() - 15 * 60000).toISOString(),
+                            read: false
+                        },
+                        {
+                            id: 3,
+                            type: 'complete',
+                            title: 'Task Completed',
+                            description: '"Clean garage" marked as completed',
+                            time: new Date(Date.now() - 60 * 60000).toISOString(),
+                            read: false
+                        },
+                        {
+                            id: 4,
+                            type: 'in-progress',
+                            title: 'Task In Progress',
+                            description: 'Helper started working on "Fix leaking faucet"',
+                            time: new Date(Date.now() - 120 * 60000).toISOString(),
+                            read: true
+                        },
+                        {
+                            id: 5,
+                            type: 'active',
+                            title: 'Task Active',
+                            description: 'Your task "Clean garage" is now active',
+                            time: new Date(Date.now() - 180 * 60000).toISOString(),
+                            read: true
+                        },
+                        {
+                            id: 6,
+                            type: 'cancelled',
+                            title: 'Task Cancelled',
+                            description: 'You cancelled "Fix leaking faucet"',
+                            time: new Date(Date.now() - 240 * 60000).toISOString(),
+                            read: true
+                        },
+                        {
+                            id: 7,
+                            type: 'verified',
+                            title: 'Verification Complete',
+                            description: 'Your account has been verified!',
+                            time: new Date(Date.now() - 300 * 60000).toISOString(),
+                            read: true
+                        }
+                    ];
+                }
+                updateNotificationBadge();
+            }
+        }
+
         function openNotifications() {
             // Mark all as read when opening
             notifications.forEach(n => n.read = true);
+            if (currentUser?.email) {
+                localStorage.setItem(`notifications_${currentUser.email}`, JSON.stringify(notifications));
+            }
             updateNotificationBadge();
             
             // Populate notifications modal
@@ -1893,15 +1965,16 @@
             } else {
                 notificationsList.innerHTML = notifications.map(n => {
                     const timeAgo = formatDate(n.time);
-                    const isNew = !n.read ? '<span class="notification-badge-new">New</span>' : '';
                     
                     let icon = 'notifications';
                     switch(n.type) {
                         case 'offer': icon = 'handshake'; break;
                         case 'edit': icon = 'edit'; break;
                         case 'complete': icon = 'check_circle'; break;
-                        case 'review': icon = 'star'; break;
-                        case 'message': icon = 'chat'; break;
+                        case 'in-progress': icon = 'engineering'; break;
+                        case 'active': icon = 'pending_actions'; break;
+                        case 'cancelled': icon = 'cancel'; break;
+                        case 'verified': icon = 'verified'; break;
                         default: icon = 'notifications';
                     }
                     
@@ -1912,7 +1985,7 @@
                             </div>
                             <div class="notification-content">
                                 <div class="notification-title">
-                                    ${n.title} ${isNew}
+                                    ${n.title}
                                 </div>
                                 <div class="notification-desc">${n.description}</div>
                                 <div class="notification-time">${timeAgo}</div>
@@ -2198,6 +2271,67 @@
             }
         }
 
+        // ==================== SAVE TASK TO MONGODB ====================
+        async function saveTaskToMongoDB(taskData) {
+            const token = getAuthToken();
+            
+            if (!token) {
+                throw new Error('Not authenticated');
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/tasks/${taskData._id || taskData.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(taskData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save task to MongoDB');
+                }
+
+                const savedTask = await response.json();
+                addDebug('Task saved to MongoDB:', savedTask);
+                return savedTask;
+            } catch (error) {
+                addDebug('Error saving task to MongoDB:', error.message);
+                throw error;
+            }
+        }
+
+        // ==================== SAVE PROFILE IMAGE TO MONGODB ====================
+        async function saveProfileImageToMongoDB(imageData) {
+            const token = getAuthToken();
+            
+            if (!token || !currentUser?.email) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/users/${currentUser.email}/profile-image`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ profileImage: imageData })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save profile image to MongoDB');
+                }
+
+                addDebug('Profile image saved to MongoDB');
+                return true;
+            } catch (error) {
+                addDebug('Error saving profile image:', error.message);
+                return false;
+            }
+        }
+
         function calculateStats(tasks) {
             const stats = {
                 active: 0,
@@ -2220,7 +2354,8 @@
                     case 'completed':
                         stats.completed++;
                         break;
-                    case 'cancelled':
+                    case':
+ 'cancelled':
                         stats.cancelled++;
                         break;
                     default:
@@ -2234,8 +2369,7 @@
         function getTasksByStatus(status) {
             return userTasks.filter(task => {
                 switch(status) {
-                    case 'active':
-                        return ['waiting', 'posted', 'active'].includes(task.status);
+                    case 'active                        return ['waiting', 'posted', 'active'].includes(task.status);
                     case 'in-progress':
                         return ['in-progress', 'assigned'].includes(task.status);
                     case 'completed':
@@ -2447,7 +2581,7 @@
             document.getElementById('manageTaskModal').classList.remove('active');
         }
 
-        function saveTaskChanges() {
+        async function saveTaskChanges() {
             try {
                 const description = document.getElementById('editTaskDescription')?.value;
                 const budget = document.getElementById('editBudget')?.value;
@@ -2457,17 +2591,24 @@
                 const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
                 if (taskIndex !== -1) {
                     const oldDescription = userTasks[taskIndex].taskDescription;
+                    const oldStatus = userTasks[taskIndex].status;
                     
                     if (description) userTasks[taskIndex].taskDescription = description;
                     if (budget) userTasks[taskIndex].budgetAmount = budget;
                     if (status) userTasks[taskIndex].status = status;
                     if (moreDetails !== undefined) userTasks[taskIndex].moreDetails = moreDetails;
                     
+                    // Save to MongoDB
+                    try {
+                        await saveTaskToMongoDB(userTasks[taskIndex]);
+                        showToast('Task saved to database!');
+                    } catch (e) {
+                        showToast('Saved locally. Will sync when online.', true);
+                    }
+                    
+                    // Save to localStorage as backup
                     if (currentUser?.email) {
                         localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
-                        
-                        // In a real app, you'd also send this to the backend
-                        // saveTaskToMongoDB(userTasks[taskIndex]);
                     }
                     
                     // Add notification for task edit
@@ -2480,6 +2621,38 @@
                         );
                     }
                     
+                    // Add notification for status change
+                    if (status && status !== oldStatus) {
+                        let statusTitle = '';
+                        let statusIcon = '';
+                        switch(status) {
+                            case 'active':
+                                statusTitle = 'Task Active';
+                                statusIcon = 'active';
+                                break;
+                            case 'in-progress':
+                                statusTitle = 'Task In Progress';
+                                statusIcon = 'in-progress';
+                                break;
+                            case 'completed':
+                                statusTitle = 'Task Completed';
+                                statusIcon = 'complete';
+                                break;
+                            case 'cancelled':
+                                statusTitle = 'Task Cancelled';
+                                statusIcon = 'cancelled';
+                                break;
+                        }
+                        if (statusTitle) {
+                            addNotification(
+                                statusIcon,
+                                statusTitle,
+                                `"${(description || oldDescription || 'Task').substring(0, 30)}..." status changed to ${status}`,
+                                currentTaskId
+                            );
+                        }
+                    }
+                    
                     // Immediately update the dashboard to reflect changes
                     updateDashboard();
                     showToast('Task updated successfully!');
@@ -2490,11 +2663,19 @@
             }
         }
 
-        function markTaskCompleted() {
+        async function markTaskCompleted() {
             try {
                 const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
                 if (taskIndex !== -1) {
                     userTasks[taskIndex].status = 'completed';
+                    
+                    // Save to MongoDB
+                    try {
+                        await saveTaskToMongoDB(userTasks[taskIndex]);
+                    } catch (e) {
+                        // Continue with local save
+                    }
+                    
                     if (currentUser?.email) {
                         localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
                     }
@@ -2517,12 +2698,20 @@
             }
         }
 
-        function cancelTask() {
+        async function cancelTask() {
             if (confirm('Are you sure you want to cancel this task?')) {
                 try {
                     const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
                     if (taskIndex !== -1) {
                         userTasks[taskIndex].status = 'cancelled';
+                        
+                        // Save to MongoDB
+                        try {
+                            await saveTaskToMongoDB(userTasks[taskIndex]);
+                        } catch (e) {
+                            // Continue with local save
+                        }
+                        
                         if (currentUser?.email) {
                             localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
                         }
@@ -2530,7 +2719,7 @@
                         // Add notification for task cancellation
                         const task = userTasks[taskIndex];
                         addNotification(
-                            'cancel',
+                            'cancelled',
                             'Task Cancelled',
                             `You cancelled "${(task.taskDescription || 'Task').substring(0, 30)}..."`,
                             currentTaskId
@@ -2552,6 +2741,7 @@
                 // In a real app, you'd call an API to delete the account
                 localStorage.removeItem('taskmart_user');
                 localStorage.removeItem(`tasks_${currentUser?.email}`);
+                localStorage.removeItem(`notifications_${currentUser?.email}`);
                 localStorage.removeItem(`profile_image_${currentUser?.email}`);
                 showToast('Account deleted successfully');
                 setTimeout(() => {
@@ -2577,7 +2767,7 @@
                     return;
                 }
 
-                // Load saved profile image
+                // Load saved profile image from localStorage first (for immediate display)
                 const savedImage = localStorage.getItem(`profile_image_${currentUser.email}`);
                 if (savedImage) {
                     document.getElementById('avatarImage').src = savedImage;
@@ -2685,6 +2875,9 @@
                 } else {
                     document.getElementById('activityList').innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>No activity in the last hour</p></div>';
                 }
+                
+                // Load notifications
+                loadNotifications();
             } catch (error) {
                 handleNetworkError(error);
             }
@@ -2696,6 +2889,7 @@
 
         window.logout = function() {
             localStorage.removeItem('taskmart_user');
+            localStorage.removeItem('auth_token');
             window.location.href = '/login.html';
         };
 
@@ -2714,10 +2908,10 @@
             document.getElementById('editProfileModal').classList.remove('active');
         };
 
-        window.previewImage = function(input) {
+        window.previewImage = async function(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                     const imageData = e.target.result;
                     
                     document.getElementById('uploadAvatarText').style.display = 'none';
@@ -2728,14 +2922,24 @@
                     document.getElementById('avatarText').style.display = 'none';
                     
                     if (currentUser) {
+                        // Save to localStorage
                         localStorage.setItem(`profile_image_${currentUser.email}`, imageData);
+                        
+                        // Save to MongoDB
+                        try {
+                            await saveProfileImageToMongoDB(imageData);
+                            showToast('Profile photo saved to database!');
+                        } catch (e) {
+                            showToast('Photo saved locally. Will sync when online.', true);
+                        }
+                        
                         currentUser.photoUploaded = true;
                         updateVerificationRing();
                         profileImage = imageData;
                         
                         // Add notification for photo upload
                         addNotification(
-                            'profile',
+                            'verified',
                             'Profile Photo Updated',
                             'You uploaded a new profile photo'
                         );
@@ -2745,7 +2949,7 @@
             }
         };
 
-        window.saveProfile = function() {
+        window.saveProfile = async function() {
             const newName = document.getElementById('editName').value;
             
             if (currentUser) {
@@ -2764,7 +2968,7 @@
                 // Add notification for profile update
                 if (newName !== oldName) {
                     addNotification(
-                        'profile',
+                        'verified',
                         'Profile Updated',
                         'Your profile information has been updated'
                     );
@@ -2772,6 +2976,25 @@
                 
                 closeEditProfile();
                 showToast('Profile updated successfully!');
+            }
+        };
+
+        // ==================== COLLAPSIBLE SETTINGS ====================
+        window.toggleSettings = function() {
+            const header = document.getElementById('settingsHeader');
+            const content = document.getElementById('settingsContent');
+            const icon = header.querySelector('.material-symbols-outlined');
+            
+            settingsCollapsed = !settingsCollapsed;
+            
+            if (settingsCollapsed) {
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+                icon.textContent = 'expand_more';
+            } else {
+                header.classList.remove('collapsed');
+                content.classList.remove('collapsed');
+                icon.textContent = 'expand_less';
             }
         };
 
@@ -2809,35 +3032,6 @@
                         </div>
                     `;
                 } else {
-                    // Initialize sample notifications
-                    notifications = [
-                        {
-                            id: 1,
-                            type: 'offer',
-                            title: 'New Offer Received',
-                            description: 'Mike offered R450 for "Fix leaking faucet"',
-                            time: new Date(Date.now() - 2 * 60000).toISOString(),
-                            read: false
-                        },
-                        {
-                            id: 2,
-                            type: 'edit',
-                            title: 'Task Updated',
-                            description: 'You edited "Fix leaking faucet"',
-                            time: new Date(Date.now() - 15 * 60000).toISOString(),
-                            read: false
-                        },
-                        {
-                            id: 3,
-                            type: 'complete',
-                            title: 'Task Completed',
-                            description: '"Clean garage" marked as completed',
-                            time: new Date(Date.now() - 60 * 60000).toISOString(),
-                            read: false
-                        }
-                    ];
-                    updateNotificationBadge();
-                    
                     updateDashboard();
                 }
             } catch (error) {
