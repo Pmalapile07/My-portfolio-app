@@ -1,480 +1,819 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const path = require('path');
-const mongoose = require('mongoose');
-const app = express();
-const port = process.env.PORT || 3000;
-
-// Enable CORS for all routes
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(express.json({ limit: '50mb' })); // Increased limit for images
-app.use(express.static(__dirname));
-
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI;
-
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
-
-// ========== TASK SCHEMA ==========
-const taskSchema = new mongoose.Schema({
-  location: { type: String, required: true },
-  coordinates: { type: String, default: '' },
-  streetName: { type: String, default: '' },
-  when: { type: String, enum: ['now', 'later'], default: 'now' },
-  scheduledDate: { type: String, default: null },
-  scheduledTime: { type: String, default: null },
-  taskDescription: { type: String, required: true },
-  budgetType: { type: String, enum: ['fixed', 'open'], default: 'fixed' },
-  budgetAmount: { type: Number, default: null },
-  paymentMethod: { type: String, enum: ['cash', 'online'], default: 'cash' },
-  moreDetails: { type: String, default: '' },
-  images: [{ type: String }], // Store base64 images
-  userId: { type: String, default: 'guest' },
-  status: { type: String, enum: ['draft', 'posted', 'in-progress', 'completed', 'active', 'cancelled'], default: 'posted' },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const Task = mongoose.model('Task', taskSchema);
-
-// ========== USER SCHEMA ==========
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ['poster', 'helper'], default: 'poster' },
-  initials: { type: String },
-  emailVerified: { type: Boolean, default: true }, // Set to true for now
-  photoUploaded: { type: Boolean, default: false },
-  adminVerified: { type: Boolean, default: true }, // Set to true for now
-  profileImage: { type: String, default: null },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
-
-// Serve config.js with the Mapbox token from your environment variable
-app.get('/config.js', (req, res) => {
-    res.type('application/javascript');
-    res.send(`window.MAPBOX_TOKEN = '${process.env.MAPBOX_ACCESS_TOKEN}';`);
-});
-
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        token_set: !!process.env.MAPBOX_ACCESS_TOKEN,
-        mongodb_connected: mongoose.connection.readyState === 1
-    });
-});
-
-// Serve the main page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// ========== GEOCODING ENDPOINTS ==========
-app.get('/api/geocode/reverse', async (req, res) => {
-    try {
-        const { lat, lon, type } = req.query;
-        
-        if (!lat || !lon) {
-            return res.status(400).json({ error: 'Missing parameters' });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TaskMart</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=${type === 'place' ? 'place,locality,neighborhood' : 'address'}&access_token=${process.env.MAPBOX_ACCESS_TOKEN}`;
-        
-        const response = await axios.get(url);
-        
-        if (type === 'place') {
-            res.json({ name: response.data.features[0]?.text || null });
-        } else {
-            res.json({ address: response.data.features[0]?.place_name || null });
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: #f8fafd;
+            min-height: 100vh;
+            color: #1e293b;
         }
-    } catch (error) {
-        console.error('Geocoding error:', error.message);
-        res.status(500).json({ error: 'Failed to geocode' });
-    }
-});
 
-// ========== TASK API ROUTES ==========
-
-// Create a new task
-app.post('/api/tasks', async (req, res) => {
-    try {
-        const task = new Task(req.body);
-        await task.save();
-        res.status(201).json(task);
-    } catch (error) {
-        console.error('Error creating task:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// Get all tasks
-app.get('/api/tasks', async (req, res) => {
-    try {
-        const { email } = req.query;
-        let query = {};
-        
-        if (email) {
-            query = { userId: email };
+        /* Header - Pink matching login button */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 2rem;
+            background: #FF286F;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(255, 40, 111, 0.2);
         }
-        
-        const tasks = await Task.find(query).sort({ createdAt: -1 });
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// Get tasks by user email
-app.get('/api/tasks/user/:email', async (req, res) => {
-    try {
-        const tasks = await Task.find({ userId: req.params.email }).sort({ createdAt: -1 });
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error fetching user tasks:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get a single task by ID
-app.get('/api/tasks/:id', async (req, res) => {
-    try {
-        const task = await Task.findById(req.params.id);
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        res.json(task);
-    } catch (error) {
-        console.error('Error fetching task:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// Update a task
-app.put('/api/tasks/:id', async (req, res) => {
-    try {
-        const task = await Task.findByIdAndUpdate(
-            req.params.id, 
-            req.body, 
-            { new: true, runValidators: true }
-        );
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
+        .logo {
+            height: 40px;
+            width: auto;
+            display: flex;
+            align-items: center;
         }
-        res.json(task);
-    } catch (error) {
-        console.error('Error updating task:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
 
-// Delete a task
-app.delete('/api/tasks/:id', async (req, res) => {
-    try {
-        const task = await Task.findByIdAndDelete(req.params.id);
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
+        .logo img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
         }
-        res.json({ message: 'Task deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting task:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// Get tasks by status
-app.get('/api/tasks/status/:status', async (req, res) => {
-    try {
-        const tasks = await Task.find({ status: req.params.status }).sort({ createdAt: -1 });
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error fetching tasks by status:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ========== USER API ROUTES ==========
-
-// Get all users (without passwords)
-app.get('/api/users', async (req, res) => {
-    try {
-        const users = await User.find().select('-password');
-        res.json(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get user by email
-app.get('/api/users/email/:email', async (req, res) => {
-    try {
-        const user = await User.findOne({ email: req.params.email }).select('-password');
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+        .debug-toggle {
+            background: white;
+            color: #FF286F;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        res.json(user);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// Get user by email (query param version)
-app.get('/api/users', async (req, res) => {
-    try {
-        const { email } = req.query;
-        if (email) {
-            const user = await User.findOne({ email }).select('-password');
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
+        .debug-toggle:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: scale(1.05);
+        }
+
+        .debug-panel {
+            position: fixed;
+            top: 80px;
+            right: 2rem;
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            max-width: 400px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            border-left: 4px solid #FF286F;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-error {
+            color: #FF286F;
+        }
+
+        .debug-success {
+            color: #10b981;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 1rem 2rem;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 10px 40px rgba(4, 91, 146, 0.08);
+            border: 1px solid rgba(4, 91, 146, 0.1);
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .auth-tab {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.5rem 0;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .auth-tab.active {
+            color: #045B92;
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #FF286F;
+            border-radius: 2px;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #045B92;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+            border-radius: 10px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            outline: none;
+            background: #f8fafd;
+        }
+
+        .form-group input:focus {
+            border-color: #FF286F;
+            background: white;
+        }
+
+        .form-group input.error {
+            border-color: #FF286F;
+            background: rgba(255, 40, 111, 0.02);
+        }
+
+        .password-input-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .toggle-password:hover {
+            color: #FF286F;
+        }
+
+        .error-message {
+            color: #FF286F;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .role-option {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .role-option input[type="radio"] {
+            display: none;
+        }
+
+        .role-card {
+            border: 1px solid rgba(4, 91, 146, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s;
+            background: #f8fafd;
+        }
+
+        .role-option input[type="radio"]:checked + .role-card {
+            border-color: #FF286F;
+            background: white;
+        }
+
+        .role-icon {
+            font-size: 24px !important;
+            color: #045B92;
+            margin-bottom: 0.5rem;
+        }
+
+        .role-title {
+            font-weight: 600;
+            color: #045B92;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .role-desc {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 1rem;
+            background: #FF286F;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+
+        .auth-button:hover {
+            background: #d61e5b;
+        }
+
+        .auth-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-button.loading {
+            color: transparent;
+            position: relative;
+        }
+
+        .auth-button.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        .forgot-password a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+
+        .forgot-password a:hover {
+            color: #FF286F;
+        }
+
+        .terms-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .terms-text a {
+            color: #FF286F;
+            text-decoration: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            z-index: 1000;
+            display: none;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                padding: 1rem;
             }
-            return res.json([user]); // Return as array for compatibility
+            
+            .logo {
+                height: 35px;
+            }
+            
+            .auth-card {
+                padding: 1.5rem;
+            }
+            
+            .debug-panel {
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
+            }
         }
-        
-        const users = await User.find().select('-password');
-        res.json(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="Cream Black Typography Loop Brand Logo (500 x 180 px).png" alt="TaskMart" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <span style="display: none; font-weight: 700; color: white; font-size: 1.5rem;">TaskMart</span>
+            </div>
+            <button class="debug-toggle" onclick="toggleDebug()">Debug</button>
+        </div>
+    </header>
 
-// Create user (signup)
-app.post('/api/users', async (req, res) => {
-    try {
-        const { name, email, password, role, initials } = req.body;
-        
-        // Check if user exists
-        const existing = await User.findOne({ email });
-        if (existing) {
-            return res.status(400).json({ error: 'Email already exists' });
+    <div class="debug-panel" id="debugPanel"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="login">Log In</div>
+                <div class="auth-tab" data-tab="signup">Sign Up</div>
+            </div>
+
+            <!-- Login Form -->
+            <form class="auth-form active" id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" value="pmalapile07@gmail.com">
+                    <div class="error-message" id="loginEmailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="loginPassword" placeholder="••••••••" value="password123">
+                        <span class="material-symbols-outlined toggle-password" onclick="togglePassword('loginPassword')">visibility_off</span>
+                    </div>
+                    <div class="error-message" id="loginPasswordError"></div>
+                </div>
+
+                <div class="forgot-password">
+                    <a href="#" id="forgotPassword">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="auth-button" id="loginBtn">Log In</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label>Full name</label>
+                    <input type="text" id="signupName" placeholder="Pearl Malapile">
+                    <div class="error-message" id="signupNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" placeholder="your@email.com">
+                    <div class="error-message" id="signupEmailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>I want to:</label>
+                    <div class="role-selector">
+                        <label class="role-option">
+                            <input type="radio" name="role" value="poster" checked>
+                            <div class="role-card">
+                                <span class="material-symbols-outlined role-icon">assignment</span>
+                                <div class="role-title">Get Help</div>
+                                <div class="role-desc">Post tasks</div>
+                            </div>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="helper">
+                            <div class="role-card">
+                                <span class="material-symbols-outlined role-icon">handyman</span>
+                                <div class="role-title">Earn Money</div>
+                                <div class="role-desc">Do tasks</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="signupPassword" placeholder="••••••••">
+                        <span class="material-symbols-outlined toggle-password" onclick="togglePassword('signupPassword')">visibility_off</span>
+                    </div>
+                    <div class="error-message" id="signupPasswordError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="signupConfirmPassword" placeholder="••••••••">
+                        <span class="material-symbols-outlined toggle-password" onclick="togglePassword('signupConfirmPassword')">visibility_off</span>
+                    </div>
+                    <div class="error-message" id="signupConfirmError"></div>
+                </div>
+
+                <button type="submit" class="auth-button" id="signupBtn">Create Account</button>
+
+                <div class="terms-text">
+                    By signing up, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== CONFIG ====================
+        const API_BASE_URL = 'https://taskmartapp.onrender.com';
+
+        // ==================== DEBUG ====================
+        function addDebug(message, type = 'info', data = null) {
+            const panel = document.getElementById('debugPanel');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : '';
+            
+            let debugText = `<span class="${className}">[${timestamp}]</span> ${message}`;
+            if (data) {
+                debugText += `\n${JSON.stringify(data, null, 2)}`;
+            }
+            panel.innerHTML += debugText + '\n---\n';
+            console.log(`[${type}]`, message, data);
         }
 
-        const userInitials = initials || name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        
-        const user = new User({
-            name,
-            email,
-            password, // In production, hash this with bcrypt!
-            role: role || 'poster',
-            initials: userInitials,
-            emailVerified: true,
-            adminVerified: true
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                addDebug('Debug mode enabled', 'info');
+                addDebug('API URL:', 'info', API_BASE_URL);
+            }
+        }
+
+        // ==================== TOAST ====================
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast' + (isError ? ' error' : '') + ' show';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ==================== UI HELPERS ====================
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const tabName = this.dataset.tab;
+                document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+                document.getElementById(tabName + 'Form').classList.add('active');
+                
+                clearAllErrors();
+            });
         });
-        
-        await user.save();
-        
-        // Return user without password
-        const userResponse = user.toObject();
-        delete userResponse.password;
-        
-        res.status(201).json(userResponse);
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
 
-// Update user profile image
-app.put('/api/users/:email/profile-image', async (req, res) => {
-    try {
-        const { profileImage } = req.body;
-        
-        const user = await User.findOneAndUpdate(
-            { email: req.params.email },
-            { profileImage, photoUploaded: true },
-            { new: true, runValidators: true }
-        ).select('-password');
-        
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = event.target;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility_off';
+            }
         }
-        
-        res.json(user);
-    } catch (error) {
-        console.error('Error updating profile image:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
 
-// Update user
-app.put('/api/users/:email', async (req, res) => {
-    try {
-        const user = await User.findOneAndUpdate(
-            { email: req.params.email },
-            req.body,
-            { new: true, runValidators: true }
-        ).select('-password');
-        
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+        function clearAllErrors() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('visible');
+            });
+            document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
         }
-        
-        res.json(user);
-    } catch (error) {
-        console.error('Error updating user:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
 
-// Delete user
-app.delete('/api/users/:email', async (req, res) => {
-    try {
-        const user = await User.findOneAndDelete({ email: req.params.email });
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+        function showFieldError(inputId, message) {
+            const input = document.getElementById(inputId);
+            const errorEl = document.getElementById(inputId + 'Error');
+            input.classList.add('error');
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.add('visible');
+            }
         }
-        
-        // Also delete all tasks by this user
-        await Task.deleteMany({ userId: req.params.email });
-        
-        res.json({ message: 'User and associated tasks deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// ========== AUTHENTICATION ROUTES ==========
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
 
-// Login endpoint
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+        function saveUserSession(user, token) {
+            localStorage.setItem('taskmart_user', JSON.stringify(user));
+            if (token) {
+                localStorage.setItem('auth_token', token);
+            }
+            addDebug('User session saved', 'success', user);
         }
-        
-        // Simple password check - in production, use bcrypt
-        if (user.password !== password) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+
+        function getReturnUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('returnTo') || '/dashboard.html';
         }
-        
-        // Create token (simple version - in production use JWT)
-        const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
-        
-        const userResponse = user.toObject();
-        delete userResponse.password;
-        
-        res.json({
-            token,
-            user: userResponse
+
+        // ==================== LOGIN - REAL MONGODB ====================
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearAllErrors();
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const returnUrl = getReturnUrl();
+            
+            addDebug('Login attempt for: ' + email, 'info');
+
+            let isValid = true;
+
+            if (!email) {
+                showFieldError('loginEmail', 'Email required');
+                isValid = false;
+            } else if (!isValidEmail(email)) {
+                showFieldError('loginEmail', 'Invalid email');
+                isValid = false;
+            }
+
+            if (!password) {
+                showFieldError('loginPassword', 'Password required');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.classList.add('loading');
+
+            try {
+                addDebug('Calling login API: ' + `${API_BASE_URL}/api/auth/login`, 'info');
+                
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    addDebug('Login failed: ' + data.error, 'error');
+                    throw new Error(data.error || 'Login failed');
+                }
+
+                addDebug('Login successful', 'success', data.user);
+                
+                saveUserSession(data.user, data.token);
+                showToast('Login successful!');
+                
+                setTimeout(() => {
+                    window.location.href = returnUrl;
+                }, 1000);
+
+            } catch (error) {
+                addDebug('Login error: ' + error.message, 'error');
+                loginBtn.disabled = false;
+                loginBtn.classList.remove('loading');
+                showFieldError('loginEmail', 'Invalid credentials');
+                showToast('Login failed: ' + error.message, true);
+            }
         });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// Register endpoint
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { name, email, password, role } = req.body;
-        
-        // Check if user exists
-        const existing = await User.findOne({ email });
-        if (existing) {
-            return res.status(400).json({ error: 'Email already exists' });
-        }
+        // ==================== SIGNUP - REAL MONGODB ====================
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearAllErrors();
 
-        const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        
-        const user = new User({
-            name,
-            email,
-            password,
-            role: role || 'poster',
-            initials,
-            emailVerified: true,
-            adminVerified: true
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+            const role = document.querySelector('input[name="role"]:checked')?.value;
+            const returnUrl = getReturnUrl();
+            
+            addDebug('Signup attempt for: ' + email, 'info');
+
+            let isValid = true;
+
+            if (!name) {
+                showFieldError('signupName', 'Name required');
+                isValid = false;
+            }
+
+            if (!email) {
+                showFieldError('signupEmail', 'Email required');
+                isValid = false;
+            } else if (!isValidEmail(email)) {
+                showFieldError('signupEmail', 'Invalid email');
+                isValid = false;
+            }
+
+            if (!password) {
+                showFieldError('signupPassword', 'Password required');
+                isValid = false;
+            } else if (password.length < 6) {
+                showFieldError('signupPassword', 'Min 6 characters');
+                isValid = false;
+            }
+
+            if (password !== confirmPassword) {
+                showFieldError('signupConfirm', 'Passwords do not match');
+                isValid = false;
+            }
+
+            if (!role) {
+                showToast('Select a role', true);
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            const signupBtn = document.getElementById('signupBtn');
+            signupBtn.disabled = true;
+            signupBtn.classList.add('loading');
+
+            try {
+                addDebug('Calling register API: ' + `${API_BASE_URL}/api/auth/register`, 'info');
+                
+                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    addDebug('Signup failed: ' + data.error, 'error');
+                    throw new Error(data.error || 'Signup failed');
+                }
+
+                addDebug('Signup successful', 'success', data.user);
+                
+                saveUserSession(data.user, data.token);
+                showToast('Account created!');
+                
+                setTimeout(() => {
+                    window.location.href = returnUrl;
+                }, 1000);
+
+            } catch (error) {
+                addDebug('Signup error: ' + error.message, 'error');
+                signupBtn.disabled = false;
+                signupBtn.classList.remove('loading');
+                
+                if (error.message.includes('already exists')) {
+                    showFieldError('signupEmail', 'Email already registered');
+                }
+                showToast('Signup failed: ' + error.message, true);
+            }
         });
-        
-        await user.save();
-        
-        // Create token
-        const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
-        
-        const userResponse = user.toObject();
-        delete userResponse.password;
-        
-        res.status(201).json({
-            token,
-            user: userResponse
+
+        // ==================== FORGOT PASSWORD ====================
+        document.getElementById('forgotPassword').addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            if (!email || !isValidEmail(email)) {
+                showToast('Enter a valid email first', true);
+                return;
+            }
+
+            try {
+                await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                showToast('Reset link sent if email exists');
+            } catch (error) {
+                showToast('Error sending reset link', true);
+            }
         });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
 
-// Verify token endpoint
-app.get('/api/auth/verify', async (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ error: 'Invalid token format' });
-    }
-    
-    try {
-        // Simple token verification - in production use JWT
-        const decoded = Buffer.from(token, 'base64').toString('ascii');
-        const [email] = decoded.split(':');
+        // ==================== CHECK EXISTING SESSION ====================
+        const existingUser = localStorage.getItem('taskmart_user');
+        const existingToken = localStorage.getItem('auth_token');
         
-        const user = await User.findOne({ email }).select('-password');
-        if (!user) {
-            return res.status(401).json({ error: 'User not found' });
+        if (existingUser && existingToken) {
+            addDebug('Existing session found', 'info', JSON.parse(existingUser));
+            
+            // Verify token with backend
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${existingToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.valid) {
+                        const returnUrl = getReturnUrl();
+                        if (returnUrl !== '/login.html') {
+                            addDebug('Valid session, redirecting to: ' + returnUrl, 'success');
+                            window.location.href = returnUrl;
+                        }
+                    }
+                } else {
+                    // Token invalid, clear storage
+                    localStorage.removeItem('taskmart_user');
+                    localStorage.removeItem('auth_token');
+                    addDebug('Invalid token cleared', 'info');
+                }
+            } catch (error) {
+                addDebug('Token verification failed', 'error');
+            }
+        } else {
+            addDebug('No existing session', 'info');
         }
-        
-        res.json({ valid: true, user });
-    } catch (error) {
-        console.error('Token verification error:', error);
-        res.status(401).json({ error: 'Invalid token' });
-    }
-});
-
-// Forgot password endpoint
-app.post('/api/auth/forgot-password', async (req, res) => {
-    try {
-        const { email } = req.body;
-        
-        const user = await User.findOne({ email });
-        if (!user) {
-            // Don't reveal that user doesn't exist
-            return res.json({ message: 'If the email exists, a reset link will be sent' });
-        }
-        
-        // In production, send email with reset link
-        // For now, just return success
-        res.json({ message: 'Password reset email sent' });
-    } catch (error) {
-        console.error('Forgot password error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ========== START SERVER ==========
-app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
-    console.log(`Mapbox token configured: ${!!process.env.MAPBOX_ACCESS_TOKEN}`);
-    console.log(`MongoDB configured: ${!!process.env.MONGODB_URI}`);
-    console.log(`✅ User API endpoints available at /api/users`);
-    console.log(`✅ Auth endpoints available at /api/auth`);
-});
+    </script>
+</body>
+</html>
