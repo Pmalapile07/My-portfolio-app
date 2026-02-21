@@ -1236,8 +1236,9 @@
 
     <script>
         // ==================== CONFIGURATION ====================
-        const API_BASE_URL = 'https://taskmartapp.onrender.com'; // <-- CHANGE THIS TO YOUR RENDER URL
-        
+        // UPDATED WITH YOUR ACTUAL RENDER URL
+        const API_BASE_URL = 'https://taskmartapp.onrender.com';
+
         // ==================== STATE ====================
         let currentUser = null;
         let userTasks = [];
@@ -1448,24 +1449,62 @@
             }
 
             try {
-                // Try to get tasks from MongoDB
-                const response = await fetch(`${API_BASE_URL}/api/tasks?email=${user.email}`);
+                // Try different endpoint formats that your backend might expect
+                const endpoints = [
+                    `${API_BASE_URL}/api/tasks?email=${user.email}`,  // Query parameter
+                    `${API_BASE_URL}/api/tasks/user/${user.email}`,  // Path parameter
+                    `${API_BASE_URL}/api/tasks`  // Get all and filter
+                ];
+
+                let lastError = null;
                 
-                addDebug('Response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch tasks: ${response.status}`);
+                for (const endpoint of endpoints) {
+                    try {
+                        addDebug('Trying endpoint:', endpoint);
+                        
+                        const response = await fetch(endpoint);
+                        
+                        addDebug('Response status:', response.status);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            addDebug('Success! Data received:', data);
+                            
+                            // Handle different response formats
+                            let tasks = [];
+                            if (Array.isArray(data)) {
+                                tasks = data;
+                            } else if (data.tasks && Array.isArray(data.tasks)) {
+                                tasks = data.tasks;
+                            } else if (data.data && Array.isArray(data.data)) {
+                                tasks = data.data;
+                            }
+
+                            // If we got all tasks, filter by email
+                            if (!endpoint.includes(user.email)) {
+                                tasks = tasks.filter(task => 
+                                    task.userId === user.email || 
+                                    task.userEmail === user.email ||
+                                    task.email === user.email
+                                );
+                            }
+
+                            addDebug(`Found ${tasks.length} tasks for user`);
+                            
+                            // Save to localStorage as backup
+                            if (tasks.length > 0) {
+                                localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
+                            }
+                            
+                            return tasks;
+                        }
+                    } catch (e) {
+                        lastError = e;
+                        addDebug(`Endpoint failed: ${e.message}`);
+                    }
                 }
-                
-                const tasks = await response.json();
-                addDebug('Tasks fetched from MongoDB:', tasks);
-                
-                // Save to localStorage as backup
-                if (tasks && tasks.length > 0) {
-                    localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
-                }
-                
-                return tasks || [];
+
+                throw lastError || new Error('All endpoints failed');
                 
             } catch (error) {
                 addDebug('Error fetching from MongoDB:', error.message);
@@ -1794,17 +1833,20 @@
         });
 
         // ==================== INITIALIZE ====================
-        if (!isUserLoggedIn()) {
-            document.getElementById('recentTaskContent').innerHTML = `
-                <div class="empty-state">
-                    <span class="material-symbols-outlined">login</span>
-                    <p>Please log in to view your dashboard</p>
-                    <button class="retry-btn" onclick="window.location.href='/login.html?returnTo=' + encodeURIComponent(window.location.href)">Log In</button>
-                </div>
-            `;
-        } else {
-            updateDashboard();
-        }
+        // Wait for DOM to be fully loaded before updating dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!isUserLoggedIn()) {
+                document.getElementById('recentTaskContent').innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">login</span>
+                        <p>Please log in to view your dashboard</p>
+                        <button class="retry-btn" onclick="window.location.href='/login.html?returnTo=' + encodeURIComponent(window.location.href)">Log In</button>
+                    </div>
+                `;
+            } else {
+                updateDashboard();
+            }
+        });
     </script>
 </body>
 </html>
