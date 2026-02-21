@@ -32,7 +32,7 @@
             padding: 1rem;
         }
 
-        /* Profile Section - Mobile first */
+        /* Profile Section with Verification Ring */
         .profile-section {
             background: white;
             border-radius: 20px;
@@ -42,17 +42,26 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: relative;
         }
 
         .profile-info {
             display: flex;
             align-items: center;
             gap: 1rem;
+            flex: 1;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            flex-shrink: 0;
         }
 
         .profile-avatar {
-            width: 48px;
-            height: 48px;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
             background: linear-gradient(135deg, #045B92, #FF286F);
             display: flex;
@@ -60,8 +69,61 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 1.25rem;
-            flex-shrink: 0;
+            font-size: 1.5rem;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 3px solid white;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Verification Progress Ring */
+        .verification-ring {
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            width: calc(100% + 6px);
+            height: calc(100% + 6px);
+            border-radius: 50%;
+            background: conic-gradient(
+                #10b981 0deg,
+                #10b981 0deg,
+                #e2e8f0 0deg
+            );
+            z-index: 1;
+            transition: background 0.3s ease;
+        }
+
+        .verification-ring.partial {
+            background: conic-gradient(
+                #f59e0b 0deg 120deg,
+                #e2e8f0 120deg 360deg
+            );
+        }
+
+        .verification-ring.mostly {
+            background: conic-gradient(
+                #f59e0b 0deg 240deg,
+                #e2e8f0 240deg 360deg
+            );
+        }
+
+        .verification-ring.verified {
+            background: conic-gradient(
+                #10b981 0deg 360deg,
+                #e2e8f0 0deg
+            );
         }
 
         .profile-text {
@@ -80,11 +142,38 @@
             align-items: center;
             gap: 0.25rem;
             font-size: 0.75rem;
+        }
+
+        .profile-badge.verified {
             color: #10b981;
+        }
+
+        .profile-badge.pending {
+            color: #f59e0b;
+        }
+
+        .profile-badge.unverified {
+            color: #94a3b8;
         }
 
         .profile-badge .material-symbols-outlined {
             font-size: 16px !important;
+        }
+
+        .verification-hint {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            cursor: help;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
 
         .profile-settings {
@@ -109,7 +198,30 @@
             font-size: 22px !important;
         }
 
-        /* Stats Grid - Mobile first (2 columns) */
+        .edit-profile-btn {
+            background: #FF286F;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: background 0.2s;
+        }
+
+        .edit-profile-btn:hover {
+            background: #d61e5b;
+        }
+
+        .edit-profile-btn .material-symbols-outlined {
+            font-size: 18px !important;
+        }
+
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -122,6 +234,12 @@
             border-radius: 16px;
             padding: 1rem;
             box-shadow: 0 2px 8px rgba(4, 91, 146, 0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
         }
 
         .stat-header {
@@ -179,6 +297,261 @@
             line-height: 1.2;
         }
 
+        /* Edit Profile Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .edit-profile-modal {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: #045B92;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(4, 91, 146, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+        }
+
+        .modal-close .material-symbols-outlined {
+            color: #045B92;
+        }
+
+        .profile-pic-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .upload-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #045B92, #FF286F);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-avatar .upload-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .upload-avatar:hover .upload-overlay {
+            opacity: 1;
+        }
+
+        .upload-overlay .material-symbols-outlined {
+            color: white;
+            font-size: 32px !important;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #045B92;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid rgba(4, 91, 146, 0.1);
+            border-radius: 10px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #FF286F;
+            outline: none;
+        }
+
+        .verification-status {
+            background: rgba(4, 91, 146, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .verification-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+        }
+
+        .verification-item:last-child {
+            border-bottom: none;
+        }
+
+        .verification-item-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .verification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .verification-icon.verified {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .verification-icon.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .verification-icon.unverified {
+            background: rgba(100, 116, 139, 0.1);
+            color: #64748b;
+        }
+
+        .verification-text {
+            font-weight: 500;
+        }
+
+        .verification-text small {
+            display: block;
+            font-size: 0.7rem;
+            color: #64748b;
+            font-weight: normal;
+        }
+
+        .verification-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .verification-badge.verified {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .verification-badge.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .verification-badge.unverified {
+            background: rgba(100, 116, 139, 0.1);
+            color: #64748b;
+        }
+
+        .save-btn {
+            background: #FF286F;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .save-btn:hover {
+            background: #d61e5b;
+        }
+
         /* Loading State */
         .loading-skeleton {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -202,6 +575,12 @@
             margin-bottom: 1.25rem;
             box-shadow: 0 4px 12px rgba(4, 91, 146, 0.08);
             border: 1px solid rgba(255, 40, 111, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .recent-task-card:hover {
+            transform: translateY(-2px);
         }
 
         .card-label {
@@ -381,6 +760,11 @@
             gap: 0.75rem;
             padding: 0.75rem 0;
             border-bottom: 1px solid rgba(4, 91, 146, 0.05);
+            cursor: pointer;
+        }
+
+        .activity-item:hover {
+            background: rgba(4, 91, 146, 0.02);
         }
 
         .activity-item:last-child {
@@ -495,10 +879,9 @@
                 padding: 1.5rem;
             }
 
-            .profile-avatar {
-                width: 56px;
-                height: 56px;
-                font-size: 1.5rem;
+            .avatar-container {
+                width: 70px;
+                height: 70px;
             }
 
             .profile-text h1 {
@@ -561,23 +944,39 @@
         <!-- Profile Section -->
         <div class="profile-section">
             <div class="profile-info">
-                <div class="profile-avatar" id="profileAvatar">--</div>
+                <div class="avatar-container" id="avatarContainer">
+                    <div class="profile-avatar" id="profileAvatar" onclick="openEditProfile()">
+                        <span id="avatarText">--</span>
+                        <img id="avatarImage" style="display: none;" alt="profile">
+                    </div>
+                    <div class="verification-ring" id="verificationRing"></div>
+                </div>
                 <div class="profile-text">
                     <h1 id="profileName">Loading...</h1>
                     <div class="profile-badge" id="profileBadge">
-                        <span class="material-symbols-outlined">verified</span>
-                        <span>Verified Poster</span>
+                        <span class="material-symbols-outlined" id="badgeIcon">verified</span>
+                        <span id="badgeText">Not yet verified</span>
+                    </div>
+                    <div class="verification-hint" id="verificationHint" onclick="openEditProfile()">
+                        <span class="material-symbols-outlined">info</span>
+                        <span>Complete profile to get verified</span>
                     </div>
                 </div>
             </div>
-            <div class="profile-settings" id="settingsBtn">
-                <span class="material-symbols-outlined">settings</span>
+            <div class="profile-actions">
+                <button class="edit-profile-btn" onclick="openEditProfile()">
+                    <span class="material-symbols-outlined">edit</span>
+                    Edit
+                </button>
+                <div class="profile-settings" id="settingsBtn">
+                    <span class="material-symbols-outlined">settings</span>
+                </div>
             </div>
         </div>
 
-        <!-- Stats Grid -->
+        <!-- Stats Grid (clickable) -->
         <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterTasks('active')">
                 <div class="stat-header">
                     <span class="stat-title">Active</span>
                     <div class="stat-icon active">
@@ -586,7 +985,7 @@
                 </div>
                 <div class="stat-number" id="activeCount">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterTasks('in-progress')">
                 <div class="stat-header">
                     <span class="stat-title">In Progress</span>
                     <div class="stat-icon in-progress">
@@ -595,7 +994,7 @@
                 </div>
                 <div class="stat-number" id="inProgressCount">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterTasks('completed')">
                 <div class="stat-header">
                     <span class="stat-title">Completed</span>
                     <div class="stat-icon completed">
@@ -604,7 +1003,7 @@
                 </div>
                 <div class="stat-number" id="completedCount">0</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="filterTasks('cancelled')">
                 <div class="stat-header">
                     <span class="stat-title">Cancelled</span>
                     <div class="stat-icon cancelled">
@@ -617,11 +1016,10 @@
 
         <!-- Main Grid -->
         <div class="main-grid">
-            <!-- Recent Task Card -->
-            <div class="recent-task-card" id="recentTaskCard">
+            <!-- Recent Task Card (clickable) -->
+            <div class="recent-task-card" id="recentTaskCard" onclick="viewFullTask()">
                 <div class="card-label">📋 YOUR MOST RECENT TASK</div>
                 <div id="recentTaskContent">
-                    <!-- Loading state will be shown here -->
                     <div class="loading-skeleton" style="width: 80%;"></div>
                     <div class="loading-skeleton" style="width: 60%;"></div>
                     <div class="loading-skeleton" style="width: 100%; height: 60px;"></div>
@@ -648,8 +1046,89 @@
         </div>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="edit-profile-modal">
+            <div class="modal-header">
+                <h2>Edit Profile</h2>
+                <button class="modal-close" onclick="closeEditProfile()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="profile-pic-upload">
+                <div class="upload-avatar" id="uploadAvatar" onclick="document.getElementById('profilePicInput').click()">
+                    <span id="uploadAvatarText">PS</span>
+                    <img id="uploadAvatarImage" style="display: none;" alt="preview">
+                    <div class="upload-overlay">
+                        <span class="material-symbols-outlined">photo_camera</span>
+                    </div>
+                </div>
+                <input type="file" id="profilePicInput" class="hidden-input" accept="image/*" onchange="previewImage(this)">
+                <p style="font-size: 0.8rem; color: #64748b;">Click to upload profile picture</p>
+            </div>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="editName" placeholder="Your name">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="editEmail" placeholder="your@email.com" readonly>
+                <small style="color: #64748b; font-size: 0.7rem;">Email cannot be changed</small>
+            </div>
+
+            <div class="verification-status">
+                <div class="verification-item">
+                    <div class="verification-item-left">
+                        <div class="verification-icon" id="emailVerifyIcon">
+                            <span class="material-symbols-outlined">mark_email_read</span>
+                        </div>
+                        <div class="verification-text">
+                            Email Verification
+                            <small>Verify your email address</small>
+                        </div>
+                    </div>
+                    <span class="verification-badge" id="emailVerifyBadge">Pending</span>
+                </div>
+                <div class="verification-item">
+                    <div class="verification-item-left">
+                        <div class="verification-icon" id="photoVerifyIcon">
+                            <span class="material-symbols-outlined">face</span>
+                        </div>
+                        <div class="verification-text">
+                            Profile Photo
+                            <small>Upload a clear photo of yourself</small>
+                        </div>
+                    </div>
+                    <span class="verification-badge" id="photoVerifyBadge">Pending</span>
+                </div>
+                <div class="verification-item">
+                    <div class="verification-item-left">
+                        <div class="verification-icon" id="adminVerifyIcon">
+                            <span class="material-symbols-outlined">verified</span>
+                        </div>
+                        <div class="verification-text">
+                            Admin Verification
+                            <small>Waiting for admin approval</small>
+                        </div>
+                    </div>
+                    <span class="verification-badge" id="adminVerifyBadge">Pending</span>
+                </div>
+            </div>
+
+            <button class="save-btn" onclick="saveProfile()">Save Changes</button>
+        </div>
+    </div>
+
     <script>
         const API_BASE_URL = window.location.origin;
+
+        // User data
+        let currentUser = null;
+        let userTasks = [];
+        let profileImage = null;
 
         // Auth helpers
         function getAuthToken() {
@@ -684,6 +1163,122 @@
             return date.toLocaleDateString();
         }
 
+        // Calculate verification progress
+        function calculateVerificationProgress(user) {
+            let progress = 0;
+            const steps = {
+                email: user?.emailVerified || false,
+                photo: user?.photoUploaded || false,
+                admin: user?.adminVerified || false
+            };
+
+            if (steps.email) progress += 33;
+            if (steps.photo) progress += 33;
+            if (steps.admin) progress += 34;
+
+            return {
+                progress,
+                steps,
+                isVerified: steps.email && steps.photo && steps.admin
+            };
+        }
+
+        // Update verification ring
+        function updateVerificationRing() {
+            const ring = document.getElementById('verificationRing');
+            const badge = document.getElementById('profileBadge');
+            const badgeIcon = document.getElementById('badgeIcon');
+            const badgeText = document.getElementById('badgeText');
+            const hint = document.getElementById('verificationHint');
+            
+            const verification = calculateVerificationProgress(currentUser);
+            const degrees = (verification.progress / 100) * 360;
+            
+            ring.style.background = `conic-gradient(#10b981 0deg ${degrees}deg, #e2e8f0 ${degrees}deg 360deg)`;
+            
+            if (verification.isVerified) {
+                ring.classList.add('verified');
+                badge.className = 'profile-badge verified';
+                badgeIcon.textContent = 'verified';
+                badgeText.textContent = 'Verified Poster';
+                hint.style.display = 'none';
+            } else if (verification.progress > 0) {
+                ring.classList.add('partial');
+                badge.className = 'profile-badge pending';
+                badgeIcon.textContent = 'pending';
+                badgeText.textContent = 'Verification in Progress';
+                hint.innerHTML = '<span class="material-symbols-outlined">info</span><span>Complete profile to get verified</span>';
+                hint.style.display = 'flex';
+            } else {
+                ring.classList.remove('verified', 'partial', 'mostly');
+                badge.className = 'profile-badge unverified';
+                badgeIcon.textContent = 'gpp_maybe';
+                badgeText.textContent = 'Not yet verified';
+                hint.innerHTML = '<span class="material-symbols-outlined">info</span><span>Complete profile to get verified</span>';
+                hint.style.display = 'flex';
+            }
+
+            // Update modal verification status
+            if (document.getElementById('editProfileModal').classList.contains('active')) {
+                updateModalVerification();
+            }
+        }
+
+        // Update modal verification status
+        function updateModalVerification() {
+            const verification = calculateVerificationProgress(currentUser);
+            
+            // Email verification
+            const emailIcon = document.getElementById('emailVerifyIcon');
+            const emailBadge = document.getElementById('emailVerifyBadge');
+            if (verification.steps.email) {
+                emailIcon.className = 'verification-icon verified';
+                emailIcon.innerHTML = '<span class="material-symbols-outlined">check_circle</span>';
+                emailBadge.className = 'verification-badge verified';
+                emailBadge.textContent = 'Verified';
+            } else {
+                emailIcon.className = 'verification-icon pending';
+                emailIcon.innerHTML = '<span class="material-symbols-outlined">pending</span>';
+                emailBadge.className = 'verification-badge pending';
+                emailBadge.textContent = 'Pending';
+            }
+
+            // Photo verification
+            const photoIcon = document.getElementById('photoVerifyIcon');
+            const photoBadge = document.getElementById('photoVerifyBadge');
+            if (verification.steps.photo) {
+                photoIcon.className = 'verification-icon verified';
+                photoIcon.innerHTML = '<span class="material-symbols-outlined">check_circle</span>';
+                photoBadge.className = 'verification-badge verified';
+                photoBadge.textContent = 'Uploaded';
+            } else {
+                photoIcon.className = 'verification-icon pending';
+                photoIcon.innerHTML = '<span class="material-symbols-outlined">pending</span>';
+                photoBadge.className = 'verification-badge pending';
+                photoBadge.textContent = 'Pending';
+            }
+
+            // Admin verification
+            const adminIcon = document.getElementById('adminVerifyIcon');
+            const adminBadge = document.getElementById('adminVerifyBadge');
+            if (verification.steps.admin) {
+                adminIcon.className = 'verification-icon verified';
+                adminIcon.innerHTML = '<span class="material-symbols-outlined">verified</span>';
+                adminBadge.className = 'verification-badge verified';
+                adminBadge.textContent = 'Approved';
+            } else if (verification.steps.email && verification.steps.photo) {
+                adminIcon.className = 'verification-icon pending';
+                adminIcon.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>';
+                adminBadge.className = 'verification-badge pending';
+                adminBadge.textContent = 'Under Review';
+            } else {
+                adminIcon.className = 'verification-icon unverified';
+                adminIcon.innerHTML = '<span class="material-symbols-outlined">lock</span>';
+                adminBadge.className = 'verification-badge unverified';
+                adminBadge.textContent = 'Locked';
+            }
+        }
+
         // Fetch user's tasks from MongoDB
         async function fetchUserTasks() {
             const token = getAuthToken();
@@ -702,7 +1297,6 @@
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        // Token expired - clear and show login button
                         localStorage.removeItem('auth_token');
                         localStorage.removeItem('taskmart_user');
                         return null;
@@ -759,7 +1353,8 @@
                 activities.push({
                     icon: 'post_add',
                     text: `Task posted: "${task.taskDescription.substring(0, 40)}${task.taskDescription.length > 40 ? '...' : ''}"`,
-                    time: formatDate(task.createdAt)
+                    time: formatDate(task.createdAt),
+                    taskId: task._id
                 });
             });
 
@@ -768,10 +1363,9 @@
 
         // Update dashboard with real data
         async function updateDashboard() {
-            const user = getCurrentUser();
+            currentUser = getCurrentUser();
             
-            if (!user) {
-                // Not logged in - show login button
+            if (!currentUser) {
                 document.getElementById('recentTaskContent').innerHTML = `
                     <div class="empty-state">
                         <span class="material-symbols-outlined">login</span>
@@ -783,14 +1377,16 @@
             }
 
             // Update profile
-            document.getElementById('profileName').textContent = `Welcome back, ${user.name.split(' ')[0]}!`;
-            document.getElementById('profileAvatar').textContent = user.initials || user.name.substring(0, 2).toUpperCase();
+            document.getElementById('profileName').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}!`;
+            document.getElementById('avatarText').textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
+            
+            // Update verification ring
+            updateVerificationRing();
 
             // Fetch real tasks
-            const tasks = await fetchUserTasks();
+            userTasks = await fetchUserTasks();
             
-            if (!tasks) {
-                // Show error state
+            if (!userTasks) {
                 document.getElementById('recentTaskContent').innerHTML = `
                     <div class="error-state">
                         <span class="material-symbols-outlined">error</span>
@@ -801,8 +1397,7 @@
                 return;
             }
             
-            if (tasks.length === 0) {
-                // Empty state
+            if (userTasks.length === 0) {
                 document.getElementById('recentTaskContent').innerHTML = `
                     <div class="empty-state">
                         <span class="material-symbols-outlined">assignment</span>
@@ -819,14 +1414,14 @@
             }
 
             // Calculate stats
-            const stats = calculateStats(tasks);
+            const stats = calculateStats(userTasks);
             document.getElementById('activeCount').textContent = stats.active;
             document.getElementById('inProgressCount').textContent = stats.inProgress;
             document.getElementById('completedCount').textContent = stats.completed;
             document.getElementById('cancelledCount').textContent = stats.cancelled;
 
             // Get most recent task
-            const mostRecent = tasks.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+            const mostRecent = userTasks.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
 
             // Display most recent task
             document.getElementById('recentTaskContent').innerHTML = `
@@ -852,16 +1447,16 @@
                         <span class="status-badge ${mostRecent.status || 'waiting'}">${formatStatus(mostRecent.status)}</span>
                     </div>
                 </div>
-                <div class="task-actions">
+                <div class="task-actions" onclick="event.stopPropagation()">
                     <button class="btn-primary" onclick="viewTaskDetails('${mostRecent._id}')">View Details</button>
                     <button class="btn-secondary" onclick="manageTask('${mostRecent._id}')">Manage Task</button>
                 </div>
             `;
 
             // Generate and display activity
-            const activities = generateActivity(tasks);
+            const activities = generateActivity(userTasks);
             document.getElementById('activityList').innerHTML = activities.length > 0 ? activities.map(activity => `
-                <div class="activity-item">
+                <div class="activity-item" onclick="viewTaskDetails('${activity.taskId}')">
                     <div class="activity-icon">
                         <span class="material-symbols-outlined">${activity.icon}</span>
                     </div>
@@ -911,6 +1506,82 @@
             window.location.href = `/manage-task.html?id=${taskId}`;
         };
 
+        window.viewFullTask = function() {
+            if (userTasks && userTasks.length > 0) {
+                viewTaskDetails(userTasks[0]._id);
+            }
+        };
+
+        window.filterTasks = function(status) {
+            window.location.href = `/tasks.html?status=${status}`;
+        };
+
+        // Edit Profile functions
+        window.openEditProfile = function() {
+            if (!currentUser) return;
+            
+            document.getElementById('editName').value = currentUser.name || '';
+            document.getElementById('editEmail').value = currentUser.email || '';
+            document.getElementById('uploadAvatarText').textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
+            
+            updateModalVerification();
+            document.getElementById('editProfileModal').classList.add('active');
+        };
+
+        window.closeEditProfile = function() {
+            document.getElementById('editProfileModal').classList.remove('active');
+        };
+
+        window.previewImage = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('uploadAvatarText').style.display = 'none';
+                    document.getElementById('uploadAvatarImage').style.display = 'block';
+                    document.getElementById('uploadAvatarImage').src = e.target.result;
+                    document.getElementById('avatarImage').style.display = 'block';
+                    document.getElementById('avatarImage').src = e.target.result;
+                    document.getElementById('avatarText').style.display = 'none';
+                    profileImage = e.target.result;
+                    
+                    // Mark photo as uploaded
+                    if (currentUser) {
+                        currentUser.photoUploaded = true;
+                        updateVerificationRing();
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        window.saveProfile = function() {
+            const newName = document.getElementById('editName').value;
+            
+            if (currentUser) {
+                currentUser.name = newName;
+                currentUser.initials = newName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
+                // Save to localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify(currentUser));
+                
+                // Update display
+                document.getElementById('profileName').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}!`;
+                document.getElementById('avatarText').textContent = currentUser.initials;
+                document.getElementById('uploadAvatarText').textContent = currentUser.initials;
+                
+                // Update verification
+                if (profileImage) {
+                    currentUser.photoUploaded = true;
+                    updateVerificationRing();
+                }
+                
+                closeEditProfile();
+                
+                // Show success message (you can add a toast here)
+                alert('Profile updated successfully!');
+            }
+        };
+
         // Event listeners
         document.getElementById('settingsBtn').addEventListener('click', () => {
             window.location.href = '/settings.html';
@@ -920,9 +1591,15 @@
             window.location.href = '/task-planner.html';
         });
 
-        // Initialize - check login but DON'T redirect automatically
+        // Close modal when clicking outside
+        document.getElementById('editProfileModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditProfile();
+            }
+        });
+
+        // Initialize
         if (!isUserLoggedIn()) {
-            // Show login required message instead of auto-redirect
             document.getElementById('recentTaskContent').innerHTML = `
                 <div class="empty-state">
                     <span class="material-symbols-outlined">login</span>
