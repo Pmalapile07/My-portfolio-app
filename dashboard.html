@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
     <style>
-        /* Mobile-first base styles */
+        /* ALL YOUR EXISTING STYLES - keep them exactly as before */
         * {
             margin: 0;
             padding: 0;
@@ -89,7 +89,6 @@
             object-fit: cover;
         }
 
-        /* Verification Progress Ring */
         .verification-ring {
             position: absolute;
             top: -3px;
@@ -606,8 +605,33 @@
             opacity: 0.7;
         }
 
-        .btn-post-task:disabled:hover {
-            transform: none;
+        /* Debug Panel (for testing) */
+        .debug-panel {
+            background: #1e293b;
+            color: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-toggle {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
         }
 
         /* Edit Profile Modal */
@@ -1004,6 +1028,10 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- Debug Toggle (for testing) -->
+        <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
+        <div class="debug-panel" id="debugPanel"></div>
+
         <!-- Profile Section -->
         <div class="profile-section">
             <div class="profile-info">
@@ -1214,6 +1242,28 @@
         let userTasks = [];
         let profileImage = null;
 
+        // Debug function
+        function addDebug(message, data = null) {
+            const debugPanel = document.getElementById('debugPanel');
+            const timestamp = new Date().toLocaleTimeString();
+            let debugText = `[${timestamp}] ${message}`;
+            if (data) {
+                debugText += `\n${JSON.stringify(data, null, 2)}`;
+            }
+            debugPanel.innerHTML += debugText + '\n---\n';
+            console.log(message, data);
+        }
+
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                addDebug('Debug mode enabled');
+                addDebug('Current user:', currentUser);
+                addDebug('Auth token exists:', !!getAuthToken());
+            }
+        }
+
         // Auth helpers
         function getAuthToken() {
             return localStorage.getItem('auth_token');
@@ -1303,10 +1353,8 @@
                 badgeText.textContent = 'Not verified';
             }
 
-            // Update post task button state
             updatePostTaskButton();
 
-            // Update modal verification status
             if (document.getElementById('editProfileModal').classList.contains('active')) {
                 updateModalVerification();
             }
@@ -1401,35 +1449,71 @@
             const token = getAuthToken();
             const user = getCurrentUser();
 
+            addDebug('Fetching tasks...', { email: user?.email, tokenExists: !!token });
+
             if (!token || !user) {
+                addDebug('No token or user found');
                 return null;
             }
 
             try {
-                console.log('Fetching tasks for user:', user.email);
-                
-                const response = await fetch(`${API_BASE_URL}/api/tasks/user/${user.email}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                // Try different possible endpoints
+                const endpoints = [
+                    `${API_BASE_URL}/api/tasks/user/${user.email}`,
+                    `${API_BASE_URL}/api/tasks?userId=${user.email}`,
+                    `${API_BASE_URL}/api/tasks`
+                ];
 
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        localStorage.removeItem('auth_token');
-                        localStorage.removeItem('taskmart_user');
-                        return null;
+                let lastError = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        addDebug('Trying endpoint:', endpoint);
+                        
+                        const response = await fetch(endpoint, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        addDebug('Response status:', response.status);
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            addDebug('Success! Data received:', data);
+                            
+                            // Handle different response formats
+                            let tasks = [];
+                            if (Array.isArray(data)) {
+                                tasks = data;
+                            } else if (data.tasks && Array.isArray(data.tasks)) {
+                                tasks = data.tasks;
+                            } else if (data.data && Array.isArray(data.data)) {
+                                tasks = data.data;
+                            }
+
+                            // Filter by user email if needed
+                            if (!endpoint.includes(user.email)) {
+                                tasks = tasks.filter(task => 
+                                    task.userId === user.email || 
+                                    task.userEmail === user.email ||
+                                    task.email === user.email
+                                );
+                            }
+
+                            addDebug(`Found ${tasks.length} tasks for user`);
+                            return tasks;
+                        }
+                    } catch (e) {
+                        lastError = e;
+                        addDebug(`Endpoint failed: ${e.message}`);
                     }
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    throw new Error('Failed to fetch tasks');
                 }
 
-                const tasks = await response.json();
-                console.log('Tasks fetched:', tasks);
-                return tasks;
+                throw lastError || new Error('All endpoints failed');
             } catch (error) {
-                console.error('Error fetching tasks:', error);
+                addDebug('Error fetching tasks:', error.message);
                 return null;
             }
         }
@@ -1474,9 +1558,9 @@
             tasks.slice(0, 5).forEach(task => {
                 activities.push({
                     icon: 'post_add',
-                    text: `Task posted: "${task.taskDescription.substring(0, 40)}${task.taskDescription.length > 40 ? '...' : ''}"`,
-                    time: formatDate(task.createdAt),
-                    taskId: task._id
+                    text: `Task posted: "${task.taskDescription?.substring(0, 40) || 'Untitled'}${task.taskDescription?.length > 40 ? '...' : ''}"`,
+                    time: formatDate(task.createdAt || task.postedAt || task.date),
+                    taskId: task._id || task.id
                 });
             });
 
@@ -1486,6 +1570,7 @@
         // Update dashboard with real data
         async function updateDashboard() {
             currentUser = getCurrentUser();
+            addDebug('Current user:', currentUser);
             
             if (!currentUser) {
                 document.getElementById('recentTaskContent').innerHTML = `
@@ -1525,8 +1610,9 @@
                 document.getElementById('recentTaskContent').innerHTML = `
                     <div class="error-state">
                         <span class="material-symbols-outlined">error</span>
-                        <p>Failed to load tasks. Please try again.</p>
+                        <p>Failed to load tasks. Please check the debug panel.</p>
                         <button class="retry-btn" onclick="location.reload()">Try Again</button>
+                        <button class="retry-btn" onclick="toggleDebug()" style="background: #64748b; margin-top: 0.5rem;">Show Debug Info</button>
                     </div>
                 `;
                 return;
@@ -1556,26 +1642,32 @@
             document.getElementById('cancelledCount').textContent = stats.cancelled;
 
             // Get most recent task
-            const mostRecent = userTasks.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+            const mostRecent = userTasks.sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.postedAt || a.date || 0);
+                const dateB = new Date(b.createdAt || b.postedAt || b.date || 0);
+                return dateB - dateA;
+            })[0];
+
+            addDebug('Most recent task:', mostRecent);
 
             // Display most recent task
             document.getElementById('recentTaskContent').innerHTML = `
-                <div class="task-title">${mostRecent.taskDescription || 'Untitled Task'}</div>
+                <div class="task-title">${mostRecent.taskDescription || mostRecent.title || 'Untitled Task'}</div>
                 <div class="task-meta">
-                    <span class="category-badge">${mostRecent.category || getCategoryFromDescription(mostRecent.taskDescription) || 'General Task'}</span>
+                    <span class="category-badge">${mostRecent.category || getCategoryFromDescription(mostRecent.taskDescription || mostRecent.title) || 'General Task'}</span>
                     <span class="area-badge">
                         <span class="material-symbols-outlined">location_on</span>
-                        <span>${mostRecent.location || 'Location not specified'}</span>
+                        <span>${mostRecent.location || mostRecent.area || 'Location not specified'}</span>
                     </span>
                 </div>
                 <div class="task-details-grid">
                     <div class="detail-item">
                         <span class="detail-label">Budget</span>
-                        <span class="detail-value budget">${mostRecent.budgetAmount ? 'R ' + mostRecent.budgetAmount : (mostRecent.budgetType === 'open' ? 'Open to offers' : 'Not set')}</span>
+                        <span class="detail-value budget">${mostRecent.budgetAmount ? 'R ' + mostRecent.budgetAmount : (mostRecent.budget || mostRecent.budgetType === 'open' ? 'Open to offers' : 'Not set')}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Posted</span>
-                        <span class="detail-value">${formatDate(mostRecent.createdAt)}</span>
+                        <span class="detail-value">${formatDate(mostRecent.createdAt || mostRecent.postedAt || mostRecent.date)}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Status</span>
@@ -1583,8 +1675,8 @@
                     </div>
                 </div>
                 <div class="task-actions" onclick="event.stopPropagation()">
-                    <button class="btn-primary" onclick="viewTaskDetails('${mostRecent._id}')">View Details</button>
-                    <button class="btn-secondary" onclick="manageTask('${mostRecent._id}')">Manage Task</button>
+                    <button class="btn-primary" onclick="viewTaskDetails('${mostRecent._id || mostRecent.id}')">View Details</button>
+                    <button class="btn-secondary" onclick="manageTask('${mostRecent._id || mostRecent.id}')">Manage Task</button>
                 </div>
             `;
 
@@ -1643,7 +1735,7 @@
 
         window.viewFullTask = function() {
             if (userTasks && userTasks.length > 0) {
-                viewTaskDetails(userTasks[0]._id);
+                viewTaskDetails(userTasks[0]._id || userTasks[0].id);
             }
         };
 
@@ -1680,7 +1772,6 @@
                 reader.onload = function(e) {
                     const imageData = e.target.result;
                     
-                    // Update UI
                     document.getElementById('uploadAvatarText').style.display = 'none';
                     document.getElementById('uploadAvatarImage').style.display = 'block';
                     document.getElementById('uploadAvatarImage').src = imageData;
@@ -1688,7 +1779,6 @@
                     document.getElementById('avatarImage').src = imageData;
                     document.getElementById('avatarText').style.display = 'none';
                     
-                    // Save to localStorage
                     if (currentUser) {
                         localStorage.setItem(`profile_image_${currentUser.email}`, imageData);
                         currentUser.photoUploaded = true;
@@ -1707,15 +1797,12 @@
                 currentUser.name = newName;
                 currentUser.initials = newName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 
-                // Save to localStorage
                 localStorage.setItem('taskmart_user', JSON.stringify(currentUser));
                 
-                // Update display
                 document.getElementById('profileName').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}!`;
                 document.getElementById('avatarText').textContent = currentUser.initials;
                 document.getElementById('uploadAvatarText').textContent = currentUser.initials;
                 
-                // Update verification
                 updateVerificationRing();
                 
                 closeEditProfile();
@@ -1730,7 +1817,6 @@
             dropdown.classList.toggle('active');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('navDropdown');
             const trigger = document.getElementById('navMenuTrigger');
@@ -1740,7 +1826,6 @@
             }
         });
 
-        // Close modal when clicking outside
         document.getElementById('editProfileModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeEditProfile();
