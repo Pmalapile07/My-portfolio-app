@@ -397,20 +397,24 @@
     </style>
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
         <div class="header-content">
             <div class="logo">
                 <img src="Cream Black Typography Loop Brand Logo (500 x 180 px).png" alt="TaskMart" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <span style="display: none; font-weight: 700; color: white; font-size: 1.5rem;">TaskMart</span>
             </div>
-            <button class="debug-toggle" onclick="toggleDebug()">Debug</button>
+            <button class="debug-toggle" id="debugBtn">Debug</button>
         </div>
     </header>
 
+    <!-- Debug Panel -->
     <div class="debug-panel" id="debugPanel"></div>
 
+    <!-- Main Container -->
     <div class="auth-container">
         <div class="auth-card">
+            <!-- Tabs -->
             <div class="auth-tabs">
                 <div class="auth-tab active" data-tab="login">Log In</div>
                 <div class="auth-tab" data-tab="signup">Sign Up</div>
@@ -428,7 +432,7 @@
                     <label>Password</label>
                     <div class="password-input-wrapper">
                         <input type="password" id="loginPassword" placeholder="••••••••" value="password123">
-                        <span class="material-symbols-outlined toggle-password" onclick="togglePassword('loginPassword')">visibility_off</span>
+                        <span class="material-symbols-outlined toggle-password" id="toggleLoginPassword">visibility_off</span>
                     </div>
                     <div class="error-message" id="loginPasswordError"></div>
                 </div>
@@ -480,7 +484,7 @@
                     <label>Password</label>
                     <div class="password-input-wrapper">
                         <input type="password" id="signupPassword" placeholder="••••••••">
-                        <span class="material-symbols-outlined toggle-password" onclick="togglePassword('signupPassword')">visibility_off</span>
+                        <span class="material-symbols-outlined toggle-password" id="toggleSignupPassword">visibility_off</span>
                     </div>
                     <div class="error-message" id="signupPasswordError"></div>
                 </div>
@@ -489,7 +493,7 @@
                     <label>Confirm password</label>
                     <div class="password-input-wrapper">
                         <input type="password" id="signupConfirmPassword" placeholder="••••••••">
-                        <span class="material-symbols-outlined toggle-password" onclick="togglePassword('signupConfirmPassword')">visibility_off</span>
+                        <span class="material-symbols-outlined toggle-password" id="toggleSignupConfirmPassword">visibility_off</span>
                     </div>
                     <div class="error-message" id="signupConfirmError"></div>
                 </div>
@@ -503,6 +507,7 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
     <script>
@@ -523,14 +528,19 @@
             console.log(`[${type}]`, message, data);
         }
 
-        function toggleDebug() {
+        // Debug button handler
+        document.getElementById('debugBtn').addEventListener('click', function() {
             const panel = document.getElementById('debugPanel');
             panel.classList.toggle('show');
             if (panel.classList.contains('show')) {
                 addDebug('Debug mode enabled', 'info');
                 addDebug('API URL:', 'info', API_BASE_URL);
+                addDebug('LocalStorage:', 'info', {
+                    user: localStorage.getItem('taskmart_user'),
+                    token: localStorage.getItem('auth_token') ? 'exists' : 'none'
+                });
             }
-        }
+        });
 
         // ==================== TOAST ====================
         function showToast(message, isError = false) {
@@ -540,7 +550,7 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // ==================== UI HELPERS ====================
+        // ==================== TAB SWITCHING ====================
         document.querySelectorAll('.auth-tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -554,19 +564,41 @@
             });
         });
 
-        function togglePassword(inputId) {
-            const input = document.getElementById(inputId);
-            const icon = event.target;
-            
+        // ==================== PASSWORD TOGGLE ====================
+        document.getElementById('toggleLoginPassword').addEventListener('click', function() {
+            const input = document.getElementById('loginPassword');
             if (input.type === 'password') {
                 input.type = 'text';
-                icon.textContent = 'visibility';
+                this.textContent = 'visibility';
             } else {
                 input.type = 'password';
-                icon.textContent = 'visibility_off';
+                this.textContent = 'visibility_off';
             }
-        }
+        });
 
+        document.getElementById('toggleSignupPassword').addEventListener('click', function() {
+            const input = document.getElementById('signupPassword');
+            if (input.type === 'password') {
+                input.type = 'text';
+                this.textContent = 'visibility';
+            } else {
+                input.type = 'password';
+                this.textContent = 'visibility_off';
+            }
+        });
+
+        document.getElementById('toggleSignupConfirmPassword').addEventListener('click', function() {
+            const input = document.getElementById('signupConfirmPassword');
+            if (input.type === 'password') {
+                input.type = 'text';
+                this.textContent = 'visibility';
+            } else {
+                input.type = 'password';
+                this.textContent = 'visibility_off';
+            }
+        });
+
+        // ==================== ERROR HANDLING ====================
         function clearAllErrors() {
             document.querySelectorAll('.error-message').forEach(el => {
                 el.textContent = '';
@@ -602,7 +634,7 @@
             return urlParams.get('returnTo') || '/dashboard.html';
         }
 
-        // ==================== LOGIN - REAL MONGODB ====================
+        // ==================== LOGIN ====================
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             clearAllErrors();
@@ -668,7 +700,7 @@
             }
         });
 
-        // ==================== SIGNUP - REAL MONGODB ====================
+        // ==================== SIGNUP ====================
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             clearAllErrors();
@@ -781,39 +813,41 @@
         });
 
         // ==================== CHECK EXISTING SESSION ====================
-        const existingUser = localStorage.getItem('taskmart_user');
-        const existingToken = localStorage.getItem('auth_token');
-        
-        if (existingUser && existingToken) {
-            addDebug('Existing session found', 'info', JSON.parse(existingUser));
+        (async function checkSession() {
+            const existingUser = localStorage.getItem('taskmart_user');
+            const existingToken = localStorage.getItem('auth_token');
             
-            // Verify token with backend
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
-                    headers: { 'Authorization': `Bearer ${existingToken}` }
-                });
+            if (existingUser && existingToken) {
+                addDebug('Existing session found', 'info', JSON.parse(existingUser));
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.valid) {
-                        const returnUrl = getReturnUrl();
-                        if (returnUrl !== '/login.html') {
-                            addDebug('Valid session, redirecting to: ' + returnUrl, 'success');
-                            window.location.href = returnUrl;
+                // Verify token with backend
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                        headers: { 'Authorization': `Bearer ${existingToken}` }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.valid) {
+                            const returnUrl = getReturnUrl();
+                            if (returnUrl !== '/login.html') {
+                                addDebug('Valid session, redirecting to: ' + returnUrl, 'success');
+                                window.location.href = returnUrl;
+                            }
                         }
+                    } else {
+                        // Token invalid, clear storage
+                        localStorage.removeItem('taskmart_user');
+                        localStorage.removeItem('auth_token');
+                        addDebug('Invalid token cleared', 'info');
                     }
-                } else {
-                    // Token invalid, clear storage
-                    localStorage.removeItem('taskmart_user');
-                    localStorage.removeItem('auth_token');
-                    addDebug('Invalid token cleared', 'info');
+                } catch (error) {
+                    addDebug('Token verification failed', 'error');
                 }
-            } catch (error) {
-                addDebug('Token verification failed', 'error');
+            } else {
+                addDebug('No existing session', 'info');
             }
-        } else {
-            addDebug('No existing session', 'info');
-        }
+        })();
     </script>
 </body>
 </html>
