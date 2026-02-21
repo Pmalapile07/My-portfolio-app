@@ -1235,14 +1235,15 @@
     </div>
 
     <script>
-        const API_BASE_URL = window.location.origin;
-
-        // User data
+        // ==================== CONFIGURATION ====================
+        const API_BASE_URL = 'https://taskmartapp.onrender.com'; // <-- CHANGE THIS TO YOUR RENDER URL
+        
+        // ==================== STATE ====================
         let currentUser = null;
         let userTasks = [];
         let profileImage = null;
 
-        // Debug function
+        // ==================== DEBUG FUNCTIONS ====================
         function addDebug(message, data = null) {
             const debugPanel = document.getElementById('debugPanel');
             const timestamp = new Date().toLocaleTimeString();
@@ -1260,10 +1261,11 @@
             if (panel.classList.contains('show')) {
                 addDebug('Debug mode enabled');
                 addDebug('Current user:', currentUser);
+                addDebug('API Base URL:', API_BASE_URL);
             }
         }
 
-        // Auth helpers - SIMPLIFIED
+        // ==================== AUTH HELPERS ====================
         function getCurrentUser() {
             const user = localStorage.getItem('taskmart_user');
             return user ? JSON.parse(user) : null;
@@ -1273,7 +1275,7 @@
             return !!localStorage.getItem('taskmart_user');
         }
 
-        // Show toast message
+        // ==================== UI HELPERS ====================
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -1283,7 +1285,6 @@
             }, 3000);
         }
 
-        // Format date
         function formatDate(dateString) {
             if (!dateString) return 'Recently';
             
@@ -1302,7 +1303,7 @@
             return date.toLocaleDateString();
         }
 
-        // Calculate verification progress
+        // ==================== VERIFICATION FUNCTIONS ====================
         function calculateVerificationProgress(user) {
             let progress = 0;
             const steps = {
@@ -1322,7 +1323,6 @@
             };
         }
 
-        // Update verification ring
         function updateVerificationRing() {
             const ring = document.getElementById('verificationRing');
             const badge = document.getElementById('profileBadge');
@@ -1355,7 +1355,6 @@
             }
         }
 
-        // Update modal verification status
         function updateModalVerification() {
             const verification = calculateVerificationProgress(currentUser);
             
@@ -1410,7 +1409,6 @@
             }
         }
 
-        // Update post task button based on verification
         function updatePostTaskButton() {
             const postBtn = document.getElementById('postNewTaskBtn');
             const verification = calculateVerificationProgress(currentUser);
@@ -1426,7 +1424,6 @@
             }
         }
 
-        // Handle post task click
         function handlePostTask() {
             const verification = calculateVerificationProgress(currentUser);
             
@@ -1439,7 +1436,7 @@
             window.location.href = '/task-planner.html';
         }
 
-        // Fetch user's tasks from MongoDB - SIMPLIFIED
+        // ==================== TASK FETCHING ====================
         async function fetchUserTasks() {
             const user = currentUser;
 
@@ -1451,38 +1448,42 @@
             }
 
             try {
-                // Try to get tasks from localStorage first (for demo)
+                // Try to get tasks from MongoDB
+                const response = await fetch(`${API_BASE_URL}/api/tasks?email=${user.email}`);
+                
+                addDebug('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch tasks: ${response.status}`);
+                }
+                
+                const tasks = await response.json();
+                addDebug('Tasks fetched from MongoDB:', tasks);
+                
+                // Save to localStorage as backup
+                if (tasks && tasks.length > 0) {
+                    localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
+                }
+                
+                return tasks || [];
+                
+            } catch (error) {
+                addDebug('Error fetching from MongoDB:', error.message);
+                
+                // Fallback to localStorage
                 const savedTasks = localStorage.getItem(`tasks_${user.email}`);
                 if (savedTasks) {
                     const tasks = JSON.parse(savedTasks);
-                    addDebug('Found tasks in localStorage:', tasks);
+                    addDebug('Using cached tasks from localStorage:', tasks);
                     return tasks;
                 }
-
-                // If no tasks in localStorage, create a demo task
-                addDebug('No tasks found, creating demo task');
-                const demoTasks = [{
-                    _id: 'demo1',
-                    taskDescription: 'Fix leaking kitchen faucet',
-                    category: 'Plumbing',
-                    location: 'Parktown, Johannesburg',
-                    budgetAmount: 450,
-                    budgetType: 'fixed',
-                    status: 'waiting',
-                    createdAt: new Date().toISOString()
-                }];
                 
-                // Save demo tasks to localStorage
-                localStorage.setItem(`tasks_${user.email}`, JSON.stringify(demoTasks));
-                return demoTasks;
-                
-            } catch (error) {
-                addDebug('Error in fetchUserTasks:', error.message);
-                return null;
+                // If no tasks found, return empty array
+                addDebug('No tasks found for user');
+                return [];
             }
         }
 
-        // Calculate stats from tasks
         function calculateStats(tasks) {
             const stats = {
                 active: 0,
@@ -1515,7 +1516,6 @@
             return stats;
         }
 
-        // Generate activity items from tasks
         function generateActivity(tasks) {
             const activities = [];
             
@@ -1531,7 +1531,35 @@
             return activities;
         }
 
-        // Update dashboard with real data
+        function getCategoryFromDescription(desc) {
+            if (!desc) return 'General Task';
+            desc = desc.toLowerCase();
+            if (desc.includes('plumb') || desc.includes('leak') || desc.includes('pipe')) return 'Plumbing';
+            if (desc.includes('clean')) return 'Cleaning';
+            if (desc.includes('electric')) return 'Electrical';
+            if (desc.includes('move')) return 'Moving';
+            if (desc.includes('garden')) return 'Gardening';
+            return 'General Task';
+        }
+
+        function formatStatus(status) {
+            switch(status) {
+                case 'waiting':
+                case 'posted':
+                    return 'Waiting for offers';
+                case 'in-progress':
+                case 'assigned':
+                    return 'In Progress';
+                case 'completed':
+                    return 'Completed';
+                case 'cancelled':
+                    return 'Cancelled';
+                default:
+                    return 'Active';
+            }
+        }
+
+        // ==================== DASHBOARD UPDATE ====================
         async function updateDashboard() {
             currentUser = getCurrentUser();
             addDebug('Current user:', currentUser);
@@ -1659,36 +1687,7 @@
             `).join('') : '<div class="empty-state" style="padding: 1rem;"><p>No activity yet</p></div>';
         }
 
-        // Helper functions
-        function getCategoryFromDescription(desc) {
-            if (!desc) return 'General Task';
-            desc = desc.toLowerCase();
-            if (desc.includes('plumb') || desc.includes('leak') || desc.includes('pipe')) return 'Plumbing';
-            if (desc.includes('clean')) return 'Cleaning';
-            if (desc.includes('electric')) return 'Electrical';
-            if (desc.includes('move')) return 'Moving';
-            if (desc.includes('garden')) return 'Gardening';
-            return 'General Task';
-        }
-
-        function formatStatus(status) {
-            switch(status) {
-                case 'waiting':
-                case 'posted':
-                    return 'Waiting for offers';
-                case 'in-progress':
-                case 'assigned':
-                    return 'In Progress';
-                case 'completed':
-                    return 'Completed';
-                case 'cancelled':
-                    return 'Cancelled';
-                default:
-                    return 'Active';
-            }
-        }
-
-        // Navigation functions
+        // ==================== NAVIGATION ====================
         window.viewTaskDetails = function(taskId) {
             window.location.href = `/task-details.html?id=${taskId}`;
         };
@@ -1707,13 +1706,12 @@
             window.location.href = `/tasks.html?status=${status}`;
         };
 
-        // Logout function
         window.logout = function() {
             localStorage.removeItem('taskmart_user');
             window.location.href = '/login.html';
         };
 
-        // Edit Profile functions
+        // ==================== EDIT PROFILE ====================
         window.openEditProfile = function() {
             if (!currentUser) return;
             
@@ -1773,7 +1771,7 @@
             }
         };
 
-        // Navigation menu toggle
+        // ==================== EVENT LISTENERS ====================
         document.getElementById('navMenuTrigger').addEventListener('click', function(e) {
             e.stopPropagation();
             const dropdown = document.getElementById('navDropdown');
@@ -1795,7 +1793,7 @@
             }
         });
 
-        // Initialize
+        // ==================== INITIALIZE ====================
         if (!isUserLoggedIn()) {
             document.getElementById('recentTaskContent').innerHTML = `
                 <div class="empty-state">
