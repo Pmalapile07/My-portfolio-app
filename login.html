@@ -306,6 +306,31 @@
             text-decoration: none;
         }
 
+        .demo-credentials {
+            background: rgba(4, 91, 146, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .demo-credentials p {
+            color: #045B92;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .demo-credentials code {
+            display: block;
+            color: #FF286F;
+            font-size: 0.75rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid rgba(4, 91, 146, 0.1);
+            margin-bottom: 0.25rem;
+        }
+
         /* Loading overlay */
         .loading-overlay {
             position: fixed;
@@ -399,7 +424,7 @@
                 <form class="auth-form active" id="loginForm">
                     <div class="form-group">
                         <label>Email address</label>
-                        <input type="email" id="loginEmail" placeholder="your@email.com" value="pmalapile07@gmail.com">
+                        <input type="email" id="loginEmail" placeholder="your@email.com" value="test@example.com">
                         <div class="error-message" id="loginEmailError"></div>
                     </div>
 
@@ -417,6 +442,12 @@
                     </div>
 
                     <button type="submit" class="auth-button" id="loginBtn">Log In</button>
+
+                    <div class="demo-credentials">
+                        <p>✨ Demo credentials</p>
+                        <code>Email: test@example.com</code>
+                        <code>Password: password123</code>
+                    </div>
                 </form>
 
                 <!-- SIGNUP FORM -->
@@ -495,9 +526,6 @@
     <div class="success-toast" id="successToast"></div>
 
     <script>
-        // Your MongoDB API endpoint - REPLACE WITH YOUR ACTUAL RENDER URL
-        const API_BASE_URL = 'https://taskmartapp.onrender.com'; // <-- CHANGE THIS TO YOUR RENDER URL
-        
         // Toast functions
         function showError(message) {
             const toast = document.getElementById('errorToast');
@@ -566,7 +594,7 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
-        // Save user to localStorage (temporary session)
+        // Save user to localStorage
         function saveUserSession(user) {
             localStorage.setItem('taskmart_user', JSON.stringify(user));
         }
@@ -578,7 +606,7 @@
         }
 
         // Handle Login
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             clearAllErrors();
 
@@ -609,61 +637,59 @@
             loginBtn.disabled = true;
             loginBtn.classList.add('loading');
 
-            try {
-                console.log('Attempting login for:', email);
+            setTimeout(() => {
+                // Get existing users or create empty array
+                const users = JSON.parse(localStorage.getItem('taskmart_users') || '[]');
                 
-                // Try to find user in MongoDB
-                const response = await fetch(`${API_BASE_URL}/api/users?email=${email}`);
+                // Find user
+                let user = users.find(u => u.email === email && u.password === password);
                 
-                if (!response.ok) {
-                    throw new Error('Network error');
+                // If no user found, check demo credentials
+                if (!user && email === 'test@example.com' && password === 'password123') {
+                    user = {
+                        name: 'Test User',
+                        email: 'test@example.com',
+                        role: 'poster',
+                        initials: 'TU',
+                        emailVerified: true,
+                        photoUploaded: false,
+                        adminVerified: true
+                    };
                 }
-                
-                const users = await response.json();
-                console.log('Users found:', users);
-                
-                // Find user with matching email and password (in production, use proper password hashing)
-                const user = users.find(u => u.email === email && u.password === password);
-                
-                if (!user) {
-                    throw new Error('Invalid email or password');
+
+                if (user) {
+                    // Create user session
+                    const userSession = {
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        initials: user.initials,
+                        loggedIn: true,
+                        emailVerified: true,
+                        photoUploaded: user.photoUploaded || false,
+                        adminVerified: true
+                    };
+                    
+                    // Save to localStorage
+                    saveUserSession(userSession);
+                    
+                    showSuccess('Login successful! Redirecting...');
+
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = returnUrl;
+                    }, 1000);
+                } else {
+                    loginBtn.disabled = false;
+                    loginBtn.classList.remove('loading');
+                    showError('Invalid email or password');
+                    showFieldError('loginEmail', 'Invalid email or password');
                 }
-
-                // Create user session
-                const userSession = {
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    initials: user.initials,
-                    loggedIn: true,
-                    emailVerified: user.emailVerified || false,
-                    photoUploaded: user.photoUploaded || false,
-                    adminVerified: user.adminVerified || false,
-                    id: user._id
-                };
-                
-                // Save to localStorage
-                saveUserSession(userSession);
-                
-                showSuccess('Login successful! Redirecting...');
-
-                // Redirect to dashboard
-                setTimeout(() => {
-                    window.location.href = returnUrl;
-                }, 1000);
-
-            } catch (error) {
-                console.error('Login error:', error);
-                loginBtn.disabled = false;
-                loginBtn.classList.remove('loading');
-                
-                showError(error.message || 'Login failed. Please try again.');
-                showFieldError('loginEmail', 'Invalid email or password');
-            }
+            }, 1000);
         });
 
         // Handle Signup
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
             e.preventDefault();
             clearAllErrors();
 
@@ -718,13 +744,17 @@
             signupBtn.disabled = true;
             signupBtn.classList.add('loading');
 
-            try {
-                // Check if user already exists
-                const checkResponse = await fetch(`${API_BASE_URL}/api/users?email=${email}`);
-                const existingUsers = await checkResponse.json();
+            setTimeout(() => {
+                // Get existing users
+                const users = JSON.parse(localStorage.getItem('taskmart_users') || '[]');
                 
-                if (existingUsers.length > 0) {
-                    throw new Error('Email already registered');
+                // Check if user already exists
+                if (users.some(u => u.email === email)) {
+                    signupBtn.disabled = false;
+                    signupBtn.classList.remove('loading');
+                    showFieldError('signupEmail', 'Email already registered');
+                    showError('This email is already registered. Please login instead.');
+                    return;
                 }
 
                 // Create new user
@@ -732,42 +762,29 @@
                 const newUser = {
                     name,
                     email,
-                    password, // In production, hash this!
+                    password,
                     role,
                     initials,
-                    emailVerified: false,
+                    emailVerified: true,
                     photoUploaded: false,
-                    adminVerified: false,
+                    adminVerified: true,
                     createdAt: new Date().toISOString()
                 };
 
-                // Save to MongoDB
-                const createResponse = await fetch(`${API_BASE_URL}/api/users`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(newUser)
-                });
-
-                if (!createResponse.ok) {
-                    throw new Error('Failed to create account');
-                }
-
-                const createdUser = await createResponse.json();
-                console.log('User created:', createdUser);
+                // Add to users array
+                users.push(newUser);
+                localStorage.setItem('taskmart_users', JSON.stringify(users));
 
                 // Create user session
                 const userSession = {
-                    name: createdUser.name,
-                    email: createdUser.email,
-                    role: createdUser.role,
-                    initials: createdUser.initials,
+                    name: newUser.name,
+                    email: newUser.email,
+                    role: newUser.role,
+                    initials: newUser.initials,
                     loggedIn: true,
-                    emailVerified: false,
+                    emailVerified: true,
                     photoUploaded: false,
-                    adminVerified: false,
-                    id: createdUser._id
+                    adminVerified: true
                 };
                 
                 // Save to localStorage
@@ -779,19 +796,7 @@
                 setTimeout(() => {
                     window.location.href = returnUrl;
                 }, 1000);
-
-            } catch (error) {
-                console.error('Signup error:', error);
-                signupBtn.disabled = false;
-                signupBtn.classList.remove('loading');
-                
-                if (error.message.includes('already registered')) {
-                    showFieldError('signupEmail', 'Email already registered');
-                    showError('This email is already registered. Please login instead.');
-                } else {
-                    showError(error.message || 'Signup failed. Please try again.');
-                }
-            }
+            }, 1000);
         });
 
         // Handle Forgot Password
