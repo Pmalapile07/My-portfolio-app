@@ -141,6 +141,35 @@
             font-size: 14px !important;
         }
 
+        .verification-progress {
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(4, 91, 146, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #10b981;
+            white-space: nowrap;
+        }
+
         .verification-hint {
             font-size: 0.7rem;
             color: #64748b;
@@ -152,6 +181,7 @@
             padding: 0.25rem 0.75rem;
             border-radius: 30px;
             width: fit-content;
+            margin-top: 0.5rem;
         }
 
         .verification-hint:hover {
@@ -236,10 +266,10 @@
             color: #ef4444;
         }
 
-        /* Stats Grid - BACK TO 4 COLUMNS */
+        /* Stats Grid - 2 rows on mobile, 4 columns on desktop */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 0.75rem;
             margin-bottom: 1.25rem;
         }
@@ -344,6 +374,14 @@
             color: #94a3b8;
             font-weight: 600;
             margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-label .material-symbols-outlined {
+            font-size: 18px !important;
+            color: #FF286F;
         }
 
         .task-title {
@@ -450,9 +488,9 @@
             color: #10b981;
         }
 
-        .status-badge.paused {
-            background: rgba(100, 116, 139, 0.1);
-            color: #64748b;
+        .status-badge.cancelled {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
         }
 
         .task-actions {
@@ -877,6 +915,74 @@
             color: #FF286F;
         }
 
+        /* Notifications Modal */
+        .notifications-modal {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .notifications-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .notifications-header h3 {
+            font-size: 1.2rem;
+            color: #045B92;
+            font-weight: 600;
+        }
+
+        .notification-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 40, 111, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FF286F;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #045B92;
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .empty-notifications {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
+
         /* Debug Panel */
         .debug-panel {
             background: #1e293b;
@@ -1162,7 +1268,7 @@
             color: #cbd5e1;
         }
 
-        /* Network Error Toast */
+        /* Toast Notification */
         .toast {
             position: fixed;
             bottom: 5rem;
@@ -1189,16 +1295,6 @@
             background: #ef4444;
         }
 
-        /* Network Error Specific */
-        .network-error {
-            background: #ef4444;
-            color: white;
-            padding: 1rem;
-            border-radius: 12px;
-            margin: 1rem 0;
-            text-align: center;
-        }
-
         /* Tablet and Desktop */
         @media (min-width: 640px) {
             .dashboard-container {
@@ -1220,6 +1316,7 @@
             }
 
             .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
                 gap: 1rem;
             }
 
@@ -1296,6 +1393,15 @@
                             <span id="badgeText">Not verified</span>
                         </span>
                     </div>
+                    
+                    <!-- Verification Progress Bar -->
+                    <div class="verification-progress" id="verificationProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text" id="progressText">0%</span>
+                    </div>
+                    
                     <div class="verification-hint" id="verificationHint" onclick="openEditProfile()">
                         <span class="material-symbols-outlined">info</span>
                         <span>Complete profile to get verified</span>
@@ -1311,6 +1417,10 @@
                     <div class="nav-dot"></div>
                 </div>
                 <div class="nav-dropdown" id="navDropdown">
+                    <div class="nav-item" onclick="openNotifications()">
+                        <span class="material-symbols-outlined">notifications</span>
+                        <span>Notifications</span>
+                    </div>
                     <div class="nav-item" onclick="openEditProfile()">
                         <span class="material-symbols-outlined">edit</span>
                         <span>Edit Profile</span>
@@ -1331,7 +1441,7 @@
             </div>
         </div>
 
-        <!-- Stats Grid - BACK TO 4 COLUMNS -->
+        <!-- Stats Grid - 2x2 on mobile, 4 columns on desktop -->
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card" onclick="showTasksByStatus('active')">
                 <div class="stat-header">
@@ -1373,9 +1483,12 @@
 
         <!-- Main Grid -->
         <div class="main-grid">
-            <!-- Recent Task Card -->
+            <!-- Recent Task Card - NO EMOJI -->
             <div class="recent-task-card">
-                <div class="card-label">📋 YOUR MOST RECENT TASK</div>
+                <div class="card-label">
+                    <span class="material-symbols-outlined">description</span>
+                    Your Most Recent Task
+                </div>
                 <div id="recentTaskContent">
                     <div class="loading-skeleton" style="width: 80%;"></div>
                     <div class="loading-skeleton" style="width: 60%;"></div>
@@ -1383,9 +1496,12 @@
                 </div>
             </div>
 
-            <!-- Recent Activity (last hour) -->
+            <!-- Recent Activity - WITH ICONS INSTEAD OF EMOJIS -->
             <div class="recent-activity-card">
-                <div class="card-label">⚡ RECENT ACTIVITY (LAST HOUR)</div>
+                <div class="card-label">
+                    <span class="material-symbols-outlined">history</span>
+                    Recent Activity (Last Hour)
+                </div>
                 <div class="activity-list" id="activityList">
                     <div class="loading-skeleton" style="width: 90%;"></div>
                     <div class="loading-skeleton" style="width: 70%;"></div>
@@ -1403,7 +1519,7 @@
         </div>
     </div>
 
-    <!-- Network Error Notification -->
+    <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
     <!-- Tasks List Modal -->
@@ -1436,7 +1552,7 @@
         </div>
     </div>
 
-    <!-- Manage Task Modal - REMOVED ACCEPT HELPER BUTTON -->
+    <!-- Manage Task Modal -->
     <div class="modal-overlay" id="manageTaskModal">
         <div class="task-modal">
             <div class="task-modal-header">
@@ -1447,6 +1563,24 @@
             </div>
             <div class="task-modal-content" id="manageTaskContent">
                 <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div class="modal-overlay" id="notificationsModal">
+        <div class="notifications-modal">
+            <div class="notifications-header">
+                <h3>Notifications</h3>
+                <button class="modal-close" onclick="closeNotifications()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="notificationsContent">
+                <div class="empty-notifications">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #cbd5e1; margin-bottom: 1rem;">notifications</span>
+                    <p>No notifications yet</p>
+                </div>
             </div>
         </div>
     </div>
@@ -1587,7 +1721,6 @@
         function handleNetworkError(error) {
             console.error('Network error:', error);
             
-            // Check if it's a network error vs API error
             if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
                 showToast('Network connection issue. Using cached data if available.', true);
             } else {
@@ -1645,11 +1778,17 @@
             const badge = document.getElementById('profileBadge');
             const badgeIcon = document.getElementById('badgeIcon');
             const badgeText = document.getElementById('badgeText');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
             
             const verification = calculateVerificationProgress(currentUser);
             const degrees = (verification.progress / 100) * 360;
             
             ring.style.background = `conic-gradient(#10b981 0deg ${degrees}deg, #e2e8f0 ${degrees}deg 360deg)`;
+            
+            // Update progress bar
+            progressFill.style.width = verification.progress + '%';
+            progressText.textContent = verification.progress + '%';
             
             if (verification.isVerified) {
                 badge.className = 'profile-badge verified';
@@ -2105,6 +2244,7 @@
                         localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
                     }
                     
+                    // Immediately update the dashboard to reflect changes
                     updateDashboard();
                     showToast('Task updated successfully!');
                     closeManageTaskModal();
@@ -2148,6 +2288,16 @@
                     handleNetworkError(error);
                 }
             }
+        }
+
+        // ==================== NOTIFICATIONS ====================
+        function openNotifications() {
+            document.getElementById('notificationsModal').classList.add('active');
+            document.getElementById('navDropdown').classList.remove('active');
+        }
+
+        function closeNotifications() {
+            document.getElementById('notificationsModal').classList.remove('active');
         }
 
         // ==================== DASHBOARD UPDATE ====================
@@ -2376,6 +2526,10 @@
 
         document.getElementById('manageTaskModal').addEventListener('click', function(e) {
             if (e.target === this) closeManageTaskModal();
+        });
+
+        document.getElementById('notificationsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeNotifications();
         });
 
         document.getElementById('editProfileModal').addEventListener('click', function(e) {
