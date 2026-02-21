@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
     <style>
-        /* ===== ORIGINAL DASHBOARD STYLING - REVERTED ===== */
+        /* Mobile-first base styles */
         * {
             margin: 0;
             padding: 0;
@@ -33,7 +33,7 @@
             padding-bottom: 5rem;
         }
 
-        /* Top Bar */
+        /* Top Bar with Debug and Notification */
         .top-bar {
             display: flex;
             align-items: center;
@@ -89,32 +89,6 @@
             align-items: center;
             justify-content: center;
             border: 2px solid white;
-        }
-
-        /* Debug Panel */
-        .debug-panel {
-            background: #1e293b;
-            color: #fff;
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            font-family: monospace;
-            font-size: 0.8rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            display: none;
-        }
-
-        .debug-panel.show {
-            display: block;
-        }
-
-        .debug-success {
-            color: #10b981;
-        }
-
-        .debug-error {
-            color: #FF286F;
         }
 
         /* Profile Section */
@@ -344,7 +318,7 @@
 
         .stat-number {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 600;
             color: #045B92;
             line-height: 1.2;
         }
@@ -465,6 +439,7 @@
 
         .detail-value.budget {
             color: #FF286F;
+            font-weight: 400;
         }
 
         .status-badge {
@@ -474,6 +449,11 @@
             font-size: 0.8rem;
             font-weight: 600;
             width: fit-content;
+        }
+
+        .status-badge.waiting {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
         }
 
         .status-badge.active {
@@ -602,7 +582,48 @@
             color: #94a3b8;
         }
 
-        /* Modal Styles */
+        /* Post New Task Button */
+        .post-task-section {
+            position: fixed;
+            bottom: 1rem;
+            left: 1rem;
+            right: 1rem;
+            z-index: 100;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .btn-post-task {
+            background: #FF286F;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 40, 111, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-post-task:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn-post-task.disabled,
+        .btn-post-task:disabled {
+            background: #cbd5e1;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Modal Styles - Increased z-index */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -617,6 +638,7 @@
             justify-content: center;
             z-index: 999999;
             padding: 1rem;
+            overflow: hidden;
         }
 
         .modal-overlay.active {
@@ -625,6 +647,9 @@
 
         body.modal-open {
             overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
 
         .task-modal {
@@ -632,10 +657,12 @@
             border-radius: 24px;
             width: 100%;
             max-width: 500px;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
             position: relative;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            -webkit-overflow-scrolling: touch;
+            z-index: 1000000;
         }
 
         .task-modal-header {
@@ -648,7 +675,7 @@
             border-radius: 24px 24px 0 0;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 1000001;
         }
 
         .task-modal-header h2 {
@@ -656,6 +683,7 @@
             color: #045B92;
             margin: 0;
             text-transform: lowercase;
+            font-family: 'Manrope', sans-serif;
             font-weight: 500;
         }
 
@@ -679,9 +707,13 @@
             padding: 1.5rem;
         }
 
-        /* Task Details */
+        /* Task Planner Style Sections */
         .modal-section {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .modal-section:last-child {
+            margin-bottom: 0;
         }
 
         .modal-section-label {
@@ -691,60 +723,807 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
             display: block;
+            letter-spacing: 0.3px;
         }
 
         .modal-section-value {
             font-size: 0.95rem;
             color: #045B92;
             line-height: 1.5;
+            word-break: break-word;
             font-weight: 400;
-            background: rgba(4, 91, 146, 0.02);
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid rgba(4, 91, 146, 0.1);
         }
 
-        /* Image Preview */
-        .image-preview-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+        .modal-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
             margin-top: 0.5rem;
         }
 
-        .image-preview {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
+        .modal-detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .modal-detail-label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .modal-detail-value {
+            font-size: 0.9rem;
+            color: #045B92;
+            font-weight: 400;
+        }
+
+        .modal-detail-value.pink {
+            color: #FF286F;
+            font-weight: 500;
+        }
+
+        .modal-divider {
+            height: 1px;
+            background: rgba(4, 91, 146, 0.1);
+            margin: 1rem 0;
+        }
+
+        /* Task List in Modal */
+        .task-list {
+            list-style: none;
+        }
+
+        .task-list-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .task-list-item:hover {
+            background: rgba(255, 40, 111, 0.05);
+        }
+
+        .task-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-list-title {
+            font-weight: 600;
+            color: #045B92;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-list-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .task-list-budget {
+            color: #FF286F;
+            font-weight: 600;
+        }
+
+        /* Edit Fields */
+        .edit-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .edit-field label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+            letter-spacing: 0.3px;
+        }
+
+        .edit-field input,
+        .edit-field select,
+        .edit-field textarea {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 1px solid rgba(4, 91, 146, 0.3);
+            border-radius: 5px;
+            background: white;
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .edit-field input:focus,
+        .edit-field select:focus,
+        .edit-field textarea:focus {
+            border-color: #FF286F;
+        }
+
+        .edit-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .edit-field input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .edit-field input[type="number"]::-webkit-outer-spin-button,
+        .edit-field input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Image Upload in Edit */
+        .image-upload-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .image-upload-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+            letter-spacing: 0.3px;
+        }
+
+        .current-image {
+            margin-bottom: 1rem;
+        }
+
+        .current-image img {
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
             object-fit: cover;
             border: 1px solid rgba(4, 91, 146, 0.2);
         }
 
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #10b981;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 30px;
+        .upload-image-btn {
+            background: rgba(4, 91, 146, 0.1);
+            color: #045B92;
+            border: 1px dashed rgba(4, 91, 146, 0.3);
+            padding: 0.75rem;
+            border-radius: 10px;
+            width: 100%;
             font-weight: 500;
-            text-align: center;
-            z-index: 1000000;
-            display: none;
-            animation: slideUp 0.3s ease;
-            max-width: 400px;
-            width: 90%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
 
-        .toast.show {
+        .upload-image-btn:hover {
+            background: rgba(255, 40, 111, 0.05);
+            border-color: #FF286F;
+        }
+
+        /* Address Field */
+        .address-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .address-field label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+            letter-spacing: 0.3px;
+        }
+
+        .address-input-wrapper {
+            position: relative;
+        }
+
+        .address-input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            padding-right: 4rem;
+            border: 1px solid rgba(4, 91, 146, 0.3);
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .address-input:focus {
+            border-color: #FF286F;
+        }
+
+        .location-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background: rgba(4, 91, 146, 0.1);
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .location-icon:hover {
+            background: #FF286F;
+        }
+
+        .location-icon:hover .material-symbols-outlined {
+            color: white;
+        }
+
+        .location-icon .material-symbols-outlined {
+            color: #045B92;
+            font-size: 24px !important;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 0.9rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .action-btn.save {
+            background: #FF286F;
+            color: white;
+        }
+
+        .action-btn.save:hover {
+            background: #d61e5b;
+        }
+
+        .action-btn.complete {
+            background: #045B92;
+            color: white;
+        }
+
+        .action-btn.complete:hover {
+            background: #073b5e;
+        }
+
+        .action-btn.cancel {
+            background: #ef4444;
+            color: white;
+        }
+
+        .action-btn.cancel:hover {
+            background: #dc2626;
+        }
+
+        .action-btn.secondary {
+            background: white;
+            color: #045B92;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+
+        .action-btn.secondary:hover {
+            border-color: #FF286F;
+            color: #FF286F;
+        }
+
+        /* Confirmation Modal */
+        .confirm-modal {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .confirm-modal h3 {
+            font-size: 1.3rem;
+            color: #045B92;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .confirm-modal p {
+            color: #64748b;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn.yes {
+            background: #FF286F;
+            color: white;
+        }
+
+        .confirm-btn.yes:hover {
+            background: #d61e5b;
+        }
+
+        .confirm-btn.no {
+            background: white;
+            color: #045B92;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+
+        .confirm-btn.no:hover {
+            border-color: #FF286F;
+            color: #FF286F;
+        }
+
+        /* Notifications Modal */
+        .notifications-modal {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .notifications-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            position: sticky;
+            top: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            z-index: 1000001;
+        }
+
+        .notifications-header h3 {
+            font-size: 1.2rem;
+            color: #045B92;
+            font-weight: 600;
+        }
+
+        .notifications-list {
+            padding: 0 1.5rem 1.5rem;
+            min-height: 200px;
+        }
+
+        .notification-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-item:hover {
+            background: rgba(255, 40, 111, 0.02);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 40, 111, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FF286F;
+            flex-shrink: 0;
+        }
+
+        .notification-icon .material-symbols-outlined {
+            font-size: 20px !important;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #045B92;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .notification-desc {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .empty-notifications {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: #94a3b8;
+        }
+
+        .empty-notifications .material-symbols-outlined {
+            font-size: 48px !important;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+
+        /* Settings Section */
+        .settings-section {
+            margin-top: 2rem;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 0 1rem;
+            cursor: pointer;
+        }
+
+        .settings-header h3 {
+            color: #045B92;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .settings-header .material-symbols-outlined {
+            color: #FF286F;
+            transition: transform 0.3s ease;
+        }
+
+        .settings-header.collapsed .material-symbols-outlined {
+            transform: rotate(-90deg);
+        }
+
+        .settings-content {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .settings-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+        }
+
+        .settings-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .settings-item:hover {
+            background: rgba(255, 40, 111, 0.02);
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .settings-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(4, 91, 146, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #045B92;
+        }
+
+        .settings-icon.delete {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .settings-icon.logout {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .settings-text {
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .settings-text.delete {
+            color: #ef4444;
+        }
+
+        .settings-arrow {
+            color: #94a3b8;
+        }
+
+        /* Edit Profile Modal */
+        .edit-profile-modal {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 1000000;
+        }
+
+        .edit-profile-content {
+            padding: 2rem;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: #045B92;
+            font-weight: 600;
+        }
+
+        .profile-pic-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .upload-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #045B92, #FF286F);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-avatar .upload-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .upload-avatar:hover .upload-overlay {
+            opacity: 1;
+        }
+
+        .upload-overlay .material-symbols-outlined {
+            color: white;
+            font-size: 32px !important;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(4, 91, 146, 0.3);
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #FF286F;
+        }
+
+        .form-group input[readonly] {
+            background: #f8fafd;
+            color: #64748b;
+        }
+
+        /* Verification Status */
+        .verification-status {
+            margin: 1.5rem 0;
+        }
+
+        .verification-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.05);
+        }
+
+        .verification-item:last-child {
+            border-bottom: none;
+        }
+
+        .verification-item-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .verification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #10b981;
+        }
+
+        .verification-icon .material-symbols-outlined {
+            font-size: 20px !important;
+        }
+
+        .verification-text {
+            font-weight: 500;
+        }
+
+        .verification-text small {
+            display: block;
+            font-size: 0.7rem;
+            color: #64748b;
+            font-weight: normal;
+        }
+
+        .verification-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .save-btn {
+            background: #FF286F;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1.5rem;
+        }
+
+        .save-btn:hover {
+            background: #d61e5b;
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            background: #1e293b;
+            color: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            display: none;
+            z-index: 999998;
+        }
+
+        .debug-panel.show {
             display: block;
         }
 
-        .toast.error {
-            background: #ef4444;
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #ef4444;
+        }
+
+        .error-state .material-symbols-outlined {
+            font-size: 48px !important;
+            margin-bottom: 1rem;
+        }
+
+        .retry-btn {
+            background: #FF286F;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 1rem;
+            cursor: pointer;
         }
 
         /* Empty State */
@@ -760,10 +1539,38 @@
             color: #cbd5e1;
         }
 
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 5rem;
+            left: 1rem;
+            right: 1rem;
+            background: #10b981;
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 500;
+            text-align: center;
+            z-index: 1000000;
+            display: none;
+            animation: slideUp 0.3s ease;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
         /* Tablet and Desktop */
         @media (min-width: 640px) {
             .dashboard-container {
                 padding: 1.5rem;
+                padding-bottom: 6rem;
             }
 
             .profile-section {
@@ -788,12 +1595,34 @@
                 padding: 1.25rem;
             }
 
+            .stat-title {
+                font-size: 0.75rem;
+            }
+
             .stat-number {
                 font-size: 1.75rem;
             }
 
             .task-title {
                 font-size: 1.5rem;
+            }
+
+            .post-task-section {
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
+                width: fit-content;
+            }
+
+            .btn-post-task {
+                width: auto;
+                padding: 1rem 2rem;
+            }
+
+            .toast {
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
             }
         }
 
@@ -813,9 +1642,9 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Top Bar -->
+        <!-- Top Bar with Debug and Notification Bell -->
         <div class="top-bar">
-            <button class="debug-toggle" onclick="toggleDebug()">Debug Info</button>
+            <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
             <div class="notification-bell" onclick="openNotifications()">
                 <span class="material-symbols-outlined">notifications</span>
                 <span class="notification-badge" id="notificationBadge">0</span>
@@ -844,14 +1673,15 @@
                         </span>
                     </div>
                     
-                    <div class="verification-progress">
+                    <!-- Verification Progress Bar -->
+                    <div class="verification-progress" id="verificationProgress">
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill" style="width: 100%"></div>
                         </div>
                         <span class="progress-text" id="progressText">100%</span>
                     </div>
                     
-                    <div class="verification-hint" onclick="openEditProfile()">
+                    <div class="verification-hint" id="verificationHint" onclick="openEditProfile()">
                         <span class="material-symbols-outlined">info</span>
                         <span>Your account is verified</span>
                     </div>
@@ -860,7 +1690,7 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="stats-grid">
+        <div class="stats-grid" id="statsGrid">
             <div class="stat-card" onclick="showTasksByStatus('active')">
                 <div class="stat-header">
                     <span class="stat-title">Active</span>
@@ -902,7 +1732,7 @@
         <!-- Main Grid -->
         <div class="main-grid">
             <!-- Recent Task Card -->
-            <div class="recent-task-card" id="recentTaskCard">
+            <div class="recent-task-card">
                 <div class="card-label">
                     <span class="material-symbols-outlined">description</span>
                     Your Most Recent Task
@@ -918,7 +1748,7 @@
             <div class="recent-activity-card">
                 <div class="card-label">
                     <span class="material-symbols-outlined">history</span>
-                    Recent Activity
+                    Recent Activity (Last Hour)
                 </div>
                 <div class="activity-list" id="activityList">
                     <div class="loading-skeleton" style="width: 90%;"></div>
@@ -927,10 +1757,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- Post New Task Button -->
+        <div class="post-task-section">
+            <button class="btn-post-task" id="postNewTaskBtn" onclick="handlePostTask()">
+                <span class="material-symbols-outlined">add</span>
+                Post a New Task
+            </button>
+        </div>
     </div>
 
-    <!-- Toast -->
+    <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
+
+    <!-- Confirmation Modal (for one-time edit) -->
+    <div class="modal-overlay" id="confirmEditModal">
+        <div class="confirm-modal">
+            <h3>Edit Task Once</h3>
+            <p>You can only edit this task once. After saving, you won't be able to make further changes. Are you sure you want to continue?</p>
+            <div class="confirm-buttons">
+                <button class="confirm-btn yes" onclick="confirmEditTask()">Yes, Edit</button>
+                <button class="confirm-btn no" onclick="closeConfirmEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Tasks List Modal -->
     <div class="modal-overlay" id="tasksListModal">
@@ -941,7 +1791,9 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="task-modal-content" id="tasksListContent"></div>
+            <div class="task-modal-content" id="tasksListContent">
+                <!-- Dynamically populated -->
+            </div>
         </div>
     </div>
 
@@ -954,7 +1806,9 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="task-modal-content" id="taskDetailsContent"></div>
+            <div class="task-modal-content" id="taskDetailsContent">
+                <!-- Dynamically populated -->
+            </div>
         </div>
     </div>
 
@@ -967,83 +1821,197 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="task-modal-content" id="manageTaskContent"></div>
+            <div class="task-modal-content" id="manageTaskContent">
+                <!-- Dynamically populated -->
+            </div>
         </div>
     </div>
 
     <!-- Notifications Modal -->
     <div class="modal-overlay" id="notificationsModal">
-        <div class="task-modal">
-            <div class="task-modal-header">
-                <h2>notifications</h2>
+        <div class="notifications-modal">
+            <div class="notifications-header">
+                <h3>Notifications</h3>
                 <button class="modal-close" onclick="closeNotifications()">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="task-modal-content" id="notificationsList"></div>
+            <div class="notifications-list" id="notificationsList">
+                <!-- Dynamically populated with real notifications only -->
+            </div>
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div class="modal-overlay" id="confirmEditModal">
-        <div class="task-modal" style="max-width: 400px;">
-            <div class="task-modal-header">
-                <h2>edit task</h2>
-                <button class="modal-close" onclick="closeConfirmEditModal()">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div class="task-modal-content" style="text-align: center;">
-                <p style="margin-bottom: 1.5rem; color: #64748b;">You can only edit this task once. Are you sure?</p>
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn-primary" onclick="saveTaskChanges()">Yes, Edit</button>
-                    <button class="btn-secondary" onclick="closeConfirmEditModal()">Cancel</button>
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="edit-profile-modal">
+            <div class="edit-profile-content">
+                <div class="modal-header">
+                    <h2>Edit Profile</h2>
+                    <button class="modal-close" onclick="closeEditProfile()">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
                 </div>
+
+                <div class="profile-pic-upload">
+                    <div class="upload-avatar" id="uploadAvatar" onclick="document.getElementById('profilePicInput').click()">
+                        <span id="uploadAvatarText">PS</span>
+                        <img id="uploadAvatarImage" style="display: none;" alt="preview">
+                        <div class="upload-overlay">
+                            <span class="material-symbols-outlined">photo_camera</span>
+                        </div>
+                    </div>
+                    <input type="file" id="profilePicInput" class="hidden-input" accept="image/*" onchange="previewImage(this)">
+                    <p style="font-size: 0.8rem; color: #64748b;">Click to upload profile picture</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editName" placeholder="Your name">
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="editEmail" placeholder="your@email.com" readonly>
+                    <small style="color: #64748b; font-size: 0.7rem;">Email cannot be changed</small>
+                </div>
+
+                <!-- Verification Status - All Verified -->
+                <div class="verification-status">
+                    <div class="verification-item">
+                        <div class="verification-item-left">
+                            <div class="verification-icon">
+                                <span class="material-symbols-outlined">check_circle</span>
+                            </div>
+                            <div class="verification-text">
+                                Email Verification
+                                <small>Your email is verified</small>
+                            </div>
+                        </div>
+                        <span class="verification-badge">Verified</span>
+                    </div>
+                    <div class="verification-item">
+                        <div class="verification-item-left">
+                            <div class="verification-icon">
+                                <span class="material-symbols-outlined">check_circle</span>
+                            </div>
+                            <div class="verification-text">
+                                Profile Photo
+                                <small>Photo uploaded</small>
+                            </div>
+                        </div>
+                        <span class="verification-badge">Verified</span>
+                    </div>
+                    <div class="verification-item">
+                        <div class="verification-item-left">
+                            <div class="verification-icon">
+                                <span class="material-symbols-outlined">verified</span>
+                            </div>
+                            <div class="verification-text">
+                                Account Status
+                                <small>Your account is active</small>
+                            </div>
+                        </div>
+                        <span class="verification-badge">Active</span>
+                    </div>
+                </div>
+
+                <!-- Settings Section - Collapsible -->
+                <div class="settings-section">
+                    <div class="settings-header" id="settingsHeader" onclick="toggleSettings()">
+                        <h3>Settings</h3>
+                        <span class="material-symbols-outlined">expand_less</span>
+                    </div>
+                    <div class="settings-content" id="settingsContent">
+                        <div class="settings-item" onclick="window.location.href='/settings.html'">
+                            <div class="settings-item-left">
+                                <div class="settings-icon">
+                                    <span class="material-symbols-outlined">settings</span>
+                                </div>
+                                <div class="settings-text">Settings</div>
+                            </div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+                        
+                        <div class="settings-item" onclick="window.location.href='/help.html'">
+                            <div class="settings-item-left">
+                                <div class="settings-icon">
+                                    <span class="material-symbols-outlined">help</span>
+                                </div>
+                                <div class="settings-text">Help & Support</div>
+                            </div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+                        
+                        <div class="settings-item" onclick="confirmDeleteAccount()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon delete">
+                                    <span class="material-symbols-outlined">delete_forever</span>
+                                </div>
+                                <div class="settings-text delete">Delete Account</div>
+                            </div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+                        
+                        <div class="settings-item" onclick="logout()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon logout">
+                                    <span class="material-symbols-outlined">logout</span>
+                                </div>
+                                <div class="settings-text delete">Logout</div>
+                            </div>
+                            <span class="settings-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="save-btn" onclick="saveProfile()">Save Changes</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== CONFIG ====================
+        // ==================== CONFIGURATION ====================
         const API_BASE_URL = 'https://taskmartapp.onrender.com';
 
         // ==================== STATE ====================
         let currentUser = null;
         let userTasks = [];
-        let notifications = [];
+        let profileImage = null;
         let currentTaskId = null;
-        let taskEditCount = {};
+        let pendingTaskData = null;
+        let notifications = [];
+        let settingsCollapsed = false;
+        let taskEditCount = {}; // Track how many times a task has been edited
 
-        // ==================== DEBUG ====================
-        function addDebug(message, type = 'info', data = null) {
-            const panel = document.getElementById('debugPanel');
+        // ==================== DEBUG FUNCTIONS ====================
+        function addDebug(message, data = null) {
+            const debugPanel = document.getElementById('debugPanel');
             const timestamp = new Date().toLocaleTimeString();
-            const className = type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : '';
-            
-            let debugText = `<span class="${className}">[${timestamp}]</span> ${message}`;
+            let debugText = `[${timestamp}] ${message}`;
             if (data) {
                 debugText += `\n${JSON.stringify(data, null, 2)}`;
             }
-            panel.innerHTML += debugText + '\n---\n';
-            console.log(`[${type}]`, message, data);
+            debugPanel.innerHTML += debugText + '\n---\n';
+            console.log(message, data);
         }
 
         function toggleDebug() {
             const panel = document.getElementById('debugPanel');
             panel.classList.toggle('show');
             if (panel.classList.contains('show')) {
-                addDebug('Debug mode enabled', 'info');
-                addDebug('Current user:', 'info', currentUser);
+                addDebug('Debug mode enabled');
+                addDebug('Current user:', currentUser);
             }
         }
 
-        // ==================== AUTH ====================
+        // ==================== AUTH HELPERS ====================
         function getCurrentUser() {
             try {
                 const user = localStorage.getItem('taskmart_user');
                 return user ? JSON.parse(user) : null;
             } catch (e) {
-                addDebug('Error parsing user: ' + e.message, 'error');
+                console.error('Error parsing user:', e);
                 return null;
             }
         }
@@ -1052,26 +2020,7 @@
             return !!localStorage.getItem('taskmart_user');
         }
 
-        // ==================== TOAST ====================
-        function showToast(message, isError = false) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast' + (isError ? ' error' : '') + ' show';
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // ==================== MODAL ====================
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
-            document.body.classList.add('modal-open');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-            document.body.classList.remove('modal-open');
-        }
-
-        // ==================== NOTIFICATIONS ====================
+        // ==================== NOTIFICATION FUNCTIONS ====================
         function addNotification(type, title, description, taskId = null) {
             const notification = {
                 id: Date.now() + Math.random(),
@@ -1084,8 +2033,13 @@
             };
             
             notifications.unshift(notification);
-            if (notifications.length > 20) notifications = notifications.slice(0, 20);
             
+            // Keep only last 20 notifications
+            if (notifications.length > 20) {
+                notifications = notifications.slice(0, 20);
+            }
+            
+            // Save to localStorage
             if (currentUser?.email) {
                 localStorage.setItem(`notifications_${currentUser.email}`, JSON.stringify(notifications));
             }
@@ -1096,46 +2050,70 @@
         function updateNotificationBadge() {
             const unreadCount = notifications.filter(n => !n.read).length;
             const badge = document.getElementById('notificationBadge');
-            badge.textContent = unreadCount;
-            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
         }
 
         function loadNotifications() {
             if (currentUser?.email) {
                 const saved = localStorage.getItem(`notifications_${currentUser.email}`);
-                notifications = saved ? JSON.parse(saved) : [];
+                if (saved) {
+                    notifications = JSON.parse(saved);
+                } else {
+                    notifications = [];
+                }
                 updateNotificationBadge();
             }
         }
 
         function openNotifications() {
+            // Mark all as read when opening
             notifications.forEach(n => n.read = true);
             if (currentUser?.email) {
                 localStorage.setItem(`notifications_${currentUser.email}`, JSON.stringify(notifications));
             }
             updateNotificationBadge();
             
-            const list = document.getElementById('notificationsList');
+            const notificationsList = document.getElementById('notificationsList');
             
             if (notifications.length === 0) {
-                list.innerHTML = '<div class="empty-state"><span class="material-symbols-outlined">notifications</span><p>No notifications</p></div>';
+                notificationsList.innerHTML = `
+                    <div class="empty-notifications">
+                        <span class="material-symbols-outlined">notifications</span>
+                        <p>No notifications yet</p>
+                    </div>
+                `;
             } else {
-                list.innerHTML = notifications.map(n => {
+                notificationsList.innerHTML = notifications.map(n => {
                     const timeAgo = formatDate(n.time);
+                    
                     let icon = 'notifications';
                     switch(n.type) {
                         case 'offer': icon = 'handshake'; break;
                         case 'edit': icon = 'edit'; break;
                         case 'complete': icon = 'check_circle'; break;
                         case 'in-progress': icon = 'engineering'; break;
+                        case 'active': icon = 'pending_actions'; break;
                         case 'cancelled': icon = 'cancel'; break;
+                        case 'verified': icon = 'verified'; break;
+                        default: icon = 'notifications';
                     }
+                    
                     return `
-                        <div class="activity-item" onclick="${n.taskId ? `viewTaskDetails('${n.taskId}')` : 'closeNotifications()'}">
-                            <div class="activity-icon"><span class="material-symbols-outlined">${icon}</span></div>
-                            <div class="activity-content">
-                                <div class="activity-text">${n.title}</div>
-                                <div class="activity-time">${n.description} • ${timeAgo}</div>
+                        <div class="notification-item" onclick="${n.taskId ? `viewTaskDetails('${n.taskId}')` : 'closeNotifications()'}">
+                            <div class="notification-icon">
+                                <span class="material-symbols-outlined">${icon}</span>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-title">
+                                    ${n.title}
+                                </div>
+                                <div class="notification-desc">${n.description}</div>
+                                <div class="notification-time">${timeAgo}</div>
                             </div>
                         </div>
                     `;
@@ -1149,9 +2127,31 @@
             closeModal('notificationsModal');
         }
 
-        // ==================== DATE ====================
+        // ==================== MODAL LOCK FUNCTIONS ====================
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.classList.remove('modal-open');
+        }
+
+        // ==================== TOAST ====================
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast' + (isError ? ' error' : '') + ' show';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ==================== DATE FORMATTING ====================
         function formatDate(dateString) {
             if (!dateString) return 'Recently';
+            
             try {
                 const date = new Date(dateString);
                 if (isNaN(date.getTime())) return 'Recently';
@@ -1163,135 +2163,122 @@
                 const diffDays = Math.floor(diffHours / 24);
 
                 if (diffMins < 1) return 'Just now';
-                if (diffMins < 60) return `${diffMins} min ago`;
-                if (diffHours < 24) return `${diffHours} hour ago`;
+                if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
                 if (diffDays === 1) return 'Yesterday';
-                return `${diffDays} days ago`;
-            } catch {
+                if (diffDays < 7) return `${diffDays} days ago`;
+                return date.toLocaleDateString();
+            } catch (e) {
                 return 'Recently';
             }
         }
 
-        // ==================== TASKS ====================
+        // ==================== VERIFICATION FUNCTIONS ====================
+        function updateVerificationRing() {
+            const ring = document.getElementById('verificationRing');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            // Always set to 100%
+            ring.style.background = `conic-gradient(#10b981 0deg 360deg, #e2e8f0 0deg)`;
+            progressFill.style.width = '100%';
+            progressText.textContent = '100%';
+        }
+
+        function handlePostTask() {
+            window.location.href = '/task-planner.html';
+        }
+
+        // ==================== TASK FETCHING ====================
         async function fetchUserTasks() {
-            if (!currentUser?.email) {
-                addDebug('No user email', 'error');
+            const user = currentUser;
+
+            addDebug('Fetching tasks for user email:', user?.email);
+
+            if (!user?.email) {
+                addDebug('No user email found');
                 return null;
             }
 
-            addDebug('Fetching tasks for: ' + currentUser.email, 'info');
+            // Try to get cached tasks first
+            const cachedTasks = localStorage.getItem(`tasks_${user.email}`);
+            let tasks = cachedTasks ? JSON.parse(cachedTasks) : [];
 
-            // Try multiple endpoints
-            const endpoints = [
-                `${API_BASE_URL}/api/tasks`,
-                `${API_BASE_URL}/api/tasks?userId=${currentUser.email}`,
-                `${API_BASE_URL}/api/tasks?email=${currentUser.email}`,
-                `${API_BASE_URL}/api/tasks/user/${currentUser.email}`
-            ];
+            // Load edit counts
+            const savedEditCounts = localStorage.getItem(`editCount_${user.email}`);
+            if (savedEditCounts) {
+                taskEditCount = JSON.parse(savedEditCounts);
+            }
 
-            for (const endpoint of endpoints) {
-                try {
-                    addDebug('Trying: ' + endpoint, 'info');
+            // If we have cached tasks, show them immediately
+            if (tasks.length > 0) {
+                setTimeout(() => updateDashboardWithTasks(tasks), 0);
+            }
+
+            // Try to fetch from API, but don't show errors if it fails
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await fetch(`${API_BASE_URL}/api/tasks?email=${user.email}`, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    let fetchedTasks = Array.isArray(data) ? data : (data.tasks || data.data || []);
                     
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000);
-                    
-                    const response = await fetch(endpoint, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        addDebug('✓ Success from: ' + endpoint, 'success');
-                        
-                        // Parse response
-                        let tasks = [];
-                        if (Array.isArray(data)) tasks = data;
-                        else if (data.tasks) tasks = data.tasks;
-                        else if (data.data) tasks = data.data;
-                        
-                        // Filter by email if needed
-                        if (!endpoint.includes(currentUser.email)) {
-                            tasks = tasks.filter(t => 
-                                t.userId === currentUser.email || 
-                                t.userEmail === currentUser.email ||
-                                t.email === currentUser.email
-                            );
-                        }
-                        
-                        addDebug(`Found ${tasks.length} tasks`, 'success');
-                        
-                        // Cache tasks
-                        localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(tasks));
-                        return tasks;
+                    if (fetchedTasks.length > 0) {
+                        localStorage.setItem(`tasks_${user.email}`, JSON.stringify(fetchedTasks));
+                        return fetchedTasks;
                     }
-                } catch (error) {
-                    addDebug(`✗ Failed: ${error.message}`, 'error');
                 }
+            } catch (error) {
+                // Silently fail - just use cached data
+                addDebug('API fetch failed, using cached data');
             }
 
-            // Fallback to cache
-            const cached = localStorage.getItem(`tasks_${currentUser.email}`);
-            if (cached) {
-                addDebug('Using cached tasks', 'info');
-                return JSON.parse(cached);
-            }
-            
-            addDebug('No tasks found', 'error');
-            return [];
+            return tasks.length > 0 ? tasks : [];
         }
 
         function updateDashboardWithTasks(tasks) {
-            if (!tasks || tasks.length === 0) {
-                document.getElementById('recentTaskContent').innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-symbols-outlined">assignment</span>
-                        <p>No tasks yet</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Calculate stats
-            const stats = { active: 0, inProgress: 0, completed: 0, cancelled: 0 };
-            tasks.forEach(t => {
-                if (t.status === 'active') stats.active++;
-                else if (t.status === 'in-progress') stats.inProgress++;
-                else if (t.status === 'completed') stats.completed++;
-                else if (t.status === 'cancelled') stats.cancelled++;
-                else stats.active++;
-            });
-
+            if (!tasks || tasks.length === 0) return;
+            
+            const stats = calculateStats(tasks);
             document.getElementById('activeCount').textContent = stats.active;
             document.getElementById('inProgressCount').textContent = stats.inProgress;
             document.getElementById('completedCount').textContent = stats.completed;
             document.getElementById('cancelledCount').textContent = stats.cancelled;
 
-            // Most recent task
-            const mostRecent = tasks.sort((a, b) => 
-                new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-            )[0];
+            const mostRecent = tasks.sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.postedAt || a.date || 0);
+                const dateB = new Date(b.createdAt || b.postedAt || b.date || 0);
+                return dateB - dateA;
+            })[0];
 
             document.getElementById('recentTaskContent').innerHTML = `
                 <div class="task-title">${mostRecent.taskDescription || mostRecent.title || 'Untitled Task'}</div>
                 <div class="task-meta">
-                    <span class="category-badge">${mostRecent.category || 'General'}</span>
+                    <span class="category-badge">${mostRecent.category || getCategoryFromDescription(mostRecent.taskDescription || mostRecent.title) || 'General Task'}</span>
                     <span class="area-badge">
                         <span class="material-symbols-outlined">location_on</span>
-                        <span>${mostRecent.location || 'Location N/A'}</span>
+                        <span>${mostRecent.location || mostRecent.area || 'Location not specified'}</span>
                     </span>
                 </div>
                 <div class="task-details-grid">
                     <div class="detail-item">
                         <span class="detail-label">Budget</span>
-                        <span class="detail-value budget">R ${mostRecent.budgetAmount || mostRecent.budget || '0'}</span>
+                        <span class="detail-value budget">${mostRecent.budgetAmount ? 'R ' + mostRecent.budgetAmount : (mostRecent.budget || 'Not set')}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Posted</span>
-                        <span class="detail-value">${formatDate(mostRecent.createdAt)}</span>
+                        <span class="detail-value">${formatDate(mostRecent.createdAt || mostRecent.postedAt || mostRecent.date)}</span>
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Status</span>
-                        <span class="status-badge ${mostRecent.status || 'active'}">${formatStatus(mostRecent.status)}</span>
+                        <span class="status-badge ${mostRecent.status || 'waiting'}">${formatStatus(mostRecent.status)}</span>
                     </div>
                 </div>
                 <div class="task-actions">
@@ -1300,53 +2287,126 @@
                 </div>
             `;
 
-            // Activity
-            const oneHourAgo = new Date(Date.now() - 3600000);
-            const recent = tasks
-                .filter(t => new Date(t.createdAt || 0) >= oneHourAgo)
-                .slice(0, 5)
-                .map(t => ({
-                    icon: 'post_add',
-                    text: `Task posted: "${(t.taskDescription || 'Untitled').substring(0, 40)}..."`,
-                    time: formatDate(t.createdAt),
-                    taskId: t._id || t.id
-                }));
-
-            document.getElementById('activityList').innerHTML = recent.length ? recent.map(a => `
-                <div class="activity-item" onclick="viewTaskDetails('${a.taskId}')">
-                    <div class="activity-icon"><span class="material-symbols-outlined">${a.icon}</span></div>
-                    <div class="activity-content">
-                        <div class="activity-text">${a.text}</div>
-                        <div class="activity-time">${a.time}</div>
+            const activities = generateActivity(tasks);
+            if (activities.length > 0) {
+                document.getElementById('activityList').innerHTML = activities.map(activity => `
+                    <div class="activity-item" onclick="viewTaskDetails('${activity.taskId}')">
+                        <div class="activity-icon">
+                            <span class="material-symbols-outlined">${activity.icon}</span>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">${activity.text}</div>
+                            <div class="activity-time">${activity.time}</div>
+                        </div>
                     </div>
-                </div>
-            `).join('') : '<div class="empty-state" style="padding: 1rem;"><p>No recent activity</p></div>';
+                `).join('');
+            } else {
+                document.getElementById('activityList').innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>No activity in the last hour</p></div>';
+            }
+        }
+
+        function calculateStats(tasks) {
+            const stats = {
+                active: 0,
+                inProgress: 0,
+                completed: 0,
+                cancelled: 0
+            };
+
+            tasks.forEach(task => {
+                // Only four statuses: active, in-progress, completed, cancelled
+                switch(task.status) {
+                    case 'active':
+                        stats.active++;
+                        break;
+                    case 'in-progress':
+                        stats.inProgress++;
+                        break;
+                    case 'completed':
+                        stats.completed++;
+                        break;
+                    case 'cancelled':
+                        stats.cancelled++;
+                        break;
+                    default:
+                        // Default to active if status not recognized
+                        stats.active++;
+                }
+            });
+
+            return stats;
+        }
+
+        function getTasksByStatus(status) {
+            return userTasks.filter(task => task.status === status);
+        }
+
+        function generateActivity(tasks) {
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            
+            return tasks
+                .filter(task => {
+                    const taskDate = new Date(task.createdAt || task.postedAt || task.date || 0);
+                    return !isNaN(taskDate.getTime()) && taskDate >= oneHourAgo;
+                })
+                .slice(0, 10)
+                .map(task => ({
+                    icon: 'post_add',
+                    text: `Task posted: "${(task.taskDescription || task.title || 'Untitled').substring(0, 40)}${(task.taskDescription || task.title || '').length > 40 ? '...' : ''}"`,
+                    time: formatDate(task.createdAt || task.postedAt || task.date),
+                    taskId: task._id || task.id
+                }));
+        }
+
+        function getCategoryFromDescription(desc) {
+            if (!desc) return 'General Task';
+            desc = desc.toLowerCase();
+            if (desc.includes('plumb') || desc.includes('leak') || desc.includes('pipe')) return 'Plumbing';
+            if (desc.includes('clean')) return 'Cleaning';
+            if (desc.includes('electric')) return 'Electrical';
+            if (desc.includes('move')) return 'Moving';
+            if (desc.includes('garden')) return 'Gardening';
+            return 'General Task';
         }
 
         function formatStatus(status) {
             switch(status) {
-                case 'active': return 'Active';
-                case 'in-progress': return 'In Progress';
-                case 'completed': return 'Completed';
-                case 'cancelled': return 'Cancelled';
-                default: return 'Active';
+                case 'active':
+                    return 'Active';
+                case 'in-progress':
+                    return 'In Progress';
+                case 'completed':
+                    return 'Completed';
+                case 'cancelled':
+                    return 'Cancelled';
+                default:
+                    return 'Active';
             }
         }
 
-        // ==================== TASK ACTIONS ====================
+        // ==================== MODAL FUNCTIONS ====================
         function showTasksByStatus(status) {
-            const tasks = userTasks.filter(t => t.status === status);
+            const tasks = getTasksByStatus(status);
             const title = status === 'in-progress' ? 'in progress' : status;
             
-            let content = tasks.length ? tasks.map(t => `
-                <div class="activity-item" onclick="viewTaskDetails('${t._id || t.id}')">
-                    <div class="activity-icon"><span class="material-symbols-outlined">description</span></div>
-                    <div class="activity-content">
-                        <div class="activity-text">${t.taskDescription || 'Untitled'}</div>
-                        <div class="activity-time">R ${t.budgetAmount || t.budget || '0'} • ${t.location || 'N/A'}</div>
-                    </div>
-                </div>
-            `).join('') : '<div class="empty-state"><p>No tasks found</p></div>';
+            let content = '';
+            if (tasks.length === 0) {
+                content = `<div class="empty-state"><p>No ${title} tasks found</p></div>`;
+            } else {
+                content = '<div class="task-list">';
+                tasks.forEach(task => {
+                    content += `
+                        <div class="task-list-item" onclick="viewTaskDetails('${task._id || task.id}')">
+                            <div class="task-list-title">${task.taskDescription || task.title || 'Untitled Task'}</div>
+                            <div class="task-list-meta">
+                                <span>${task.location || 'Location N/A'}</span>
+                                <span class="task-list-budget">${task.budgetAmount ? 'R ' + task.budgetAmount : (task.budget || 'Not set')}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                content += '</div>';
+            }
             
             document.getElementById('tasksListTitle').textContent = title + ' tasks';
             document.getElementById('tasksListContent').innerHTML = content;
@@ -1360,63 +2420,82 @@
         function viewTaskDetails(taskId) {
             const task = userTasks.find(t => (t._id || t.id) === taskId);
             if (!task) return;
-            
+
             currentTaskId = taskId;
             
+            // Build images HTML if any
             let imagesHtml = '';
-            if (task.images?.length) {
+            if (task.images && task.images.length > 0) {
                 imagesHtml = `
                     <div class="modal-section">
-                        <div class="modal-section-label">Images</div>
-                        <div class="image-preview-container">
-                            ${task.images.map(img => `<img src="${img}" class="image-preview">`).join('')}
+                        <span class="modal-section-label">Images</span>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            ${task.images.map(img => `<img src="${img}" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(4,91,146,0.2);">`).join('')}
                         </div>
                     </div>
                 `;
             }
-
-            document.getElementById('taskDetailsContent').innerHTML = `
+            
+            const content = `
                 <div class="modal-section">
-                    <div class="modal-section-label">Description</div>
-                    <div class="modal-section-value">${task.taskDescription || 'No description'}</div>
+                    <span class="modal-section-label">Description</span>
+                    <div class="modal-section-value">${task.taskDescription || task.title || 'No description'}</div>
                 </div>
                 
                 ${imagesHtml}
                 
-                <div class="modal-section">
-                    <div class="modal-section-label">Location</div>
-                    <div class="modal-section-value">${task.location || 'Not specified'}</div>
+                <div class="modal-divider"></div>
+                
+                <div class="modal-detail-grid">
+                    <div class="modal-detail-item">
+                        <span class="modal-detail-label">Location</span>
+                        <span class="modal-detail-value">${task.location || task.area || 'Not specified'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <span class="modal-detail-label">Category</span>
+                        <span class="modal-detail-value">${task.category || getCategoryFromDescription(task.taskDescription) || 'General'}</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <span class="modal-detail-label">Budget</span>
+                        <span class="modal-detail-value pink">${task.budgetAmount ? 'R ' + task.budgetAmount : (task.budget || 'Not set')}</span>
+                    </div>
                 </div>
                 
                 <div class="modal-section">
-                    <div class="modal-section-label">Street Address</div>
-                    <div class="modal-section-value">${task.streetName || 'Not provided'}</div>
+                    <span class="modal-section-label">Status</span>
+                    <div><span class="status-badge ${task.status || 'active'}">${formatStatus(task.status)}</span></div>
                 </div>
                 
                 <div class="modal-section">
-                    <div class="modal-section-label">Budget</div>
-                    <div class="modal-section-value" style="color: #FF286F;">R ${task.budgetAmount || task.budget || '0'}</div>
+                    <span class="modal-section-label">Posted</span>
+                    <div class="modal-section-value">${formatDate(task.createdAt || task.postedAt || task.date)}</div>
                 </div>
                 
+                ${task.streetName ? `
                 <div class="modal-section">
-                    <div class="modal-section-label">Status</div>
-                    <span class="status-badge ${task.status || 'active'}">${formatStatus(task.status)}</span>
+                    <span class="modal-section-label">Street Address</span>
+                    <div class="modal-section-value">${task.streetName}</div>
                 </div>
+                ` : ''}
                 
                 ${task.moreDetails ? `
                 <div class="modal-section">
-                    <div class="modal-section-label">Additional Details</div>
+                    <span class="modal-section-label">Additional Details</span>
                     <div class="modal-section-value">${task.moreDetails}</div>
                 </div>
                 ` : ''}
                 
-                <div class="task-actions">
-                    <button class="btn-primary" onclick="openManageTask('${taskId}')">Manage Task</button>
-                    <button class="btn-secondary" onclick="closeTaskDetailsModal()">Close</button>
+                <div class="modal-divider"></div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn save" onclick="openManageTask('${taskId}')">Manage Task</button>
+                    <button class="action-btn secondary" onclick="closeTaskDetailsModal()">Close</button>
                 </div>
             `;
             
+            document.getElementById('taskDetailsContent').innerHTML = content;
             openModal('taskDetailsModal');
+            closeTasksListModal();
         }
 
         function closeTaskDetailsModal() {
@@ -1426,49 +2505,65 @@
         function openManageTask(taskId) {
             const task = userTasks.find(t => (t._id || t.id) === taskId);
             if (!task) return;
-            
+
             currentTaskId = taskId;
+            
+            // Check if task has been edited before
             const editCount = taskEditCount[taskId] || 0;
-            const disabled = editCount >= 1 ? 'disabled' : '';
-
+            
+            // If already edited, disable editing
+            const disabledAttr = editCount >= 1 ? 'disabled' : '';
+            const readonlyAttr = editCount >= 1 ? 'readonly' : '';
+            
+            // Build images HTML
             let imagesHtml = '';
-            if (task.images?.length) {
-                imagesHtml = `<img src="${task.images[0]}" class="image-preview" style="margin-bottom: 0.5rem;">`;
+            if (task.images && task.images.length > 0) {
+                imagesHtml = `
+                    <div class="current-image">
+                        <img src="${task.images[0]}" alt="Task image">
+                    </div>
+                `;
             }
-
-            document.getElementById('manageTaskContent').innerHTML = `
-                <div class="modal-section">
-                    <div class="modal-section-label">Task Description</div>
-                    <textarea class="modal-section-value" style="width:100%; min-height:80px; resize:vertical;" id="editTaskDescription" ${disabled}>${task.taskDescription || ''}</textarea>
+            
+            const content = `
+                <div class="edit-field">
+                    <label>Task Description</label>
+                    <textarea id="editTaskDescription" ${readonlyAttr}>${task.taskDescription || task.title || ''}</textarea>
                 </div>
                 
-                <div class="modal-section">
-                    <div class="modal-section-label">Images</div>
+                <div class="image-upload-section">
+                    <span class="image-upload-label">Task Image</span>
                     ${imagesHtml}
-                    <button class="btn-secondary" style="width:100%;" onclick="document.getElementById('taskImageInput').click()" ${disabled}>
-                        <span class="material-symbols-outlined">upload</span> Upload Image
+                    <button class="upload-image-btn" onclick="document.getElementById('taskImageInput').click()" ${disabledAttr}>
+                        <span class="material-symbols-outlined">upload</span>
+                        Upload Image
                     </button>
-                    <input type="file" id="taskImageInput" style="display:none;" accept="image/*" onchange="previewTaskImage(this)">
+                    <input type="file" id="taskImageInput" class="hidden-input" accept="image/*" onchange="previewTaskImage(this)">
                 </div>
                 
-                <div class="modal-section">
-                    <div class="modal-section-label">Budget (R)</div>
-                    <input type="number" class="modal-section-value" style="width:100%;" id="editBudget" value="${task.budgetAmount || task.budget || ''}" ${disabled}>
+                <div class="edit-field">
+                    <label>Budget (R)</label>
+                    <input type="number" id="editBudget" value="${task.budgetAmount || task.budget || ''}" min="0" step="1" ${readonlyAttr}>
                 </div>
                 
-                <div class="modal-section">
-                    <div class="modal-section-label">Street Address</div>
-                    <input type="text" class="modal-section-value" style="width:100%;" id="editStreetAddress" value="${task.streetName || ''}" ${disabled}>
+                <div class="address-field">
+                    <label>Street Address</label>
+                    <div class="address-input-wrapper">
+                        <input type="text" id="editStreetAddress" class="address-input" value="${task.streetName || ''}" placeholder="Enter your address" ${readonlyAttr}>
+                        <button class="location-icon" onclick="openMap()" ${disabledAttr}>
+                            <span class="material-symbols-outlined">location_on</span>
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="modal-section">
-                    <div class="modal-section-label">Additional Details</div>
-                    <textarea class="modal-section-value" style="width:100%; min-height:80px; resize:vertical;" id="editMoreDetails" ${disabled}>${task.moreDetails || ''}</textarea>
+                <div class="edit-field">
+                    <label>Additional Details</label>
+                    <textarea id="editMoreDetails" ${readonlyAttr}>${task.moreDetails || ''}</textarea>
                 </div>
                 
-                <div class="modal-section">
-                    <div class="modal-section-label">Status</div>
-                    <select class="modal-section-value" style="width:100%;" id="editStatus" ${disabled}>
+                <div class="edit-field">
+                    <label>Status</label>
+                    <select id="editStatus" ${disabledAttr}>
                         <option value="active" ${task.status === 'active' ? 'selected' : ''}>Active</option>
                         <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
                         <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
@@ -1476,19 +2571,21 @@
                     </select>
                 </div>
                 
-                ${editCount >= 1 ? '<p style="color:#FF286F; text-align:center; margin:1rem 0;">This task has already been edited</p>' : ''}
+                <div class="modal-divider"></div>
                 
-                <div class="task-actions">
+                <div class="action-buttons">
                     ${editCount < 1 ? 
-                        `<button class="btn-primary" onclick="confirmEditTask()">Save Changes</button>` : 
-                        `<button class="btn-primary" disabled style="opacity:0.5;">Already Edited</button>`
+                        `<button class="action-btn save" onclick="confirmEditTask('${taskId}')">Save Changes</button>` : 
+                        `<button class="action-btn save" disabled style="opacity:0.5; cursor:not-allowed;">Already Edited</button>`
                     }
-                    <button class="btn-primary" style="background:#045B92;" onclick="markTaskDone('${taskId}')">Mark as Done</button>
-                    <button class="btn-primary" style="background:#ef4444;" onclick="cancelTask('${taskId}')">Cancel Task</button>
-                    <button class="btn-secondary" onclick="closeManageTaskModal()">Close</button>
+                    <button class="action-btn complete" onclick="markTaskDone('${taskId}')">Mark as Done</button>
+                    <button class="action-btn cancel" onclick="cancelTask('${taskId}')">Cancel Task</button>
+                    <button class="action-btn secondary" onclick="closeManageTaskModal()">Close</button>
                 </div>
+                ${editCount >= 1 ? '<p style="color:#ef4444; font-size:0.8rem; text-align:center; margin-top:0.5rem;">This task has already been edited once. Further edits are not allowed.</p>' : ''}
             `;
             
+            document.getElementById('manageTaskContent').innerHTML = content;
             openModal('manageTaskModal');
             closeTaskDetailsModal();
         }
@@ -1497,8 +2594,9 @@
             closeModal('manageTaskModal');
         }
 
-        function confirmEditTask() {
-            closeManageTaskModal();
+        // ==================== ONE-TIME EDIT CONFIRMATION ====================
+        function confirmEditTask(taskId) {
+            pendingTaskId = taskId;
             openModal('confirmEditModal');
         }
 
@@ -1506,172 +2604,362 @@
             closeModal('confirmEditModal');
         }
 
-        function saveTaskChanges() {
-            const description = document.getElementById('editTaskDescription')?.value;
-            const budget = document.getElementById('editBudget')?.value;
-            const streetAddress = document.getElementById('editStreetAddress')?.value;
-            const moreDetails = document.getElementById('editMoreDetails')?.value;
-            const status = document.getElementById('editStatus')?.value;
-
-            const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
-            if (taskIndex === -1) return;
-
-            const taskId = userTasks[taskIndex]._id || userTasks[taskIndex].id;
-            if (taskEditCount[taskId] >= 1) {
-                showToast('Already edited once', true);
-                return;
-            }
-
-            // Update task
-            if (description) userTasks[taskIndex].taskDescription = description;
-            if (budget) userTasks[taskIndex].budgetAmount = budget;
-            if (streetAddress) userTasks[taskIndex].streetName = streetAddress;
-            if (moreDetails) userTasks[taskIndex].moreDetails = moreDetails;
-            if (status) userTasks[taskIndex].status = status;
-
-            // Track edit
-            taskEditCount[taskId] = (taskEditCount[taskId] || 0) + 1;
-            
-            if (currentUser?.email) {
-                localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
-                localStorage.setItem(`editCount_${currentUser.email}`, JSON.stringify(taskEditCount));
-            }
-
-            addNotification('edit', 'Task Updated', `You edited "${(description || '').substring(0, 30)}..."`, currentTaskId);
-            updateDashboardWithTasks(userTasks);
-            showToast('Task updated');
+        function confirmEditTask() {
             closeConfirmEditModal();
+            // Proceed with saving
+            saveTaskChanges();
+        }
+
+        // ==================== TASK ACTIONS ====================
+        function saveTaskChanges() {
+            try {
+                const description = document.getElementById('editTaskDescription')?.value;
+                const budget = document.getElementById('editBudget')?.value;
+                const streetAddress = document.getElementById('editStreetAddress')?.value;
+                const moreDetails = document.getElementById('editMoreDetails')?.value;
+                const status = document.getElementById('editStatus')?.value;
+
+                const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
+                if (taskIndex !== -1) {
+                    const taskId = userTasks[taskIndex]._id || userTasks[taskIndex].id;
+                    
+                    // Check if already edited
+                    if (taskEditCount[taskId] >= 1) {
+                        showToast('This task has already been edited once', true);
+                        return;
+                    }
+                    
+                    const oldDescription = userTasks[taskIndex].taskDescription;
+                    
+                    if (description) userTasks[taskIndex].taskDescription = description;
+                    if (budget) userTasks[taskIndex].budgetAmount = budget;
+                    if (streetAddress) userTasks[taskIndex].streetName = streetAddress;
+                    if (moreDetails !== undefined) userTasks[taskIndex].moreDetails = moreDetails;
+                    if (status) userTasks[taskIndex].status = status;
+                    
+                    // Track edit count
+                    taskEditCount[taskId] = (taskEditCount[taskId] || 0) + 1;
+                    
+                    // Save to localStorage
+                    if (currentUser?.email) {
+                        localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
+                        localStorage.setItem(`editCount_${currentUser.email}`, JSON.stringify(taskEditCount));
+                    }
+                    
+                    // Add notification
+                    addNotification(
+                        'edit',
+                        'Task Updated',
+                        `You edited "${description.substring(0, 30)}${description.length > 30 ? '...' : ''}"`,
+                        currentTaskId
+                    );
+                    
+                    // Update dashboard
+                    updateDashboardWithTasks(userTasks);
+                    showToast('Task updated successfully!');
+                    closeManageTaskModal();
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+            }
         }
 
         function markTaskDone(taskId) {
             const taskIndex = userTasks.findIndex(t => (t._id || t.id) === taskId);
-            if (taskIndex === -1) return;
-
-            userTasks[taskIndex].status = 'completed';
-            
-            if (currentUser?.email) {
-                localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
+            if (taskIndex !== -1) {
+                userTasks[taskIndex].status = 'completed';
+                
+                if (currentUser?.email) {
+                    localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
+                }
+                
+                const task = userTasks[taskIndex];
+                addNotification(
+                    'complete',
+                    'Task Completed',
+                    `"${(task.taskDescription || 'Task').substring(0, 30)}..." marked as done`,
+                    taskId
+                );
+                
+                updateDashboardWithTasks(userTasks);
+                showToast('Task marked as done!');
+                closeManageTaskModal();
             }
-
-            addNotification('complete', 'Task Completed', `"${(userTasks[taskIndex].taskDescription || '').substring(0, 30)}..." marked as done`, taskId);
-            updateDashboardWithTasks(userTasks);
-            showToast('Task marked as done');
-            closeManageTaskModal();
         }
 
         function cancelTask(taskId) {
-            if (!confirm('Cancel this task?')) return;
-
-            const taskIndex = userTasks.findIndex(t => (t._id || t.id) === taskId);
-            if (taskIndex === -1) return;
-
-            userTasks[taskIndex].status = 'cancelled';
-            
-            if (currentUser?.email) {
-                localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
+            if (confirm('Are you sure you want to cancel this task?')) {
+                const taskIndex = userTasks.findIndex(t => (t._id || t.id) === taskId);
+                if (taskIndex !== -1) {
+                    userTasks[taskIndex].status = 'cancelled';
+                    
+                    if (currentUser?.email) {
+                        localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
+                    }
+                    
+                    const task = userTasks[taskIndex];
+                    addNotification(
+                        'cancelled',
+                        'Task Cancelled',
+                        `You cancelled "${(task.taskDescription || 'Task').substring(0, 30)}..."`,
+                        taskId
+                    );
+                    
+                    updateDashboardWithTasks(userTasks);
+                    showToast('Task cancelled');
+                    closeManageTaskModal();
+                }
             }
-
-            addNotification('cancelled', 'Task Cancelled', `You cancelled "${(userTasks[taskIndex].taskDescription || '').substring(0, 30)}..."`, taskId);
-            updateDashboardWithTasks(userTasks);
-            showToast('Task cancelled');
-            closeManageTaskModal();
         }
 
+        // ==================== IMAGE UPLOAD ====================
         function previewTaskImage(input) {
-            if (!input.files?.length) return;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
-                if (taskIndex === -1) return;
-
-                if (!userTasks[taskIndex].images) userTasks[taskIndex].images = [];
-                userTasks[taskIndex].images.push(e.target.result);
-                showToast('Image added');
-            };
-            reader.readAsDataURL(input.files[0]);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    
+                    // Update task with new image
+                    const taskIndex = userTasks.findIndex(t => (t._id || t.id) === currentTaskId);
+                    if (taskIndex !== -1) {
+                        if (!userTasks[taskIndex].images) userTasks[taskIndex].images = [];
+                        userTasks[taskIndex].images.push(imageData);
+                        
+                        // Show preview
+                        const currentImageDiv = document.querySelector('.current-image');
+                        if (currentImageDiv) {
+                            currentImageDiv.innerHTML = `<img src="${imageData}" alt="Task image" style="width:100px; height:100px; border-radius:10px; object-fit:cover;">`;
+                        }
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
-        // ==================== PROFILE ====================
-        function openEditProfile() {
-            // Implement if needed
-            showToast('Edit profile coming soon');
+        function openMap() {
+            showToast('Map integration coming soon');
         }
 
-        // ==================== INIT ====================
+        // ==================== ACCOUNT ACTIONS ====================
+        function confirmDeleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                localStorage.removeItem('taskmart_user');
+                localStorage.removeItem(`tasks_${currentUser?.email}`);
+                localStorage.removeItem(`notifications_${currentUser?.email}`);
+                localStorage.removeItem(`profile_image_${currentUser?.email}`);
+                localStorage.removeItem(`editCount_${currentUser?.email}`);
+                showToast('Account deleted successfully');
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 1500);
+            }
+        }
+
+        // ==================== DASHBOARD UPDATE ====================
         async function updateDashboard() {
-            currentUser = getCurrentUser();
-            
-            if (!currentUser) {
-                document.getElementById('recentTaskContent').innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-symbols-outlined">login</span>
-                        <p>Please log in</p>
-                        <button class="btn-primary" onclick="window.location.href='/login.html'">Go to Login</button>
-                    </div>
-                `;
-                return;
+            try {
+                currentUser = getCurrentUser();
+                addDebug('Current user:', currentUser);
+                
+                if (!currentUser) {
+                    document.getElementById('recentTaskContent').innerHTML = `
+                        <div class="empty-state">
+                            <span class="material-symbols-outlined">login</span>
+                            <p>Please log in to view your tasks</p>
+                            <button class="retry-btn" onclick="window.location.href='/login.html?returnTo=' + encodeURIComponent(window.location.href)">Go to Login</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Load saved profile image
+                const savedImage = localStorage.getItem(`profile_image_${currentUser.email}`);
+                if (savedImage) {
+                    document.getElementById('avatarImage').src = savedImage;
+                    document.getElementById('avatarImage').style.display = 'block';
+                    document.getElementById('avatarText').style.display = 'none';
+                    document.getElementById('uploadAvatarImage').src = savedImage;
+                    document.getElementById('uploadAvatarImage').style.display = 'block';
+                    document.getElementById('uploadAvatarText').style.display = 'none';
+                }
+
+                // Update profile
+                document.getElementById('profileName').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}!`;
+                document.getElementById('avatarText').textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
+                document.getElementById('uploadAvatarText').textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
+                
+                updateVerificationRing();
+
+                // Load edit counts
+                const savedEditCounts = localStorage.getItem(`editCount_${currentUser.email}`);
+                if (savedEditCounts) {
+                    taskEditCount = JSON.parse(savedEditCounts);
+                }
+
+                // Load cached tasks first
+                const cachedTasks = localStorage.getItem(`tasks_${currentUser.email}`);
+                if (cachedTasks) {
+                    userTasks = JSON.parse(cachedTasks);
+                    updateDashboardWithTasks(userTasks);
+                }
+
+                // Then fetch fresh tasks
+                const freshTasks = await fetchUserTasks();
+                if (freshTasks) {
+                    userTasks = freshTasks;
+                    updateDashboardWithTasks(userTasks);
+                }
+                
+                // Load notifications
+                loadNotifications();
+                
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
             }
-
-            // Load profile image
-            const savedImage = localStorage.getItem(`profile_image_${currentUser.email}`);
-            if (savedImage) {
-                document.getElementById('avatarImage').src = savedImage;
-                document.getElementById('avatarImage').style.display = 'block';
-                document.getElementById('avatarText').style.display = 'none';
-            }
-
-            document.getElementById('profileName').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}`;
-            document.getElementById('avatarText').textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
-
-            // Load edit counts
-            const savedEdits = localStorage.getItem(`editCount_${currentUser.email}`);
-            if (savedEdits) taskEditCount = JSON.parse(savedEdits);
-
-            // Load cached tasks first
-            const cached = localStorage.getItem(`tasks_${currentUser.email}`);
-            if (cached) {
-                userTasks = JSON.parse(cached);
-                updateDashboardWithTasks(userTasks);
-            }
-
-            // Fetch fresh
-            const fresh = await fetchUserTasks();
-            if (fresh) {
-                userTasks = fresh;
-                updateDashboardWithTasks(userTasks);
-            }
-
-            loadNotifications();
         }
 
-        // ==================== START ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!isUserLoggedIn()) {
-                document.getElementById('recentTaskContent').innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-symbols-outlined">login</span>
-                        <p>Please log in</p>
-                        <button class="btn-primary" onclick="window.location.href='/login.html'">Go to Login</button>
-                    </div>
-                `;
-            } else {
-                updateDashboard();
+        // ==================== NAVIGATION ====================
+        window.viewTaskDetails = viewTaskDetails;
+        window.openManageTask = openManageTask;
+        window.confirmEditTask = confirmEditTask;
+        window.markTaskDone = markTaskDone;
+        window.cancelTask = cancelTask;
+
+        window.logout = function() {
+            localStorage.removeItem('taskmart_user');
+            window.location.href = '/login.html';
+        };
+
+        // ==================== EDIT PROFILE ====================
+        window.openEditProfile = function() {
+            if (!currentUser) return;
+            
+            document.getElementById('editName').value = currentUser.name || '';
+            document.getElementById('editEmail').value = currentUser.email || '';
+            
+            openModal('editProfileModal');
+        };
+
+        window.closeEditProfile = function() {
+            closeModal('editProfileModal');
+        };
+
+        window.previewImage = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    
+                    document.getElementById('uploadAvatarText').style.display = 'none';
+                    document.getElementById('uploadAvatarImage').style.display = 'block';
+                    document.getElementById('uploadAvatarImage').src = imageData;
+                    document.getElementById('avatarImage').style.display = 'block';
+                    document.getElementById('avatarImage').src = imageData;
+                    document.getElementById('avatarText').style.display = 'none';
+                    
+                    if (currentUser) {
+                        localStorage.setItem(`profile_image_${currentUser.email}`, imageData);
+                        
+                        addNotification(
+                            'verified',
+                            'Profile Photo Updated',
+                            'You uploaded a new profile photo'
+                        );
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
             }
+        };
+
+        window.saveProfile = function() {
+            const newName = document.getElementById('editName').value;
+            
+            if (currentUser) {
+                const oldName = currentUser.name;
+                currentUser.name = newName;
+                currentUser.initials = newName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
+                localStorage.setItem('taskmart_user', JSON.stringify(currentUser));
+                
+                document.getElementById('profileName').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}!`;
+                document.getElementById('avatarText').textContent = currentUser.initials;
+                document.getElementById('uploadAvatarText').textContent = currentUser.initials;
+                
+                if (newName !== oldName) {
+                    addNotification(
+                        'verified',
+                        'Profile Updated',
+                        'Your profile information has been updated'
+                    );
+                }
+                
+                closeEditProfile();
+                showToast('Profile updated successfully!');
+            }
+        };
+
+        // ==================== COLLAPSIBLE SETTINGS ====================
+        window.toggleSettings = function() {
+            const header = document.getElementById('settingsHeader');
+            const content = document.getElementById('settingsContent');
+            const icon = header.querySelector('.material-symbols-outlined');
+            
+            settingsCollapsed = !settingsCollapsed;
+            
+            if (settingsCollapsed) {
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+                icon.textContent = 'expand_more';
+            } else {
+                header.classList.remove('collapsed');
+                content.classList.remove('collapsed');
+                icon.textContent = 'expand_less';
+            }
+        };
+
+        // ==================== EVENT LISTENERS ====================
+        // Close modals when clicking outside
+        document.getElementById('tasksListModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTasksListModal();
         });
 
-        // Modal close on outside click
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    const id = modal.id;
-                    if (id === 'tasksListModal') closeTasksListModal();
-                    if (id === 'taskDetailsModal') closeTaskDetailsModal();
-                    if (id === 'manageTaskModal') closeManageTaskModal();
-                    if (id === 'notificationsModal') closeNotifications();
-                    if (id === 'confirmEditModal') closeConfirmEditModal();
+        document.getElementById('taskDetailsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTaskDetailsModal();
+        });
+
+        document.getElementById('manageTaskModal').addEventListener('click', function(e) {
+            if (e.target === this) closeManageTaskModal();
+        });
+
+        document.getElementById('notificationsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeNotifications();
+        });
+
+        document.getElementById('editProfileModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditProfile();
+        });
+
+        document.getElementById('confirmEditModal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfirmEditModal();
+        });
+
+        // ==================== INITIALIZE ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (!isUserLoggedIn()) {
+                    document.getElementById('recentTaskContent').innerHTML = `
+                        <div class="empty-state">
+                            <span class="material-symbols-outlined">login</span>
+                            <p>Please log in to view your dashboard</p>
+                            <button class="retry-btn" onclick="window.location.href='/login.html?returnTo=' + encodeURIComponent(window.location.href)">Go to Login</button>
+                        </div>
+                    `;
+                } else {
+                    updateDashboard();
                 }
-            });
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+            }
         });
     </script>
 </body>
