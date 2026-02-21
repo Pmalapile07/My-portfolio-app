@@ -22,7 +22,7 @@
     <script src="/config.js"></script>
 
     <style>
-        /* ALL YOUR EXISTING CSS STYLES */
+        /* ALL YOUR EXISTING CSS STYLES - KEEP THEM EXACTLY AS THEY ARE */
         @font-face {
             font-family: 'Codec Cold News';
             src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
@@ -683,50 +683,26 @@
             font-weight: 500;
         }
         
-        /* Error toast */
-        .error-toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #FF286F;
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            box-shadow: 0 10px 30px rgba(255, 40, 111, 0.3);
-            z-index: 10000004;
-            transition: transform 0.3s ease;
-            max-width: 90%;
-            text-align: center;
-        }
-        
-        .error-toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-        
         /* Success toast */
         .success-toast {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            top: 20px;
+            right: 20px;
             background: #10b981;
             color: white;
-            padding: 1rem 2rem;
-            border-radius: 50px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
             font-family: 'Manrope', sans-serif;
             font-weight: 500;
             box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
             z-index: 10000004;
+            transform: translateX(400px);
             transition: transform 0.3s ease;
-            max-width: 90%;
-            text-align: center;
+            max-width: 350px;
         }
         
         .success-toast.show {
-            transform: translateX(-50%) translateY(0);
+            transform: translateX(0);
         }
         
         .char-count {
@@ -1803,9 +1779,6 @@
         </div>
     </div>
 
-    <!-- ERROR TOAST -->
-    <div class="error-toast" id="errorToast"></div>
-    
     <!-- SUCCESS TOAST -->
     <div class="success-toast" id="successToast"></div>
 
@@ -1886,24 +1859,13 @@
             const BASE_URL = window.location.origin;
             
             // Auth helper functions
-            function getAuthToken() {
-                return localStorage.getItem('auth_token');
-            }
-
             function getCurrentUser() {
-                const user = localStorage.getItem('user');
+                const user = localStorage.getItem('taskmart_user');
                 return user ? JSON.parse(user) : null;
             }
 
             function isUserLoggedIn() {
-                return !!getAuthToken() && !!getCurrentUser();
-            }
-
-            function showError(message) {
-                const toast = document.getElementById('errorToast');
-                toast.textContent = message;
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 4000);
+                return !!localStorage.getItem('taskmart_user');
             }
 
             function showSuccess(message) {
@@ -2017,8 +1979,13 @@
             let uploadedImages = [];
             let isPosting = false;
 
-            // Check for pending task after login
+            // Check for pending task after login - but ONLY ONCE
+            let hasCheckedPendingTask = false;
+            
             function checkForPendingTask() {
+                if (hasCheckedPendingTask) return;
+                hasCheckedPendingTask = true;
+                
                 const pendingTask = sessionStorage.getItem('pendingTask');
                 if (pendingTask) {
                     try {
@@ -2060,7 +2027,10 @@
                             displayImagePreviews();
                         }
                         
+                        // Clear the pending task immediately so it doesn't restore again
                         sessionStorage.removeItem('pendingTask');
+                        
+                        // Show success message
                         showSuccess('Task restored! You can now post it.');
                     } catch (e) {
                         console.error('Error restoring task:', e);
@@ -2376,7 +2346,6 @@
                     
                 } catch (error) {
                     console.error('Failed to initialize map:', error);
-                    showError('Failed to load map. Please try again.');
                 }
             }
 
@@ -2635,12 +2604,11 @@
             
             nextButton.addEventListener('click', openPreview);
 
-            // ===== MONGODB SAVE FUNCTIONALITY WITH AUTH =====
+            // ===== SAVE TASK TO MONGODB =====
             async function saveTaskToMongoDB(taskData) {
-                const token = getAuthToken();
                 const user = getCurrentUser();
                 
-                if (!token || !user) {
+                if (!user) {
                     throw new Error('Not authenticated');
                 }
                 
@@ -2659,7 +2627,6 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify(taskData),
                         signal: controller.signal
@@ -2668,12 +2635,6 @@
                     clearTimeout(timeoutId);
                     
                     if (!response.ok) {
-                        if (response.status === 401) {
-                            // Token expired or invalid
-                            localStorage.removeItem('auth_token');
-                            localStorage.removeItem('user');
-                            throw new Error('Session expired. Please login again.');
-                        }
                         const errorData = await response.json().catch(() => null);
                         throw new Error(errorData?.error || 'Failed to save task');
                     }
@@ -2732,194 +2693,3 @@
                 e.stopPropagation();
                 
                 console.log('Post button clicked');
-                
-                // Visual feedback
-                postButton.classList.add('clicked');
-                setTimeout(() => postButton.classList.remove('clicked'), 200);
-                
-                // Check if button is disabled
-                if (postButton.disabled) {
-                    console.log('Post button is disabled');
-                    showError('Please accept terms and conditions first');
-                    return;
-                }
-                
-                // Prevent multiple clicks
-                if (isPosting) {
-                    console.log('Already posting');
-                    return;
-                }
-                
-                // Check if user is logged in
-                if (!isUserLoggedIn()) {
-                    console.log('No user, redirecting to login');
-                    
-                    // Save task data
-                    const taskData = {
-                        location: locationField.value,
-                        streetName: streetField.value,
-                        taskDescription: taskField.value,
-                        budgetType: budgetType,
-                        budgetAmount: budgetAmountInput.value,
-                        selectedWhen: selectedWhen,
-                        selectedDate: selectedDate,
-                        selectedTime: selectedTime,
-                        selectedPayment: selectedPayment,
-                        moreDetails: moreDetailsField.value,
-                        uploadedImages: uploadedImages
-                    };
-                    sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
-                    
-                    // Redirect to login
-                    const returnUrl = encodeURIComponent(window.location.href);
-                    window.location.href = '/login.html?returnTo=' + returnUrl;
-                    return;
-                }
-                
-                // User is logged in - show confirmation
-                console.log('Showing confirmation modal');
-                confirmTitle.textContent = 'Ready to post?';
-                confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
-                confirmYesBtn.textContent = 'Yes, post it';
-                confirmModal.classList.add('active');
-            });
-
-            // ===== CONFIRM YES BUTTON HANDLER =====
-            confirmYesBtn.addEventListener('click', async function() {
-                if (isPosting) {
-                    console.log('Already posting');
-                    return;
-                }
-                
-                isPosting = true;
-                
-                // Visual feedback
-                confirmYesBtn.classList.add('loading');
-                confirmYesBtn.disabled = true;
-                
-                console.log('Confirm Yes clicked - starting post');
-                
-                // Hide confirmation modal immediately
-                confirmModal.classList.remove('active');
-                
-                // Show loading overlay
-                postLoadingOverlay.classList.add('active');
-                
-                // Add loading class to post button
-                postButton.classList.add('loading');
-                
-                const user = getCurrentUser();
-                
-                // Prepare task data
-                const taskData = {
-                    location: locationField.value,
-                    coordinates: currentCoordinates || '',
-                    streetName: streetField.value || '',
-                    when: selectedWhen,
-                    scheduledDate: selectedDate,
-                    scheduledTime: selectedTime,
-                    taskDescription: taskField.value,
-                    budgetType: budgetType,
-                    budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
-                    paymentMethod: selectedPayment,
-                    moreDetails: moreDetailsField.value || '',
-                    images: uploadedImages,
-                    status: 'posted'
-                };
-                
-                try {
-                    // Save to MongoDB with auth
-                    const savedTask = await saveTaskToMongoDB(taskData);
-                    
-                    // Hide loading overlay
-                    postLoadingOverlay.classList.remove('active');
-                    postButton.classList.remove('loading');
-                    
-                    if (savedTask) {
-                        console.log('Task saved successfully:', savedTask);
-                        
-                        // Hide preview sheet
-                        previewSheet.style.display = 'none';
-                        
-                        // Show success sheet
-                        successTaskId.textContent = `#${savedTask._id}`;
-                        successSheet.style.display = 'flex';
-                        
-                        // Fire confetti
-                        fireConfettiAroundIcon();
-                        
-                        // Reset form
-                        locationField.value = 'detecting location...';
-                        streetField.value = '';
-                        taskField.value = '';
-                        budgetAmountInput.value = '';
-                        moreDetailsField.value = '';
-                        uploadedImages = [];
-                        imagePreviewContainer.innerHTML = '';
-                        updateCharCount();
-                        
-                        showSuccess('Task posted successfully!');
-                    }
-                } catch (error) {
-                    // Hide loading overlay on error
-                    postLoadingOverlay.classList.remove('active');
-                    postButton.classList.remove('loading');
-                    
-                    // Show error toast
-                    showError(error.message || 'Failed to post task. Please try again.');
-                    console.error('Post error:', error);
-                    
-                    // If session expired, redirect to login
-                    if (error.message.includes('Session expired')) {
-                        setTimeout(() => {
-                            const returnUrl = encodeURIComponent(window.location.href);
-                            window.location.href = '/login.html?returnTo=' + returnUrl;
-                        }, 2000);
-                    }
-                } finally {
-                    // Re-enable button
-                    isPosting = false;
-                    confirmYesBtn.classList.remove('loading');
-                    confirmYesBtn.disabled = false;
-                }
-            });
-
-            confirmCancelBtn.addEventListener('click', function() {
-                confirmModal.classList.remove('active');
-            });
-
-            confirmModal.addEventListener('click', function(e) {
-                if (e.target === confirmModal) {
-                    confirmModal.classList.remove('active');
-                }
-            });
-
-            locationSheet.addEventListener('click', function(e) {
-                if (e.target === locationSheet) closePlanner();
-            });
-            
-            previewSheet.addEventListener('click', function(e) {
-                if (e.target === previewSheet) {
-                    previewSheet.style.display = 'none';
-                    unlockBodyScroll();
-                }
-            });
-
-            locationSheet.addEventListener('touchstart', function(e) {
-                if (e.target === locationSheet) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-            
-            previewSheet.addEventListener('touchstart', function(e) {
-                if (e.target === previewSheet) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            // Check for pending task
-            checkForPendingTask();
-        })();
-    </script>
-</body>
-</html>
