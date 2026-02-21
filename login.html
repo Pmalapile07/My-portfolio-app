@@ -25,16 +25,16 @@
             color: #1e293b;
         }
 
-        /* Minimal Header with Logo */
+        /* Header - Matches Login Button */
         .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            padding: 1.5rem 2rem;
-            background: white;
-            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            padding: 1rem 2rem;
+            background: #FF286F;  /* Matches login button */
             z-index: 100;
+            box-shadow: 0 2px 8px rgba(255, 40, 111, 0.2);
         }
 
         .header-content {
@@ -46,7 +46,7 @@
         }
 
         .logo {
-            height: 45px;
+            height: 40px;
             width: auto;
             display: flex;
             align-items: center;
@@ -56,23 +56,57 @@
             height: 100%;
             width: auto;
             object-fit: contain;
+            filter: brightness(0) invert(1); /* Makes logo white on pink */
         }
 
-        .header-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .header-links a {
-            color: #045B92;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .header-links a:hover {
+        /* Debug Button */
+        .debug-toggle {
+            background: white;
             color: #FF286F;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .debug-toggle:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: scale(1.05);
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            top: 80px;
+            right: 2rem;
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            max-width: 400px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            border-left: 4px solid #FF286F;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-error {
+            color: #FF286F;
+        }
+
+        .debug-success {
+            color: #10b981;
         }
 
         /* Main Container */
@@ -199,7 +233,7 @@
             display: block;
         }
 
-        /* Role Selector - Minimal */
+        /* Role Selector */
         .role-selector {
             display: flex;
             gap: 1rem;
@@ -323,33 +357,6 @@
             text-decoration: none;
         }
 
-        /* Demo Credentials - Minimal */
-        .demo-credentials {
-            background: #f8fafd;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1.5rem;
-            border: 1px solid rgba(4, 91, 146, 0.1);
-        }
-
-        .demo-credentials p {
-            color: #045B92;
-            font-size: 0.75rem;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .demo-credentials code {
-            display: block;
-            color: #64748b;
-            font-size: 0.7rem;
-            background: white;
-            padding: 0.5rem;
-            border-radius: 6px;
-            border: 1px solid rgba(4, 91, 146, 0.1);
-            margin-bottom: 0.25rem;
-        }
-
         /* Toast Notifications */
         .toast {
             position: fixed;
@@ -386,30 +393,32 @@
                 height: 35px;
             }
             
-            .header-links {
-                gap: 1rem;
-            }
-            
             .auth-card {
                 padding: 1.5rem;
+            }
+            
+            .debug-panel {
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Minimal Header with Logo -->
+    <!-- Header - Pink matching login button -->
     <header class="header">
         <div class="header-content">
             <div class="logo">
                 <img src="Cream Black Typography Loop Brand Logo (500 x 180 px).png" alt="TaskMart" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <span style="display: none; font-weight: 700; color: #045B92; font-size: 1.5rem;">TaskMart</span>
+                <span style="display: none; font-weight: 700; color: white; font-size: 1.5rem;">TaskMart</span>
             </div>
-            <div class="header-links">
-                <a href="#">About</a>
-                <a href="#">Help</a>
-            </div>
+            <button class="debug-toggle" onclick="toggleDebug()">Debug</button>
         </div>
     </header>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel" id="debugPanel"></div>
 
     <!-- Main Container -->
     <div class="auth-container">
@@ -442,12 +451,6 @@
                 </div>
 
                 <button type="submit" class="auth-button" id="loginBtn">Log In</button>
-
-                <div class="demo-credentials">
-                    <p>Demo credentials</p>
-                    <code>Email: pmalapile07@gmail.com</code>
-                    <code>Password: password123</code>
-                </div>
             </form>
 
             <!-- Signup Form -->
@@ -520,6 +523,29 @@
         // ==================== CONFIG ====================
         const API_BASE_URL = 'https://taskmartapp.onrender.com';
 
+        // ==================== DEBUG ====================
+        function addDebug(message, type = 'info', data = null) {
+            const panel = document.getElementById('debugPanel');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : '';
+            
+            let debugText = `<span class="${className}">[${timestamp}]</span> ${message}`;
+            if (data) {
+                debugText += `\n${JSON.stringify(data, null, 2)}`;
+            }
+            panel.innerHTML += debugText + '\n---\n';
+            console.log(`[${type}]`, message, data);
+        }
+
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            panel.classList.toggle('show');
+            if (panel.classList.contains('show')) {
+                addDebug('Debug mode enabled', 'info');
+                addDebug('API URL:', 'info', API_BASE_URL);
+            }
+        }
+
         // ==================== TOAST ====================
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
@@ -582,6 +608,7 @@
         // ==================== SAVE USER ====================
         function saveUserSession(user) {
             localStorage.setItem('taskmart_user', JSON.stringify(user));
+            addDebug('User session saved', 'success', user);
         }
 
         function getReturnUrl() {
@@ -598,6 +625,8 @@
             const password = document.getElementById('loginPassword').value;
             const returnUrl = getReturnUrl();
             
+            addDebug('Login attempt for: ' + email, 'info');
+
             let isValid = true;
 
             if (!email) {
@@ -620,19 +649,26 @@
             loginBtn.classList.add('loading');
 
             try {
-                // Try to get users
+                addDebug('Fetching users from: ' + `${API_BASE_URL}/api/users`, 'info');
+                
                 const response = await fetch(`${API_BASE_URL}/api/users`);
                 const users = await response.json();
+                
+                addDebug('Users fetched: ' + users.length, 'success', users);
                 
                 // Find user
                 let user = users.find(u => u.email === email);
                 
                 if (!user) {
+                    addDebug('User not found: ' + email, 'error');
                     throw new Error('User not found');
                 }
 
-                // In production, use proper password verification
+                addDebug('User found:', 'success', user);
+
+                // Simple password check (in production, use proper verification)
                 if (user.password !== password) {
+                    addDebug('Password mismatch', 'error');
                     throw new Error('Invalid password');
                 }
 
@@ -646,12 +682,14 @@
                 
                 saveUserSession(userSession);
                 showToast('Login successful!');
+                addDebug('Login successful, redirecting to: ' + returnUrl, 'success');
                 
                 setTimeout(() => {
                     window.location.href = returnUrl;
                 }, 1000);
 
             } catch (error) {
+                addDebug('Login error: ' + error.message, 'error');
                 loginBtn.disabled = false;
                 loginBtn.classList.remove('loading');
                 showFieldError('loginEmail', 'Invalid credentials');
@@ -671,6 +709,8 @@
             const role = document.querySelector('input[name="role"]:checked')?.value;
             const returnUrl = getReturnUrl();
             
+            addDebug('Signup attempt for: ' + email, 'info');
+
             let isValid = true;
 
             if (!name) {
@@ -711,6 +751,16 @@
             signupBtn.classList.add('loading');
 
             try {
+                // Check if user exists
+                addDebug('Checking if user exists...', 'info');
+                const checkResponse = await fetch(`${API_BASE_URL}/api/users?email=${email}`);
+                const existingUsers = await checkResponse.json();
+                
+                if (existingUsers.length > 0) {
+                    addDebug('User already exists: ' + email, 'error');
+                    throw new Error('User exists');
+                }
+
                 const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 const newUser = {
                     name,
@@ -721,13 +771,21 @@
                     createdAt: new Date().toISOString()
                 };
 
+                addDebug('Creating user:', 'info', newUser);
+
                 const response = await fetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newUser)
                 });
 
-                if (!response.ok) throw new Error('Signup failed');
+                if (!response.ok) {
+                    addDebug('Signup API error: ' + response.status, 'error');
+                    throw new Error('Signup failed');
+                }
+
+                const createdUser = await response.json();
+                addDebug('User created successfully', 'success', createdUser);
 
                 const userSession = {
                     name: newUser.name,
@@ -739,12 +797,14 @@
                 
                 saveUserSession(userSession);
                 showToast('Account created!');
+                addDebug('Signup successful, redirecting to: ' + returnUrl, 'success');
                 
                 setTimeout(() => {
                     window.location.href = returnUrl;
                 }, 1000);
 
             } catch (error) {
+                addDebug('Signup error: ' + error.message, 'error');
                 signupBtn.disabled = false;
                 signupBtn.classList.remove('loading');
                 showFieldError('signupEmail', 'Email may already exist');
@@ -755,16 +815,21 @@
         // ==================== FORGOT PASSWORD ====================
         document.getElementById('forgotPassword').addEventListener('click', (e) => {
             e.preventDefault();
+            addDebug('Forgot password clicked', 'info');
             showToast('Contact support to reset password');
         });
 
         // ==================== CHECK EXISTING SESSION ====================
         const existingUser = localStorage.getItem('taskmart_user');
         if (existingUser) {
+            addDebug('Existing session found', 'info', JSON.parse(existingUser));
             const returnUrl = getReturnUrl();
             if (returnUrl !== '/login.html') {
+                addDebug('Redirecting to: ' + returnUrl, 'info');
                 window.location.href = returnUrl;
             }
+        } else {
+            addDebug('No existing session', 'info');
         }
     </script>
 </body>
