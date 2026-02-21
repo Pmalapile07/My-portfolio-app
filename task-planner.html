@@ -1875,13 +1875,7 @@
                 setTimeout(() => toast.classList.remove('show'), 3000);
             }
             
-            // Current user state
-            const currentUser = getCurrentUser() || {
-                name: 'Guest',
-                initials: 'GU',
-                avatar: null
-            };
-            
+            // Set the Mapbox token from the config
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
                 console.log('Mapbox token set successfully');
@@ -1959,6 +1953,13 @@
             const previewWhen = document.getElementById('previewWhen');
             const postButton = document.getElementById('postButton');
             const termsCheckbox = document.getElementById('termsCheckbox');
+
+            // Current user state
+            const currentUser = getCurrentUser() || {
+                name: 'Guest',
+                initials: 'GU',
+                avatar: null
+            };
 
             // Map variables
             let map = null;
@@ -2060,6 +2061,7 @@
                 }
             }
 
+            // Event Listeners
             taskField.addEventListener('input', function() {
                 if (this.value.length > 50) {
                     this.value = this.value.slice(0, 50);
@@ -2069,6 +2071,7 @@
                 taskField.classList.remove('error');
             });
 
+            // Image upload handling
             uploadIcon.addEventListener('click', function(e) {
                 e.preventDefault();
                 imageSourceMenu.classList.add('active');
@@ -2118,6 +2121,7 @@
                 imageSourceMenu.classList.remove('active');
             });
 
+            // Close menu when clicking outside
             document.addEventListener('click', function(e) {
                 if (!imageSourceMenu.contains(e.target) && !uploadIcon.contains(e.target)) {
                     imageSourceMenu.classList.remove('active');
@@ -2149,6 +2153,7 @@
                 });
             }
 
+            // Payment method handlers
             cashBtn.addEventListener('click', function() {
                 selectedPayment = 'cash';
                 cashBtn.className = 'payment-option active';
@@ -2176,6 +2181,7 @@
                 }, 3000);
             });
 
+            // Close payment window when clicking outside
             document.addEventListener('click', function(e) {
                 if (!paymentWindow.contains(e.target) && paymentWindow.classList.contains('active')) {
                     paymentWindow.classList.remove('active');
@@ -2693,3 +2699,190 @@
                 e.stopPropagation();
                 
                 console.log('Post button clicked');
+                
+                // Visual feedback
+                postButton.classList.add('clicked');
+                setTimeout(() => postButton.classList.remove('clicked'), 200);
+                
+                // Check if button is disabled
+                if (postButton.disabled) {
+                    console.log('Post button is disabled');
+                    return;
+                }
+                
+                // Prevent multiple clicks
+                if (isPosting) {
+                    console.log('Already posting');
+                    return;
+                }
+                
+                // Check if user is logged in
+                if (!isUserLoggedIn()) {
+                    console.log('No user, redirecting to login');
+                    
+                    // Save task data
+                    const taskData = {
+                        location: locationField.value,
+                        streetName: streetField.value,
+                        taskDescription: taskField.value,
+                        budgetType: budgetType,
+                        budgetAmount: budgetAmountInput.value,
+                        selectedWhen: selectedWhen,
+                        selectedDate: selectedDate,
+                        selectedTime: selectedTime,
+                        selectedPayment: selectedPayment,
+                        moreDetails: moreDetailsField.value,
+                        uploadedImages: uploadedImages
+                    };
+                    sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
+                    
+                    // Redirect to login
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    window.location.href = '/login.html?returnTo=' + returnUrl;
+                    return;
+                }
+                
+                // User is logged in - show confirmation
+                console.log('Showing confirmation modal');
+                confirmTitle.textContent = 'Ready to post?';
+                confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
+                confirmYesBtn.textContent = 'Yes, post it';
+                confirmModal.classList.add('active');
+            });
+
+            // ===== CONFIRM YES BUTTON HANDLER =====
+            confirmYesBtn.addEventListener('click', async function() {
+                if (isPosting) {
+                    console.log('Already posting');
+                    return;
+                }
+                
+                isPosting = true;
+                
+                // Visual feedback
+                confirmYesBtn.classList.add('loading');
+                confirmYesBtn.disabled = true;
+                
+                console.log('Confirm Yes clicked - starting post');
+                
+                // Hide confirmation modal immediately
+                confirmModal.classList.remove('active');
+                
+                // Show loading overlay
+                postLoadingOverlay.classList.add('active');
+                
+                // Add loading class to post button
+                postButton.classList.add('loading');
+                
+                const user = getCurrentUser();
+                
+                // Prepare task data
+                const taskData = {
+                    location: locationField.value,
+                    coordinates: currentCoordinates || '',
+                    streetName: streetField.value || '',
+                    when: selectedWhen,
+                    scheduledDate: selectedDate,
+                    scheduledTime: selectedTime,
+                    taskDescription: taskField.value,
+                    budgetType: budgetType,
+                    budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
+                    paymentMethod: selectedPayment,
+                    moreDetails: moreDetailsField.value || '',
+                    images: uploadedImages,
+                    status: 'posted'
+                };
+                
+                try {
+                    // Save to MongoDB with auth
+                    const savedTask = await saveTaskToMongoDB(taskData);
+                    
+                    // Hide loading overlay
+                    postLoadingOverlay.classList.remove('active');
+                    postButton.classList.remove('loading');
+                    
+                    if (savedTask) {
+                        console.log('Task saved successfully:', savedTask);
+                        
+                        // Hide preview sheet
+                        previewSheet.style.display = 'none';
+                        
+                        // Show success sheet
+                        successTaskId.textContent = `#${savedTask._id}`;
+                        successSheet.style.display = 'flex';
+                        
+                        // Fire confetti
+                        fireConfettiAroundIcon();
+                        
+                        // Reset form
+                        locationField.value = 'detecting location...';
+                        streetField.value = '';
+                        taskField.value = '';
+                        budgetAmountInput.value = '';
+                        moreDetailsField.value = '';
+                        uploadedImages = [];
+                        imagePreviewContainer.innerHTML = '';
+                        updateCharCount();
+                        
+                        showSuccess('Task posted successfully!');
+                    }
+                } catch (error) {
+                    // Hide loading overlay on error
+                    postLoadingOverlay.classList.remove('active');
+                    postButton.classList.remove('loading');
+                    
+                    // Show error toast
+                    console.error('Post error:', error);
+                    
+                    // If session expired, redirect to login
+                    if (error.message.includes('Not authenticated')) {
+                        const returnUrl = encodeURIComponent(window.location.href);
+                        window.location.href = '/login.html?returnTo=' + returnUrl;
+                    }
+                } finally {
+                    // Re-enable button
+                    isPosting = false;
+                    confirmYesBtn.classList.remove('loading');
+                    confirmYesBtn.disabled = false;
+                }
+            });
+
+            confirmCancelBtn.addEventListener('click', function() {
+                confirmModal.classList.remove('active');
+            });
+
+            confirmModal.addEventListener('click', function(e) {
+                if (e.target === confirmModal) {
+                    confirmModal.classList.remove('active');
+                }
+            });
+
+            locationSheet.addEventListener('click', function(e) {
+                if (e.target === locationSheet) closePlanner();
+            });
+            
+            previewSheet.addEventListener('click', function(e) {
+                if (e.target === previewSheet) {
+                    previewSheet.style.display = 'none';
+                    unlockBodyScroll();
+                }
+            });
+
+            locationSheet.addEventListener('touchstart', function(e) {
+                if (e.target === locationSheet) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            previewSheet.addEventListener('touchstart', function(e) {
+                if (e.target === previewSheet) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Check for pending task
+            checkForPendingTask();
+        })();
+    </script>
+</body>
+</html>
