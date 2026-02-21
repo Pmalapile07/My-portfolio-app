@@ -97,6 +97,11 @@
             justify-content: center;
             cursor: pointer;
             flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .profile-settings:hover {
+            background: rgba(255, 40, 111, 0.1);
         }
 
         .profile-settings .material-symbols-outlined {
@@ -180,6 +185,8 @@
             background-size: 200% 100%;
             animation: loading 1.5s infinite;
             border-radius: 8px;
+            height: 20px;
+            margin: 0.5rem 0;
         }
 
         @keyframes loading {
@@ -212,6 +219,7 @@
             color: #045B92;
             margin-bottom: 0.75rem;
             line-height: 1.3;
+            word-break: break-word;
         }
 
         .task-meta {
@@ -273,6 +281,7 @@
             font-size: 1rem;
             font-weight: 700;
             color: #045B92;
+            word-break: break-word;
         }
 
         .detail-value.budget {
@@ -403,6 +412,7 @@
             font-size: 0.9rem;
             font-weight: 500;
             margin-bottom: 0.2rem;
+            word-break: break-word;
         }
 
         .activity-time {
@@ -449,6 +459,17 @@
         .error-state .material-symbols-outlined {
             font-size: 48px !important;
             margin-bottom: 1rem;
+        }
+
+        .retry-btn {
+            background: #FF286F;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 1rem;
+            cursor: pointer;
         }
 
         /* Empty State */
@@ -600,7 +621,10 @@
             <div class="recent-task-card" id="recentTaskCard">
                 <div class="card-label">📋 YOUR MOST RECENT TASK</div>
                 <div id="recentTaskContent">
-                    <!-- Dynamically populated -->
+                    <!-- Loading state will be shown here -->
+                    <div class="loading-skeleton" style="width: 80%;"></div>
+                    <div class="loading-skeleton" style="width: 60%;"></div>
+                    <div class="loading-skeleton" style="width: 100%; height: 60px;"></div>
                 </div>
             </div>
 
@@ -608,7 +632,9 @@
             <div class="recent-activity-card">
                 <div class="card-label">⚡ RECENT ACTIVITY</div>
                 <div class="activity-list" id="activityList">
-                    <!-- Dynamically populated -->
+                    <div class="loading-skeleton" style="width: 90%;"></div>
+                    <div class="loading-skeleton" style="width: 70%;"></div>
+                    <div class="loading-skeleton" style="width: 80%;"></div>
                 </div>
             </div>
         </div>
@@ -636,11 +662,13 @@
         }
 
         function isUserLoggedIn() {
-            return !!getAuthToken() && !!getCurrentUser();
+            return !!localStorage.getItem('taskmart_user');
         }
 
         // Format date
         function formatDate(dateString) {
+            if (!dateString) return 'Recently';
+            
             const date = new Date(dateString);
             const now = new Date();
             const diffMs = now - date;
@@ -652,7 +680,8 @@
             if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
             if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
             if (diffDays === 1) return 'Yesterday';
-            return `${diffDays} days ago`;
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString();
         }
 
         // Fetch user's tasks from MongoDB
@@ -661,7 +690,6 @@
             const user = getCurrentUser();
 
             if (!token || !user) {
-                window.location.href = '/login.html?returnTo=' + encodeURIComponent(window.location.href);
                 return null;
             }
 
@@ -674,9 +702,9 @@
 
                 if (!response.ok) {
                     if (response.status === 401) {
+                        // Token expired - clear and show login button
                         localStorage.removeItem('auth_token');
                         localStorage.removeItem('taskmart_user');
-                        window.location.href = '/login.html?returnTo=' + encodeURIComponent(window.location.href);
                         return null;
                     }
                     throw new Error('Failed to fetch tasks');
@@ -730,8 +758,8 @@
             tasks.slice(0, 5).forEach(task => {
                 activities.push({
                     icon: 'post_add',
-                    text: `Task posted: "${task.taskDescription.substring(0, 30)}${task.taskDescription.length > 30 ? '...' : ''}"`,
-                    time: formatDate(task.createdAt || new Date())
+                    text: `Task posted: "${task.taskDescription.substring(0, 40)}${task.taskDescription.length > 40 ? '...' : ''}"`,
+                    time: formatDate(task.createdAt)
                 });
             });
 
@@ -742,24 +770,38 @@
         async function updateDashboard() {
             const user = getCurrentUser();
             
-            // Update profile
-            if (user) {
-                document.getElementById('profileName').textContent = `Welcome back, ${user.name.split(' ')[0]}!`;
-                document.getElementById('profileAvatar').textContent = user.initials || user.name.substring(0, 2).toUpperCase();
+            if (!user) {
+                // Not logged in - show login button
+                document.getElementById('recentTaskContent').innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">login</span>
+                        <p>Please log in to view your tasks</p>
+                        <button class="retry-btn" onclick="window.location.href='/login.html?returnTo=' + encodeURIComponent(window.location.href)">Go to Login</button>
+                    </div>
+                `;
+                return;
             }
 
-            // Show loading state
-            document.getElementById('recentTaskContent').innerHTML = `
-                <div style="padding: 2rem; text-align: center;">
-                    <div class="loading-skeleton" style="height: 20px; width: 80%; margin: 0 auto 1rem;"></div>
-                    <div class="loading-skeleton" style="height: 60px; width: 100%;"></div>
-                </div>
-            `;
+            // Update profile
+            document.getElementById('profileName').textContent = `Welcome back, ${user.name.split(' ')[0]}!`;
+            document.getElementById('profileAvatar').textContent = user.initials || user.name.substring(0, 2).toUpperCase();
 
             // Fetch real tasks
             const tasks = await fetchUserTasks();
             
-            if (!tasks || tasks.length === 0) {
+            if (!tasks) {
+                // Show error state
+                document.getElementById('recentTaskContent').innerHTML = `
+                    <div class="error-state">
+                        <span class="material-symbols-outlined">error</span>
+                        <p>Failed to load tasks</p>
+                        <button class="retry-btn" onclick="location.reload()">Try Again</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (tasks.length === 0) {
                 // Empty state
                 document.getElementById('recentTaskContent').innerHTML = `
                     <div class="empty-state">
@@ -784,13 +826,13 @@
             document.getElementById('cancelledCount').textContent = stats.cancelled;
 
             // Get most recent task
-            const mostRecent = tasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+            const mostRecent = tasks.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
 
             // Display most recent task
             document.getElementById('recentTaskContent').innerHTML = `
-                <div class="task-title">${mostRecent.taskDescription}</div>
+                <div class="task-title">${mostRecent.taskDescription || 'Untitled Task'}</div>
                 <div class="task-meta">
-                    <span class="category-badge">${mostRecent.category || 'General Task'}</span>
+                    <span class="category-badge">${mostRecent.category || getCategoryFromDescription(mostRecent.taskDescription) || 'General Task'}</span>
                     <span class="area-badge">
                         <span class="material-symbols-outlined">location_on</span>
                         <span>${mostRecent.location || 'Location not specified'}</span>
@@ -807,7 +849,7 @@
                     </div>
                     <div class="detail-item">
                         <span class="detail-label">Status</span>
-                        <span class="status-badge ${mostRecent.status || 'waiting'}">${(mostRecent.status === 'waiting' || mostRecent.status === 'posted') ? 'Waiting for offers' : mostRecent.status}</span>
+                        <span class="status-badge ${mostRecent.status || 'waiting'}">${formatStatus(mostRecent.status)}</span>
                     </div>
                 </div>
                 <div class="task-actions">
@@ -818,7 +860,7 @@
 
             // Generate and display activity
             const activities = generateActivity(tasks);
-            document.getElementById('activityList').innerHTML = activities.map(activity => `
+            document.getElementById('activityList').innerHTML = activities.length > 0 ? activities.map(activity => `
                 <div class="activity-item">
                     <div class="activity-icon">
                         <span class="material-symbols-outlined">${activity.icon}</span>
@@ -828,17 +870,46 @@
                         <div class="activity-time">${activity.time}</div>
                     </div>
                 </div>
-            `).join('');
+            `).join('') : '<div class="empty-state" style="padding: 1rem;"><p>No activity yet</p></div>';
+        }
+
+        // Helper functions
+        function getCategoryFromDescription(desc) {
+            if (!desc) return 'General Task';
+            desc = desc.toLowerCase();
+            if (desc.includes('plumb') || desc.includes('leak') || desc.includes('pipe')) return 'Plumbing';
+            if (desc.includes('clean')) return 'Cleaning';
+            if (desc.includes('electric')) return 'Electrical';
+            if (desc.includes('move')) return 'Moving';
+            if (desc.includes('garden')) return 'Gardening';
+            return 'General Task';
+        }
+
+        function formatStatus(status) {
+            switch(status) {
+                case 'waiting':
+                case 'posted':
+                    return 'Waiting for offers';
+                case 'in-progress':
+                case 'assigned':
+                    return 'In Progress';
+                case 'completed':
+                    return 'Completed';
+                case 'cancelled':
+                    return 'Cancelled';
+                default:
+                    return 'Active';
+            }
         }
 
         // Navigation functions
-        function viewTaskDetails(taskId) {
+        window.viewTaskDetails = function(taskId) {
             window.location.href = `/task-details.html?id=${taskId}`;
-        }
+        };
 
-        function manageTask(taskId) {
+        window.manageTask = function(taskId) {
             window.location.href = `/manage-task.html?id=${taskId}`;
-        }
+        };
 
         // Event listeners
         document.getElementById('settingsBtn').addEventListener('click', () => {
@@ -849,9 +920,16 @@
             window.location.href = '/task-planner.html';
         });
 
-        // Check login and initialize
+        // Initialize - check login but DON'T redirect automatically
         if (!isUserLoggedIn()) {
-            window.location.href = '/login.html?returnTo=' + encodeURIComponent(window.location.href);
+            // Show login required message instead of auto-redirect
+            document.getElementById('recentTaskContent').innerHTML = `
+                <div class="empty-state">
+                    <span class="material-symbols-outlined">login</span>
+                    <p>Please log in to view your dashboard</p>
+                    <button class="retry-btn" onclick="window.location.href='/login.html?returnTo=' + encodeURIComponent(window.location.href)">Log In</button>
+                </div>
+            `;
         } else {
             updateDashboard();
         }
