@@ -399,14 +399,14 @@
                 <form class="auth-form active" id="loginForm">
                     <div class="form-group">
                         <label>Email address</label>
-                        <input type="email" id="loginEmail" placeholder="your@email.com">
+                        <input type="email" id="loginEmail" placeholder="your@email.com" value="test@example.com">
                         <div class="error-message" id="loginEmailError"></div>
                     </div>
 
                     <div class="form-group">
                         <label>Password</label>
                         <div class="password-input-wrapper">
-                            <input type="password" id="loginPassword" placeholder="••••••••">
+                            <input type="password" id="loginPassword" placeholder="••••••••" value="password123">
                             <span class="material-symbols-outlined toggle-password" onclick="togglePassword('loginPassword')">visibility_off</span>
                         </div>
                         <div class="error-message" id="loginPasswordError"></div>
@@ -497,7 +497,6 @@
     <script>
         // Configuration
         const API_BASE_URL = window.location.origin; // Your backend URL
-        const IS_PRODUCTION = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
         // Toast functions
         function showError(message) {
@@ -567,30 +566,16 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
-        // Save auth token and user data
+        // Save auth data
         function saveAuth(token, user) {
             localStorage.setItem('auth_token', token);
             localStorage.setItem('user', JSON.stringify(user));
-            
-            // Set auth header for future requests
-            window.authorizationHeader = `Bearer ${token}`;
         }
 
-        // Role-based redirect
-        function redirectBasedOnRole(role, returnUrl) {
-            if (role === 'poster') {
-                window.location.href = returnUrl || '/poster-dashboard.html';
-            } else if (role === 'helper') {
-                window.location.href = returnUrl || '/helper-dashboard.html';
-            } else {
-                window.location.href = returnUrl || '/task-planner.html';
-            }
-        }
-
-        // Get return URL from query parameters
+        // Get return URL
         function getReturnUrl() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('returnTo');
+            return urlParams.get('returnTo') || '/task-planner.html';
         }
 
         // Handle Login
@@ -616,9 +601,6 @@
             if (!password) {
                 showFieldError('loginPassword', 'Password is required');
                 isValid = false;
-            } else if (password.length < 6) {
-                showFieldError('loginPassword', 'Password must be at least 6 characters');
-                isValid = false;
             }
 
             if (!isValid) return;
@@ -629,7 +611,8 @@
             loginBtn.classList.add('loading');
 
             try {
-                // Real API call to your backend
+                console.log('Sending login request:', { email, password });
+                
                 const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
@@ -639,19 +622,20 @@
                 });
 
                 const data = await response.json();
+                console.log('Login response:', data);
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Login failed');
+                    throw new Error(data.error || data.message || 'Login failed');
                 }
 
-                // Save auth token and user data
+                // Save auth data
                 saveAuth(data.token, data.user);
                 
                 showSuccess('Login successful! Redirecting...');
 
-                // Role-based redirect
+                // Redirect
                 setTimeout(() => {
-                    redirectBasedOnRole(data.user.role, returnUrl);
+                    window.location.href = returnUrl;
                 }, 1000);
 
             } catch (error) {
@@ -659,12 +643,8 @@
                 loginBtn.disabled = false;
                 loginBtn.classList.remove('loading');
                 
-                if (error.message.includes('Failed to fetch')) {
-                    showError('Cannot connect to server. Please check your internet connection.');
-                } else {
-                    showError(error.message || 'Login failed. Please try again.');
-                    showFieldError('loginEmail', 'Invalid email or password');
-                }
+                showError(error.message || 'Login failed. Please try again.');
+                showFieldError('loginEmail', 'Invalid email or password');
             }
         });
 
@@ -725,35 +705,42 @@
             signupBtn.classList.add('loading');
 
             try {
-                // Real API call to your backend
+                // Create initials from name
+                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
+                const userData = {
+                    name,
+                    email,
+                    password,
+                    role,
+                    initials
+                };
+                
+                console.log('Sending signup request:', userData);
+
                 const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        name,
-                        email,
-                        password,
-                        role,
-                        initials: name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-                    })
+                    body: JSON.stringify(userData)
                 });
 
                 const data = await response.json();
+                console.log('Signup response:', data);
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Signup failed');
+                    throw new Error(data.error || data.message || 'Signup failed');
                 }
 
-                // Save auth token and user data
+                // Save auth data
                 saveAuth(data.token, data.user);
                 
                 showSuccess('Account created successfully! Redirecting...');
 
-                // Role-based redirect
+                // Redirect
                 setTimeout(() => {
-                    redirectBasedOnRole(role, returnUrl);
+                    window.location.href = returnUrl;
                 }, 1000);
 
             } catch (error) {
@@ -761,9 +748,7 @@
                 signupBtn.disabled = false;
                 signupBtn.classList.remove('loading');
                 
-                if (error.message.includes('Failed to fetch')) {
-                    showError('Cannot connect to server. Please check your internet connection.');
-                } else if (error.message.includes('already exists')) {
+                if (error.message.includes('email') || error.message.includes('already exists')) {
                     showFieldError('signupEmail', 'Email already registered');
                     showError('This email is already registered. Please login instead.');
                 } else {
@@ -799,54 +784,33 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to send reset email');
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to send reset email');
                 }
 
                 showSuccess('Password reset link sent to your email!');
             } catch (error) {
                 console.error('Forgot password error:', error);
-                showError('Failed to send reset email. Please try again.');
+                showError(error.message || 'Failed to send reset email. Please try again.');
             }
         });
 
         // Check for existing session
-        async function checkExistingSession() {
+        function checkExistingSession() {
             const token = localStorage.getItem('auth_token');
-            const user = localStorage.getItem('user');
             const returnUrl = getReturnUrl();
             
-            if (token && user) {
-                try {
-                    // Verify token with backend
-                    const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        // Token is valid, redirect based on role
-                        redirectBasedOnRole(data.user.role, returnUrl);
-                    } else {
-                        // Token invalid, clear storage
-                        localStorage.removeItem('auth_token');
-                        localStorage.removeItem('user');
-                    }
-                } catch (error) {
-                    console.error('Session verification failed:', error);
-                    // Don't redirect on network error, let user try to login
+            if (token && returnUrl !== window.location.pathname) {
+                // Optional: Verify token with backend
+                // For now, just redirect if there's a return URL
+                if (returnUrl && returnUrl !== '/login.html') {
+                    window.location.href = returnUrl;
                 }
             }
         }
 
         // Initialize
         checkExistingSession();
-
-        // Add this to your existing task-planner.html to use the token
-        // In task-planner.html, when making API calls:
-        // const token = localStorage.getItem('auth_token');
-        // headers: { 'Authorization': `Bearer ${token}` }
     </script>
 </body>
 </html>
