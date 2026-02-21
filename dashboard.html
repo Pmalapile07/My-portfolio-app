@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
     <style>
-        /* Mobile-first base styles */
+        /* Mobile-first base styles - KEEP ALL YOUR EXISTING STYLES */
         * {
             margin: 0;
             padding: 0;
@@ -1799,6 +1799,7 @@
         let currentTaskId = null;
         let notifications = [];
         let settingsCollapsed = false;
+        let isLoading = false;
 
         // ==================== DEBUG FUNCTIONS ====================
         function addDebug(message, data = null) {
@@ -1905,38 +1906,6 @@
                             description: '"Clean garage" marked as completed',
                             time: new Date(Date.now() - 60 * 60000).toISOString(),
                             read: false
-                        },
-                        {
-                            id: 4,
-                            type: 'in-progress',
-                            title: 'Task In Progress',
-                            description: 'Helper started working on "Fix leaking faucet"',
-                            time: new Date(Date.now() - 120 * 60000).toISOString(),
-                            read: true
-                        },
-                        {
-                            id: 5,
-                            type: 'active',
-                            title: 'Task Active',
-                            description: 'Your task "Clean garage" is now active',
-                            time: new Date(Date.now() - 180 * 60000).toISOString(),
-                            read: true
-                        },
-                        {
-                            id: 6,
-                            type: 'cancelled',
-                            title: 'Task Cancelled',
-                            description: 'You cancelled "Fix leaking faucet"',
-                            time: new Date(Date.now() - 240 * 60000).toISOString(),
-                            read: true
-                        },
-                        {
-                            id: 7,
-                            type: 'verified',
-                            title: 'Verification Complete',
-                            description: 'Your account has been verified!',
-                            time: new Date(Date.now() - 300 * 60000).toISOString(),
-                            read: true
                         }
                     ];
                 }
@@ -2016,7 +1985,7 @@
             console.error('Network error:', error);
             
             if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-                showToast('Network connection issue. Using cached data if available.', true);
+                showToast('Network connection issue. Using cached data.', true);
             } else {
                 showToast(error.message || 'An error occurred', true);
             }
@@ -2197,11 +2166,17 @@
                 return null;
             }
 
-            // Try to get cached tasks first
+            // Try to get cached tasks first (for immediate display)
             const cachedTasks = localStorage.getItem(`tasks_${user.email}`);
             let tasks = cachedTasks ? JSON.parse(cachedTasks) : [];
 
+            // If we have cached tasks, show them immediately while fetching
+            if (tasks.length > 0) {
+                setTimeout(() => updateDashboardWithTasks(tasks), 0);
+            }
+
             try {
+                // Try multiple endpoints
                 const endpoints = [
                     `${API_BASE_URL}/api/tasks?email=${user.email}`,
                     `${API_BASE_URL}/api/tasks/user/${user.email}`,
@@ -2215,9 +2190,15 @@
                     try {
                         addDebug('Trying endpoint:', endpoint);
                         
-                        const response = await fetch(endpoint);
+                        // Add timeout to prevent hanging
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 5000);
                         
-                        addDebug('Response status:', response.status);
+                        const response = await fetch(endpoint, {
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
                         
                         if (response.ok) {
                             const data = await response.json();
@@ -2256,14 +2237,8 @@
                     handleNetworkError(lastError);
                 }
 
-                // If we have cached tasks, show them with a warning
-                if (tasks.length > 0) {
-                    addDebug('Using cached tasks from localStorage:', tasks);
-                    showToast('Using cached data. Network connection issue.', true);
-                    return tasks;
-                }
-                
-                return [];
+                // Return cached tasks if available
+                return tasks.length > 0 ? tasks : [];
                 
             } catch (error) {
                 handleNetworkError(error);
@@ -2271,12 +2246,76 @@
             }
         }
 
-        // ==================== SAVE TASK TO MONGODB ====================
+        // Helper function to update dashboard with tasks
+        function updateDashboardWithTasks(tasks) {
+            if (!tasks || tasks.length === 0) return;
+            
+            const stats = calculateStats(tasks);
+            document.getElementById('activeCount').textContent = stats.active;
+            document.getElementById('inProgressCount').textContent = stats.inProgress;
+            document.getElementById('completedCount').textContent = stats.completed;
+            document.getElementById('cancelledCount').textContent = stats.cancelled;
+
+            const mostRecent = tasks.sort((a, b) => {
+                const dateA = new Date(a.createdAt || a.postedAt || a.date || 0);
+                const dateB = new Date(b.createdAt || b.postedAt || b.date || 0);
+                return dateB - dateA;
+            })[0];
+
+            document.getElementById('recentTaskContent').innerHTML = `
+                <div class="task-title">${mostRecent.taskDescription || mostRecent.title || 'Untitled Task'}</div>
+                <div class="task-meta">
+                    <span class="category-badge">${mostRecent.category || getCategoryFromDescription(mostRecent.taskDescription || mostRecent.title) || 'General Task'}</span>
+                    <span class="area-badge">
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span>${mostRecent.location || mostRecent.area || 'Location not specified'}</span>
+                    </span>
+                </div>
+                <div class="task-details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Budget</span>
+                        <span class="detail-value budget">${mostRecent.budgetAmount ? 'R ' + mostRecent.budgetAmount : (mostRecent.budget || 'Not set')}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Posted</span>
+                        <span class="detail-value">${formatDate(mostRecent.createdAt || mostRecent.postedAt || mostRecent.date)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="status-badge ${mostRecent.status || 'waiting'}">${formatStatus(mostRecent.status)}</span>
+                    </div>
+                </div>
+                <div class="task-actions">
+                    <button class="btn-primary" onclick="viewTaskDetails('${mostRecent._id || mostRecent.id}')">View Details</button>
+                    <button class="btn-secondary" onclick="openManageTask('${mostRecent._id || mostRecent.id}')">Manage Task</button>
+                </div>
+            `;
+
+            const activities = generateActivity(tasks);
+            if (activities.length > 0) {
+                document.getElementById('activityList').innerHTML = activities.map(activity => `
+                    <div class="activity-item" onclick="viewTaskDetails('${activity.taskId}')">
+                        <div class="activity-icon">
+                            <span class="material-symbols-outlined">${activity.icon}</span>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">${activity.text}</div>
+                            <div class="activity-time">${activity.time}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('activityList').innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>No activity in the last hour</p></div>';
+            }
+        }
+
+        // ==================== SAVE TASK TO MONGODB (with fallback) ====================
         async function saveTaskToMongoDB(taskData) {
             const token = getAuthToken();
             
             if (!token) {
-                throw new Error('Not authenticated');
+                addDebug('No auth token, saving to localStorage only');
+                return false;
             }
 
             try {
@@ -2293,21 +2332,20 @@
                     throw new Error('Failed to save task to MongoDB');
                 }
 
-                const savedTask = await response.json();
-                addDebug('Task saved to MongoDB:', savedTask);
-                return savedTask;
+                addDebug('Task saved to MongoDB');
+                return true;
             } catch (error) {
                 addDebug('Error saving task to MongoDB:', error.message);
-                throw error;
+                return false;
             }
         }
 
-        // ==================== SAVE PROFILE IMAGE TO MONGODB ====================
+        // ==================== SAVE PROFILE IMAGE TO MONGODB (with fallback) ====================
         async function saveProfileImageToMongoDB(imageData) {
             const token = getAuthToken();
             
             if (!token || !currentUser?.email) {
-                return;
+                return false;
             }
 
             try {
@@ -2354,8 +2392,7 @@
                     case 'completed':
                         stats.completed++;
                         break;
-                    case':
- 'cancelled':
+                    case 'cancelled':
                         stats.cancelled++;
                         break;
                     default:
@@ -2369,7 +2406,8 @@
         function getTasksByStatus(status) {
             return userTasks.filter(task => {
                 switch(status) {
-                    case 'active                        return ['waiting', 'posted', 'active'].includes(task.status);
+                    case 'active':
+                        return ['waiting', 'posted', 'active'].includes(task.status);
                     case 'in-progress':
                         return ['in-progress', 'assigned'].includes(task.status);
                     case 'completed':
@@ -2598,15 +2636,14 @@
                     if (status) userTasks[taskIndex].status = status;
                     if (moreDetails !== undefined) userTasks[taskIndex].moreDetails = moreDetails;
                     
-                    // Save to MongoDB
-                    try {
-                        await saveTaskToMongoDB(userTasks[taskIndex]);
-                        showToast('Task saved to database!');
-                    } catch (e) {
-                        showToast('Saved locally. Will sync when online.', true);
-                    }
+                    // Save to MongoDB (don't wait for it)
+                    saveTaskToMongoDB(userTasks[taskIndex]).then(success => {
+                        if (success) {
+                            showToast('Task saved to database!');
+                        }
+                    });
                     
-                    // Save to localStorage as backup
+                    // Save to localStorage immediately
                     if (currentUser?.email) {
                         localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
                     }
@@ -2654,7 +2691,7 @@
                     }
                     
                     // Immediately update the dashboard to reflect changes
-                    updateDashboard();
+                    updateDashboardWithTasks(userTasks);
                     showToast('Task updated successfully!');
                     closeManageTaskModal();
                 }
@@ -2669,12 +2706,8 @@
                 if (taskIndex !== -1) {
                     userTasks[taskIndex].status = 'completed';
                     
-                    // Save to MongoDB
-                    try {
-                        await saveTaskToMongoDB(userTasks[taskIndex]);
-                    } catch (e) {
-                        // Continue with local save
-                    }
+                    // Save to MongoDB (don't wait)
+                    saveTaskToMongoDB(userTasks[taskIndex]);
                     
                     if (currentUser?.email) {
                         localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
@@ -2689,7 +2722,7 @@
                         currentTaskId
                     );
                     
-                    updateDashboard();
+                    updateDashboardWithTasks(userTasks);
                     showToast('Task marked as completed!');
                     closeManageTaskModal();
                 }
@@ -2705,12 +2738,8 @@
                     if (taskIndex !== -1) {
                         userTasks[taskIndex].status = 'cancelled';
                         
-                        // Save to MongoDB
-                        try {
-                            await saveTaskToMongoDB(userTasks[taskIndex]);
-                        } catch (e) {
-                            // Continue with local save
-                        }
+                        // Save to MongoDB (don't wait)
+                        saveTaskToMongoDB(userTasks[taskIndex]);
                         
                         if (currentUser?.email) {
                             localStorage.setItem(`tasks_${currentUser.email}`, JSON.stringify(userTasks));
@@ -2725,7 +2754,7 @@
                             currentTaskId
                         );
                         
-                        updateDashboard();
+                        updateDashboardWithTasks(userTasks);
                         showToast('Task cancelled');
                         closeManageTaskModal();
                     }
@@ -2786,98 +2815,23 @@
                 
                 updateVerificationRing();
 
-                userTasks = await fetchUserTasks();
-                
-                if (!userTasks) {
-                    document.getElementById('recentTaskContent').innerHTML = `
-                        <div class="error-state">
-                            <span class="material-symbols-outlined">error</span>
-                            <p>Failed to load tasks. Please check your connection.</p>
-                            <button class="retry-btn" onclick="location.reload()">Try Again</button>
-                            <button class="retry-btn" onclick="toggleDebug()" style="background: #64748b; margin-top: 0.5rem;">Show Debug Info</button>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                if (userTasks.length === 0) {
-                    document.getElementById('recentTaskContent').innerHTML = `
-                        <div class="empty-state">
-                            <span class="material-symbols-outlined">assignment</span>
-                            <p>No tasks yet</p>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Post your first task to get started!</p>
-                        </div>
-                    `;
-                    document.getElementById('activityList').innerHTML = `
-                        <div class="empty-state" style="padding: 1rem;">
-                            <p>No activity yet</p>
-                        </div>
-                    `;
-                    return;
+                // Load cached tasks first
+                const cachedTasks = localStorage.getItem(`tasks_${currentUser.email}`);
+                if (cachedTasks) {
+                    userTasks = JSON.parse(cachedTasks);
+                    updateDashboardWithTasks(userTasks);
                 }
 
-                const stats = calculateStats(userTasks);
-                document.getElementById('activeCount').textContent = stats.active;
-                document.getElementById('inProgressCount').textContent = stats.inProgress;
-                document.getElementById('completedCount').textContent = stats.completed;
-                document.getElementById('cancelledCount').textContent = stats.cancelled;
-
-                const mostRecent = userTasks.sort((a, b) => {
-                    const dateA = new Date(a.createdAt || a.postedAt || a.date || 0);
-                    const dateB = new Date(b.createdAt || b.postedAt || b.date || 0);
-                    return dateB - dateA;
-                })[0];
-
-                addDebug('Most recent task:', mostRecent);
-
-                document.getElementById('recentTaskContent').innerHTML = `
-                    <div class="task-title">${mostRecent.taskDescription || mostRecent.title || 'Untitled Task'}</div>
-                    <div class="task-meta">
-                        <span class="category-badge">${mostRecent.category || getCategoryFromDescription(mostRecent.taskDescription || mostRecent.title) || 'General Task'}</span>
-                        <span class="area-badge">
-                            <span class="material-symbols-outlined">location_on</span>
-                            <span>${mostRecent.location || mostRecent.area || 'Location not specified'}</span>
-                        </span>
-                    </div>
-                    <div class="task-details-grid">
-                        <div class="detail-item">
-                            <span class="detail-label">Budget</span>
-                            <span class="detail-value budget">${mostRecent.budgetAmount ? 'R ' + mostRecent.budgetAmount : (mostRecent.budget || 'Not set')}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Posted</span>
-                            <span class="detail-value">${formatDate(mostRecent.createdAt || mostRecent.postedAt || mostRecent.date)}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Status</span>
-                            <span class="status-badge ${mostRecent.status || 'waiting'}">${formatStatus(mostRecent.status)}</span>
-                        </div>
-                    </div>
-                    <div class="task-actions">
-                        <button class="btn-primary" onclick="viewTaskDetails('${mostRecent._id || mostRecent.id}')">View Details</button>
-                        <button class="btn-secondary" onclick="openManageTask('${mostRecent._id || mostRecent.id}')">Manage Task</button>
-                    </div>
-                `;
-
-                const activities = generateActivity(userTasks);
-                if (activities.length > 0) {
-                    document.getElementById('activityList').innerHTML = activities.map(activity => `
-                        <div class="activity-item" onclick="viewTaskDetails('${activity.taskId}')">
-                            <div class="activity-icon">
-                                <span class="material-symbols-outlined">${activity.icon}</span>
-                            </div>
-                            <div class="activity-content">
-                                <div class="activity-text">${activity.text}</div>
-                                <div class="activity-time">${activity.time}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    document.getElementById('activityList').innerHTML = '<div class="empty-state" style="padding: 1rem;"><p>No activity in the last hour</p></div>';
+                // Then fetch fresh tasks
+                const freshTasks = await fetchUserTasks();
+                if (freshTasks) {
+                    userTasks = freshTasks;
+                    updateDashboardWithTasks(userTasks);
                 }
                 
                 // Load notifications
                 loadNotifications();
+                
             } catch (error) {
                 handleNetworkError(error);
             }
@@ -2922,16 +2876,15 @@
                     document.getElementById('avatarText').style.display = 'none';
                     
                     if (currentUser) {
-                        // Save to localStorage
+                        // Save to localStorage immediately
                         localStorage.setItem(`profile_image_${currentUser.email}`, imageData);
                         
-                        // Save to MongoDB
-                        try {
-                            await saveProfileImageToMongoDB(imageData);
-                            showToast('Profile photo saved to database!');
-                        } catch (e) {
-                            showToast('Photo saved locally. Will sync when online.', true);
-                        }
+                        // Try to save to MongoDB (don't wait)
+                        saveProfileImageToMongoDB(imageData).then(success => {
+                            if (success) {
+                                showToast('Profile photo saved to database!');
+                            }
+                        });
                         
                         currentUser.photoUploaded = true;
                         updateVerificationRing();
