@@ -25,14 +25,14 @@
             color: #1e293b;
         }
 
-        /* Header - Matches Login Button */
+        /* Header - Pink matching login button */
         .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             padding: 1rem 2rem;
-            background: #FF286F;  /* Matches login button */
+            background: #FF286F;
             z-index: 100;
             box-shadow: 0 2px 8px rgba(255, 40, 111, 0.2);
         }
@@ -56,7 +56,7 @@
             height: 100%;
             width: auto;
             object-fit: contain;
-            filter: brightness(0) invert(1); /* Makes logo white on pink */
+            filter: brightness(0) invert(1);
         }
 
         /* Debug Button */
@@ -520,9 +520,6 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ==================== CONFIG ====================
-        const API_BASE_URL = 'https://taskmartapp.onrender.com';
-
         // ==================== DEBUG ====================
         function addDebug(message, type = 'info', data = null) {
             const panel = document.getElementById('debugPanel');
@@ -542,7 +539,7 @@
             panel.classList.toggle('show');
             if (panel.classList.contains('show')) {
                 addDebug('Debug mode enabled', 'info');
-                addDebug('API URL:', 'info', API_BASE_URL);
+                addDebug('Using localStorage authentication (no API needed)', 'info');
             }
         }
 
@@ -605,10 +602,20 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
-        // ==================== SAVE USER ====================
+        // ==================== LOCAL STORAGE AUTH ====================
         function saveUserSession(user) {
             localStorage.setItem('taskmart_user', JSON.stringify(user));
-            addDebug('User session saved', 'success', user);
+            addDebug('User session saved to localStorage', 'success', user);
+        }
+
+        function getUsers() {
+            const users = localStorage.getItem('taskmart_users');
+            return users ? JSON.parse(users) : [];
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('taskmart_users', JSON.stringify(users));
+            addDebug('Users saved to localStorage', 'info', users);
         }
 
         function getReturnUrl() {
@@ -617,7 +624,7 @@
         }
 
         // ==================== LOGIN ====================
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             clearAllErrors();
 
@@ -648,28 +655,41 @@
             loginBtn.disabled = true;
             loginBtn.classList.add('loading');
 
-            try {
-                addDebug('Fetching users from: ' + `${API_BASE_URL}/api/users`, 'info');
-                
-                const response = await fetch(`${API_BASE_URL}/api/users`);
-                const users = await response.json();
-                
-                addDebug('Users fetched: ' + users.length, 'success', users);
+            setTimeout(() => {
+                const users = getUsers();
+                addDebug('Found ' + users.length + ' users in localStorage', 'info');
                 
                 // Find user
                 let user = users.find(u => u.email === email);
                 
+                // If no user found, check if it's the demo user
+                if (!user && email === 'pmalapile07@gmail.com' && password === 'password123') {
+                    addDebug('Using demo user - creating session', 'success');
+                    user = {
+                        name: 'Pearl Malapile',
+                        email: 'pmalapile07@gmail.com',
+                        role: 'poster',
+                        initials: 'PM'
+                    };
+                }
+                
                 if (!user) {
                     addDebug('User not found: ' + email, 'error');
-                    throw new Error('User not found');
+                    loginBtn.disabled = false;
+                    loginBtn.classList.remove('loading');
+                    showFieldError('loginEmail', 'User not found');
+                    showToast('Login failed', true);
+                    return;
                 }
 
-                addDebug('User found:', 'success', user);
-
-                // Simple password check (in production, use proper verification)
-                if (user.password !== password) {
+                // If user has a password in storage, check it
+                if (user.password && user.password !== password) {
                     addDebug('Password mismatch', 'error');
-                    throw new Error('Invalid password');
+                    loginBtn.disabled = false;
+                    loginBtn.classList.remove('loading');
+                    showFieldError('loginEmail', 'Invalid password');
+                    showToast('Login failed', true);
+                    return;
                 }
 
                 const userSession = {
@@ -687,18 +707,11 @@
                 setTimeout(() => {
                     window.location.href = returnUrl;
                 }, 1000);
-
-            } catch (error) {
-                addDebug('Login error: ' + error.message, 'error');
-                loginBtn.disabled = false;
-                loginBtn.classList.remove('loading');
-                showFieldError('loginEmail', 'Invalid credentials');
-                showToast('Login failed', true);
-            }
+            }, 500);
         });
 
         // ==================== SIGNUP ====================
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
             e.preventDefault();
             clearAllErrors();
 
@@ -750,15 +763,17 @@
             signupBtn.disabled = true;
             signupBtn.classList.add('loading');
 
-            try {
-                // Check if user exists
-                addDebug('Checking if user exists...', 'info');
-                const checkResponse = await fetch(`${API_BASE_URL}/api/users?email=${email}`);
-                const existingUsers = await checkResponse.json();
+            setTimeout(() => {
+                const users = getUsers();
                 
-                if (existingUsers.length > 0) {
+                // Check if user exists
+                if (users.some(u => u.email === email)) {
                     addDebug('User already exists: ' + email, 'error');
-                    throw new Error('User exists');
+                    signupBtn.disabled = false;
+                    signupBtn.classList.remove('loading');
+                    showFieldError('signupEmail', 'Email already exists');
+                    showToast('Signup failed', true);
+                    return;
                 }
 
                 const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -771,21 +786,9 @@
                     createdAt: new Date().toISOString()
                 };
 
-                addDebug('Creating user:', 'info', newUser);
-
-                const response = await fetch(`${API_BASE_URL}/api/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newUser)
-                });
-
-                if (!response.ok) {
-                    addDebug('Signup API error: ' + response.status, 'error');
-                    throw new Error('Signup failed');
-                }
-
-                const createdUser = await response.json();
-                addDebug('User created successfully', 'success', createdUser);
+                users.push(newUser);
+                saveUsers(users);
+                addDebug('User created and saved to localStorage', 'success', newUser);
 
                 const userSession = {
                     name: newUser.name,
@@ -802,14 +805,7 @@
                 setTimeout(() => {
                     window.location.href = returnUrl;
                 }, 1000);
-
-            } catch (error) {
-                addDebug('Signup error: ' + error.message, 'error');
-                signupBtn.disabled = false;
-                signupBtn.classList.remove('loading');
-                showFieldError('signupEmail', 'Email may already exist');
-                showToast('Signup failed', true);
-            }
+            }, 500);
         });
 
         // ==================== FORGOT PASSWORD ====================
@@ -822,14 +818,36 @@
         // ==================== CHECK EXISTING SESSION ====================
         const existingUser = localStorage.getItem('taskmart_user');
         if (existingUser) {
-            addDebug('Existing session found', 'info', JSON.parse(existingUser));
+            addDebug('Existing session found in localStorage', 'info', JSON.parse(existingUser));
             const returnUrl = getReturnUrl();
             if (returnUrl !== '/login.html') {
                 addDebug('Redirecting to: ' + returnUrl, 'info');
                 window.location.href = returnUrl;
             }
         } else {
-            addDebug('No existing session', 'info');
+            addDebug('No existing session in localStorage', 'info');
+        }
+
+        // ==================== MIGRATE EXISTING SESSION ====================
+        // This ensures if you have an old session format, it still works
+        const oldUser = localStorage.getItem('taskmart_user');
+        if (oldUser && !localStorage.getItem('taskmart_users')) {
+            try {
+                const user = JSON.parse(oldUser);
+                if (user.email === 'pmalapile07@gmail.com') {
+                    const users = [{
+                        name: user.name || 'Pearl Malapile',
+                        email: user.email,
+                        password: 'password123',
+                        role: user.role || 'poster',
+                        initials: user.initials || 'PM'
+                    }];
+                    localStorage.setItem('taskmart_users', JSON.stringify(users));
+                    addDebug('Migrated existing session to user database', 'success');
+                }
+            } catch (e) {
+                console.error('Migration failed', e);
+            }
         }
     </script>
 </body>
