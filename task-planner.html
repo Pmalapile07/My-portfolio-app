@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - TaskMart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Task Planner</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +11,26 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;800&display=swap">
     
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <!-- Canvas Confetti library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    
+    <!-- Config file -->
+    <script src="/config.js"></script>
+
     <style>
+        /* ALL YOUR EXISTING CSS STYLES */
+        @font-face {
+            font-family: 'Codec Cold News';
+            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -20,244 +39,1189 @@
 
         body {
             font-family: 'Manrope', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            background-color: transparent;
             min-height: 100vh;
+        }
+
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined' !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            visibility: visible !important;
+        }
+
+        .sheet-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 999999;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        
+        .sheet {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            height: 90vh;
+            height: 90dvh;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .sheet-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .auth-container {
-            width: 100%;
-            max-width: 480px;
-        }
-
-        .auth-card {
+            justify-content: space-between;
+            padding: 1.5rem 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
             background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            animation: slideUp 0.4s ease;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            flex-shrink: 0;
         }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .auth-header {
-            background: linear-gradient(135deg, #045B92 0%, #073b5e 100%);
-            padding: 2rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .auth-header h1 {
-            color: white;
-            font-size: 1.8rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
-        .auth-header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.95rem;
-        }
-
-        .auth-header .material-symbols-outlined {
-            font-size: 48px !important;
-            color: white;
-            margin-bottom: 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 12px;
-            border-radius: 50%;
-        }
-
-        .auth-tabs {
-            display: flex;
-            border-bottom: 2px solid rgba(4, 91, 146, 0.1);
-            background: white;
-        }
-
-        .auth-tab {
-            flex: 1;
-            padding: 1.25rem;
-            text-align: center;
+        
+        .sheet-back-btn {
+            background: transparent;
+            border: none;
             cursor: pointer;
-            font-weight: 500;
-            color: rgba(4, 91, 146, 0.5);
-            transition: all 0.2s;
-            border-bottom: 3px solid transparent;
+            padding: 4px;
         }
-
-        .auth-tab.active {
-            color: #FF286F;
-            border-bottom-color: #FF286F;
+        .sheet-back-btn .material-symbols-outlined {
+            font-size: 24px !important;
+            color: #FF286F !important;
         }
-
-        .auth-form-container {
-            padding: 2rem;
-        }
-
-        .auth-form {
-            display: none;
-        }
-
-        .auth-form.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
+        
+        .sheet-title {
+            font-size: 1.1rem;
             color: #045B92;
-            font-weight: 500;
-            font-size: 0.9rem;
+            margin: 0;
+            text-transform: lowercase;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
         }
-
-        .form-group input {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            border: 2px solid rgba(4, 91, 146, 0.1);
+        .sheet-title::first-letter {
+            text-transform: uppercase;
+        }
+        
+        .sheet-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 1.5rem 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: #FF286F rgba(4, 91, 146, 0.1);
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .sheet-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sheet-content::-webkit-scrollbar-track {
+            background: rgba(4, 91, 146, 0.05);
             border-radius: 10px;
-            font-family: 'Manrope', sans-serif;
-            font-size: 1rem;
-            transition: all 0.2s;
-            outline: none;
         }
-
-        .form-group input:focus {
-            border-color: #FF286F;
-            box-shadow: 0 0 0 4px rgba(255, 40, 111, 0.1);
+        .sheet-content::-webkit-scrollbar-thumb {
+            background: #FF286F;
+            border-radius: 10px;
         }
-
-        .form-group input.error {
-            border-color: #FF286F;
-            background-color: rgba(255, 40, 111, 0.02);
+        
+        .sheet-footer {
+            padding: 1rem 1.5rem 1.5rem;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+            background: white;
+            flex-shrink: 0;
         }
-
-        .password-input-wrapper {
-            position: relative;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: rgba(4, 91, 146, 0.5);
-        }
-
-        .toggle-password:hover {
-            color: #FF286F;
-        }
-
-        .error-message {
-            color: #FF286F;
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
-            display: none;
-        }
-
-        .error-message.visible {
-            display: block;
-        }
-
-        /* Role Selector Styles */
-        .role-selector {
+        
+        .next-btn-container {
             display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
+            justify-content: flex-end;
         }
-
-        .role-option {
-            flex: 1;
-            cursor: pointer;
-        }
-
-        .role-option input[type="radio"] {
-            display: none;
-        }
-
-        .role-card {
-            border: 2px solid rgba(4, 91, 146, 0.1);
-            border-radius: 12px;
-            padding: 1rem;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .role-option input[type="radio"]:checked + .role-card {
-            border-color: #FF286F;
-            background-color: rgba(255, 40, 111, 0.05);
-            transform: scale(1.02);
-        }
-
-        .role-icon {
-            font-size: 32px !important;
-            color: #045B92;
-            margin-bottom: 0.5rem;
-        }
-
-        .role-title {
-            font-weight: 600;
-            color: #045B92;
-            margin-bottom: 0.25rem;
-        }
-
-        .role-desc {
-            font-size: 0.8rem;
-            color: rgba(4, 91, 146, 0.6);
-        }
-
-        .auth-button {
-            width: 100%;
-            padding: 1rem;
+        
+        .next-button {
             background: #FF286F;
             color: white;
             border: none;
-            border-radius: 10px;
+            padding: 1rem 3rem;
             font-size: 1rem;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            border-radius: 5px !important;
+            min-width: 120px;
+            transition: background-color 0.2s;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
+        }
+        .next-button:hover {
+            background: #d61e5b;
+        }
+        
+        .form-section {
+            margin-bottom: 1.75rem;
+        }
+        
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-label {
+            font-weight: 500 !important;
+            color: #045B92;
+            margin-bottom: 0.5rem;
+            display: block;
+            font-size: 0.95rem;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .label-with-hint {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .hint-text {
+            font-weight: 300 !important;
+            color: rgba(4, 91, 146, 0.5);
+            font-size: 0.8rem;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .tip-banner {
+            background: rgba(4, 91, 146, 0.08);
+            padding: 1.25rem;
+            border-radius: 5px !important;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
             margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tip-banner-icon {
+            width: 32px;
+            height: 32px;
+            background-color: rgba(4, 91, 146, 0.12);
+            border-radius: 5px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background-color 0.3s ease-in-out;
+        }
+        .tip-banner-icon .material-symbols-outlined {
+            color: #045B92 !important;
+            font-size: 20px !important;
+            transition: color 0.3s ease-in-out;
+        }
+        
+        .tip-banner-text {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #045B92;
+            line-height: 1.5;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .form-section .location-icon:hover,
+        .form-section .upload-icon:hover,
+        .form-section .date-time-box:hover,
+        .form-section .tip-banner-icon:hover {
+            background-color: #FF286F !important;
+            transition: background-color 0.3s ease-in-out;
+        }
+        
+        .form-section .location-icon:hover .custom-icon,
+        .form-section .upload-icon:hover .material-symbols-outlined,
+        .form-section .date-time-box:hover .custom-icon,
+        .form-section .tip-banner-icon:hover .material-symbols-outlined {
+            filter: brightness(0) invert(1);
+            transition: filter 0.3s ease-in-out;
+        }
+        
+        .date-time-box:hover span:not(.custom-icon) {
+            color: white !important;
+        }
+        
+        #previewSheet .preview-icon:hover,
+        #previewSheet .helper-icon:hover {
+            background-color: rgba(4, 91, 146, 0.08) !important;
+        }
+        
+        #previewSheet .preview-icon:hover .custom-icon,
+        #previewSheet .helper-icon:hover .material-symbols-outlined {
+            filter: none !important;
+        }
+        
+        .field-error {
+            color: #FF286F;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            font-weight: 300;
+            display: none;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .field-error.visible {
+            display: block;
+        }
+        
+        .location-field-wrapper,
+        .task-field-wrapper,
+        .budget-field-wrapper,
+        .street-field-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        
+        .location-field,
+        .street-field,
+        .task-field,
+        .more-details-field,
+        .budget-input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 1px solid rgba(4, 91, 146, 0.3) !important;
+            border-radius: 5px !important;
+            background: white;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 200 !important;
+            font-size: 1rem !important;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .budget-field-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        
+        .budget-input {
+            padding-left: 2.5rem;
+        }
+        
+        .currency-symbol {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #045B92;
+            font-weight: 500;
+            font-size: 1rem;
+            font-family: 'Manrope', sans-serif !important;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .task-field {
+            padding-right: 4rem;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .location-field.error,
+        .task-field.error,
+        .budget-input.error {
+            border-color: #FF286F !important;
+            background-color: rgba(255, 40, 111, 0.02);
+        }
+        
+        .location-field:focus,
+        .street-field:focus,
+        .task-field:focus,
+        .more-details-field:focus,
+        .budget-input:focus {
+            border-color: #FF286F !important;
+        }
+        
+        .location-field {
+            padding-right: 4rem;
+        }
+        
+        .custom-icon {
+            width: 24px;
+            height: 24px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            display: inline-block;
+        }
+        
+        .location-3-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/location%203.png');
+        }
+        
+        .location-pin-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/location.png');
+        }
+        
+        .image-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/image.png');
+        }
+        
+        .checklist-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/checklist.png');
+        }
+        
+        .clock-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clock.png');
+        }
+        
+        .check-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/check-mark.png');
+        }
+        
+        .calendar-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/calendar.png');
+        }
+        
+        .wallet-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/wallet.png');
+        }
+        
+        .street-icon {
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/IMG_5019.png');
+            width: 24px;
+            height: 24px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        @keyframes shake {
+            0% { transform: translateY(-50%) translateX(0); }
+            5% { transform: translateY(-50%) translateX(-3px) rotate(-1deg); }
+            10% { transform: translateY(-50%) translateX(3px) rotate(1deg); }
+            15% { transform: translateY(-50%) translateX(-2px) rotate(-0.5deg); }
+            20% { transform: translateY(-50%) translateX(2px) rotate(0.5deg); }
+            25% { transform: translateY(-50%) translateX(-1px) rotate(-0.2deg); }
+            30% { transform: translateY(-50%) translateX(1px) rotate(0.2deg); }
+            35%, 100% { transform: translateY(-50%) translateX(0); }
+        }
+        
+        .shake-icon {
+            animation: shake 1.5s infinite ease-in-out;
+        }
+        
+        .location-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background-color: rgba(4, 91, 146, 0.12);
+            border-radius: 5px !important;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease-in-out;
+            pointer-events: auto;
+            z-index: 2;
+            animation: shake 1.5s infinite ease-in-out;
+        }
+        .location-icon:hover {
+            background-color: #FF286F !important;
+        }
+        .location-icon:hover .custom-icon {
+            filter: brightness(0) invert(1);
+        }
+        .location-icon .custom-icon {
+            width: 24px;
+            height: 24px;
+            transition: filter 0.3s ease-in-out;
+        }
+        
+        .upload-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background-color: rgba(4, 91, 146, 0.12);
+            border-radius: 5px !important;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease-in-out;
+            pointer-events: auto;
+            z-index: 2;
+            animation: shake 1.5s infinite ease-in-out;
+            overflow: hidden;
+        }
+        .upload-icon:hover {
+            background-color: #FF286F !important;
+        }
+        .upload-icon:hover .material-symbols-outlined {
+            color: white !important;
+        }
+        .upload-icon .material-symbols-outlined {
+            color: #045B92;
+            font-size: 24px !important;
+            transition: color 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        .file-input-hidden {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            left: 0;
+            top: 0;
+        }
+        
+        .image-source-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
+            z-index: 10000000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-width: 600px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+        }
+        .image-source-menu.active {
+            transform: translateX(-50%) translateY(0);
+        }
+        .menu-header {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            color: #045B92;
+            font-weight: 500;
+        }
+        .menu-option {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.05);
+        }
+        .menu-option:hover {
+            background: rgba(4, 91, 146, 0.05);
+        }
+        .menu-option .material-symbols-outlined {
+            color: #FF286F;
+        }
+        .menu-option span {
+            color: #045B92;
+        }
+        .menu-cancel {
+            padding: 1rem;
+            text-align: center;
+            color: #FF286F;
+            font-weight: 500;
+            cursor: pointer;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+        
+        .payment-window {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
+            z-index: 10000000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-width: 600px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+        }
+        .payment-window.active {
+            transform: translateX(-50%) translateY(0);
+        }
+        .payment-header {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            color: #045B92;
+            font-weight: 500;
+        }
+        .payment-content {
+            padding: 2rem;
+            text-align: center;
+            color: #045B92;
+        }
+        .payment-buttons {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+        .payment-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .payment-btn.primary {
+            background: #FF286F;
+            color: white;
+        }
+        .payment-btn.primary:hover {
+            background: #d61e5b;
+        }
+        .payment-btn.secondary {
+            background: transparent;
+            color: #045B92;
+            border: 1px solid #045B92;
+        }
+        .payment-btn.secondary:hover {
+            background: rgba(4, 91, 146, 0.05);
+        }
+        
+        /* Post-loading overlay with animated dots */
+        .post-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000003;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .post-loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .post-loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .post-loading-spinner {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            height: 30px;
+            align-items: center;
+        }
+        
+        .post-loading-spinner .dot {
+            width: 12px;
+            height: 12px;
+            background: #FF286F;
+            border-radius: 50%;
+            animation: bounceDot 1.2s infinite ease-in-out;
+        }
+        
+        .post-loading-spinner .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .post-loading-spinner .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes bounceDot {
+            0%, 80%, 100% { 
+                transform: scale(0.6);
+                opacity: 0.6;
+            }
+            40% { 
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+        
+        .post-loading-text {
+            color: #045B92;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        /* Error toast */
+        .error-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #FF286F;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(255, 40, 111, 0.3);
+            z-index: 10000004;
+            transition: transform 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .error-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* Success toast */
+        .success-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #10b981;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+            z-index: 10000004;
+            transition: transform 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .success-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .char-count {
+            text-align: right;
+            font-size: 0.75rem;
+            color: rgba(4, 91, 146, 0.5);
+            margin-top: 0.25rem;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .char-count.limit-reached {
+            color: #FF286F;
+        }
+        
+        .when-options,
+        .budget-options,
+        .payment-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .when-option,
+        .budget-option,
+        .payment-option {
+            flex: 1;
+            padding: 0.75rem 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 5px !important;
+            transition: all 0.2s;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid transparent;
+        }
+        
+        .when-option.active,
+        .budget-option.active {
+            background: #FF286F;
+            color: white;
+            border: none;
+        }
+        
+        .when-option.inactive,
+        .budget-option.inactive {
+            background: transparent;
+            color: #045B92;
+            border: 1px solid #045B92;
+        }
+        
+        .when-option.inactive:hover,
+        .budget-option.inactive:hover {
+            background: #FF286F;
+            color: white;
+            border-color: #FF286F;
+        }
+        
+        .payment-option.active {
+            background: #FF286F;
+            color: white;
+            border: none;
+        }
+        
+        .payment-option.inactive {
+            background: transparent;
+            color: #045B92;
+            border: 1px solid #045B92;
+        }
+        
+        .payment-option.inactive:hover {
+            background: #FF286F;
+            color: white;
+            border-color: #FF286F;
+        }
+        
+        #onlineBtn {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+            border-color: rgba(4, 91, 146, 0.2);
+            color: rgba(4, 91, 146, 0.5);
+        }
+        
+        .date-time-pickers {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.25rem;
+        }
+        
+        .date-time-box {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.7rem 0.5rem;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+            border-radius: 5px !important;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s ease-in-out;
+            position: relative;
+        }
+        .date-time-box:hover {
+            border-color: #FF286F;
+            background-color: #FF286F;
+        }
+        
+        .date-time-box .custom-icon {
+            width: 20px;
+            height: 20px;
+            transition: filter 0.3s ease-in-out;
+        }
+        
+        .date-time-box:hover .custom-icon {
+            filter: brightness(0) invert(1);
+        }
+        
+        .date-time-box:hover span {
+            color: white !important;
+        }
+        
+        .date-time-box span {
+            font-size: 0.85rem;
+            color: #045B92;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 400 !important;
+            transition: color 0.3s ease-in-out;
+        }
+        
+        .native-datetime-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .native-date-input,
+        .native-time-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            left: 0;
+            top: 0;
+        }
+        
+        .more-details-field {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .optional-text {
+            font-weight: 300 !important;
+            color: rgba(4, 91, 146, 0.5);
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+            font-family: 'Manrope', sans-serif !important;
+        }
+
+        #previewSheet {
+            display: none;
+        }
+        
+        #successSheet {
+            display: none;
+        }
+        
+        .preview-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
+        }
+        
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(4, 91, 146, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            font-size: 24px;
+            color: #045B92;
+            overflow: hidden;
+        }
+        
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.35rem;
+        }
+        
+        .profile-name {
+            font-size: 1rem;
+            color: #045B92;
+            font-weight: 500;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .verified-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .verified-icon .material-symbols-outlined {
+            color: #34A853 !important;
+            font-size: 18px !important;
+        }
+        
+        .success-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+        
+        .success-check {
+            width: 100px;
+            height: 100px;
+            background: #8BC34A;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            animation: popIn 0.5s ease;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .success-check .material-symbols-outlined {
+            color: white !important;
+            font-size: 60px !important;
+        }
+        
+        .success-title {
+            font-size: 1.1rem;
+            color: #045B92;
+            font-weight: 500 !important;
+            margin-bottom: 0.25rem;
+            font-family: 'Manrope', sans-serif !important;
+            text-transform: lowercase;
+        }
+        .success-title::first-letter {
+            text-transform: uppercase;
+        }
+        
+        .success-message {
+            color: rgba(4, 91, 146, 0.5);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .task-id-small {
+            background: transparent;
+            color: rgba(4, 91, 146, 0.4);
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            word-break: break-all;
+            font-weight: 300;
+        }
+        
+        .go-to-task-btn {
+            background: #FF286F;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 200px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            margin-bottom: 0.5rem;
+        }
+        .go-to-task-btn:hover {
+            background: #d61e5b;
+        }
+        
+        .preview-items {
+            background: white;
+            border: 1px solid rgba(4, 91, 146, 0.1);
+            padding: 1.5rem;
+            border-radius: 5px !important;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
+        }
+        
+        .preview-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .preview-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .preview-icon {
+            display: none;
+        }
+        
+        .preview-content {
+            flex: 1;
+            margin-left: 0;
+        }
+        
+        .preview-label {
+            font-size: 0.75rem;
+            color: rgba(4, 91, 146, 0.5);
+            margin-bottom: 0.15rem;
+            text-transform: uppercase;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.3px;
+        }
+        
+        .preview-value {
+            font-weight: 400 !important;
+            font-size: 0.95rem;
+            color: #045B92;
+            line-height: 1.4;
+            word-break: break-word;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .preview-value.pink-text {
+            color: #FF286F;
+            font-weight: 500 !important;
+        }
+        
+        .budget-hint {
+            font-size: 0.7rem;
+            color: rgba(4, 91, 146, 0.5);
+            margin-left: 0.5rem;
+            font-weight: 300;
+            text-transform: none;
+        }
+        
+        .preview-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .preview-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+        
+        .preview-divider {
+            height: 1px;
+            background: rgba(4, 91, 146, 0.1);
+            margin: 1rem 0;
+        }
+        
+        .helper-message {
+            background: rgba(4, 91, 146, 0.08);
+            padding: 1.25rem;
+            border-radius: 5px !important;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+        
+        .helper-icon {
+            width: 32px;
+            height: 32px;
+            background-color: rgba(4, 91, 146, 0.12);
+            border-radius: 5px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: none !important;
+        }
+        .helper-icon .material-symbols-outlined {
+            color: #045B92 !important;
+            font-size: 20px !important;
+        }
+        
+        .helper-text {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #045B92;
+            line-height: 1.5;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif !important;
+        }
+        
+        .terms-container {
+            margin: 1.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .terms-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #FF286F;
+        }
+        
+        .terms-label {
+            font-size: 0.85rem;
+            color: #045B92;
+            cursor: pointer;
+            user-select: none;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 400 !important;
+        }
+        
+        .terms-label a {
+            color: #FF286F;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .terms-label a:hover {
+            text-decoration: underline;
+        }
+        
+        .post-btn-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .post-button {
+            background: #FF286F;
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px !important;
+            width: 100%;
+            transition: all 0.1s ease;
+            margin-bottom: 0.5rem;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
             position: relative;
             overflow: hidden;
         }
-
-        .auth-button:hover:not(:disabled) {
+        
+        .post-button:active {
+            transform: scale(0.98);
             background: #d61e5b;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255, 40, 111, 0.3);
         }
-
-        .auth-button:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        .auth-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .auth-button.loading {
+        
+        .post-button.loading {
+            opacity: 0.7;
+            cursor: wait;
             color: transparent;
         }
-
-        .auth-button.loading::after {
+        
+        .post-button.loading::after {
             content: '';
             position: absolute;
             width: 20px;
@@ -271,546 +1235,1691 @@
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        .forgot-password {
-            text-align: right;
-            margin-top: 0.5rem;
+        
+        .post-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-
-        .forgot-password a {
-            color: #045B92;
-            text-decoration: none;
-            font-size: 0.85rem;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+        
+        .post-button.clicked {
+            transform: scale(0.98);
+            background: #d61e5b;
         }
-
-        .forgot-password a:hover {
-            opacity: 1;
-            color: #FF286F;
-        }
-
-        .terms-text {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: 0.8rem;
+        
+        .free-text {
+            font-size: 0.75rem;
             color: rgba(4, 91, 146, 0.5);
+            text-align: center;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif !important;
         }
 
-        .terms-text a {
-            color: #FF286F;
-            text-decoration: none;
-        }
-
-        /* Loading overlay */
-        .loading-overlay {
+        .map-modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
-            display: none;
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 2000000;
+            display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-
-        .loading-overlay.active {
+        
+        .map-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .map-modal {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px !important;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .map-modal-header {
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
         }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(4, 91, 146, 0.1);
-            border-top-color: #FF286F;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        
+        .map-modal-header h3 {
+            font-size: 1.1rem;
+            color: #045B92;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
         }
-
-        /* Error toast */
-        .error-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+        
+        .map-modal-close {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .map-modal-close .material-symbols-outlined {
+            font-size: 24px !important;
+            color: #FF286F !important;
+        }
+        
+        .map-container {
+            height: 300px;
+            width: 100%;
+        }
+        
+        .map-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(4, 91, 146, 0.1);
+        }
+        
+        .map-confirm-btn {
             background: #FF286F;
             color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            box-shadow: 0 10px 30px rgba(255, 40, 111, 0.3);
-            z-index: 10000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 350px;
+            border: none;
+            padding: 0.7rem 2rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border-radius: 5px !important;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
+        }
+        .map-confirm-btn:hover {
+            background: #d61e5b;
+        }
+        
+        .location-info {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.85rem;
+            color: #045B92;
+            background: rgba(4, 91, 146, 0.03);
+            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 300 !important;
         }
 
-        .error-toast.show {
-            transform: translateX(0);
-        }
-
-        .success-toast {
+        .confirm-modal-overlay {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        
+        .confirm-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .confirm-modal {
+            background: white;
+            max-width: 400px;
+            width: 90%;
+            padding: 2rem;
+            border-radius: 12px !important;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .confirm-modal h3 {
+            font-size: 1.3rem;
+            color: #045B92;
+            margin-bottom: 1rem;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
+        }
+        
+        .confirm-modal p {
+            font-size: 0.95rem;
+            color: rgba(4, 91, 146, 0.8);
+            margin-bottom: 2rem;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 300 !important;
+        }
+        
+        .confirm-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .confirm-btn {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 5px !important;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Manrope', sans-serif !important;
+            font-weight: 500 !important;
+        }
+        
+        .confirm-btn.yes {
+            background: #FF286F;
             color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-            z-index: 10000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 350px;
+        }
+        
+        .confirm-btn.yes:hover {
+            background: #d61e5b;
+        }
+        
+        .confirm-btn.yes:active {
+            transform: scale(0.95);
+        }
+        
+        .confirm-btn.yes.loading {
+            opacity: 0.7;
+            cursor: wait;
+            color: transparent;
+            position: relative;
+        }
+        
+        .confirm-btn.yes.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .confirm-btn.cancel {
+            background: transparent;
+            color: #045B92;
+            border: 1px solid #045B92;
+        }
+        
+        .confirm-btn.cancel:hover {
+            background: rgba(4, 91, 146, 0.05);
+        }
+        
+        .confirm-btn.cancel:active {
+            transform: scale(0.95);
         }
 
-        .success-toast.show {
-            transform: translateX(0);
+        @media (max-width: 768px) {
+            .sheet-header {
+                padding: 1.25rem 1.25rem 1.25rem;
+            }
+            .sheet-content {
+                padding: 1.75rem 1.25rem 0.75rem;
+            }
+            .sheet-footer {
+                padding: 0.75rem 1.25rem 1.25rem;
+            }
+            .profile-avatar {
+                width: 56px;
+                height: 56px;
+            }
+            .map-container {
+                height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sheet-header {
+                padding: 1rem 1rem 1rem;
+            }
+            .sheet-content {
+                padding: 1.5rem 1rem 0.5rem;
+            }
+            .sheet-footer {
+                padding: 0.5rem 1rem 1rem;
+            }
+            .when-options,
+            .budget-options,
+            .payment-options {
+                gap: 0.5rem;
+            }
+            .date-time-pickers {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .profile-avatar {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+            .helper-message {
+                padding: 1rem;
+                gap: 0.75rem;
+            }
+            .confirm-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .label-with-hint {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+            .map-container {
+                height: 200px;
+            }
+        }
+
+        .image-preview-container {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .image-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            object-fit: cover;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+        .remove-image {
+            background: #FF286F;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: -15px;
+            margin-top: -5px;
         }
     </style>
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <span class="material-symbols-outlined">task_alt</span>
-                <h1>Welcome to TaskMart</h1>
-                <p>Connect with trusted helpers in your area</p>
+    <!-- TASK PLANNER SHEET -->
+    <div class="sheet-container" id="locationSheet">
+        <div class="sheet">
+            <div class="sheet-header">
+                <button class="sheet-back-btn" id="sheetBackBtn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <div class="sheet-title">Plan your task</div>
             </div>
+            
+            <div class="sheet-content" id="locationContent">
+                <div class="tip-banner">
+                    <div class="tip-banner-icon">
+                        <span class="material-symbols-outlined">lightbulb</span>
+                    </div>
+                    <div class="tip-banner-text">
+                        Describe your task clearly to get better offers from helpers. Be specific about what you need and any important details.
+                    </div>
+                </div>
 
-            <!-- Tabs -->
-            <div class="auth-tabs">
-                <div class="auth-tab active" data-tab="login">Log In</div>
-                <div class="auth-tab" data-tab="signup">Sign Up</div>
+                <div class="form-section">
+                    <label class="section-label">Your location</label>
+                    <div class="location-field-wrapper">
+                        <input type="text" class="location-field" id="locationField" placeholder="Your location" value="detecting location...">
+                        <button class="location-icon" id="locationMapBtn">
+                            <span class="custom-icon location-pin-icon"></span>
+                        </button>
+                    </div>
+                    <div class="field-error" id="locationError">Please confirm your location</div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="label-with-hint">
+                        <label class="section-label">Street name</label>
+                        <span class="hint-text">(Your full address is only revealed after you approve a helper.)</span>
+                    </div>
+                    <div class="street-field-wrapper">
+                        <input type="text" class="street-field" id="streetField" placeholder="House number, street name, or nearby landmark">
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label class="section-label">When do you need help?</label>
+                    <div class="when-options">
+                        <button class="when-option active" id="whenNowBtn">Now</button>
+                        <button class="when-option inactive" id="whenLaterBtn">Later</button>
+                    </div>
+                    
+                    <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
+                        <div class="date-time-box" id="pickDateBtn">
+                            <span class="custom-icon check-icon"></span>
+                            <span id="dateDisplay">Pick a date</span>
+                            <input type="date" id="nativeDatePicker" class="native-date-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
+                        </div>
+                        <div class="date-time-box" id="pickTimeBtn">
+                            <span class="custom-icon clock-icon"></span>
+                            <span id="timeDisplay">Pick a time</span>
+                            <input type="time" id="nativeTimePicker" class="native-time-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label class="section-label">Describe your task</label>
+                    <div class="task-field-wrapper">
+                        <input type="text" class="task-field" id="taskField" placeholder="Describe your task or upload an image" maxlength="50" value="">
+                        <span class="upload-icon" id="uploadIcon">
+                            <span class="material-symbols-outlined">add</span>
+                        </span>
+                    </div>
+                    <div class="char-count" id="taskCharCount">0/50</div>
+                    <div class="field-error" id="taskError">Please describe your task</div>
+                    <div id="imagePreviewContainer" class="image-preview-container"></div>
+                </div>
+
+                <div class="form-section">
+                    <label class="section-label">What's your budget?</label>
+                    <div class="budget-options">
+                        <button class="budget-option active" id="fixedBudgetBtn">Fixed</button>
+                        <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
+                    </div>
+                    <div id="fixedBudgetInput" style="display: block;">
+                        <div class="budget-field-wrapper">
+                            <span class="currency-symbol">R</span>
+                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount" inputmode="numeric" pattern="[0-9]*">
+                        </div>
+                        <div class="field-error" id="budgetError">Please enter a budget amount</div>
+                    </div>
+                    
+                    <div style="margin-top: 0.75rem;">
+                        <label class="section-label">Payment method</label>
+                        <div class="payment-options">
+                            <button class="payment-option active" id="cashBtn">
+                                <span>Cash</span>
+                            </button>
+                            <button class="payment-option inactive" id="onlineBtn" disabled>
+                                <span>Online payment</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label class="section-label">Have more details? <span class="optional-text">(Optional)</span></label>
+                    <textarea class="more-details-field" id="moreDetailsField" placeholder="Add more details about your task..." rows="3"></textarea>
+                </div>
             </div>
-
-            <!-- Forms Container -->
-            <div class="auth-form-container">
-                <!-- LOGIN FORM -->
-                <form class="auth-form active" id="loginForm">
-                    <div class="form-group">
-                        <label>Email address</label>
-                        <input type="email" id="loginEmail" placeholder="your@email.com" value="test@example.com">
-                        <div class="error-message" id="loginEmailError"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password</label>
-                        <div class="password-input-wrapper">
-                            <input type="password" id="loginPassword" placeholder="••••••••" value="password123">
-                            <span class="material-symbols-outlined toggle-password" onclick="togglePassword('loginPassword')">visibility_off</span>
-                        </div>
-                        <div class="error-message" id="loginPasswordError"></div>
-                    </div>
-
-                    <div class="forgot-password">
-                        <a href="#" id="forgotPassword">Forgot password?</a>
-                    </div>
-
-                    <button type="submit" class="auth-button" id="loginBtn">Log In</button>
-                </form>
-
-                <!-- SIGNUP FORM -->
-                <form class="auth-form" id="signupForm">
-                    <div class="form-group">
-                        <label>Full name</label>
-                        <input type="text" id="signupName" placeholder="John Doe">
-                        <div class="error-message" id="signupNameError"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Email address</label>
-                        <input type="email" id="signupEmail" placeholder="your@email.com">
-                        <div class="error-message" id="signupEmailError"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>I want to:</label>
-                        <div class="role-selector">
-                            <label class="role-option">
-                                <input type="radio" name="role" value="poster" checked>
-                                <div class="role-card">
-                                    <span class="material-symbols-outlined role-icon">assignment</span>
-                                    <div class="role-title">Get Help</div>
-                                    <div class="role-desc">Post tasks and find helpers</div>
-                                </div>
-                            </label>
-                            <label class="role-option">
-                                <input type="radio" name="role" value="helper">
-                                <div class="role-card">
-                                    <span class="material-symbols-outlined role-icon">handyman</span>
-                                    <div class="role-title">Earn Money</div>
-                                    <div class="role-desc">Complete tasks and earn</div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password</label>
-                        <div class="password-input-wrapper">
-                            <input type="password" id="signupPassword" placeholder="••••••••">
-                            <span class="material-symbols-outlined toggle-password" onclick="togglePassword('signupPassword')">visibility_off</span>
-                        </div>
-                        <div class="error-message" id="signupPasswordError"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Confirm password</label>
-                        <div class="password-input-wrapper">
-                            <input type="password" id="signupConfirmPassword" placeholder="••••••••">
-                            <span class="material-symbols-outlined toggle-password" onclick="togglePassword('signupConfirmPassword')">visibility_off</span>
-                        </div>
-                        <div class="error-message" id="signupConfirmError"></div>
-                    </div>
-
-                    <button type="submit" class="auth-button" id="signupBtn">Create Account</button>
-
-                    <div class="terms-text">
-                        By signing up, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-                    </div>
-                </form>
+            
+            <div class="sheet-footer">
+                <div class="next-btn-container">
+                    <button class="next-button" id="nextButton">Next</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
+    <!-- PREVIEW SHEET -->
+    <div class="sheet-container" id="previewSheet">
+        <div class="sheet">
+            <div class="sheet-header">
+                <button class="sheet-back-btn" id="previewBackBtn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <div class="sheet-title">Confirm your task</div>
+            </div>
+            
+            <div class="sheet-content" id="previewContent">
+                <div class="preview-header">
+                    <div class="profile-avatar" id="profileAvatar">PS</div>
+                    <div class="profile-info-row">
+                        <span class="profile-name" id="profileName">Loading...</span>
+                        <span class="verified-icon">
+                            <span class="material-symbols-outlined">verified</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="preview-items">
+                    <div class="preview-item">
+                        <div class="preview-content">
+                            <div class="preview-label">TASK LOCATION</div>
+                            <div class="preview-value" id="previewLocation">loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="preview-item">
+                        <div class="preview-content">
+                            <div class="preview-label">STREET NAME</div>
+                            <div class="preview-value pink-text" id="previewStreet">Not provided</div>
+                        </div>
+                    </div>
+
+                    <div class="preview-item">
+                        <div class="preview-content">
+                            <div class="preview-label">DATE AND TIME</div>
+                            <div class="preview-value pink-text" id="previewWhen">Now</div>
+                        </div>
+                    </div>
+
+                    <div class="preview-item">
+                        <div class="preview-content">
+                            <div class="preview-label">YOUR TASK</div>
+                            <div class="preview-value pink-text" id="previewTask">Loading...</div>
+                            <div id="previewImagesContainer" class="preview-images"></div>
+                        </div>
+                    </div>
+
+                    <div class="preview-item">
+                        <div class="preview-content">
+                            <div class="preview-label">BUDGET <span class="budget-hint">(per task)</span></div>
+                            <div class="preview-value pink-text" id="previewBudget">Not set</div>
+                            <div class="preview-value" id="previewPayment" style="font-size:0.85rem; color:#045B92; margin-top:0.25rem;"></div>
+                        </div>
+                    </div>
+
+                    <div class="preview-item">
+                        <div class="preview-content">
+                            <div class="preview-label">MORE DETAILS</div>
+                            <div class="preview-value" id="previewDetails">None provided</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="helper-message">
+                    <div class="helper-icon">
+                        <span class="material-symbols-outlined">check</span>
+                    </div>
+                    <div class="helper-text" id="helperText">
+                        Your task will be visible to nearby helpers. You will receive offers and can choose who to work with.
+                    </div>
+                </div>
+
+                <div class="terms-container">
+                    <input type="checkbox" id="termsCheckbox" class="terms-checkbox">
+                    <label for="termsCheckbox" class="terms-label">
+                        I agree to the <a href="#">TaskMart Terms of Service</a> and <a href="#">Privacy Policy</a>.
+                    </label>
+                </div>
+            </div>
+            
+            <div class="sheet-footer">
+                <div class="post-btn-container">
+                    <button class="post-button" id="postButton" disabled>Post task</button>
+                    <div class="free-text" id="freeText">Free to post • no upfront payment</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Error Toast -->
+    <!-- SUCCESS SHEET -->
+    <div class="sheet-container" id="successSheet">
+        <div class="sheet">
+            <div class="sheet-header">
+                <div class="sheet-title">Task Posted!</div>
+            </div>
+            
+            <div class="sheet-content" id="successContent">
+                <div class="success-content">
+                    <div class="success-check" id="successCheckIcon">
+                        <span class="material-symbols-outlined">check</span>
+                    </div>
+                    <div class="success-title">Success! task has been posted</div>
+                    <div class="success-message">Taskers can now view and respond to your task.</div>
+                    <button class="go-to-task-btn" id="doneBtn">Go to task</button>
+                    <div class="task-id-small" id="successTaskId">#loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POST LOADING OVERLAY -->
+    <div class="post-loading-overlay" id="postLoadingOverlay">
+        <div class="post-loading-content">
+            <div class="post-loading-spinner">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div class="post-loading-text">Posting your task...</div>
+        </div>
+    </div>
+
+    <!-- ERROR TOAST -->
     <div class="error-toast" id="errorToast"></div>
     
-    <!-- Success Toast -->
+    <!-- SUCCESS TOAST -->
     <div class="success-toast" id="successToast"></div>
 
+    <!-- MAP MODAL -->
+    <div class="map-modal-overlay" id="mapModal">
+        <div class="map-modal">
+            <div class="map-modal-header">
+                <h3>Select precise location</h3>
+                <button class="map-modal-close" id="mapModalCloseBtn">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="locationInfo" class="location-info">Drag the marker to your exact location</div>
+            <div class="map-container" id="map"></div>
+            <div class="map-modal-footer">
+                <button class="map-confirm-btn" id="mapConfirmBtn">Confirm location</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYMENT WINDOW -->
+    <div class="payment-window" id="paymentWindow">
+        <div class="payment-header">Secure payment</div>
+        <div class="payment-content">
+            <p>We'll securely hold your payment until the task is completed.</p>
+            <p>You only pay when you're satisfied with the work.</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">This is a placeholder - payment integration coming soon.</p>
+        </div>
+        <div class="payment-buttons">
+            <button class="payment-btn secondary" id="cancelPaymentBtn">Cancel</button>
+            <button class="payment-btn primary" id="confirmPaymentBtn">Continue to payment</button>
+        </div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div class="loading-text">Taking you to payment</div>
+            <div class="loading-subtext">Please wait while we redirect you...</div>
+        </div>
+    </div>
+
+    <!-- CONFIRMATION MODAL -->
+    <div class="confirm-modal-overlay" id="confirmModal">
+        <div class="confirm-modal">
+            <h3 id="confirmTitle">Ready to post?</h3>
+            <p id="confirmMessage">We're about to post your task. Are you sure you want to continue?</p>
+            <div class="confirm-buttons">
+                <button class="confirm-btn yes" id="confirmYesBtn">Yes, post it</button>
+                <button class="confirm-btn cancel" id="confirmCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAMERA/GALLERY SELECTION MENU -->
+    <div class="image-source-menu" id="imageSourceMenu">
+        <div class="menu-header">Choose image source</div>
+        <div class="menu-option" id="takePhotoOption">
+            <span class="material-symbols-outlined">photo_camera</span>
+            <span>Take photo</span>
+        </div>
+        <div class="menu-option" id="chooseFromGalleryOption">
+            <span class="material-symbols-outlined">photo_library</span>
+            <span>Choose from gallery</span>
+        </div>
+        <div class="menu-cancel" id="cancelImageMenu">Cancel</div>
+    </div>
+
     <script>
-        // Configuration
-        const API_BASE_URL = window.location.origin; // Your backend URL
-
-        // Toast functions
-        function showError(message) {
-            const toast = document.getElementById('errorToast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 4000);
-        }
-
-        function showSuccess(message) {
-            const toast = document.getElementById('successToast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // Toggle between login and signup tabs
-        document.querySelectorAll('.auth-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                const tabName = this.dataset.tab;
-                document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
-                document.getElementById(tabName + 'Form').classList.add('active');
-                
-                clearAllErrors();
-            });
-        });
-
-        // Toggle password visibility
-        function togglePassword(inputId) {
-            const input = document.getElementById(inputId);
-            const icon = event.target;
+        (function() {
+            'use strict';
             
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.textContent = 'visibility';
+            const BASE_URL = window.location.origin;
+            
+            // Auth helper functions
+            function getAuthToken() {
+                return localStorage.getItem('auth_token');
+            }
+
+            function getCurrentUser() {
+                const user = localStorage.getItem('user');
+                return user ? JSON.parse(user) : null;
+            }
+
+            function isUserLoggedIn() {
+                return !!getAuthToken() && !!getCurrentUser();
+            }
+
+            function showError(message) {
+                const toast = document.getElementById('errorToast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 4000);
+            }
+
+            function showSuccess(message) {
+                const toast = document.getElementById('successToast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+            
+            // Current user state
+            const currentUser = getCurrentUser() || {
+                name: 'Guest',
+                initials: 'GU',
+                avatar: null
+            };
+            
+            if (window.MAPBOX_TOKEN) {
+                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                console.log('Mapbox token set successfully');
             } else {
-                input.type = 'password';
-                icon.textContent = 'visibility_off';
+                console.error('Mapbox token not found');
             }
-        }
-
-        // Clear all error messages
-        function clearAllErrors() {
-            document.querySelectorAll('.error-message').forEach(el => {
-                el.textContent = '';
-                el.classList.remove('visible');
-            });
-            document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
-        }
-
-        // Show error on field
-        function showFieldError(inputId, message) {
-            const input = document.getElementById(inputId);
-            const errorEl = document.getElementById(inputId + 'Error');
-            input.classList.add('error');
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.classList.add('visible');
-            }
-        }
-
-        // Validate email
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
-        // Save auth data
-        function saveAuth(token, user) {
-            localStorage.setItem('auth_token', token);
-            localStorage.setItem('user', JSON.stringify(user));
-        }
-
-        // Get return URL
-        function getReturnUrl() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('returnTo') || '/task-planner.html';
-        }
-
-        // Handle Login
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            clearAllErrors();
-
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const returnUrl = getReturnUrl();
             
-            let isValid = true;
+            // Get all elements
+            const locationSheet = document.getElementById('locationSheet');
+            const previewSheet = document.getElementById('previewSheet');
+            const successSheet = document.getElementById('successSheet');
+            const postLoadingOverlay = document.getElementById('postLoadingOverlay');
+            const confirmModal = document.getElementById('confirmModal');
+            const confirmTitle = document.getElementById('confirmTitle');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmYesBtn = document.getElementById('confirmYesBtn');
+            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+            const mapModal = document.getElementById('mapModal');
+            const mapModalCloseBtn = document.getElementById('mapModalCloseBtn');
+            const mapConfirmBtn = document.getElementById('mapConfirmBtn');
+            const locationInfo = document.getElementById('locationInfo');
+            const locationContent = document.getElementById('locationContent');
+            const previewContent = document.getElementById('previewContent');
+            const sheetBackBtn = document.getElementById('sheetBackBtn');
+            const previewBackBtn = document.getElementById('previewBackBtn');
+            const locationField = document.getElementById('locationField');
+            const streetField = document.getElementById('streetField');
+            const locationMapBtn = document.getElementById('locationMapBtn');
+            const whenNowBtn = document.getElementById('whenNowBtn');
+            const whenLaterBtn = document.getElementById('whenLaterBtn');
+            const dateTimePickers = document.getElementById('dateTimePickers');
+            const pickDateBtn = document.getElementById('pickDateBtn');
+            const pickTimeBtn = document.getElementById('pickTimeBtn');
+            const dateDisplay = document.getElementById('dateDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const nativeDatePicker = document.getElementById('nativeDatePicker');
+            const nativeTimePicker = document.getElementById('nativeTimePicker');
+            const taskField = document.getElementById('taskField');
+            const taskCharCount = document.getElementById('taskCharCount');
+            const uploadIcon = document.getElementById('uploadIcon');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const previewImagesContainer = document.getElementById('previewImagesContainer');
+            const moreDetailsField = document.getElementById('moreDetailsField');
+            const nextButton = document.getElementById('nextButton');
+            const profileAvatar = document.getElementById('profileAvatar');
+            const profileName = document.getElementById('profileName');
+            const successTaskId = document.getElementById('successTaskId');
+            const doneBtn = document.getElementById('doneBtn');
+            const successCheckIcon = document.getElementById('successCheckIcon');
+            const cashBtn = document.getElementById('cashBtn');
+            const onlineBtn = document.getElementById('onlineBtn');
+            const paymentWindow = document.getElementById('paymentWindow');
+            const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+            const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const helperText = document.getElementById('helperText');
+            const freeText = document.getElementById('freeText');
+            const imageSourceMenu = document.getElementById('imageSourceMenu');
+            const takePhotoOption = document.getElementById('takePhotoOption');
+            const chooseFromGalleryOption = document.getElementById('chooseFromGalleryOption');
+            const cancelImageMenu = document.getElementById('cancelImageMenu');
+            const locationError = document.getElementById('locationError');
+            const taskError = document.getElementById('taskError');
+            const budgetError = document.getElementById('budgetError');
+            const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
+            const openBudgetBtn = document.getElementById('openBudgetBtn');
+            const fixedBudgetInput = document.getElementById('fixedBudgetInput');
+            const budgetAmountInput = document.getElementById('budgetAmount');
+            const previewLocation = document.getElementById('previewLocation');
+            const previewStreet = document.getElementById('previewStreet');
+            const previewTask = document.getElementById('previewTask');
+            const previewBudget = document.getElementById('previewBudget');
+            const previewPayment = document.getElementById('previewPayment');
+            const previewDetails = document.getElementById('previewDetails');
+            const previewWhen = document.getElementById('previewWhen');
+            const postButton = document.getElementById('postButton');
+            const termsCheckbox = document.getElementById('termsCheckbox');
 
-            // Validation
-            if (!email) {
-                showFieldError('loginEmail', 'Email is required');
-                isValid = false;
-            } else if (!isValidEmail(email)) {
-                showFieldError('loginEmail', 'Please enter a valid email');
-                isValid = false;
-            }
+            // Map variables
+            let map = null;
+            let marker = null;
+            let selectedLat = null;
+            let selectedLng = null;
+            let selectedAddress = '';
 
-            if (!password) {
-                showFieldError('loginPassword', 'Password is required');
-                isValid = false;
-            }
+            // State
+            let selectedWhen = 'now';
+            let budgetType = 'fixed';
+            let currentCoordinates = '';
+            let currentLocationName = '';
+            let scrollPosition = 0;
+            let selectedDate = null;
+            let selectedTime = null;
+            let selectedPayment = 'cash';
+            let uploadedImages = [];
+            let isPosting = false;
 
-            if (!isValid) return;
-
-            // Show loading
-            const loginBtn = document.getElementById('loginBtn');
-            loginBtn.disabled = true;
-            loginBtn.classList.add('loading');
-
-            try {
-                console.log('Sending login request:', { email, password });
-                
-                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-                console.log('Login response:', data);
-
-                if (!response.ok) {
-                    throw new Error(data.error || data.message || 'Login failed');
+            // Check for pending task after login
+            function checkForPendingTask() {
+                const pendingTask = sessionStorage.getItem('pendingTask');
+                if (pendingTask) {
+                    try {
+                        const task = JSON.parse(pendingTask);
+                        
+                        if (task.location) locationField.value = task.location;
+                        if (task.streetName) streetField.value = task.streetName;
+                        if (task.taskDescription) {
+                            taskField.value = task.taskDescription;
+                            updateCharCount();
+                        }
+                        if (task.budgetType) {
+                            if (task.budgetType === 'fixed') {
+                                fixedBudgetBtn.click();
+                                if (task.budgetAmount) budgetAmountInput.value = task.budgetAmount;
+                            } else {
+                                openBudgetBtn.click();
+                            }
+                        }
+                        if (task.selectedWhen) {
+                            if (task.selectedWhen === 'later') {
+                                whenLaterBtn.click();
+                                if (task.selectedDate) {
+                                    selectedDate = task.selectedDate;
+                                    dateDisplay.textContent = formatDateForDisplay(task.selectedDate);
+                                }
+                                if (task.selectedTime) {
+                                    selectedTime = task.selectedTime;
+                                    timeDisplay.textContent = formatTimeForDisplay(task.selectedTime);
+                                }
+                            }
+                        }
+                        if (task.selectedPayment) {
+                            if (task.selectedPayment === 'cash') cashBtn.click();
+                        }
+                        if (task.moreDetails) moreDetailsField.value = task.moreDetails;
+                        if (task.uploadedImages && task.uploadedImages.length > 0) {
+                            uploadedImages = task.uploadedImages;
+                            displayImagePreviews();
+                        }
+                        
+                        sessionStorage.removeItem('pendingTask');
+                        showSuccess('Task restored! You can now post it.');
+                    } catch (e) {
+                        console.error('Error restoring task:', e);
+                    }
                 }
-
-                // Save auth data
-                saveAuth(data.token, data.user);
-                
-                showSuccess('Login successful! Redirecting...');
-
-                // Redirect
-                setTimeout(() => {
-                    window.location.href = returnUrl;
-                }, 1000);
-
-            } catch (error) {
-                console.error('Login error:', error);
-                loginBtn.disabled = false;
-                loginBtn.classList.remove('loading');
-                
-                showError(error.message || 'Login failed. Please try again.');
-                showFieldError('loginEmail', 'Invalid email or password');
             }
-        });
 
-        // Handle Signup
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            clearAllErrors();
-
-            const name = document.getElementById('signupName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-            const confirmPassword = document.getElementById('signupConfirmPassword').value;
-            const role = document.querySelector('input[name="role"]:checked')?.value;
-            const returnUrl = getReturnUrl();
+            function updateUserProfile() {
+                profileName.textContent = currentUser.name;
+                
+                if (currentUser.avatar) {
+                    profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
+                } else {
+                    profileAvatar.textContent = currentUser.initials || 'GU';
+                }
+            }
             
-            let isValid = true;
+            updateUserProfile();
 
-            // Validation
-            if (!name) {
-                showFieldError('signupName', 'Name is required');
-                isValid = false;
-            } else if (name.length < 2) {
-                showFieldError('signupName', 'Name must be at least 2 characters');
-                isValid = false;
+            function updateCharCount() {
+                const length = taskField.value.length;
+                taskCharCount.textContent = `${length}/50`;
+                if (length >= 50) {
+                    taskCharCount.classList.add('limit-reached');
+                } else {
+                    taskCharCount.classList.remove('limit-reached');
+                }
             }
 
-            if (!email) {
-                showFieldError('signupEmail', 'Email is required');
-                isValid = false;
-            } else if (!isValidEmail(email)) {
-                showFieldError('signupEmail', 'Please enter a valid email');
-                isValid = false;
-            }
+            taskField.addEventListener('input', function() {
+                if (this.value.length > 50) {
+                    this.value = this.value.slice(0, 50);
+                }
+                updateCharCount();
+                taskError.classList.remove('visible');
+                taskField.classList.remove('error');
+            });
 
-            if (!password) {
-                showFieldError('signupPassword', 'Password is required');
-                isValid = false;
-            } else if (password.length < 6) {
-                showFieldError('signupPassword', 'Password must be at least 6 characters');
-                isValid = false;
-            }
+            uploadIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                imageSourceMenu.classList.add('active');
+            });
 
-            if (password !== confirmPassword) {
-                showFieldError('signupConfirm', 'Passwords do not match');
-                isValid = false;
-            }
-
-            if (!role) {
-                showError('Please select whether you want to get help or earn money');
-                isValid = false;
-            }
-
-            if (!isValid) return;
-
-            // Show loading
-            const signupBtn = document.getElementById('signupBtn');
-            signupBtn.disabled = true;
-            signupBtn.classList.add('loading');
-
-            try {
-                // Create initials from name
-                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            function createFileInput(accept, capture) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = accept;
+                if (capture) input.capture = capture;
+                input.multiple = true;
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                input.style.pointerEvents = 'none';
+                input.style.top = '-100px';
+                document.body.appendChild(input);
                 
-                const userData = {
-                    name,
-                    email,
-                    password,
-                    role,
-                    initials
+                input.addEventListener('change', function(e) {
+                    const files = Array.from(e.target.files);
+                    files.forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                uploadedImages.push(event.target.result);
+                                displayImagePreviews();
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                    document.body.removeChild(input);
+                });
+                
+                input.click();
+            }
+
+            takePhotoOption.addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+                createFileInput('image/*', 'environment');
+            });
+
+            chooseFromGalleryOption.addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+                createFileInput('image/*', null);
+            });
+
+            cancelImageMenu.addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!imageSourceMenu.contains(e.target) && !uploadIcon.contains(e.target)) {
+                    imageSourceMenu.classList.remove('active');
+                }
+            });
+
+            function displayImagePreviews() {
+                imagePreviewContainer.innerHTML = '';
+                uploadedImages.forEach((imgData, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.style.display = 'inline-block';
+                    
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.className = 'image-preview';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = '×';
+                    removeBtn.className = 'remove-image';
+                    removeBtn.onclick = () => {
+                        uploadedImages.splice(index, 1);
+                        displayImagePreviews();
+                    };
+                    
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    imagePreviewContainer.appendChild(wrapper);
+                });
+            }
+
+            cashBtn.addEventListener('click', function() {
+                selectedPayment = 'cash';
+                cashBtn.className = 'payment-option active';
+                onlineBtn.className = 'payment-option inactive';
+                
+                postButton.disabled = !termsCheckbox.checked;
+                freeText.textContent = 'Cash payment in person • No upfront payment';
+                helperText.textContent = 'You will pay the helper directly in cash when the task is complete.';
+            });
+
+            cancelPaymentBtn.addEventListener('click', function() {
+                paymentWindow.classList.remove('active');
+            });
+
+            confirmPaymentBtn.addEventListener('click', function() {
+                paymentWindow.classList.remove('active');
+                loadingOverlay.classList.add('active');
+                
+                setTimeout(() => {
+                    loadingOverlay.classList.remove('active');
+                    confirmTitle.textContent = 'Payment successful';
+                    confirmMessage.textContent = 'Your payment has been processed. Would you like to post your task now?';
+                    confirmYesBtn.textContent = 'Yes, post task';
+                    confirmModal.classList.add('active');
+                }, 3000);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!paymentWindow.contains(e.target) && paymentWindow.classList.contains('active')) {
+                    paymentWindow.classList.remove('active');
+                }
+            });
+
+            doneBtn.addEventListener('click', function() {
+                successSheet.style.display = 'none';
+                unlockBodyScroll();
+                window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
+            });
+
+            previewSheet.style.display = 'none';
+            successSheet.style.display = 'none';
+            updateCharCount();
+
+            function updatePostButtonState() {
+                postButton.disabled = !termsCheckbox.checked;
+            }
+
+            termsCheckbox.addEventListener('change', updatePostButtonState);
+
+            function lockBodyScroll() {
+                scrollPosition = window.scrollY;
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+                document.body.style.top = `-${scrollPosition}px`;
+                document.body.style.overflow = 'hidden';
+            }
+
+            function unlockBodyScroll() {
+                document.body.style.position = '';
+                document.body.style.width = '';
+                document.body.style.top = '';
+                document.body.style.overflow = '';
+                window.scrollTo(0, scrollPosition);
+            }
+
+            function scrollToElement(element) {
+                if (element && locationContent) {
+                    const elementRect = element.getBoundingClientRect();
+                    const contentRect = locationContent.getBoundingClientRect();
+                    const relativeTop = elementRect.top - contentRect.top;
+                    
+                    locationContent.scrollTo({
+                        top: relativeTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+
+            function clearErrors() {
+                locationError.classList.remove('visible');
+                taskError.classList.remove('visible');
+                if (budgetError) budgetError.classList.remove('visible');
+                locationField.classList.remove('error');
+                taskField.classList.remove('error');
+                if (budgetAmountInput) budgetAmountInput.classList.remove('error');
+            }
+
+            function validateForm() {
+                clearErrors();
+                let isValid = true;
+                let firstError = null;
+
+                if (!locationField.value || locationField.value === 'detecting location...' || locationField.value.trim() === '') {
+                    locationError.classList.add('visible');
+                    locationField.classList.add('error');
+                    if (!firstError) firstError = locationField;
+                    isValid = false;
+                }
+                
+                if (!taskField.value.trim()) {
+                    taskError.classList.add('visible');
+                    taskField.classList.add('error');
+                    if (!firstError) firstError = taskField;
+                    isValid = false;
+                }
+                
+                if (budgetType === 'fixed' && fixedBudgetInput.style.display === 'block') {
+                    if (!budgetAmountInput.value) {
+                        budgetError.classList.add('visible');
+                        budgetAmountInput.classList.add('error');
+                        if (!firstError) firstError = budgetAmountInput;
+                        isValid = false;
+                    }
+                }
+                
+                if (firstError) {
+                    scrollToElement(firstError);
+                }
+                
+                return isValid;
+            }
+
+            async function getLocationName(lat, lon) {
+                try {
+                    const response = await fetch(
+                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
+                    );
+                    const data = await response.json();
+                    return data.name || null;
+                } catch (error) {
+                    console.log('Reverse geocoding failed:', error);
+                    return null;
+                }
+            }
+
+            async function getFullAddress(lat, lon) {
+                try {
+                    const response = await fetch(
+                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
+                    );
+                    const data = await response.json();
+                    return data.address || null;
+                } catch (error) {
+                    console.log('Reverse geocoding failed:', error);
+                    return null;
+                }
+            }
+
+            function initMap(lat, lng) {
+                if (map) {
+                    map.remove();
+                }
+                
+                try {
+                    map = new mapboxgl.Map({
+                        container: 'map',
+                        style: 'mapbox://styles/mapbox/streets-v12',
+                        center: [lng, lat],
+                        zoom: 15
+                    });
+
+                    map.on('load', () => {
+                        console.log('Map loaded successfully');
+                        
+                        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+                        
+                        marker = new mapboxgl.Marker({
+                            draggable: true,
+                            color: '#FF286F'
+                        })
+                            .setLngLat([lng, lat])
+                            .addTo(map);
+                        
+                        marker.on('dragend', async function() {
+                            const lngLat = marker.getLngLat();
+                            selectedLat = lngLat.lat;
+                            selectedLng = lngLat.lng;
+                            
+                            const address = await getFullAddress(selectedLat, selectedLng);
+                            if (address) {
+                                locationInfo.textContent = address;
+                                selectedAddress = address;
+                            } else {
+                                locationInfo.textContent = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
+                            }
+                        });
+                        
+                        getFullAddress(lat, lng).then(address => {
+                            if (address) {
+                                locationInfo.textContent = address;
+                                selectedAddress = address;
+                            }
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('Failed to initialize map:', error);
+                    showError('Failed to load map. Please try again.');
+                }
+            }
+
+            function openMapModal() {
+                let lat = -26.195246;
+                let lng = 28.034088;
+                
+                if (currentCoordinates) {
+                    const coords = currentCoordinates.split(',').map(c => parseFloat(c.trim()));
+                    if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                        lat = coords[0];
+                        lng = coords[1];
+                    }
+                }
+                
+                setTimeout(() => {
+                    initMap(lat, lng);
+                }, 100);
+                
+                mapModal.classList.add('active');
+            }
+
+            function closeMapModal() {
+                mapModal.classList.remove('active');
+                if (map) {
+                    map.remove();
+                    map = null;
+                }
+            }
+
+            window.addEventListener('message', function(event) {
+                if (event.data.type === 'OPEN_PLANNER') {
+                    currentLocationName = event.data.location || '';
+                    currentCoordinates = event.data.coordinates || '';
+                    
+                    if (currentLocationName) {
+                        locationField.value = currentLocationName;
+                    } else {
+                        locationField.value = 'detecting location...';
+                    }
+                    
+                    clearErrors();
+                    locationSheet.style.display = 'flex';
+                    lockBodyScroll();
+                    
+                    if (locationContent) {
+                        locationContent.scrollTop = 0;
+                    }
+                }
+            });
+
+            function closePlanner() {
+                locationSheet.style.display = 'none';
+                unlockBodyScroll();
+                window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
+            }
+
+            function capitalizeSentence(str) {
+                if (!str) return str;
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
+            function formatDateForDisplay(dateString) {
+                if (!dateString) return null;
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateString;
+            }
+
+            function formatTimeForDisplay(timeString) {
+                if (!timeString) return null;
+                return timeString;
+            }
+
+            nativeDatePicker.addEventListener('change', function(e) {
+                if (this.value) {
+                    selectedDate = this.value;
+                    dateDisplay.textContent = formatDateForDisplay(this.value);
+                }
+            });
+
+            nativeTimePicker.addEventListener('change', function(e) {
+                if (this.value) {
+                    selectedTime = this.value;
+                    timeDisplay.textContent = formatTimeForDisplay(this.value);
+                }
+            });
+
+            pickDateBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                nativeDatePicker.showPicker();
+            });
+
+            pickTimeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                nativeTimePicker.showPicker();
+            });
+
+            nativeDatePicker.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            nativeTimePicker.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
+            function openPreview() {
+                if (!validateForm()) {
+                    return;
+                }
+                
+                previewLocation.textContent = capitalizeSentence(locationField.value || 'Your location');
+                previewStreet.textContent = streetField.value ? capitalizeSentence(streetField.value) : 'Not provided';
+                previewTask.textContent = capitalizeSentence(taskField.value || 'Not specified');
+                
+                previewImagesContainer.innerHTML = '';
+                if (uploadedImages.length > 0) {
+                    uploadedImages.forEach(imgData => {
+                        const img = document.createElement('img');
+                        img.src = imgData;
+                        img.className = 'preview-thumb';
+                        previewImagesContainer.appendChild(img);
+                    });
+                }
+                
+                if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
+                    let paymentText = selectedPayment === 'cash' ? 'Cash' : 'Online payment';
+                    
+                    previewBudget.textContent = `R ${budgetAmountInput.value}`;
+                    previewPayment.textContent = `Payment: ${paymentText}`;
+                } else {
+                    previewBudget.textContent = 'Open to offers';
+                    previewPayment.textContent = '';
+                }
+                
+                previewDetails.textContent = moreDetailsField.value ? capitalizeSentence(moreDetailsField.value) : 'None provided';
+                
+                if (selectedWhen === 'later' && (selectedDate || selectedTime)) {
+                    let whenStr = '';
+                    if (selectedDate) whenStr += formatDateForDisplay(selectedDate);
+                    if (selectedTime) whenStr += (whenStr ? ' at ' : '') + formatTimeForDisplay(selectedTime);
+                    previewWhen.textContent = whenStr;
+                } else {
+                    previewWhen.textContent = 'Now';
+                }
+                
+                termsCheckbox.checked = false;
+                updatePostButtonState();
+                
+                locationSheet.style.display = 'none';
+                previewSheet.style.display = 'flex';
+                
+                if (previewContent) {
+                    previewContent.scrollTop = 0;
+                }
+            }
+
+            whenNowBtn.addEventListener('click', function() {
+                selectedWhen = 'now';
+                whenNowBtn.className = 'when-option active';
+                whenLaterBtn.className = 'when-option inactive';
+                dateTimePickers.style.display = 'none';
+            });
+
+            whenLaterBtn.addEventListener('click', function() {
+                selectedWhen = 'later';
+                whenLaterBtn.className = 'when-option active';
+                whenNowBtn.className = 'when-option inactive';
+                dateTimePickers.style.display = 'flex';
+            });
+
+            fixedBudgetBtn.addEventListener('click', function() {
+                budgetType = 'fixed';
+                fixedBudgetBtn.className = 'budget-option active';
+                openBudgetBtn.className = 'budget-option inactive';
+                fixedBudgetInput.style.display = 'block';
+                if (budgetError) budgetError.classList.remove('visible');
+            });
+
+            openBudgetBtn.addEventListener('click', function() {
+                budgetType = 'open';
+                openBudgetBtn.className = 'budget-option active';
+                fixedBudgetBtn.className = 'budget-option inactive';
+                fixedBudgetInput.style.display = 'none';
+                if (budgetAmountInput) {
+                    budgetAmountInput.value = '';
+                    budgetAmountInput.classList.remove('error');
+                }
+                if (budgetError) budgetError.classList.remove('visible');
+            });
+
+            if (budgetAmountInput) {
+                budgetAmountInput.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    if (this.value) {
+                        this.classList.remove('error');
+                        if (budgetError) budgetError.classList.remove('visible');
+                    }
+                });
+            }
+
+            locationField.addEventListener('input', function() {
+                locationError.classList.remove('visible');
+                locationField.classList.remove('error');
+            });
+
+            locationMapBtn.addEventListener('click', function() {
+                openMapModal();
+            });
+
+            mapModalCloseBtn.addEventListener('click', closeMapModal);
+
+            mapConfirmBtn.addEventListener('click', async function() {
+                if (marker) {
+                    const pos = marker.getLngLat();
+                    selectedLat = pos.lat;
+                    selectedLng = pos.lng;
+                    
+                    currentCoordinates = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
+                    
+                    const locationName = await getLocationName(selectedLat, selectedLng);
+                    if (locationName) {
+                        locationField.value = locationName;
+                        currentLocationName = locationName;
+                    }
+                    
+                    if (selectedAddress) {
+                        streetField.value = selectedAddress;
+                    } else {
+                        const fullAddress = await getFullAddress(selectedLat, selectedLng);
+                        if (fullAddress) {
+                            streetField.value = fullAddress;
+                        }
+                    }
+                }
+                closeMapModal();
+            });
+
+            mapModal.addEventListener('click', function(e) {
+                if (e.target === mapModal) {
+                    closeMapModal();
+                }
+            });
+
+            sheetBackBtn.addEventListener('click', closePlanner);
+            
+            previewBackBtn.addEventListener('click', function() {
+                previewSheet.style.display = 'none';
+                locationSheet.style.display = 'flex';
+                lockBodyScroll();
+                if (locationContent) {
+                    locationContent.scrollTop = 0;
+                }
+            });
+            
+            nextButton.addEventListener('click', openPreview);
+
+            // ===== MONGODB SAVE FUNCTIONALITY WITH AUTH =====
+            async function saveTaskToMongoDB(taskData) {
+                const token = getAuthToken();
+                const user = getCurrentUser();
+                
+                if (!token || !user) {
+                    throw new Error('Not authenticated');
+                }
+                
+                // Add user info to task
+                taskData.userId = user.email;
+                taskData.userName = user.name;
+                taskData.userRole = user.role;
+                
+                try {
+                    console.log('Saving task to:', `${BASE_URL}/api/tasks`);
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    const response = await fetch(`${BASE_URL}/api/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(taskData),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            // Token expired or invalid
+                            localStorage.removeItem('auth_token');
+                            localStorage.removeItem('user');
+                            throw new Error('Session expired. Please login again.');
+                        }
+                        const errorData = await response.json().catch(() => null);
+                        throw new Error(errorData?.error || 'Failed to save task');
+                    }
+                    
+                    const savedTask = await response.json();
+                    console.log('✅ Task saved to MongoDB:', savedTask);
+                    return savedTask;
+                } catch (error) {
+                    console.error('❌ Error saving task:', error);
+                    if (error.name === 'AbortError') {
+                        throw new Error('Request timed out. Please try again.');
+                    }
+                    throw error;
+                }
+            }
+
+            function fireConfettiAroundIcon() {
+                if (!successCheckIcon) return;
+                
+                const rect = successCheckIcon.getBoundingClientRect();
+                const x = (rect.left + rect.width / 2) / window.innerWidth;
+                const y = (rect.top + rect.height / 2) / window.innerHeight;
+                
+                confetti({
+                    particleCount: 120,
+                    spread: 100,
+                    origin: { x, y },
+                    startVelocity: 20,
+                    colors: ['#8BC34A', '#FFC107', '#FF286F', '#045B92']
+                });
+                
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        spread: 70,
+                        origin: { x, y },
+                        startVelocity: 25,
+                        colors: ['#8BC34A', '#FFC107', '#045B92']
+                    });
+                }, 200);
+                
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 100,
+                        spread: 120,
+                        origin: { x, y },
+                        startVelocity: 15,
+                        colors: ['#FF286F', '#8BC34A', '#FFC107']
+                    });
+                }, 400);
+            }
+
+            // ===== POST BUTTON CLICK HANDLER =====
+            postButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Post button clicked');
+                
+                // Visual feedback
+                postButton.classList.add('clicked');
+                setTimeout(() => postButton.classList.remove('clicked'), 200);
+                
+                // Check if button is disabled
+                if (postButton.disabled) {
+                    console.log('Post button is disabled');
+                    showError('Please accept terms and conditions first');
+                    return;
+                }
+                
+                // Prevent multiple clicks
+                if (isPosting) {
+                    console.log('Already posting');
+                    return;
+                }
+                
+                // Check if user is logged in
+                if (!isUserLoggedIn()) {
+                    console.log('No user, redirecting to login');
+                    
+                    // Save task data
+                    const taskData = {
+                        location: locationField.value,
+                        streetName: streetField.value,
+                        taskDescription: taskField.value,
+                        budgetType: budgetType,
+                        budgetAmount: budgetAmountInput.value,
+                        selectedWhen: selectedWhen,
+                        selectedDate: selectedDate,
+                        selectedTime: selectedTime,
+                        selectedPayment: selectedPayment,
+                        moreDetails: moreDetailsField.value,
+                        uploadedImages: uploadedImages
+                    };
+                    sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
+                    
+                    // Redirect to login
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    window.location.href = '/login.html?returnTo=' + returnUrl;
+                    return;
+                }
+                
+                // User is logged in - show confirmation
+                console.log('Showing confirmation modal');
+                confirmTitle.textContent = 'Ready to post?';
+                confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
+                confirmYesBtn.textContent = 'Yes, post it';
+                confirmModal.classList.add('active');
+            });
+
+            // ===== CONFIRM YES BUTTON HANDLER =====
+            confirmYesBtn.addEventListener('click', async function() {
+                if (isPosting) {
+                    console.log('Already posting');
+                    return;
+                }
+                
+                isPosting = true;
+                
+                // Visual feedback
+                confirmYesBtn.classList.add('loading');
+                confirmYesBtn.disabled = true;
+                
+                console.log('Confirm Yes clicked - starting post');
+                
+                // Hide confirmation modal immediately
+                confirmModal.classList.remove('active');
+                
+                // Show loading overlay
+                postLoadingOverlay.classList.add('active');
+                
+                // Add loading class to post button
+                postButton.classList.add('loading');
+                
+                const user = getCurrentUser();
+                
+                // Prepare task data
+                const taskData = {
+                    location: locationField.value,
+                    coordinates: currentCoordinates || '',
+                    streetName: streetField.value || '',
+                    when: selectedWhen,
+                    scheduledDate: selectedDate,
+                    scheduledTime: selectedTime,
+                    taskDescription: taskField.value,
+                    budgetType: budgetType,
+                    budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
+                    paymentMethod: selectedPayment,
+                    moreDetails: moreDetailsField.value || '',
+                    images: uploadedImages,
+                    status: 'posted'
                 };
                 
-                console.log('Sending signup request:', userData);
-
-                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(userData)
-                });
-
-                const data = await response.json();
-                console.log('Signup response:', data);
-
-                if (!response.ok) {
-                    throw new Error(data.error || data.message || 'Signup failed');
+                try {
+                    // Save to MongoDB with auth
+                    const savedTask = await saveTaskToMongoDB(taskData);
+                    
+                    // Hide loading overlay
+                    postLoadingOverlay.classList.remove('active');
+                    postButton.classList.remove('loading');
+                    
+                    if (savedTask) {
+                        console.log('Task saved successfully:', savedTask);
+                        
+                        // Hide preview sheet
+                        previewSheet.style.display = 'none';
+                        
+                        // Show success sheet
+                        successTaskId.textContent = `#${savedTask._id}`;
+                        successSheet.style.display = 'flex';
+                        
+                        // Fire confetti
+                        fireConfettiAroundIcon();
+                        
+                        // Reset form
+                        locationField.value = 'detecting location...';
+                        streetField.value = '';
+                        taskField.value = '';
+                        budgetAmountInput.value = '';
+                        moreDetailsField.value = '';
+                        uploadedImages = [];
+                        imagePreviewContainer.innerHTML = '';
+                        updateCharCount();
+                        
+                        showSuccess('Task posted successfully!');
+                    }
+                } catch (error) {
+                    // Hide loading overlay on error
+                    postLoadingOverlay.classList.remove('active');
+                    postButton.classList.remove('loading');
+                    
+                    // Show error toast
+                    showError(error.message || 'Failed to post task. Please try again.');
+                    console.error('Post error:', error);
+                    
+                    // If session expired, redirect to login
+                    if (error.message.includes('Session expired')) {
+                        setTimeout(() => {
+                            const returnUrl = encodeURIComponent(window.location.href);
+                            window.location.href = '/login.html?returnTo=' + returnUrl;
+                        }, 2000);
+                    }
+                } finally {
+                    // Re-enable button
+                    isPosting = false;
+                    confirmYesBtn.classList.remove('loading');
+                    confirmYesBtn.disabled = false;
                 }
+            });
 
-                // Save auth data
-                saveAuth(data.token, data.user);
-                
-                showSuccess('Account created successfully! Redirecting...');
+            confirmCancelBtn.addEventListener('click', function() {
+                confirmModal.classList.remove('active');
+            });
 
-                // Redirect
-                setTimeout(() => {
-                    window.location.href = returnUrl;
-                }, 1000);
-
-            } catch (error) {
-                console.error('Signup error:', error);
-                signupBtn.disabled = false;
-                signupBtn.classList.remove('loading');
-                
-                if (error.message.includes('email') || error.message.includes('already exists')) {
-                    showFieldError('signupEmail', 'Email already registered');
-                    showError('This email is already registered. Please login instead.');
-                } else {
-                    showError(error.message || 'Signup failed. Please try again.');
+            confirmModal.addEventListener('click', function(e) {
+                if (e.target === confirmModal) {
+                    confirmModal.classList.remove('active');
                 }
-            }
-        });
+            });
 
-        // Handle Forgot Password
-        document.getElementById('forgotPassword').addEventListener('click', async function(e) {
-            e.preventDefault();
+            locationSheet.addEventListener('click', function(e) {
+                if (e.target === locationSheet) closePlanner();
+            });
             
-            const email = document.getElementById('loginEmail').value.trim();
-            
-            if (!email) {
-                showError('Please enter your email address first');
-                document.getElementById('loginEmail').focus();
-                return;
-            }
-
-            if (!isValidEmail(email)) {
-                showError('Please enter a valid email address');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email })
-                });
-
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Failed to send reset email');
+            previewSheet.addEventListener('click', function(e) {
+                if (e.target === previewSheet) {
+                    previewSheet.style.display = 'none';
+                    unlockBodyScroll();
                 }
+            });
 
-                showSuccess('Password reset link sent to your email!');
-            } catch (error) {
-                console.error('Forgot password error:', error);
-                showError(error.message || 'Failed to send reset email. Please try again.');
-            }
-        });
-
-        // Check for existing session
-        function checkExistingSession() {
-            const token = localStorage.getItem('auth_token');
-            const returnUrl = getReturnUrl();
-            
-            if (token && returnUrl !== window.location.pathname) {
-                // Optional: Verify token with backend
-                // For now, just redirect if there's a return URL
-                if (returnUrl && returnUrl !== '/login.html') {
-                    window.location.href = returnUrl;
+            locationSheet.addEventListener('touchstart', function(e) {
+                if (e.target === locationSheet) {
+                    e.preventDefault();
                 }
-            }
-        }
+            }, { passive: false });
+            
+            previewSheet.addEventListener('touchstart', function(e) {
+                if (e.target === previewSheet) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
 
-        // Initialize
-        checkExistingSession();
+            // Check for pending task
+            checkForPendingTask();
+        })();
     </script>
 </body>
 </html>
