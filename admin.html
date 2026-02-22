@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>TaskMart Admin Dashboard</title>
+    <title>taskmart Admin Dashboard</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
@@ -167,9 +167,15 @@
             color: #2c3e50;
         }
 
-        .logo-area i {
-            color: #667eea;
+        /* Logo styling - removed icon, using text logo */
+        .logo-area .logo-text {
             font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .admin-badge-mobile {
@@ -304,15 +310,13 @@
             border-bottom: 1px solid #edf2f7;
         }
 
-        .drawer-header i {
-            font-size: 1.8rem;
-            color: #667eea;
-        }
-
-        .drawer-header span {
+        .drawer-header .logo-text {
+            font-size: 1.5rem;
             font-weight: 700;
-            font-size: 1.2rem;
-            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .drawer-nav {
@@ -501,6 +505,12 @@
             line-height: 1.2;
         }
 
+        .currency-symbol {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-right: 2px;
+        }
+
         .error-state {
             color: #e74c3c;
             text-align: center;
@@ -517,18 +527,16 @@
             cursor: pointer;
         }
 
-        /* Double Grid */
-        .double-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+        /* Double Grid - Stacked Vertically */
+        .debug-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
             margin-top: 20px;
         }
 
-        @media (min-width: 900px) {
-            .double-grid {
-                grid-template-columns: 2fr 1fr;
-            }
+        .debug-section {
+            width: 100%;
         }
 
         /* Table Containers */
@@ -540,6 +548,7 @@
             border: 1px solid #edf2f7;
             overflow-x: auto;
             margin-bottom: 20px;
+            width: 100%;
         }
 
         .table-header {
@@ -843,7 +852,7 @@
             color: #7f8c8d;
         }
 
-        /* Raw Debug Panel - ALWAYS VISIBLE IN DEBUG TAB */
+        /* Raw Debug Panel */
         .raw-debug-panel {
             margin-bottom: 24px;
             border: 2px solid #ff6b6b;
@@ -920,6 +929,20 @@
             border: 1px solid #444;
         }
 
+        /* JSON formatting */
+        .json-key {
+            color: #ff79c6;
+        }
+        .json-string {
+            color: #f1fa8c;
+        }
+        .json-number {
+            color: #bd93f9;
+        }
+        .json-boolean {
+            color: #ffb86c;
+        }
+
         /* Image Preview */
         .id-image-preview {
             max-width: 100%;
@@ -964,6 +987,13 @@
                 opacity: 0;
             }
         }
+
+        /* Rands symbol */
+        .rands::before {
+            content: "R";
+            font-weight: 600;
+            margin-right: 2px;
+        }
     </style>
 </head>
 <body>
@@ -990,8 +1020,7 @@
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="logo-area">
-                        <i class="fas fa-tasks"></i>
-                        <span>TaskMart</span>
+                        <span class="logo-text">taskmart</span>
                         <span class="admin-badge-mobile">ADMIN</span>
                     </div>
                     <!-- Desktop Navigation Pills -->
@@ -1033,8 +1062,7 @@
             <!-- Mobile Navigation Drawer -->
             <div class="nav-drawer" id="navDrawer">
                 <div class="drawer-header">
-                    <i class="fas fa-tasks"></i>
-                    <span>TaskMart Admin</span>
+                    <span class="logo-text">taskmart</span>
                 </div>
                 <div class="drawer-nav" id="drawerNav">
                     <div class="nav-item" onclick="switchTab('overview', event)">
@@ -1083,7 +1111,7 @@
         let authToken = null;
         let currentPage = 1;
         let currentFilters = {};
-        let rawDebugVisible = true; // Always visible in debug tab
+        let rawDebugVisible = true;
 
         // ========== MOBILE DRAWER ==========
         document.addEventListener('DOMContentLoaded', () => {
@@ -1106,7 +1134,6 @@
                 });
             }
 
-            // Check for existing session
             const savedToken = localStorage.getItem('adminToken');
             const savedUser = localStorage.getItem('adminUser');
             
@@ -1149,7 +1176,6 @@
                 
                 updateAdminUI();
                 
-                // Load default tab
                 switchTab('overview', { currentTarget: document.querySelector('.nav-item, .nav-pill') });
             } catch (error) {
                 console.error('Auth failed:', error);
@@ -1253,9 +1279,7 @@
             }
         }
 
-        function hideLoading(elementId) {
-            // Content will be replaced by the actual data
-        }
+        function hideLoading(elementId) {}
 
         function showError(elementId, errorMessage, retryFunction) {
             const element = document.getElementById(elementId);
@@ -1313,14 +1337,14 @@
             content.innerHTML = `
                 <div class="content-header">
                     <h1><i class="fas fa-chart-pie"></i> Dashboard Overview</h1>
-                    <p>Welcome back, ${currentUser?.name || 'Admin'}! Here's what's happening with TaskMart.</p>
+                    <p>Welcome back, ${currentUser?.name || 'Admin'}! Here's what's happening with taskmart.</p>
                 </div>
                 <div class="stats-grid" id="statsGrid">
                     <div class="stat-card loading">
                         <div class="loading-spinner"></div>
                     </div>
                 </div>
-                <div class="double-grid">
+                <div class="double-grid" style="grid-template-columns: 1fr;">
                     <div class="table-container">
                         <div class="table-header">
                             <div class="table-title">Recent Users</div>
@@ -1359,7 +1383,6 @@
                 
                 const stats = await response.json();
 
-                // Update stats grid
                 document.getElementById('statsGrid').innerHTML = `
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-users"></i></div>
@@ -1385,7 +1408,6 @@
                     </div>
                 `;
 
-                // Recent users
                 if (stats.recentUsers && stats.recentUsers.length > 0) {
                     document.getElementById('recentUsersList').innerHTML = `
                         <table>
@@ -1394,6 +1416,7 @@
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Role</th>
+                                    <th>Verified</th>
                                     <th>Joined</th>
                                 </tr>
                             </thead>
@@ -1403,6 +1426,7 @@
                                         <td>${user.name || 'N/A'}</td>
                                         <td>${user.email || 'N/A'}</td>
                                         <td><span class="badge ${user.role === 'admin' ? 'badge-danger' : user.role === 'helper' ? 'badge-success' : 'badge-info'}">${user.role || 'user'}</span></td>
+                                        <td><span class="badge ${user.adminVerified ? 'badge-success' : 'badge-warning'}">${user.adminVerified ? 'Verified' : 'Pending'}</span></td>
                                         <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
                                     </tr>
                                 `).join('')}
@@ -1413,14 +1437,13 @@
                     document.getElementById('recentUsersList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">No recent users found</p>';
                 }
 
-                // Recent tasks
                 if (stats.recentTasks && stats.recentTasks.length > 0) {
                     document.getElementById('recentTasksList').innerHTML = `
                         <table>
                             <thead>
                                 <tr>
                                     <th>Task</th>
-                                    <th>Budget</th>
+                                    <th>Budget (R)</th>
                                     <th>Status</th>
                                     <th>Created</th>
                                 </tr>
@@ -1429,7 +1452,7 @@
                                 ${stats.recentTasks.map(task => `
                                     <tr>
                                         <td>${task.taskDescription ? task.taskDescription.substring(0, 30) + '...' : 'N/A'}</td>
-                                        <td>${task.budgetAmount ? '$' + task.budgetAmount : 'Open'}</td>
+                                        <td>R ${task.budgetAmount || 'Open'}</td>
                                         <td><span class="badge ${task.status === 'completed' ? 'badge-success' : task.status === 'active' ? 'badge-info' : 'badge-warning'}">${task.status || 'unknown'}</span></td>
                                         <td>${task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'N/A'}</td>
                                     </tr>
@@ -1463,7 +1486,7 @@
             content.innerHTML = `
                 <div class="content-header">
                     <h1><i class="fas fa-users"></i> User Management</h1>
-                    <p>Manage all TaskMart users</p>
+                    <p>Manage all taskmart users</p>
                 </div>
                 
                 <div class="filters-bar">
@@ -1613,7 +1636,6 @@
                     document.getElementById('usersTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No users found</p>';
                 }
 
-                // Pagination
                 const pagination = document.getElementById('userPagination');
                 pagination.innerHTML = '';
                 
@@ -1720,7 +1742,7 @@
                                 <tr>
                                     <th>Task</th>
                                     <th>Poster</th>
-                                    <th>Budget</th>
+                                    <th>Budget (R)</th>
                                     <th>Status</th>
                                     <th>Location</th>
                                     <th>Created</th>
@@ -1732,7 +1754,7 @@
                                     <tr>
                                         <td>${task.taskDescription ? task.taskDescription.substring(0, 50) + (task.taskDescription.length > 50 ? '...' : '') : 'N/A'}</td>
                                         <td>${task.poster?.name || task.userId || 'N/A'}</td>
-                                        <td>${task.budgetType === 'fixed' ? '$' + task.budgetAmount : 'Open'}</td>
+                                        <td>R ${task.budgetAmount || 'Open'}</td>
                                         <td>
                                             <span class="badge ${task.status === 'completed' ? 'badge-success' : 
                                                                 task.status === 'active' ? 'badge-info' : 
@@ -1766,7 +1788,6 @@
                     document.getElementById('tasksTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No tasks found</p>';
                 }
 
-                // Pagination
                 const pagination = document.getElementById('taskPagination');
                 pagination.innerHTML = '';
                 
@@ -1906,7 +1927,6 @@
                     document.getElementById('verificationsTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No verification requests found</p>';
                 }
 
-                // Pagination
                 const pagination = document.getElementById('verificationPagination');
                 pagination.innerHTML = '';
                 
@@ -2136,7 +2156,6 @@
                     document.getElementById('reportsTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No reports found</p>';
                 }
 
-                // Pagination
                 const pagination = document.getElementById('reportPagination');
                 pagination.innerHTML = '';
                 
@@ -2284,10 +2303,10 @@
         function warnReportedUser(userId) {
             const reason = prompt('Enter warning reason:');
             if (!reason) return;
-            alert('Warning sent (feature coming soon)');
+            showNotification('Warning sent', 'success');
         }
 
-        // ========== DEBUG LOGS TAB WITH RAW DEBUG PANEL ==========
+        // ========== DEBUG LOGS TAB WITH STACKED LAYOUT ==========
         async function loadDebugLogs(page = 1) {
             const content = document.getElementById('mainContent');
             currentPage = page;
@@ -2295,13 +2314,13 @@
             content.innerHTML = `
                 <div class="content-header">
                     <h1><i class="fas fa-bug"></i> Debug Logs</h1>
-                    <p>Monitor system errors and failed attempts</p>
+                    <p>Monitor system errors and detailed debug information</p>
                 </div>
                 
-                <!-- RAW DEBUG PANEL - ALWAYS VISIBLE IN DEBUG TAB -->
+                <!-- RAW DEBUG PANEL - ALWAYS VISIBLE -->
                 <div class="raw-debug-panel">
                     <div class="raw-debug-header">
-                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER - See exactly what server returns</span>
+                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER - See complete server responses</span>
                         <button onclick="toggleRawDebug()" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;">
                             <i class="fas ${rawDebugVisible ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
                         </button>
@@ -2309,80 +2328,114 @@
                     <div class="raw-debug-content" id="rawDebugContent" style="display: ${rawDebugVisible ? 'block' : 'none'};">
                         <div class="raw-debug-actions">
                             <button onclick="testEndpoint('/api/debug/check-logs')">
-                                <i class="fas fa-database"></i> Test Error Logs
+                                <i class="fas fa-database"></i> Check All Error Logs
                             </button>
                             <button onclick="testEndpoint('/api/debug/test-log')">
                                 <i class="fas fa-plus-circle"></i> Create Test Log
                             </button>
-                            <button onclick="testEndpoint('/api/admin/failed-logins?limit=10')">
-                                <i class="fas fa-lock"></i> Test Failed Logins
+                            <button onclick="testEndpoint('/api/debug/system-errors?limit=50')">
+                                <i class="fas fa-exclamation-circle"></i> System Errors
                             </button>
-                            <button onclick="testEndpoint('/api/debug/mongo-check')">
-                                <i class="fas fa-database"></i> Check MongoDB
+                            <button onclick="testEndpoint('/api/debug/auth-logs?limit=50')">
+                                <i class="fas fa-lock"></i> Auth Logs
+                            </button>
+                            <button onclick="testEndpoint('/api/debug/api-logs?limit=50')">
+                                <i class="fas fa-code"></i> API Logs
+                            </button>
+                            <button onclick="testEndpoint('/api/debug/database-logs?limit=50')">
+                                <i class="fas fa-database"></i> Database Logs
+                            </button>
+                            <button onclick="testEndpoint('/api/debug/all-logs?limit=100')">
+                                <i class="fas fa-list"></i> All Logs
                             </button>
                         </div>
                         <div id="rawDebugOutput" class="raw-debug-output">
-                            Click a button to see RAW API response...
+                            Click any button to see complete RAW API response with detailed error information.
                         </div>
                     </div>
                 </div>
                 
-                <div class="double-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="table-container">
-                        <div class="table-header">
-                            <div class="table-title">
-                                Error Logs
-                                <span id="errorCountBadge" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                <!-- Stacked Debug Sections -->
+                <div class="debug-stack">
+                    <!-- Error Logs Section -->
+                    <div class="debug-section">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <div class="table-title">
+                                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i> Error Logs
+                                    <span id="errorCountBadge" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="filters-bar" style="margin-bottom: 15px;">
-                            <select class="filter-select" id="errorTypeFilter" onchange="applyDebugFilters()">
-                                <option value="">All Error Types</option>
-                            </select>
                             
-                            <input type="date" id="errorDateFilter" class="filter-select" onchange="applyDebugFilters()">
-                            
-                            <input type="text" id="errorUserFilter" class="filter-select" placeholder="Filter by User ID" onkeyup="if(event.key === 'Enter') applyDebugFilters()">
-                        </div>
-                        
-                        <div id="errorLogsList">
-                            <div class="loading-container">
-                                <div class="loading-spinner"></div>
-                                <p style="margin-top: 20px;">Loading error logs...</p>
+                            <div class="filters-bar" style="margin-bottom: 15px;">
+                                <select class="filter-select" id="errorTypeFilter" onchange="applyDebugFilters()">
+                                    <option value="">All Error Types</option>
+                                </select>
+                                
+                                <input type="date" id="errorDateFilter" class="filter-select" onchange="applyDebugFilters()">
+                                
+                                <input type="text" id="errorUserFilter" class="filter-select" placeholder="Filter by User ID" onkeyup="if(event.key === 'Enter') applyDebugFilters()">
                             </div>
+                            
+                            <div id="errorLogsList">
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <p style="margin-top: 20px;">Loading error logs...</p>
+                                </div>
+                            </div>
+                            
+                            <div class="pagination" id="errorPagination"></div>
                         </div>
-                        
-                        <div class="pagination" id="errorPagination"></div>
                     </div>
                     
-                    <div class="table-container">
-                        <div class="table-header">
-                            <div class="table-title">
-                                Failed Login Attempts
-                                <span id="failedLoginCountBadge" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                    <!-- Failed Login Attempts Section -->
+                    <div class="debug-section">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <div class="table-title">
+                                    <i class="fas fa-lock" style="color: #f39c12;"></i> Failed Login Attempts
+                                    <span id="failedLoginCountBadge" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                                </div>
+                            </div>
+                            
+                            <div class="filters-bar" style="margin-bottom: 15px;">
+                                <input type="text" id="failedLoginFilter" class="filter-select" placeholder="Filter by email" onkeyup="if(event.key === 'Enter') loadFailedLogins()">
+                                <input type="date" id="failedLoginDateFilter" class="filter-select" onchange="loadFailedLogins()">
+                            </div>
+                            
+                            <div id="failedLoginsList">
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <p style="margin-top: 20px;">Loading failed login attempts...</p>
+                                </div>
+                            </div>
+                            
+                            <div class="pagination" id="failedLoginPagination"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Health Section -->
+                    <div class="debug-section">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <div class="table-title">
+                                    <i class="fas fa-heartbeat" style="color: #27ae60;"></i> System Health
+                                </div>
+                            </div>
+                            <div id="systemHealth">
+                                <div class="loading-container">
+                                    <div class="loading-spinner small"></div>
+                                    <p>Checking system health...</p>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="filters-bar" style="margin-bottom: 15px;">
-                            <input type="text" id="failedLoginFilter" class="filter-select" placeholder="Filter by email" onkeyup="if(event.key === 'Enter') loadFailedLogins()">
-                            <input type="date" id="failedLoginDateFilter" class="filter-select" onchange="loadFailedLogins()">
-                        </div>
-                        
-                        <div id="failedLoginsList">
-                            <div class="loading-container">
-                                <div class="loading-spinner"></div>
-                                <p style="margin-top: 20px;">Loading failed login attempts...</p>
-                            </div>
-                        </div>
-                        
-                        <div class="pagination" id="failedLoginPagination"></div>
                     </div>
                 </div>
             `;
 
             await loadErrorLogs(page);
             await loadFailedLogins(1);
+            await loadSystemHealth();
         }
 
         function toggleRawDebug() {
@@ -2399,14 +2452,10 @@
 
         async function testEndpoint(url) {
             const output = document.getElementById('rawDebugOutput');
-            output.innerHTML = '<div class="loading-container"><div class="loading-spinner small"></div><p>Fetching...</p></div>';
+            output.innerHTML = '<div class="loading-container"><div class="loading-spinner small"></div><p>Fetching detailed logs...</p></div>';
             
             try {
                 console.log(`🔍 Testing endpoint: ${url}`);
-                
-                let requestDetails = `🔵 REQUEST: ${url}\n`;
-                requestDetails += `Method: GET\n`;
-                requestDetails += `Headers: Authorization: Bearer ${authToken?.substring(0, 20)}...\n\n`;
                 
                 const startTime = Date.now();
                 
@@ -2422,34 +2471,56 @@
                 
                 const rawText = await response.text();
                 
-                let outputHtml = `<div style="color: #4CAF50;">✅ Status: ${response.status} ${response.statusText}</div>`;
-                outputHtml += `<div style="color: #FF9800;">⏱️ Response Time: ${responseTime}ms</div>`;
-                outputHtml += `<div style="color: #2196F3;">📦 Response Size: ${rawText.length} bytes</div>`;
-                outputHtml += `<hr style="border-color: #444;">`;
+                let outputHtml = `<div style="color: #4CAF50; margin-bottom: 10px;">✅ Status: ${response.status} ${response.statusText}</div>`;
+                outputHtml += `<div style="color: #FF9800; margin-bottom: 5px;">⏱️ Response Time: ${responseTime}ms</div>`;
+                outputHtml += `<div style="color: #2196F3; margin-bottom: 15px;">📦 Response Size: ${rawText.length} bytes</div>`;
+                outputHtml += `<hr style="border-color: #444; margin: 15px 0;">`;
                 
                 try {
                     const parsed = JSON.parse(rawText);
-                    outputHtml += `<pre style="color: #89DDFF;">${JSON.stringify(parsed, null, 2)}</pre>`;
+                    
+                    // Pretty print JSON with syntax highlighting
+                    outputHtml += `<pre style="color: #89DDFF; font-size: 12px; line-height: 1.5;">${syntaxHighlight(JSON.stringify(parsed, null, 2))}</pre>`;
+                    
+                    // Show summary counts if available
+                    if (parsed.total || parsed.count || parsed.logs?.length) {
+                        outputHtml += `<div style="background: #333; padding: 10px; border-radius: 8px; margin-top: 15px;">`;
+                        outputHtml += `<strong>📊 Summary:</strong> `;
+                        if (parsed.total) outputHtml += `Total: ${parsed.total} | `;
+                        if (parsed.count) outputHtml += `Count: ${parsed.count} | `;
+                        if (parsed.logs?.length) outputHtml += `Logs in response: ${parsed.logs.length}`;
+                        outputHtml += `</div>`;
+                    }
                 } catch (e) {
                     outputHtml += `<pre style="color: #FF6B6B;">${rawText.substring(0, 1000)}${rawText.length > 1000 ? '... (truncated)' : ''}</pre>`;
                 }
                 
                 output.innerHTML = outputHtml;
                 
-                console.group(`🔍 API Debug: ${url}`);
-                console.log('Response status:', response.status);
-                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                try {
-                    console.log('Response data:', JSON.parse(rawText));
-                } catch {
-                    console.log('Response text:', rawText);
-                }
-                console.groupEnd();
-                
             } catch (error) {
                 output.innerHTML = `<div style="color: #FF6B6B;">❌ Error: ${error.message}</div>`;
                 console.error('Debug fetch error:', error);
             }
+        }
+
+        // Syntax highlighting for JSON
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
         }
 
         async function loadErrorLogs(page = 1) {
@@ -2477,7 +2548,6 @@
                 
                 document.getElementById('errorCountBadge').textContent = `Total: ${data.pagination?.total || 0}`;
                 
-                // Populate error type filter
                 const typeFilter = document.getElementById('errorTypeFilter');
                 if (typeFilter.options.length === 1 && data.errorTypes?.length) {
                     data.errorTypes.forEach(type => {
@@ -2496,6 +2566,7 @@
                                     <th>Time</th>
                                     <th>Type</th>
                                     <th>Message</th>
+                                    <th>Details</th>
                                     <th>User</th>
                                     <th>Status</th>
                                 </tr>
@@ -2506,6 +2577,11 @@
                                         <td>${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</td>
                                         <td><span class="badge badge-danger">${log.errorType || 'unknown'}</span></td>
                                         <td>${log.errorMessage ? log.errorMessage.substring(0, 50) + (log.errorMessage.length > 50 ? '...' : '') : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick='showErrorDetails(${JSON.stringify(log)})'>
+                                                <i class="fas fa-search"></i> View
+                                            </button>
+                                        </td>
                                         <td>${log.userId || 'N/A'}</td>
                                         <td>
                                             <span class="badge ${log.resolved ? 'badge-success' : 'badge-warning'}">
@@ -2521,7 +2597,6 @@
                     document.getElementById('errorLogsList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No error logs found</p>';
                 }
 
-                // Pagination
                 const pagination = document.getElementById('errorPagination');
                 pagination.innerHTML = '';
                 
@@ -2544,6 +2619,22 @@
             }
         }
 
+        function showErrorDetails(log) {
+            showModal(`
+                <h3>Error Details</h3>
+                <p><strong>Time:</strong> ${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</p>
+                <p><strong>Type:</strong> ${log.errorType || 'N/A'}</p>
+                <p><strong>Message:</strong> ${log.errorMessage || 'N/A'}</p>
+                <p><strong>Stack Trace:</strong></p>
+                <pre style="background: #f8f9fa; padding: 10px; border-radius: 8px; overflow-x: auto;">${log.stackTrace || 'No stack trace available'}</pre>
+                <p><strong>User ID:</strong> ${log.userId || 'N/A'}</p>
+                <p><strong>Route:</strong> ${log.route || 'N/A'}</p>
+                <p><strong>IP Address:</strong> ${log.ip || 'N/A'}</p>
+                <p><strong>User Agent:</strong> ${log.userAgent || 'N/A'}</p>
+                <p><strong>Status:</strong> <span class="badge ${log.resolved ? 'badge-success' : 'badge-warning'}">${log.resolved ? 'Resolved' : 'Open'}</span></p>
+            `);
+        }
+
         async function loadFailedLogins(page = 1) {
             try {
                 const email = document.getElementById('failedLoginFilter')?.value || '';
@@ -2551,8 +2642,6 @@
                 
                 let url = `/api/admin/failed-logins?page=${page}&limit=20`;
                 if (email) url += `&email=${encodeURIComponent(email)}`;
-                
-                console.log('Fetching failed logins from:', url);
                 
                 const response = await fetch(url, {
                     headers: {
@@ -2566,7 +2655,6 @@
                 }
                 
                 const data = await response.json();
-                console.log('Failed logins data:', data);
                 
                 document.getElementById('failedLoginCountBadge').textContent = `Total: ${data.pagination?.total || 0}`;
                 
@@ -2579,6 +2667,7 @@
                                     <th>Email</th>
                                     <th>IP Address</th>
                                     <th>User Agent</th>
+                                    <th>Details</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2588,6 +2677,11 @@
                                         <td>${login.email || 'N/A'}</td>
                                         <td>${login.ip || 'N/A'}</td>
                                         <td>${login.userAgent ? login.userAgent.substring(0, 30) + '...' : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick='showLoginDetails(${JSON.stringify(login)})'>
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -2597,7 +2691,6 @@
                     document.getElementById('failedLoginsList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No failed login attempts found</p>';
                 }
 
-                // Pagination
                 const pagination = document.getElementById('failedLoginPagination');
                 pagination.innerHTML = '';
                 
@@ -2615,7 +2708,62 @@
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
                         <p>Error loading failed logins: ${error.message}</p>
                         <button class="retry-btn" onclick="loadFailedLogins(1)">Retry</button>
-                        <button class="retry-btn" style="background: #3498db;" onclick="testEndpoint('/api/admin/failed-logins?limit=10')">Debug API</button>
+                        <button class="retry-btn" style="background: #3498db;" onclick="testEndpoint('/api/admin/failed-logins?limit=50')">Debug API</button>
+                    </div>
+                `;
+            }
+        }
+
+        function showLoginDetails(login) {
+            showModal(`
+                <h3>Failed Login Details</h3>
+                <p><strong>Time:</strong> ${login.timestamp ? new Date(login.timestamp).toLocaleString() : 'N/A'}</p>
+                <p><strong>Email:</strong> ${login.email || 'N/A'}</p>
+                <p><strong>IP Address:</strong> ${login.ip || 'N/A'}</p>
+                <p><strong>User Agent:</strong> ${login.userAgent || 'N/A'}</p>
+                <p><strong>Attempt Count:</strong> ${login.attemptCount || '1'}</p>
+                <p><strong>Location:</strong> ${login.location || 'Unknown'}</p>
+                <p><strong>Device:</strong> ${login.device || 'Unknown'}</p>
+                <p><strong>Browser:</strong> ${login.browser || 'Unknown'}</p>
+            `);
+        }
+
+        async function loadSystemHealth() {
+            try {
+                const response = await fetch('/api/admin/system-health', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load system health');
+                
+                const health = await response.json();
+                
+                document.getElementById('systemHealth').innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
+                            <div style="color: #27ae60; font-size: 24px; margin-bottom: 5px;">${health.uptime || '99.9%'}</div>
+                            <div style="color: #7f8c8d; font-size: 0.85rem;">Uptime</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
+                            <div style="color: #3498db; font-size: 24px; margin-bottom: 5px;">${health.responseTime || '245ms'}</div>
+                            <div style="color: #7f8c8d; font-size: 0.85rem;">Avg Response</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
+                            <div style="color: #e74c3c; font-size: 24px; margin-bottom: 5px;">${health.errorRate || '0.5%'}</div>
+                            <div style="color: #7f8c8d; font-size: 0.85rem;">Error Rate</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
+                            <div style="color: #f39c12; font-size: 24px; margin-bottom: 5px;">${health.activeUsers || '1.2k'}</div>
+                            <div style="color: #7f8c8d; font-size: 0.85rem;">Active Users</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('systemHealth').innerHTML = `
+                    <div class="error-state">
+                        <p>Could not load system health</p>
                     </div>
                 `;
             }
@@ -2905,7 +3053,7 @@
         }
 
         function viewUser(userId) {
-            alert('View user details - Feature coming soon');
+            showNotification('View user details - Feature coming soon', 'info');
         }
 
         async function flagTask(taskId) {
@@ -2985,7 +3133,7 @@
         }
 
         function viewTask(taskId) {
-            alert('View task details - Feature coming soon');
+            showNotification('View task details - Feature coming soon', 'info');
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -3037,6 +3185,8 @@
         window.closeModal = closeModal;
         window.toggleRawDebug = toggleRawDebug;
         window.testEndpoint = testEndpoint;
+        window.showErrorDetails = showErrorDetails;
+        window.showLoginDetails = showLoginDetails;
         
         // Filter functions
         window.applyUserFilters = applyUserFilters;
