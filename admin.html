@@ -167,7 +167,6 @@
             color: #2c3e50;
         }
 
-        /* Logo styling - removed icon, using text logo */
         .logo-area .logo-text {
             font-size: 1.4rem;
             font-weight: 700;
@@ -889,7 +888,6 @@
         }
 
         .raw-debug-actions button {
-            background: #4CAF50;
             color: white;
             border: none;
             padding: 10px 16px;
@@ -906,16 +904,13 @@
             opacity: 0.9;
         }
 
-        .raw-debug-actions button:nth-child(2) {
-            background: #2196F3;
-        }
-
-        .raw-debug-actions button:nth-child(3) {
-            background: #FF9800;
-        }
-
-        .raw-debug-actions button:nth-child(4) {
-            background: #9C27B0;
+        .raw-debug-note {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #ffd700;
+            font-size: 0.9rem;
         }
 
         .raw-debug-output {
@@ -979,20 +974,13 @@
         
         @keyframes slideOut {
             from {
-                transform: translateX(0);
+                transform: translateX(100%);
                 opacity: 1;
             }
             to {
-                transform: translateX(100%);
+                transform: translateX(0);
                 opacity: 0;
             }
-        }
-
-        /* Rands symbol */
-        .rands::before {
-            content: "R";
-            font-weight: 600;
-            margin-right: 2px;
         }
     </style>
 </head>
@@ -1182,7 +1170,6 @@
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminUser');
                 showLoginError('Session expired. Please login again.');
-                hideLoading('mainContent');
             }
         }
 
@@ -1278,8 +1265,6 @@
                 `;
             }
         }
-
-        function hideLoading(elementId) {}
 
         function showError(elementId, errorMessage, retryFunction) {
             const element = document.getElementById(elementId);
@@ -2306,7 +2291,7 @@
             showNotification('Warning sent', 'success');
         }
 
-        // ========== DEBUG LOGS TAB WITH STACKED LAYOUT ==========
+        // ========== DEBUG LOGS TAB WITH WORKING ENDPOINTS ONLY ==========
         async function loadDebugLogs(page = 1) {
             const content = document.getElementById('mainContent');
             currentPage = page;
@@ -2317,40 +2302,37 @@
                     <p>Monitor system errors and detailed debug information</p>
                 </div>
                 
-                <!-- RAW DEBUG PANEL - ALWAYS VISIBLE -->
+                <!-- RAW DEBUG PANEL - Using only working endpoints -->
                 <div class="raw-debug-panel">
                     <div class="raw-debug-header">
-                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER - See complete server responses</span>
+                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER - Working endpoints only</span>
                         <button onclick="toggleRawDebug()" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;">
                             <i class="fas ${rawDebugVisible ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
                         </button>
                     </div>
                     <div class="raw-debug-content" id="rawDebugContent" style="display: ${rawDebugVisible ? 'block' : 'none'};">
                         <div class="raw-debug-actions">
-                            <button onclick="testEndpoint('/api/debug/check-logs')">
-                                <i class="fas fa-database"></i> Check All Error Logs
+                            <button onclick="testEndpoint('/api/debug/check-logs')" style="background: #4CAF50;">
+                                <i class="fas fa-database"></i> Check Error Logs
                             </button>
-                            <button onclick="testEndpoint('/api/debug/test-log')">
+                            <button onclick="testEndpoint('/api/debug/test-log')" style="background: #2196F3;">
                                 <i class="fas fa-plus-circle"></i> Create Test Log
                             </button>
-                            <button onclick="testEndpoint('/api/debug/system-errors?limit=50')">
-                                <i class="fas fa-exclamation-circle"></i> System Errors
+                            <button onclick="testEndpoint('/api/admin/failed-logins?limit=50')" style="background: #FF9800;">
+                                <i class="fas fa-lock"></i> Failed Logins
                             </button>
-                            <button onclick="testEndpoint('/api/debug/auth-logs?limit=50')">
-                                <i class="fas fa-lock"></i> Auth Logs
+                            <button onclick="testEndpoint('/api/debug/mongo-check')" style="background: #9C27B0;">
+                                <i class="fas fa-database"></i> Check MongoDB
                             </button>
-                            <button onclick="testEndpoint('/api/debug/api-logs?limit=50')">
-                                <i class="fas fa-code"></i> API Logs
-                            </button>
-                            <button onclick="testEndpoint('/api/debug/database-logs?limit=50')">
-                                <i class="fas fa-database"></i> Database Logs
-                            </button>
-                            <button onclick="testEndpoint('/api/debug/all-logs?limit=100')">
-                                <i class="fas fa-list"></i> All Logs
+                            <button onclick="testEndpoint('/api/admin/error-logs?limit=50')" style="background: #e74c3c;">
+                                <i class="fas fa-exclamation-circle"></i> Error Logs
                             </button>
                         </div>
+                        <div class="raw-debug-note">
+                            <i class="fas fa-info-circle"></i> Using confirmed working endpoints: check-logs, test-log, failed-logins, mongo-check, error-logs
+                        </div>
                         <div id="rawDebugOutput" class="raw-debug-output">
-                            Click any button to see complete RAW API response with detailed error information.
+                            Click any button to see RAW API response from working endpoints.
                         </div>
                     </div>
                 </div>
@@ -2413,29 +2395,11 @@
                             <div class="pagination" id="failedLoginPagination"></div>
                         </div>
                     </div>
-                    
-                    <!-- System Health Section -->
-                    <div class="debug-section">
-                        <div class="table-container">
-                            <div class="table-header">
-                                <div class="table-title">
-                                    <i class="fas fa-heartbeat" style="color: #27ae60;"></i> System Health
-                                </div>
-                            </div>
-                            <div id="systemHealth">
-                                <div class="loading-container">
-                                    <div class="loading-spinner small"></div>
-                                    <p>Checking system health...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             `;
 
             await loadErrorLogs(page);
             await loadFailedLogins(1);
-            await loadSystemHealth();
         }
 
         function toggleRawDebug() {
@@ -2452,7 +2416,7 @@
 
         async function testEndpoint(url) {
             const output = document.getElementById('rawDebugOutput');
-            output.innerHTML = '<div class="loading-container"><div class="loading-spinner small"></div><p>Fetching detailed logs...</p></div>';
+            output.innerHTML = '<div class="loading-container"><div class="loading-spinner small"></div><p>Fetching from ' + url + '...</p></div>';
             
             try {
                 console.log(`🔍 Testing endpoint: ${url}`);
@@ -2469,41 +2433,34 @@
                 const endTime = Date.now();
                 const responseTime = endTime - startTime;
                 
-                const rawText = await response.text();
+                let responseText;
+                try {
+                    responseText = await response.text();
+                } catch (e) {
+                    responseText = 'Could not read response body';
+                }
                 
-                let outputHtml = `<div style="color: #4CAF50; margin-bottom: 10px;">✅ Status: ${response.status} ${response.statusText}</div>`;
+                let outputHtml = `<div style="color: ${response.ok ? '#4CAF50' : '#FF6B6B'}; margin-bottom: 10px;">`;
+                outputHtml += `✅ Status: ${response.status} ${response.statusText}</div>`;
                 outputHtml += `<div style="color: #FF9800; margin-bottom: 5px;">⏱️ Response Time: ${responseTime}ms</div>`;
-                outputHtml += `<div style="color: #2196F3; margin-bottom: 15px;">📦 Response Size: ${rawText.length} bytes</div>`;
+                outputHtml += `<div style="color: #2196F3; margin-bottom: 15px;">📦 Response Size: ${responseText.length} bytes</div>`;
                 outputHtml += `<hr style="border-color: #444; margin: 15px 0;">`;
                 
                 try {
-                    const parsed = JSON.parse(rawText);
-                    
-                    // Pretty print JSON with syntax highlighting
+                    const parsed = JSON.parse(responseText);
                     outputHtml += `<pre style="color: #89DDFF; font-size: 12px; line-height: 1.5;">${syntaxHighlight(JSON.stringify(parsed, null, 2))}</pre>`;
-                    
-                    // Show summary counts if available
-                    if (parsed.total || parsed.count || parsed.logs?.length) {
-                        outputHtml += `<div style="background: #333; padding: 10px; border-radius: 8px; margin-top: 15px;">`;
-                        outputHtml += `<strong>📊 Summary:</strong> `;
-                        if (parsed.total) outputHtml += `Total: ${parsed.total} | `;
-                        if (parsed.count) outputHtml += `Count: ${parsed.count} | `;
-                        if (parsed.logs?.length) outputHtml += `Logs in response: ${parsed.logs.length}`;
-                        outputHtml += `</div>`;
-                    }
                 } catch (e) {
-                    outputHtml += `<pre style="color: #FF6B6B;">${rawText.substring(0, 1000)}${rawText.length > 1000 ? '... (truncated)' : ''}</pre>`;
+                    outputHtml += `<pre style="color: #FF6B6B;">${responseText.substring(0, 1000)}${responseText.length > 1000 ? '... (truncated)' : ''}</pre>`;
                 }
                 
                 output.innerHTML = outputHtml;
                 
             } catch (error) {
-                output.innerHTML = `<div style="color: #FF6B6B;">❌ Error: ${error.message}</div>`;
+                output.innerHTML = `<div style="color: #FF6B6B;">❌ Network Error: ${error.message}</div>`;
                 console.error('Debug fetch error:', error);
             }
         }
 
-        // Syntax highlighting for JSON
         function syntaxHighlight(json) {
             json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
@@ -2578,7 +2535,7 @@
                                         <td><span class="badge badge-danger">${log.errorType || 'unknown'}</span></td>
                                         <td>${log.errorMessage ? log.errorMessage.substring(0, 50) + (log.errorMessage.length > 50 ? '...' : '') : 'N/A'}</td>
                                         <td>
-                                            <button class="action-btn btn-info" onclick='showErrorDetails(${JSON.stringify(log)})'>
+                                            <button class="action-btn btn-info" onclick='showErrorDetails(${JSON.stringify(log).replace(/'/g, "\\'")})'>
                                                 <i class="fas fa-search"></i> View
                                             </button>
                                         </td>
@@ -2650,8 +2607,7 @@
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
@@ -2678,7 +2634,7 @@
                                         <td>${login.ip || 'N/A'}</td>
                                         <td>${login.userAgent ? login.userAgent.substring(0, 30) + '...' : 'N/A'}</td>
                                         <td>
-                                            <button class="action-btn btn-info" onclick='showLoginDetails(${JSON.stringify(login)})'>
+                                            <button class="action-btn btn-info" onclick='showLoginDetails(${JSON.stringify(login).replace(/'/g, "\\'")})'>
                                                 <i class="fas fa-search"></i>
                                             </button>
                                         </td>
@@ -2726,47 +2682,6 @@
                 <p><strong>Device:</strong> ${login.device || 'Unknown'}</p>
                 <p><strong>Browser:</strong> ${login.browser || 'Unknown'}</p>
             `);
-        }
-
-        async function loadSystemHealth() {
-            try {
-                const response = await fetch('/api/admin/system-health', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-
-                if (!response.ok) throw new Error('Failed to load system health');
-                
-                const health = await response.json();
-                
-                document.getElementById('systemHealth').innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
-                            <div style="color: #27ae60; font-size: 24px; margin-bottom: 5px;">${health.uptime || '99.9%'}</div>
-                            <div style="color: #7f8c8d; font-size: 0.85rem;">Uptime</div>
-                        </div>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
-                            <div style="color: #3498db; font-size: 24px; margin-bottom: 5px;">${health.responseTime || '245ms'}</div>
-                            <div style="color: #7f8c8d; font-size: 0.85rem;">Avg Response</div>
-                        </div>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
-                            <div style="color: #e74c3c; font-size: 24px; margin-bottom: 5px;">${health.errorRate || '0.5%'}</div>
-                            <div style="color: #7f8c8d; font-size: 0.85rem;">Error Rate</div>
-                        </div>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px;">
-                            <div style="color: #f39c12; font-size: 24px; margin-bottom: 5px;">${health.activeUsers || '1.2k'}</div>
-                            <div style="color: #7f8c8d; font-size: 0.85rem;">Active Users</div>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                document.getElementById('systemHealth').innerHTML = `
-                    <div class="error-state">
-                        <p>Could not load system health</p>
-                    </div>
-                `;
-            }
         }
 
         function applyDebugFilters() {
@@ -3188,14 +3103,12 @@
         window.showErrorDetails = showErrorDetails;
         window.showLoginDetails = showLoginDetails;
         
-        // Filter functions
         window.applyUserFilters = applyUserFilters;
         window.applyTaskFilters = applyTaskFilters;
         window.applyVerificationFilters = applyVerificationFilters;
         window.applyReportFilters = applyReportFilters;
         window.applyDebugFilters = applyDebugFilters;
         
-        // User action functions
         window.suspendUser = suspendUser;
         window.unsuspendUser = unsuspendUser;
         window.banUser = banUser;
@@ -3205,29 +3118,24 @@
         window.deleteUser = deleteUser;
         window.viewUser = viewUser;
         
-        // Task functions
         window.flagTask = flagTask;
         window.closeTask = closeTask;
         window.deleteTask = deleteTask;
         window.viewTask = viewTask;
         
-        // Verification functions
         window.viewVerification = viewVerification;
         window.approveVerification = approveVerification;
         window.rejectVerification = rejectVerification;
         
-        // Report functions
         window.viewReport = viewReport;
         window.addReportNote = addReportNote;
         window.resolveReport = resolveReport;
         window.dismissReport = dismissReport;
         window.warnReportedUser = warnReportedUser;
         
-        // Debug functions
         window.loadErrorLogs = loadErrorLogs;
         window.loadFailedLogins = loadFailedLogins;
         
-        // Settings
         window.saveSettings = saveSettings;
     </script>
 </body>
