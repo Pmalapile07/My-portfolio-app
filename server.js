@@ -17,11 +17,20 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/taskmart';
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
+
+// Connection event listeners
+mongoose.connection.on('connected', () => {
+    console.log('✅ MongoDB connected successfully');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ MongoDB connection error:', err);
+});
 
 // ========== TASK SCHEMA ==========
 const taskSchema = new mongoose.Schema({
@@ -85,6 +94,16 @@ const errorLogSchema = new mongoose.Schema({
 });
 
 const ErrorLog = mongoose.model('ErrorLog', errorLogSchema);
+
+// ========== FAILED LOGIN SCHEMA ==========
+const failedLoginSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  ip: { type: String },
+  userAgent: { type: String },
+  timestamp: { type: Date, default: Date.now }
+});
+
+const FailedLogin = mongoose.model('FailedLogin', failedLoginSchema);
 
 // ========== ADMIN ACTIVITY LOG SCHEMA ==========
 const adminActivitySchema = new mongoose.Schema({
@@ -159,6 +178,11 @@ app.get('/config.js', (req, res) => {
     res.send(`window.MAPBOX_TOKEN = '${process.env.MAPBOX_ACCESS_TOKEN}';`);
 });
 
+// Serve admin dashboard
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({ 
@@ -175,24 +199,195 @@ app.get('/', (req, res) => {
 
 // ========== ERROR LOGGING FUNCTION ==========
 async function logError(error, route, userId = null, req = null) {
-  try {
-    const errorLog = new ErrorLog({
-      errorType: error.name || 'UnknownError',
-      errorMessage: error.message,
-      stackTrace: error.stack,
-      route,
-      userId,
-      userEmail: req?.user?.email,
-      method: req?.method,
-      ip: req?.ip || req?.headers['x-forwarded-for'],
-      userAgent: req?.headers['user-agent']
-    });
-    await errorLog.save();
-    console.error('Error logged:', error.message);
-  } catch (logError) {
-    console.error('Failed to log error:', logError);
-  }
+    try {
+        console.log('📝 Attempting to log error:', error.message); // Debug console log
+        
+        const errorLog = new ErrorLog({
+            errorType: error.name || 'UnknownError',
+            errorMessage: error.message || String(error),
+            stackTrace: error.stack,
+            route,
+            userId: userId || (req?.user?.id) || (req?.user?.email) || 'unknown',
+            userEmail: req?.user?.email,
+            method: req?.method,
+            ip: req?.ip || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress,
+            userAgent: req?.headers?.['user-agent'],
+            resolved: false
+        });
+        
+        const saved = await errorLog.save();
+        console.log('✅ Error logged successfully. ID:', saved._id);
+        
+        return saved;
+    } catch (logError) {
+        console.error('❌ CRITICAL: Failed to log error:', logError);
+        // Write to console as last resort
+        console.error('Original error that failed to log:', error);
+    }
 }
+
+// ========== DEBUG ROUTES (For Admin Debug Panel) ==========
+
+// Test log creation
+app.get('/api/debug/test-log', async (req, res) => {
+    try {
+        // Force a test error log
+        const testError = new Error('TEST DEBUG LOG - ' + new Date().toISOString());
+        testError.name = 'TestError';
+        
+        await logError(testError, '/debug/test', 'test-user', req);
+        
+        // Count total logs
+        const totalLogs = await ErrorLog.countDocuments();
+        const recentLogs = await ErrorLog.find().sort({ timestamp: -1 }).limit(5);
+        
+        res.json({
+            success: true,
+            message: 'Test log created',
+            totalLogs,
+            recentLogs: recentLogs.map(log => ({
+                id: log._id,
+                type: log.errorType,
+                message: log.errorMessage,
+                time: log.timestamp,
+                route: log.route
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            error: error.message,
+            stack: error.stack 
+        });
+    }
+});
+
+// Direct database check for error logs
+app.get('/api/debug/check-logs', async (req, res) => {
+    try {
+        const logs = await ErrorLog.find().sort({ timestamp: -1 }).limit(20);
+        const count = await ErrorLog.countDocuments();
+        
+        res.json({
+            count,
+            logs: logs.map(log => ({
+                id: log._id,
+                type: log.errorType,
+                message: log.errorMessage,
+                time: log.timestamp,
+                route: log.route,
+                userId: log.userId,
+                userEmail: log.userEmail
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// MongoDB connection check
+app.get('/api/debug/mongo-check', async (req, res) => {
+    try {
+        const collections = await mongoose.connection.db.listCollections().toArray();
+        const errorLogCollection = collections.find(c => c.name === 'errorlogs');
+        const failedLoginCollection = collections.find(c => c.name === 'failedlogins');
+        
+        // Try to count documents in each collection
+        let errorCount = 0;
+        let failedLoginCount = 0;
+        
+        if (errorLogCollection) {
+            errorCount = await ErrorLog.estimatedDocumentCount();
+        }
+        
+        // Check if FailedLogin model exists
+        let failedLoginExists = false;
+        try {
+            if (mongoose.models.FailedLogin) {
+                failedLoginExists = true;
+                if (failedLoginCollection) {
+                    failedLoginCount = await FailedLogin.estimatedDocumentCount();
+                }
+            }
+        } catch (e) {
+            console.log('FailedLogin model not available');
+        }
+        
+        res.json({
+            connected: mongoose.connection.readyState === 1,
+            database: mongoose.connection.name,
+            host: mongoose.connection.host,
+            collections: collections.map(c => c.name),
+            errorLogExists: !!errorLogCollection,
+            errorLogCount: errorCount,
+            failedLoginExists: failedLoginExists,
+            failedLoginCount: failedLoginCount,
+            allModels: Object.keys(mongoose.models)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Test failed login endpoint
+app.get('/api/debug/test-failed-login', async (req, res) => {
+    try {
+        // Create a test failed login
+        const failedLogin = new FailedLogin({
+            email: 'test@example.com',
+            ip: req.ip || '127.0.0.1',
+            userAgent: req.headers['user-agent'] || 'Test Agent',
+            timestamp: new Date()
+        });
+        
+        await failedLogin.save();
+        
+        const count = await FailedLogin.countDocuments();
+        const recent = await FailedLogin.find().sort({ timestamp: -1 }).limit(5);
+        
+        res.json({
+            success: true,
+            message: 'Test failed login created',
+            totalCount: count,
+            recent: recent.map(l => ({
+                email: l.email,
+                ip: l.ip,
+                time: l.timestamp
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get failed login attempts (admin only)
+app.get('/api/admin/failed-logins', adminAuth, async (req, res) => {
+  try {
+    const { email, page = 1, limit = 50 } = req.query;
+    const query = email ? { email: { $regex: email, $options: 'i' } } : {};
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const failedLogins = await FailedLogin.find(query)
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await FailedLogin.countDocuments(query);
+    
+    res.json({
+      failedLogins,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    await logError(error, '/api/admin/failed-logins', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ========== ADMIN MIDDLEWARE ==========
 const adminAuth = async (req, res, next) => {
@@ -363,25 +558,6 @@ app.get('/api/users/email/:email', async (req, res) => {
     }
 });
 
-app.get('/api/users', async (req, res) => {
-    try {
-        const { email } = req.query;
-        if (email) {
-            const user = await User.findOne({ email }).select('-password');
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-            return res.json([user]);
-        }
-        
-        const users = await User.find().select('-password');
-        res.json(users);
-    } catch (error) {
-        await logError(error, '/api/users', null, req);
-        res.status(500).json({ error: error.message });
-    }
-});
-
 app.post('/api/users', async (req, res) => {
     try {
         const { name, email, password, role, initials } = req.body;
@@ -478,10 +654,24 @@ app.post('/api/auth/login', async (req, res) => {
         
         const user = await User.findOne({ email });
         if (!user) {
+            // Log failed login attempt
+            await new FailedLogin({
+                email,
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            }).save();
+            
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         
         if (user.password !== password) {
+            // Log failed login attempt
+            await new FailedLogin({
+                email,
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            }).save();
+            
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         
@@ -1211,9 +1401,12 @@ app.put('/api/admin/settings', adminAuth, async (req, res) => {
 // ========== START SERVER ==========
 app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
+    console.log(`📊 Admin dashboard: http://localhost:${port}/admin`);
+    console.log(`🔧 Debug endpoints:`);
+    console.log(`   - GET /api/debug/test-log`);
+    console.log(`   - GET /api/debug/check-logs`);
+    console.log(`   - GET /api/debug/mongo-check`);
+    console.log(`   - GET /api/debug/test-failed-login`);
     console.log(`Mapbox token configured: ${!!process.env.MAPBOX_ACCESS_TOKEN}`);
     console.log(`MongoDB configured: ${!!process.env.MONGODB_URI}`);
-    console.log(`✅ User API endpoints available at /api/users`);
-    console.log(`✅ Auth endpoints available at /api/auth`);
-    console.log(`✅ Admin API endpoints available at /api/admin`);
 });
