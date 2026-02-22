@@ -932,7 +932,7 @@
             justify-content: center;
         }
         .verified-icon .material-symbols-outlined {
-            color: #34A853 !important;
+            color: #10b981 !important;
             font-size: 18px !important;
         }
         
@@ -1676,8 +1676,8 @@
                     <div class="profile-avatar" id="profileAvatar">PS</div>
                     <div class="profile-info-row">
                         <span class="profile-name" id="profileName">Loading...</span>
-                        <span class="verified-icon">
-                            <span class="material-symbols-outlined">verified</span>
+                        <span class="verified-icon" id="verifiedIcon">
+                            <span class="material-symbols-outlined" style="color: #10b981; font-size: 18px;">verified</span>
                         </span>
                     </div>
                 </div>
@@ -1865,7 +1865,7 @@
             'use strict';
             
             const BASE_URL = window.location.origin;
-            const API_BASE_URL = 'https://taskmartapp.onrender.com'; // Your Render URL
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
             
             // Auth helper functions
             function getCurrentUser() {
@@ -1935,6 +1935,7 @@
             const nextButton = document.getElementById('nextButton');
             const profileAvatar = document.getElementById('profileAvatar');
             const profileName = document.getElementById('profileName');
+            const verifiedIcon = document.getElementById('verifiedIcon');
             const successTaskId = document.getElementById('successTaskId');
             const doneBtn = document.getElementById('doneBtn');
             const successCheckIcon = document.getElementById('successCheckIcon');
@@ -1972,6 +1973,7 @@
             const currentUser = getCurrentUser() || {
                 name: 'Guest',
                 initials: 'GU',
+                profileImage: null,
                 avatar: null
             };
 
@@ -1991,10 +1993,10 @@
             let selectedDate = null;
             let selectedTime = null;
             let selectedPayment = 'cash';
-            let uploadedImages = []; // This will store Cloudinary URLs
+            let uploadedImages = [];
             let isPosting = false;
 
-            // Check for pending task after login - but ONLY ONCE
+            // Check for pending task
             let hasCheckedPendingTask = false;
             
             function checkForPendingTask() {
@@ -2042,10 +2044,7 @@
                             displayImagePreviews();
                         }
                         
-                        // Clear the pending task immediately so it doesn't restore again
                         sessionStorage.removeItem('pendingTask');
-                        
-                        // Show success message
                         showSuccess('Task restored! You can now post it.');
                     } catch (e) {
                         console.error('Error restoring task:', e);
@@ -2056,16 +2055,18 @@
             function updateUserProfile() {
                 profileName.textContent = currentUser.name;
                 
-                // Check if user has profile picture (from Cloudinary or local)
-                if (currentUser.avatar && currentUser.avatar.startsWith('http')) {
-                    // If avatar is a Cloudinary URL, use it
-                    profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
+                // Get user's profile picture from Cloudinary
+                if (currentUser.profileImage) {
+                    profileAvatar.innerHTML = `<img src="${currentUser.profileImage}" alt="${currentUser.name}">`;
                 } else if (currentUser.avatar) {
-                    // If avatar is a data URL or local path
                     profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
                 } else {
-                    // Use initials
-                    profileAvatar.textContent = currentUser.initials || 'GU';
+                    profileAvatar.textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
+                }
+                
+                // Set verified icon
+                if (verifiedIcon) {
+                    verifiedIcon.innerHTML = `<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px;">verified</span>`;
                 }
             }
             
@@ -2081,7 +2082,6 @@
                 }
             }
 
-            // Event Listeners
             taskField.addEventListener('input', function() {
                 if (this.value.length > 50) {
                     this.value = this.value.slice(0, 50);
@@ -2098,7 +2098,6 @@
                 
                 uploadProgress.textContent = 'Uploading...';
                 
-                // Get auth token
                 const token = getAuthToken();
                 
                 try {
@@ -2132,7 +2131,6 @@
                 }
             }
 
-            // Image upload handling with Cloudinary
             uploadIcon.addEventListener('click', function(e) {
                 e.preventDefault();
                 imageSourceMenu.classList.add('active');
@@ -2165,7 +2163,6 @@
                 input.addEventListener('change', function(e) {
                     const files = Array.from(e.target.files);
                     
-                    // Process files sequentially
                     (async () => {
                         for (const file of files) {
                             await handleFileSelect(file);
@@ -2192,7 +2189,6 @@
                 imageSourceMenu.classList.remove('active');
             });
 
-            // Close menu when clicking outside
             document.addEventListener('click', function(e) {
                 if (!imageSourceMenu.contains(e.target) && !uploadIcon.contains(e.target)) {
                     imageSourceMenu.classList.remove('active');
@@ -2252,7 +2248,6 @@
                 }, 3000);
             });
 
-            // Close payment window when clicking outside
             document.addEventListener('click', function(e) {
                 if (!paymentWindow.contains(e.target) && paymentWindow.classList.contains('active')) {
                     paymentWindow.classList.remove('active');
@@ -2535,6 +2530,26 @@
                     return;
                 }
                 
+                // Refresh user data from localStorage
+                const user = getCurrentUser();
+                if (user) {
+                    document.getElementById('profileName').textContent = user.name;
+                    
+                    const profileAvatar = document.getElementById('profileAvatar');
+                    if (user.profileImage) {
+                        profileAvatar.innerHTML = `<img src="${user.profileImage}" alt="${user.name}">`;
+                    } else if (user.avatar) {
+                        profileAvatar.innerHTML = `<img src="${user.avatar}" alt="${user.name}">`;
+                    } else {
+                        profileAvatar.textContent = user.initials || user.name.substring(0, 2).toUpperCase();
+                    }
+                    
+                    const verifiedIcon = document.getElementById('verifiedIcon');
+                    if (verifiedIcon) {
+                        verifiedIcon.innerHTML = `<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px;">verified</span>`;
+                    }
+                }
+                
                 previewLocation.textContent = capitalizeSentence(locationField.value || 'Your location');
                 previewStreet.textContent = streetField.value ? capitalizeSentence(streetField.value) : 'Not provided';
                 previewTask.textContent = capitalizeSentence(taskField.value || 'Not specified');
@@ -2681,7 +2696,6 @@
             
             nextButton.addEventListener('click', openPreview);
 
-            // ===== SAVE TASK TO MONGODB =====
             async function saveTaskToMongoDB(taskData) {
                 const user = getCurrentUser();
                 
@@ -2691,11 +2705,11 @@
                 
                 const token = getAuthToken();
                 
-                // Add user info to task
+                // Add user info to task - INCLUDING PROFILE PICTURE
                 taskData.userId = user.email;
                 taskData.userName = user.name;
                 taskData.userRole = user.role;
-                taskData.userAvatar = user.profileImage || null;
+                taskData.userAvatar = user.profileImage || user.avatar || null;
                 
                 try {
                     console.log('Saving task to:', `${API_BASE_URL}/api/tasks`);
@@ -2768,34 +2782,28 @@
                 }, 400);
             }
 
-            // ===== POST BUTTON CLICK HANDLER =====
             postButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 
                 console.log('Post button clicked');
                 
-                // Visual feedback
                 postButton.classList.add('clicked');
                 setTimeout(() => postButton.classList.remove('clicked'), 200);
                 
-                // Check if button is disabled
                 if (postButton.disabled) {
                     console.log('Post button is disabled');
                     return;
                 }
                 
-                // Prevent multiple clicks
                 if (isPosting) {
                     console.log('Already posting');
                     return;
                 }
                 
-                // Check if user is logged in
                 if (!isUserLoggedIn()) {
                     console.log('No user, redirecting to login');
                     
-                    // Save task data (including Cloudinary URLs)
                     const taskData = {
                         location: locationField.value,
                         streetName: streetField.value,
@@ -2807,17 +2815,15 @@
                         selectedTime: selectedTime,
                         selectedPayment: selectedPayment,
                         moreDetails: moreDetailsField.value,
-                        uploadedImages: uploadedImages // These are now Cloudinary URLs
+                        uploadedImages: uploadedImages
                     };
                     sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
                     
-                    // Redirect to login
                     const returnUrl = encodeURIComponent(window.location.href);
                     window.location.href = '/login.html?returnTo=' + returnUrl;
                     return;
                 }
                 
-                // User is logged in - show confirmation
                 console.log('Showing confirmation modal');
                 confirmTitle.textContent = 'Ready to post?';
                 confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
@@ -2825,7 +2831,6 @@
                 confirmModal.classList.add('active');
             });
 
-            // ===== CONFIRM YES BUTTON HANDLER =====
             confirmYesBtn.addEventListener('click', async function() {
                 if (isPosting) {
                     console.log('Already posting');
@@ -2834,24 +2839,17 @@
                 
                 isPosting = true;
                 
-                // Visual feedback
                 confirmYesBtn.classList.add('loading');
                 confirmYesBtn.disabled = true;
                 
                 console.log('Confirm Yes clicked - starting post');
                 
-                // Hide confirmation modal immediately
                 confirmModal.classList.remove('active');
-                
-                // Show loading overlay
                 postLoadingOverlay.classList.add('active');
-                
-                // Add loading class to post button
                 postButton.classList.add('loading');
                 
                 const user = getCurrentUser();
                 
-                // Prepare task data with Cloudinary image URLs
                 const taskData = {
                     location: locationField.value,
                     coordinates: currentCoordinates || '',
@@ -2864,32 +2862,25 @@
                     budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
                     paymentMethod: selectedPayment,
                     moreDetails: moreDetailsField.value || '',
-                    images: uploadedImages, // These are Cloudinary URLs
+                    images: uploadedImages,
                     status: 'posted'
                 };
                 
                 try {
-                    // Save to MongoDB with auth
                     const savedTask = await saveTaskToMongoDB(taskData);
                     
-                    // Hide loading overlay
                     postLoadingOverlay.classList.remove('active');
                     postButton.classList.remove('loading');
                     
                     if (savedTask) {
                         console.log('Task saved successfully:', savedTask);
                         
-                        // Hide preview sheet
                         previewSheet.style.display = 'none';
-                        
-                        // Show success sheet
                         successTaskId.textContent = `#${savedTask._id}`;
                         successSheet.style.display = 'flex';
                         
-                        // Fire confetti
                         fireConfettiAroundIcon();
                         
-                        // Reset form
                         locationField.value = 'detecting location...';
                         streetField.value = '';
                         taskField.value = '';
@@ -2902,14 +2893,11 @@
                         showSuccess('Task posted successfully!');
                     }
                 } catch (error) {
-                    // Hide loading overlay on error
                     postLoadingOverlay.classList.remove('active');
                     postButton.classList.remove('loading');
                     
-                    // Show error toast
                     console.error('Post error:', error);
                     
-                    // If session expired, redirect to login
                     if (error.message.includes('Not authenticated')) {
                         const returnUrl = encodeURIComponent(window.location.href);
                         window.location.href = '/login.html?returnTo=' + returnUrl;
@@ -2917,7 +2905,6 @@
                         showSuccess('Error posting task. Please try again.');
                     }
                 } finally {
-                    // Re-enable button
                     isPosting = false;
                     confirmYesBtn.classList.remove('loading');
                     confirmYesBtn.disabled = false;
@@ -2957,7 +2944,6 @@
                 }
             }, { passive: false });
 
-            // Check for pending task
             checkForPendingTask();
         })();
     </script>
