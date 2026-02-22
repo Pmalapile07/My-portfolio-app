@@ -10,12 +10,22 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // ========== CLOUDINARY CONFIGURATION ==========
-// These will come from Render environment variables
+// These come from Render environment variables
+console.log('☁️ Configuring Cloudinary with:');
+console.log('Cloud name:', process.env.CLOUDINARY_CLOUD_NAME);
+console.log('API key length:', process.env.CLOUDINARY_API_KEY?.length);
+console.log('API secret length:', process.env.CLOUDINARY_API_SECRET?.length);
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// Test Cloudinary configuration
+cloudinary.api.ping()
+  .then(result => console.log('✅ Cloudinary connected successfully'))
+  .catch(error => console.error('❌ Cloudinary connection failed:', error));
 
 // ========== MULTER CONFIGURATION (memory storage) ==========
 const storage = multer.memoryStorage();
@@ -218,36 +228,66 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// ========== AUTH MIDDLEWARE ==========
+const authMiddleware = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+    
+    // Decode token to get email
+    const decoded = Buffer.from(token, 'base64').toString('ascii');
+    const [email] = decoded.split(':');
+    
+    if (!email) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+};
+
 // ========== CLOUDINARY UPLOAD ENDPOINTS ==========
-// Upload profile picture
-app.post('/api/upload/profile', upload.single('image'), async (req, res) => {
+// Upload profile picture - FIXED VERSION
+app.post('/api/upload/profile', upload.single('image'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
     
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-    
-    // Find user to get existing public_id for deletion
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    // User is now available from auth middleware
+    const user = req.user;
+    console.log('📧 Uploading profile for user:', user.email);
     
     // Delete old profile image if exists
     if (user.profileImagePublicId) {
       try {
         await cloudinary.uploader.destroy(user.profileImagePublicId);
+        console.log('🗑️ Deleted old image:', user.profileImagePublicId);
       } catch (deleteError) {
         console.log('Error deleting old image:', deleteError);
       }
     }
     
     // Upload new image
+    console.log('☁️ Uploading to Cloudinary...');
     const result = await uploadToCloudinary(req.file.buffer, 'profiles');
+    console.log('✅ Uploaded to Cloudinary:', result.secure_url);
     
     // Update user
     user.profileImage = result.secure_url;
@@ -260,14 +300,16 @@ app.post('/api/upload/profile', upload.single('image'), async (req, res) => {
       public_id: result.public_id,
       message: 'Profile picture uploaded successfully'
     });
+    
   } catch (error) {
-    await logError(error, '/api/upload/profile', null, req);
+    console.error('❌ Upload error:', error);
+    await logError(error, '/api/upload/profile', req.user?._id, req);
     res.status(500).json({ error: 'Upload failed: ' + error.message });
   }
 });
 
 // Upload task images
-app.post('/api/upload/task-image', upload.single('image'), async (req, res) => {
+app.post('/api/upload/task-image', upload.single('image'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
@@ -280,13 +322,13 @@ app.post('/api/upload/task-image', upload.single('image'), async (req, res) => {
       public_id: result.public_id
     });
   } catch (error) {
-    await logError(error, '/api/upload/task-image', null, req);
+    await logError(error, '/api/upload/task-image', req.user?._id, req);
     res.status(500).json({ error: 'Upload failed: ' + error.message });
   }
 });
 
 // Upload multiple task images
-app.post('/api/upload/task-images', upload.array('images', 5), async (req, res) => {
+app.post('/api/upload/task-images', upload.array('images', 5), authMiddleware, async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No image files provided' });
@@ -303,13 +345,13 @@ app.post('/api/upload/task-images', upload.array('images', 5), async (req, res) 
       public_ids: results.map(r => r.public_id)
     });
   } catch (error) {
-    await logError(error, '/api/upload/task-images', null, req);
+    await logError(error, '/api/upload/task-images', req.user?._id, req);
     res.status(500).json({ error: 'Upload failed: ' + error.message });
   }
 });
 
 // Delete image from Cloudinary
-app.post('/api/delete-image', async (req, res) => {
+app.post('/api/delete-image', authMiddleware, async (req, res) => {
   try {
     const { public_id } = req.body;
     if (!public_id) {
@@ -319,7 +361,7 @@ app.post('/api/delete-image', async (req, res) => {
     const result = await cloudinary.uploader.destroy(public_id);
     res.json({ result, message: 'Image deleted successfully' });
   } catch (error) {
-    await logError(error, '/api/delete-image', null, req);
+    await logError(error, '/api/delete-image', req.user?._id, req);
     res.status(500).json({ error: 'Delete failed: ' + error.message });
   }
 });
@@ -333,7 +375,7 @@ async function logError(error, route, userId = null, req = null) {
       errorMessage: error.message || String(error),
       stackTrace: error.stack,
       route,
-      userId: userId || req?.user?.id || req?.user?.email || 'unknown',
+      userId: userId || req?.user?._id || req?.user?.email || 'unknown',
       userEmail: req?.user?.email,
       method: req?.method,
       ip: req?.ip || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress,
