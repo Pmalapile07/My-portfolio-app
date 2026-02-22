@@ -1534,6 +1534,13 @@
             margin-left: -15px;
             margin-top: -5px;
         }
+        
+        /* Cloudinary upload indicator */
+        .upload-progress {
+            font-size: 0.75rem;
+            color: #045B92;
+            margin-top: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -1610,6 +1617,7 @@
                     <div class="char-count" id="taskCharCount">0/50</div>
                     <div class="field-error" id="taskError">Please describe your task</div>
                     <div id="imagePreviewContainer" class="image-preview-container"></div>
+                    <div id="uploadProgress" class="upload-progress"></div>
                 </div>
 
                 <div class="form-section">
@@ -1857,6 +1865,7 @@
             'use strict';
             
             const BASE_URL = window.location.origin;
+            const CLOUDINARY_UPLOAD_URL = 'https://your-render-app.onrender.com/upload'; // Replace with your actual Render URL
             
             // Auth helper functions
             function getCurrentUser() {
@@ -1953,6 +1962,7 @@
             const previewWhen = document.getElementById('previewWhen');
             const postButton = document.getElementById('postButton');
             const termsCheckbox = document.getElementById('termsCheckbox');
+            const uploadProgress = document.getElementById('uploadProgress');
 
             // Current user state
             const currentUser = getCurrentUser() || {
@@ -1977,7 +1987,7 @@
             let selectedDate = null;
             let selectedTime = null;
             let selectedPayment = 'cash';
-            let uploadedImages = [];
+            let uploadedImages = []; // This will store Cloudinary URLs
             let isPosting = false;
 
             // Check for pending task after login - but ONLY ONCE
@@ -2042,9 +2052,15 @@
             function updateUserProfile() {
                 profileName.textContent = currentUser.name;
                 
-                if (currentUser.avatar) {
+                // Check if user has profile picture (from Cloudinary or local)
+                if (currentUser.avatar && currentUser.avatar.startsWith('http')) {
+                    // If avatar is a Cloudinary URL, use it
+                    profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
+                } else if (currentUser.avatar) {
+                    // If avatar is a data URL or local path
                     profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
                 } else {
+                    // Use initials
                     profileAvatar.textContent = currentUser.initials || 'GU';
                 }
             }
@@ -2071,11 +2087,57 @@
                 taskField.classList.remove('error');
             });
 
-            // Image upload handling
+            // ===== CLOUDINARY IMAGE UPLOAD =====
+            async function uploadImageToCloudinary(file) {
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                uploadProgress.textContent = 'Uploading...';
+                
+                try {
+                    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Upload failed');
+                    }
+                    
+                    const data = await response.json();
+                    uploadProgress.textContent = 'Upload complete!';
+                    setTimeout(() => {
+                        uploadProgress.textContent = '';
+                    }, 2000);
+                    
+                    return data.url; // Assuming your backend returns { url: 'cloudinary-url' }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    uploadProgress.textContent = 'Upload failed. Please try again.';
+                    setTimeout(() => {
+                        uploadProgress.textContent = '';
+                    }, 3000);
+                    throw error;
+                }
+            }
+
+            // Image upload handling with Cloudinary
             uploadIcon.addEventListener('click', function(e) {
                 e.preventDefault();
                 imageSourceMenu.classList.add('active');
             });
+
+            async function handleFileSelect(file) {
+                if (file && file.type.startsWith('image/')) {
+                    try {
+                        const cloudinaryUrl = await uploadImageToCloudinary(file);
+                        uploadedImages.push(cloudinaryUrl);
+                        displayImagePreviews();
+                    } catch (error) {
+                        console.error('Failed to upload image:', error);
+                    }
+                }
+            }
 
             function createFileInput(accept, capture) {
                 const input = document.createElement('input');
@@ -2091,16 +2153,14 @@
                 
                 input.addEventListener('change', function(e) {
                     const files = Array.from(e.target.files);
-                    files.forEach(file => {
-                        if (file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                                uploadedImages.push(event.target.result);
-                                displayImagePreviews();
-                            };
-                            reader.readAsDataURL(file);
+                    
+                    // Process files sequentially
+                    (async () => {
+                        for (const file of files) {
+                            await handleFileSelect(file);
                         }
-                    });
+                    })();
+                    
                     document.body.removeChild(input);
                 });
                 
@@ -2130,13 +2190,13 @@
 
             function displayImagePreviews() {
                 imagePreviewContainer.innerHTML = '';
-                uploadedImages.forEach((imgData, index) => {
+                uploadedImages.forEach((imgUrl, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.style.position = 'relative';
                     wrapper.style.display = 'inline-block';
                     
                     const img = document.createElement('img');
-                    img.src = imgData;
+                    img.src = imgUrl; // Now using Cloudinary URL
                     img.className = 'image-preview';
                     
                     const removeBtn = document.createElement('button');
@@ -2470,9 +2530,9 @@
                 
                 previewImagesContainer.innerHTML = '';
                 if (uploadedImages.length > 0) {
-                    uploadedImages.forEach(imgData => {
+                    uploadedImages.forEach(imgUrl => {
                         const img = document.createElement('img');
-                        img.src = imgData;
+                        img.src = imgUrl;
                         img.className = 'preview-thumb';
                         previewImagesContainer.appendChild(img);
                     });
@@ -2622,6 +2682,7 @@
                 taskData.userId = user.email;
                 taskData.userName = user.name;
                 taskData.userRole = user.role;
+                taskData.userAvatar = user.avatar || null; // Include user avatar
                 
                 try {
                     console.log('Saving task to:', `${BASE_URL}/api/tasks`);
@@ -2720,7 +2781,7 @@
                 if (!isUserLoggedIn()) {
                     console.log('No user, redirecting to login');
                     
-                    // Save task data
+                    // Save task data (including Cloudinary URLs)
                     const taskData = {
                         location: locationField.value,
                         streetName: streetField.value,
@@ -2732,7 +2793,7 @@
                         selectedTime: selectedTime,
                         selectedPayment: selectedPayment,
                         moreDetails: moreDetailsField.value,
-                        uploadedImages: uploadedImages
+                        uploadedImages: uploadedImages // These are now Cloudinary URLs
                     };
                     sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
                     
@@ -2776,7 +2837,7 @@
                 
                 const user = getCurrentUser();
                 
-                // Prepare task data
+                // Prepare task data with Cloudinary image URLs
                 const taskData = {
                     location: locationField.value,
                     coordinates: currentCoordinates || '',
@@ -2789,8 +2850,9 @@
                     budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
                     paymentMethod: selectedPayment,
                     moreDetails: moreDetailsField.value || '',
-                    images: uploadedImages,
-                    status: 'posted'
+                    images: uploadedImages, // These are Cloudinary URLs
+                    status: 'posted',
+                    userAvatar: user.avatar || null // Include user avatar URL
                 };
                 
                 try {
@@ -2838,6 +2900,8 @@
                     if (error.message.includes('Not authenticated')) {
                         const returnUrl = encodeURIComponent(window.location.href);
                         window.location.href = '/login.html?returnTo=' + returnUrl;
+                    } else {
+                        showSuccess('Error posting task. Please try again.');
                     }
                 } finally {
                     // Re-enable button
