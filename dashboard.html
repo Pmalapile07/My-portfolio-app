@@ -2033,8 +2033,12 @@
             }
         }
 
+        function getAuthToken() {
+            return localStorage.getItem('taskmart_token');
+        }
+
         function isUserLoggedIn() {
-            return !!localStorage.getItem('taskmart_user');
+            return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
         }
 
         // ==================== NOTIFICATION FUNCTIONS ====================
@@ -2214,14 +2218,21 @@
             formData.append('image', file);
             formData.append('email', currentUser.email);
             
+            // Get the auth token
+            const token = getAuthToken();
+            
             try {
                 const response = await fetch(`${API_BASE_URL}/api/upload/profile`, {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Upload failed');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Upload failed');
                 }
                 
                 const data = await response.json();
@@ -2235,7 +2246,7 @@
                 document.getElementById('avatarText').style.display = 'none';
                 
                 // Update user in localStorage
-                currentUser.avatar = data.url;
+                currentUser.profileImage = data.url;
                 currentUser.photoUploaded = true;
                 localStorage.setItem('taskmart_user', JSON.stringify(currentUser));
                 
@@ -2249,7 +2260,7 @@
                 
             } catch (error) {
                 console.error('Upload error:', error);
-                progressDiv.textContent = 'Upload failed. Please try again.';
+                progressDiv.textContent = 'Upload failed: ' + error.message;
                 setTimeout(() => {
                     progressDiv.textContent = '';
                 }, 3000);
@@ -2660,9 +2671,15 @@
             const formData = new FormData();
             formData.append('image', file);
             
+            // Get the auth token
+            const token = getAuthToken();
+            
             try {
                 const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData
                 });
                 
@@ -2815,6 +2832,7 @@
         function confirmDeleteAccount() {
             if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
                 localStorage.removeItem('taskmart_user');
+                localStorage.removeItem('taskmart_token');
                 localStorage.removeItem(`tasks_${currentUser?.email}`);
                 localStorage.removeItem(`notifications_${currentUser?.email}`);
                 localStorage.removeItem(`editCount_${currentUser?.email}`);
@@ -2843,11 +2861,11 @@
                 }
 
                 // Load profile image from Cloudinary (already in user object)
-                if (currentUser.avatar) {
-                    document.getElementById('avatarImage').src = currentUser.avatar;
+                if (currentUser.profileImage) {
+                    document.getElementById('avatarImage').src = currentUser.profileImage;
                     document.getElementById('avatarImage').style.display = 'block';
                     document.getElementById('avatarText').style.display = 'none';
-                    document.getElementById('uploadAvatarImage').src = currentUser.avatar;
+                    document.getElementById('uploadAvatarImage').src = currentUser.profileImage;
                     document.getElementById('uploadAvatarImage').style.display = 'block';
                     document.getElementById('uploadAvatarText').style.display = 'none';
                 }
@@ -2892,6 +2910,7 @@
 
         window.logout = function() {
             localStorage.removeItem('taskmart_user');
+            localStorage.removeItem('taskmart_token');
             window.location.href = '/login.html';
         };
 
