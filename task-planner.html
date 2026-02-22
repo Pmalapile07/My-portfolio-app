@@ -1865,7 +1865,7 @@
             'use strict';
             
             const BASE_URL = window.location.origin;
-            const CLOUDINARY_UPLOAD_URL = 'https://your-render-app.onrender.com/upload'; // Replace with your actual Render URL
+            const API_BASE_URL = 'https://taskmartapp.onrender.com'; // Your Render URL
             
             // Auth helper functions
             function getCurrentUser() {
@@ -1873,8 +1873,12 @@
                 return user ? JSON.parse(user) : null;
             }
 
+            function getAuthToken() {
+                return localStorage.getItem('taskmart_token');
+            }
+
             function isUserLoggedIn() {
-                return !!localStorage.getItem('taskmart_user');
+                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
             }
 
             function showSuccess(message) {
@@ -2094,14 +2098,21 @@
                 
                 uploadProgress.textContent = 'Uploading...';
                 
+                // Get auth token
+                const token = getAuthToken();
+                
                 try {
-                    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+                    const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
                         method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: formData
                     });
                     
                     if (!response.ok) {
-                        throw new Error('Upload failed');
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Upload failed');
                     }
                     
                     const data = await response.json();
@@ -2110,10 +2121,10 @@
                         uploadProgress.textContent = '';
                     }, 2000);
                     
-                    return data.url; // Assuming your backend returns { url: 'cloudinary-url' }
+                    return data.url;
                 } catch (error) {
                     console.error('Upload error:', error);
-                    uploadProgress.textContent = 'Upload failed. Please try again.';
+                    uploadProgress.textContent = 'Upload failed: ' + error.message;
                     setTimeout(() => {
                         uploadProgress.textContent = '';
                     }, 3000);
@@ -2196,7 +2207,7 @@
                     wrapper.style.display = 'inline-block';
                     
                     const img = document.createElement('img');
-                    img.src = imgUrl; // Now using Cloudinary URL
+                    img.src = imgUrl;
                     img.className = 'image-preview';
                     
                     const removeBtn = document.createElement('button');
@@ -2340,10 +2351,10 @@
             async function getLocationName(lat, lon) {
                 try {
                     const response = await fetch(
-                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=place`
+                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&types=place`
                     );
                     const data = await response.json();
-                    return data.name || null;
+                    return data.features[0]?.place_name || null;
                 } catch (error) {
                     console.log('Reverse geocoding failed:', error);
                     return null;
@@ -2353,10 +2364,10 @@
             async function getFullAddress(lat, lon) {
                 try {
                     const response = await fetch(
-                        `/api/geocode/reverse?lat=${lat}&lon=${lon}&type=address`
+                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&types=address`
                     );
                     const data = await response.json();
-                    return data.address || null;
+                    return data.features[0]?.place_name || null;
                 } catch (error) {
                     console.log('Reverse geocoding failed:', error);
                     return null;
@@ -2678,22 +2689,25 @@
                     throw new Error('Not authenticated');
                 }
                 
+                const token = getAuthToken();
+                
                 // Add user info to task
                 taskData.userId = user.email;
                 taskData.userName = user.name;
                 taskData.userRole = user.role;
-                taskData.userAvatar = user.avatar || null; // Include user avatar
+                taskData.userAvatar = user.profileImage || null;
                 
                 try {
-                    console.log('Saving task to:', `${BASE_URL}/api/tasks`);
+                    console.log('Saving task to:', `${API_BASE_URL}/api/tasks`);
                     
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 10000);
                     
-                    const response = await fetch(`${BASE_URL}/api/tasks`, {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify(taskData),
                         signal: controller.signal
@@ -2851,8 +2865,7 @@
                     paymentMethod: selectedPayment,
                     moreDetails: moreDetailsField.value || '',
                     images: uploadedImages, // These are Cloudinary URLs
-                    status: 'posted',
-                    userAvatar: user.avatar || null // Include user avatar URL
+                    status: 'posted'
                 };
                 
                 try {
