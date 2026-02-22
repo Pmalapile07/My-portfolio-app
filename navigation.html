@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liquid Blob Navigation</title>
+    <title>Physical Ball Navigation</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +20,9 @@
         body {
             background: transparent;
             min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        /* ========== LIQUID BLOB NAVIGATION ========== */
+        /* ========== PHYSICAL BALL NAVIGATION ========== */
         .nav-wrapper {
             position: fixed;
             bottom: 24px;
@@ -36,71 +35,80 @@
             padding: 0 16px;
         }
 
-        .liquid-nav {
-            background: rgba(18, 18, 18, 0.85);
+        .physical-nav {
+            background: rgba(25, 25, 25, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-radius: 40px;
-            padding: 8px 16px;
+            border-radius: 60px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-around;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 440px;
+            box-shadow: 
+                inset 0 -2px 5px rgba(0, 0, 0, 0.5),
+                inset 0 2px 5px rgba(255, 255, 255, 0.1),
+                0 10px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             pointer-events: auto;
             position: relative;
         }
 
-        /* The liquid blob that moves between icons */
-        .liquid-blob {
+        /* The track/groove where the ball sits */
+        .ball-track {
+            position: absolute;
+            top: 50%;
+            left: 24px;
+            right: 24px;
+            height: 40px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            box-shadow: 
+                inset 0 2px 5px rgba(0, 0, 0, 0.5),
+                inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* The physical ball that rolls */
+        .physical-ball {
             position: absolute;
             width: 56px;
             height: 56px;
-            background: #FF286F;
-            border-radius: 30px;
+            background: linear-gradient(145deg, #ffffff, #e0e0e0);
+            border-radius: 50%;
             top: 50%;
             transform: translateY(-50%);
-            transition: left 0.5s cubic-bezier(0.34, 1.5, 0.64, 1);
-            box-shadow: 0 8px 20px rgba(255, 40, 111, 0.4);
-            z-index: 0;
+            transition: left 0.6s cubic-bezier(0.34, 1.3, 0.64, 1);
+            box-shadow: 
+                0 4px 10px rgba(0, 0, 0, 0.3),
+                inset 0 -3px 5px rgba(0, 0, 0, 0.2),
+                inset 0 3px 5px rgba(255, 255, 255, 0.9);
+            z-index: 2;
             pointer-events: none;
-            filter: blur(2px);
-            opacity: 0.7;
+            border: 1px solid rgba(255, 255, 255, 0.8);
         }
 
-        /* Inner blob for more liquid effect */
-        .liquid-blob::after {
+        /* Inner highlight for the ball */
+        .physical-ball::after {
             content: '';
             position: absolute;
-            top: -4px;
-            left: -4px;
-            right: -4px;
-            bottom: -4px;
-            background: #FF286F;
+            top: 8px;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
-            filter: blur(10px);
-            opacity: 0.4;
-            z-index: -1;
-            animation: pulseBlob 3s infinite ease-in-out;
+            filter: blur(2px);
         }
 
-        @keyframes pulseBlob {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 0.4;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 0.2;
-            }
-        }
-
+        /* The icons sit above the ball */
         .nav-btn {
             background: transparent;
             border: none;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.3);
             cursor: pointer;
             padding: 12px;
             display: flex;
@@ -108,9 +116,9 @@
             justify-content: center;
             transition: all 0.3s ease;
             position: relative;
-            z-index: 2;
-            width: 56px;
-            height: 56px;
+            z-index: 3;
+            width: 60px;
+            height: 60px;
             border-radius: 30px;
         }
 
@@ -118,53 +126,58 @@
             font-size: 24px !important;
             transition: all 0.3s ease;
             position: relative;
-            z-index: 3;
+            z-index: 4;
         }
 
-        /* Active icon becomes white */
-        .nav-btn.active {
-            color: white;
+        /* When ball is under an icon, that icon lights up */
+        .nav-btn.ball-below {
+            color: #FF286F;
         }
 
-        .nav-btn.active .material-symbols-outlined {
+        .nav-btn.ball-below .material-symbols-outlined {
             transform: scale(1.1);
-            font-variation-settings: 'FILL' 1;
+            filter: drop-shadow(0 0 5px rgba(255, 40, 111, 0.5));
         }
 
-        /* Special post button */
+        /* Special post button - sits slightly above */
         .nav-btn.post-btn {
-            margin-top: -24px;
+            margin-top: -20px;
         }
 
         .nav-btn.post-btn .material-symbols-outlined {
             font-size: 28px !important;
+            background: #FF286F;
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(255, 40, 111, 0.4);
         }
 
-        /* No labels - clean minimal look */
+        /* No labels */
         .nav-btn span:not(.material-symbols-outlined) {
             display: none;
         }
 
-        /* Responsive adjustments */
+        /* Responsive */
         @media (max-width: 480px) {
-            .liquid-nav {
-                padding: 6px 12px;
+            .physical-nav {
+                padding: 10px 16px;
             }
 
             .nav-btn {
-                width: 48px;
-                height: 48px;
+                width: 52px;
+                height: 52px;
                 padding: 10px;
             }
 
-            .nav-btn.post-btn {
-                width: 52px;
-                height: 52px;
-            }
-
-            .liquid-blob {
+            .physical-ball {
                 width: 48px;
                 height: 48px;
+            }
+
+            .ball-track {
+                left: 20px;
+                right: 20px;
             }
 
             .nav-btn .material-symbols-outlined {
@@ -173,6 +186,7 @@
 
             .nav-btn.post-btn .material-symbols-outlined {
                 font-size: 26px !important;
+                padding: 6px;
             }
         }
 
@@ -181,31 +195,32 @@
             display: none;
         }
 
-        /* Animation for page transitions */
-        @keyframes liquidEntrance {
+        /* Entrance animation */
+        @keyframes rollIn {
             0% {
                 opacity: 0;
-                transform: translateY(30px) scale(0.9);
-                filter: blur(10px);
+                transform: translateY(50px) scale(0.8);
             }
             100% {
                 opacity: 1;
                 transform: translateY(0) scale(1);
-                filter: blur(0);
             }
         }
 
-        .liquid-nav {
-            animation: liquidEntrance 0.6s cubic-bezier(0.34, 1.5, 0.64, 1);
+        .physical-nav {
+            animation: rollIn 0.5s ease-out;
         }
     </style>
 </head>
 <body>
-    <!-- Liquid Blob Navigation -->
+    <!-- Physical Ball Navigation -->
     <div class="nav-wrapper">
-        <nav class="liquid-nav" id="liquidNav">
-            <!-- The moving liquid blob -->
-            <div class="liquid-blob" id="liquidBlob"></div>
+        <nav class="physical-nav" id="physicalNav">
+            <!-- The track/groove -->
+            <div class="ball-track"></div>
+            
+            <!-- The rolling ball -->
+            <div class="physical-ball" id="physicalBall"></div>
 
             <!-- Home -->
             <button class="nav-btn" onclick="window.parent.navigateTo('home')" id="navHome" data-nav="home">
@@ -236,46 +251,37 @@
 
     <script>
         (function() {
-            // Position mapping for the liquid blob
-            const buttonPositions = {
-                home: 0,
-                notifications: 1,
-                post: 2,
-                chat: 3,
-                profile: 4
-            };
-
-            // Get the nav container and blob
-            const nav = document.getElementById('liquidNav');
-            const blob = document.getElementById('liquidBlob');
+            // Get elements
+            const nav = document.getElementById('physicalNav');
+            const ball = document.getElementById('physicalBall');
             const buttons = document.querySelectorAll('.nav-btn');
 
-            // Function to move the liquid blob to the active button
-            function moveBlobToActive(activeId) {
-                const activeButton = document.getElementById(activeId);
-                if (!activeButton || !blob || !nav) return;
+            // Function to roll the ball to a button
+            function rollBallTo(buttonId) {
+                const targetButton = document.getElementById(buttonId);
+                if (!targetButton || !ball || !nav) return;
 
                 // Get positions
                 const navRect = nav.getBoundingClientRect();
-                const buttonRect = activeButton.getBoundingClientRect();
+                const buttonRect = targetButton.getBoundingClientRect();
                 
-                // Calculate blob position relative to nav
-                const blobLeft = buttonRect.left - navRect.left;
+                // Calculate where the ball should be (center of button)
+                const ballLeft = buttonRect.left - navRect.left + (buttonRect.width / 2) - (ball.offsetWidth / 2);
                 
-                // Apply with liquid motion
-                blob.style.left = blobLeft + 'px';
+                // Apply with physics-based timing
+                ball.style.left = ballLeft + 'px';
                 
-                // Add a little bounce to the blob
-                blob.style.transform = 'translateY(-50%) scale(1.1)';
+                // Add a little roll effect (rotate the ball slightly)
+                ball.style.transform = 'translateY(-50%) rotate(5deg)';
                 setTimeout(() => {
-                    blob.style.transform = 'translateY(-50%) scale(1)';
+                    ball.style.transform = 'translateY(-50%) rotate(0deg)';
                 }, 200);
 
-                // Update active classes
+                // Update which button is illuminated
                 buttons.forEach(btn => {
-                    btn.classList.remove('active');
+                    btn.classList.remove('ball-below');
                 });
-                activeButton.classList.add('active');
+                targetButton.classList.add('ball-below');
             }
 
             // Update based on parent page
@@ -300,29 +306,24 @@
                         return;
                     }
                     
-                    // Move blob to active button
-                    moveBlobToActive(activeId);
+                    // Roll ball to active button
+                    rollBallTo(activeId);
                     
                 } catch (e) {
                     console.log('Navigation: Cannot access parent');
                 }
             }
 
-            // Initialize blob position after a tiny delay to ensure DOM is ready
+            // Initialize ball position
             setTimeout(() => {
                 updateActiveState();
             }, 100);
 
-            // Add click handlers to buttons for smooth liquid motion
+            // Add click handlers for smooth rolling
             buttons.forEach(btn => {
                 btn.addEventListener('click', function(e) {
-                    const navId = this.id;
-                    
-                    // Move blob immediately for instant feedback
-                    moveBlobToActive(navId);
-                    
-                    // The actual navigation will be handled by the parent's navigateTo function
-                    // which is called from the onclick attribute
+                    // Roll ball immediately for physical feedback
+                    rollBallTo(this.id);
                 });
             });
 
@@ -333,16 +334,16 @@
                 }
             });
 
-            // Handle window resize - reposition blob
+            // Handle window resize
             window.addEventListener('resize', () => {
-                const activeBtn = document.querySelector('.nav-btn.active');
+                const activeBtn = document.querySelector('.nav-btn.ball-below');
                 if (activeBtn) {
-                    moveBlobToActive(activeBtn.id);
+                    rollBallTo(activeBtn.id);
                 }
             });
 
-            // Export function for manual updates
-            window.updateNavBlob = updateActiveState;
+            // Export function
+            window.rollBallTo = rollBallTo;
         })();
     </script>
 </body>
