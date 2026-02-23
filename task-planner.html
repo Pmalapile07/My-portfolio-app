@@ -22,7 +22,7 @@
     <script src="/config.js"></script>
 
     <style>
-        /* ===== RESET ===== */
+        /* ===== RESET - CLEAN VIEWPORT ===== */
         * {
             margin: 0;
             padding: 0;
@@ -487,7 +487,7 @@
             outline: none;
         }
 
-        /* ===== NEXT BUTTON - VISIBLE AND FIXED ===== */
+        /* ===== NEXT BUTTON - VISIBLE ===== */
         .next-btn-container {
             padding: 1rem 1.25rem 1.5rem;
             border-top: 1px solid rgba(0, 62, 113, 0.08);
@@ -512,7 +512,7 @@
             cursor: not-allowed;
         }
 
-        /* ===== OFFERS SCREEN (keep as is) ===== */
+        /* ===== OFFERS SCREEN ===== */
         .offers-container {
             position: fixed;
             top: 0;
@@ -811,6 +811,12 @@
             border-radius: 16px;
             overflow: hidden;
         }
+
+        .upload-progress {
+            font-size: 0.8rem;
+            color: #003E71;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -834,7 +840,7 @@
             <div class="search-placeholder">what do you need help with?</div>
         </div>
         
-        <div class="location-hint">
+        <div class="location-hint" id="recenterHint">
             <span class="material-symbols-outlined">my_location</span>
             <span id="currentCity">Detecting location...</span>
         </div>
@@ -954,7 +960,7 @@
             </div>
         </div>
 
-        <!-- NEXT BUTTON - NOW VISIBLE -->
+        <!-- NEXT BUTTON -->
         <div class="next-btn-container">
             <button class="next-button" id="nextToOffersBtn" disabled>Next</button>
         </div>
@@ -1079,27 +1085,32 @@
         (function() {
             'use strict';
 
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
             }
 
-            // ===== INIT MAP WITH PROPER SIZING =====
+            // ===== STATE =====
+            let userLat = -26.195246;
+            let userLng = 28.034088;
+            let userMarker = null;
+            let offersMapInstance = null;
+            let distanceLine = null;
+
+            // ===== INIT MAIN MAP =====
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/streets-v12',
-                center: [28.034088, -26.195246],
+                center: [userLng, userLat],
                 zoom: 15,
                 attributionControl: false
             });
 
-            // Force map resize after initialization to prevent blur
+            // Force resize to prevent blur
             map.on('load', () => {
                 map.resize();
             });
-
-            let userLat = -26.195246;
-            let userLng = 28.034088;
-            let userMarker = null;
 
             // Get user location
             if (navigator.geolocation) {
@@ -1129,6 +1140,7 @@
                             });
                     },
                     (error) => {
+                        console.log('Location error:', error.message);
                         document.getElementById('currentCity').textContent = 'Enable location';
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
@@ -1176,10 +1188,16 @@
             moreDetailsBtn.addEventListener('click', function() {
                 if (collapsibleSection.style.display === 'none') {
                     collapsibleSection.style.display = 'block';
-                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
+                    moreDetailsBtn.innerHTML = `
+                        <span class="material-symbols-outlined">remove_circle</span>
+                        Less details
+                    `;
                 } else {
                     collapsibleSection.style.display = 'none';
-                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
+                    moreDetailsBtn.innerHTML = `
+                        <span class="material-symbols-outlined">add_circle</span>
+                        More details
+                    `;
                 }
             });
 
@@ -1208,6 +1226,19 @@
                 document.getElementById('nativeTimePicker').showPicker();
             });
 
+            document.getElementById('nativeDatePicker').addEventListener('change', function(e) {
+                if (this.value) {
+                    const parts = this.value.split('-');
+                    document.getElementById('dateDisplay').textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            });
+
+            document.getElementById('nativeTimePicker').addEventListener('change', function(e) {
+                if (this.value) {
+                    document.getElementById('timeDisplay').textContent = this.value;
+                }
+            });
+
             // ===== BUDGET OPTIONS =====
             const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
             const openBudgetBtn = document.getElementById('openBudgetBtn');
@@ -1223,6 +1254,321 @@
                 openBudgetBtn.className = 'budget-option active';
                 fixedBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'none';
+            });
+
+            document.getElementById('budgetAmount').addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+
+            // ===== IMAGE UPLOAD =====
+            const uploadArea = document.getElementById('uploadArea');
+            const imageSourceMenu = document.getElementById('imageSourceMenu');
+            
+            uploadArea.addEventListener('click', function(e) {
+                e.preventDefault();
+                imageSourceMenu.classList.add('active');
+            });
+
+            document.getElementById('cancelImageMenu').addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+            });
+
+            document.getElementById('takePhotoOption').addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                input.click();
+                
+                input.addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        handleImageUpload(e.target.files[0]);
+                    }
+                    document.body.removeChild(input);
+                });
+            });
+
+            document.getElementById('chooseFromGalleryOption').addEventListener('click', function() {
+                imageSourceMenu.classList.remove('active');
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.multiple = true;
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                input.click();
+                
+                input.addEventListener('change', function(e) {
+                    if (e.target.files) {
+                        Array.from(e.target.files).forEach(file => handleImageUpload(file));
+                    }
+                    document.body.removeChild(input);
+                });
+            });
+
+            function handleImageUpload(file) {
+                if (file && file.type.startsWith('image/')) {
+                    document.getElementById('uploadProgress').textContent = 'Uploading...';
+                    
+                    setTimeout(() => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const previewContainer = document.getElementById('imagePreviewContainer');
+                            const wrapper = document.createElement('div');
+                            wrapper.style.position = 'relative';
+                            wrapper.style.display = 'inline-block';
+                            
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.style.width = '70px';
+                            img.style.height = '70px';
+                            img.style.borderRadius = '8px';
+                            img.style.objectFit = 'cover';
+                            
+                            const removeBtn = document.createElement('button');
+                            removeBtn.textContent = '×';
+                            removeBtn.style.position = 'absolute';
+                            removeBtn.style.background = '#003E71';
+                            removeBtn.style.color = 'white';
+                            removeBtn.style.border = 'none';
+                            removeBtn.style.borderRadius = '50%';
+                            removeBtn.style.width = '22px';
+                            removeBtn.style.height = '22px';
+                            removeBtn.style.right = '-5px';
+                            removeBtn.style.top = '-5px';
+                            removeBtn.style.cursor = 'pointer';
+                            removeBtn.onclick = function() {
+                                wrapper.remove();
+                            };
+                            
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(removeBtn);
+                            previewContainer.appendChild(wrapper);
+                            
+                            document.getElementById('uploadProgress').textContent = 'Upload complete!';
+                            setTimeout(() => document.getElementById('uploadProgress').textContent = '', 2000);
+                        };
+                        reader.readAsDataURL(file);
+                    }, 1000);
+                }
+            }
+
+            // ===== OPEN OFFERS SCREEN =====
+            document.getElementById('nextToOffersBtn').addEventListener('click', function() {
+                document.getElementById('createTaskContainer').style.display = 'none';
+                document.getElementById('offersContainer').style.display = 'flex';
+                
+                setTimeout(() => {
+                    if (offersMapInstance) offersMapInstance.remove();
+                    
+                    offersMapInstance = new mapboxgl.Map({
+                        container: 'offersMap',
+                        style: 'mapbox://styles/mapbox/streets-v12',
+                        center: [userLng, userLat],
+                        zoom: 15,
+                        attributionControl: false
+                    });
+
+                    // User marker (green)
+                    new mapboxgl.Marker({ color: '#34A853' })
+                        .setLngLat([userLng, userLat])
+                        .addTo(offersMapInstance);
+
+                    // Helper markers (blue)
+                    const helpers = [
+                        { id: 1, lng: userLng + 0.003, lat: userLat + 0.002 },
+                        { id: 2, lng: userLng - 0.005, lat: userLat - 0.001 },
+                        { id: 3, lng: userLng + 0.008, lat: userLat - 0.004 }
+                    ];
+
+                    helpers.forEach(helper => {
+                        new mapboxgl.Marker({ color: '#003E71' })
+                            .setLngLat([helper.lng, helper.lat])
+                            .addTo(offersMapInstance);
+                    });
+                }, 100);
+            });
+
+            // ===== BACK TO CREATE TASK =====
+            document.getElementById('backToCreateBtn').addEventListener('click', function() {
+                document.getElementById('offersContainer').style.display = 'none';
+                document.getElementById('createTaskContainer').style.display = 'flex';
+            });
+
+            // ===== OFFER CARD CLICK - SHOW DISTANCE LINE =====
+            document.querySelectorAll('.offer-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    
+                    document.querySelectorAll('.offer-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    if (offersMapInstance) {
+                        if (distanceLine) {
+                            if (offersMapInstance.getLayer('distance-line')) {
+                                offersMapInstance.removeLayer('distance-line');
+                            }
+                            if (offersMapInstance.getSource('distance-line')) {
+                                offersMapInstance.removeSource('distance-line');
+                            }
+                        }
+                        
+                        offersMapInstance.addSource('distance-line', {
+                            type: 'geojson',
+                            data: {
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: [[userLng, userLat], [lng, lat]]
+                                }
+                            }
+                        });
+
+                        offersMapInstance.addLayer({
+                            id: 'distance-line',
+                            type: 'line',
+                            source: 'distance-line',
+                            layout: {
+                                'line-join': 'round',
+                                'line-cap': 'round'
+                            },
+                            paint: {
+                                'line-color': '#003E71',
+                                'line-width': 3,
+                                'line-dasharray': [2, 2]
+                            }
+                        });
+                    }
+                });
+            });
+
+            // ===== SHEET DRAGGING =====
+            const offersSheet = document.getElementById('offersSheet');
+            const handle = document.getElementById('sheetHandle');
+            let startY = 0;
+
+            handle.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            });
+
+            handle.addEventListener('touchmove', (e) => {
+                const deltaY = e.touches[0].clientY - startY;
+                if (deltaY > 0) {
+                    offersSheet.style.transform = `translateY(${deltaY}px)`;
+                    offersSheet.classList.remove('collapsed');
+                }
+            });
+
+            handle.addEventListener('touchend', (e) => {
+                const transform = offersSheet.style.transform;
+                if (transform) {
+                    const y = parseInt(transform.replace('translateY(', '').replace('px)', ''));
+                    if (y > 100) {
+                        offersSheet.style.transform = 'translateY(calc(100% - 120px))';
+                        offersSheet.classList.add('collapsed');
+                    } else {
+                        offersSheet.style.transform = 'translateY(0)';
+                        offersSheet.classList.remove('collapsed');
+                    }
+                }
+            });
+
+            // ===== PAYMENT MODAL =====
+            const paymentModal = document.getElementById('paymentModal');
+
+            document.getElementById('paymentText').addEventListener('click', function(e) {
+                e.preventDefault();
+                paymentModal.classList.add('active');
+            });
+
+            document.getElementById('closePaymentModal').addEventListener('click', function() {
+                paymentModal.classList.remove('active');
+            });
+
+            document.getElementById('modalCashPayment').addEventListener('click', function() {
+                document.querySelectorAll('.payment-option-card').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.querySelector('.payment-right span:first-child').textContent = 'Cash';
+                paymentModal.classList.remove('active');
+            });
+
+            document.getElementById('modalCardPayment').addEventListener('click', function() {
+                document.querySelectorAll('.payment-option-card').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.querySelector('.payment-right span:first-child').textContent = 'Card';
+                paymentModal.classList.remove('active');
+            });
+
+            // ===== FINAL POST TASK =====
+            document.getElementById('finalPostTaskBtn').addEventListener('click', function() {
+                document.getElementById('loadingOverlay').classList.add('active');
+                
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    document.getElementById('successToast').textContent = 'Task posted!';
+                    document.getElementById('successToast').classList.add('show');
+                    setTimeout(() => document.getElementById('successToast').classList.remove('show'), 2000);
+                    
+                    document.getElementById('offersContainer').style.display = 'none';
+                    
+                    confetti({
+                        particleCount: 150,
+                        spread: 80,
+                        origin: { y: 0.6 },
+                        colors: ['#003E71', '#34A853']
+                    });
+                }, 1500);
+            });
+
+            // ===== MAP MODAL =====
+            const mapModal = document.getElementById('mapModal');
+            let mapModalInstance = null;
+            let modalMarker = null;
+
+            document.getElementById('openMapBtn').addEventListener('click', function() {
+                mapModal.classList.add('active');
+                
+                setTimeout(() => {
+                    if (mapModalInstance) mapModalInstance.remove();
+                    
+                    mapModalInstance = new mapboxgl.Map({
+                        container: 'mapModalContainer',
+                        style: 'mapbox://styles/mapbox/streets-v12',
+                        center: [userLng, userLat],
+                        zoom: 15
+                    });
+                    
+                    modalMarker = new mapboxgl.Marker({ draggable: true, color: '#003E71' })
+                        .setLngLat([userLng, userLat])
+                        .addTo(mapModalInstance);
+                }, 100);
+            });
+
+            document.getElementById('closeMapModalBtn').addEventListener('click', function() {
+                mapModal.classList.remove('active');
+            });
+
+            document.getElementById('confirmLocationBtn').addEventListener('click', function() {
+                if (modalMarker) {
+                    const lngLat = modalMarker.getLngLat();
+                    userLat = lngLat.lat;
+                    userLng = lngLat.lng;
+                    
+                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${userLng},${userLat}.json?access_token=${mapboxgl.accessToken}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.features && data.features[0]) {
+                                document.getElementById('locationInput').value = data.features[0].place_name;
+                            }
+                        });
+                }
+                mapModal.classList.remove('active');
             });
 
             // ===== NAVIGATION =====
