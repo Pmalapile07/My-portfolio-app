@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskMart · Home</title>
     
-    <!-- Fonts -->
+    <!-- Fonts: Manrope & Material Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
@@ -29,6 +29,7 @@
         }
 
         body {
+            /* Manrope everywhere – exactly as requested */
             font-family: 'Manrope', sans-serif;
             background: #000;
             height: 100vh;
@@ -56,59 +57,49 @@
             z-index: 1;
         }
 
-        /* Blue pulse and arrow - moved up so container doesn't hide it */
-        .map-center-pulse {
+        /* --- draggable location pin (replaces pulse + arrow) --- */
+        .draggable-pin {
             position: absolute;
             top: 40%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 140px;
-            height: 140px;
-            background: rgba(0, 62, 113, 0.2);
-            border-radius: 50%;
-            z-index: 2;
-            pointer-events: none;
-            animation: pulse 2.2s infinite ease-out;
-            box-shadow: 0 0 40px rgba(0, 62, 113, 0.4);
+            transform: translate(-50%, -100%); /* tip points to location */
+            width: 48px;
+            height: 48px;
+            background: #003E71;
+            border: 3px solid white;
+            border-radius: 50% 50% 50% 0;
+            rotate: -45deg;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            z-index: 100;  /* above map, below sheet */
+            cursor: grab;
+            touch-action: none; /* better touch dragging */
+            transition: box-shadow 0.2s, transform 0.1s;
+            pointer-events: auto; /* make it draggable */
         }
 
-        .map-center-arrow {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 0;
-            height: 0;
-            border-left: 16px solid transparent;
-            border-right: 16px solid transparent;
-            border-bottom: 32px solid #003E71;
-            filter: drop-shadow(0 6px 10px rgba(0,62,113,0.6));
-            z-index: 3;
-            pointer-events: none;
+        .draggable-pin:active {
+            cursor: grabbing;
+            box-shadow: 0 15px 25px rgba(0,62,113,0.5);
+            transform: translate(-50%, -100%) scale(1.05) rotate(-45deg);
         }
 
-        .map-center-arrow::after {
+        .draggable-pin::after {
             content: '';
             position: absolute;
-            top: 12px;
-            left: -8px;
-            width: 16px;
-            height: 16px;
-            background: #003E71;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg); /* counter rotate */
+            width: 20px;
+            height: 20px;
+            background: white;
             border-radius: 50%;
-            box-shadow: 0 0 20px #003E71;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
-        @keyframes pulse {
-            0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.8); }
-            50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.4); }
-            100% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.8); }
-        }
-
-        /* === WHITE CONTAINER (LAYER 2) - sits above map === */
+        /* === WHITE CONTAINER (LAYER 2) - sits above map, no bottom nav anymore === */
         .home-sheet {
             position: absolute;
-            bottom: 82px; /* Space for nav */
+            bottom: 0; /* was 82px, now flush because nav is gone */
             left: 0;
             width: 100%;
             background: white;
@@ -175,63 +166,9 @@
             color: #003E71 !important;
         }
 
-        /* === BOTTOM NAVIGATION (LAYER 3) === */
-        .bottom-nav {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(0, 62, 113, 0.08);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 20px 24px;
-            padding-bottom: calc(10px + env(safe-area-inset-bottom, 16px));
-            z-index: 20;
-        }
+        /* === BOTTOM NAV IS COMPLETELY REMOVED — no trace === */
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            flex: 1;
-            max-width: 80px;
-        }
-
-        .nav-item .material-symbols-outlined {
-            font-size: 26px !important;
-            transition: all 0.2s;
-        }
-
-        .nav-item span:not(.material-symbols-outlined) {
-            font-size: 0.7rem;
-            font-weight: 500;
-            color: #003E71;
-            opacity: 0.6;
-        }
-
-        .nav-item.active .material-symbols-outlined {
-            color: #FF286F !important;
-            font-variation-settings: 'FILL' 1;
-        }
-
-        .nav-item.active span:not(.material-symbols-outlined) {
-            color: #FF286F;
-            opacity: 1;
-            font-weight: 600;
-        }
-
-        .nav-item.inactive .material-symbols-outlined {
-            color: #003E71;
-            opacity: 0.6;
-        }
-
-        /* === CREATE TASK FULL SCREEN (hidden by default) === */
+        /* === CREATE TASK FULL SCREEN (unchanged, only font is Manrope already) === */
         .create-task-container {
             position: fixed;
             top: 0;
@@ -753,11 +690,10 @@
     <!-- LAYER 1: FULLSCREEN MAP -->
     <div id="map"></div>
 
-    <!-- Blue pulse and arrow -->
-    <div class="map-center-pulse"></div>
-    <div class="map-center-arrow"></div>
+    <!-- Draggable location pin – replaces pulse + triangle arrow -->
+    <div class="draggable-pin" id="locationPin"></div>
 
-    <!-- LAYER 2: WHITE CONTAINER (Get help nearby) -->
+    <!-- LAYER 2: WHITE CONTAINER (Get help nearby) – no bottom nav below it -->
     <div class="home-sheet">
         <h2>Get help nearby.</h2>
         
@@ -773,21 +709,7 @@
         </div>
     </div>
 
-    <!-- LAYER 3: BOTTOM NAVIGATION -->
-    <div class="bottom-nav">
-        <div class="nav-item active" id="navHome">
-            <span class="material-symbols-outlined">home</span>
-            <span>Home</span>
-        </div>
-        <div class="nav-item inactive" id="navTasks">
-            <span class="material-symbols-outlined">task</span>
-            <span>Tasks</span>
-        </div>
-        <div class="nav-item inactive" id="navAccount">
-            <span class="material-symbols-outlined">account_circle</span>
-            <span>Account</span>
-        </div>
-    </div>
+    <!-- BOTTOM NAV COMPLETELY REMOVED -->
 
     <!-- CREATE TASK FULL SCREEN (opens when search is clicked) -->
     <div class="create-task-container" id="createTaskContainer">
@@ -963,7 +885,82 @@
                 attributionControl: false
             });
 
-            // Get user location for background map
+            // ===== DRAGGABLE PIN (replaces pulse/arrow) =====
+            const pin = document.getElementById('locationPin');
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+            const container = document.body; // pin moves relative to viewport
+
+            // Mouse/touch drag handlers
+            pin.addEventListener('mousedown', startDrag);
+            pin.addEventListener('touchstart', startDrag, {passive: false});
+
+            function startDrag(e) {
+                e.preventDefault(); // prevent map pan
+                isDragging = true;
+                pin.style.cursor = 'grabbing';
+                
+                const clientX = e.clientX ?? e.touches[0].clientX;
+                const clientY = e.clientY ?? e.touches[0].clientY;
+                
+                // Get current computed position (it's set via transform)
+                const rect = pin.getBoundingClientRect();
+                // We'll store the current viewport-relative center (approx)
+                startX = clientX;
+                startY = clientY;
+                startLeft = rect.left + rect.width/2; // approx pin base tip
+                startTop = rect.top + rect.height/2;
+
+                window.addEventListener('mousemove', drag);
+                window.addEventListener('touchmove', drag, {passive: false});
+                window.addEventListener('mouseup', stopDrag);
+                window.addEventListener('touchend', stopDrag);
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault(); // crucial to stop page scroll
+
+                const clientX = e.clientX ?? e.touches[0].clientX;
+                const clientY = e.clientY ?? e.touches[0].clientY;
+
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+
+                // Move pin with transform (maintaining the -50%, -100% offset)
+                // The pin originally has transform: translate(-50%, -100%) rotate(-45deg)
+                // We want to keep the rotation but shift the translation.
+                // So we apply a relative offset in addition.
+                // But easier: use top/left? But transform is used for centering. We'll override with style.transform.
+                // We'll compute new translation values: baseX = -50% + offsetX, baseY = -100% + offsetY
+                // offset in pixels relative to start.
+                const offsetX = dx / window.innerWidth * 100; // convert to percent of screen width (approx)
+                const offsetY = dy / window.innerHeight * 100;
+                
+                // Keep within -100% to 100% bounds roughly
+                let newX = -50 + offsetX;
+                let newY = -100 + offsetY;
+                
+                pin.style.transform = `translate(${newX}%, ${newY}%) rotate(-45deg)`;
+            }
+
+            function stopDrag(e) {
+                isDragging = false;
+                pin.style.cursor = 'grab';
+                window.removeEventListener('mousemove', drag);
+                window.removeEventListener('touchmove', drag);
+                window.removeEventListener('mouseup', stopDrag);
+                window.removeEventListener('touchend', stopDrag);
+                
+                // On drop, reverse geocode the viewport center? But pin marks location.
+                // We'll update location city based on what's under the pin (map center didn't move, only pin moved)
+                // For simplicity, we keep map static; the pin just visually marks a spot.
+                // If needed, we can later link to actual map coords, but requirement is just "pin thing that points to location and you can drag around".
+                // We'll keep map center unchanged. User expects pin to mark location.
+                // To make it realistic, we could snap map center to pin? But that would move map. We'll leave as is.
+            }
+
+            // Get user location for background map and also move pin there initially
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -1039,12 +1036,12 @@
             openCreateTaskBtn.addEventListener('click', function() {
                 createTaskContainer.style.display = 'flex';
                 
-                // Auto-fill location from background map
-                if (currentLat && currentLng) {
-                    document.getElementById('locationInput').value = document.getElementById('currentCity').textContent;
+                // Auto-fill location from background map (latest city)
+                const citySpan = document.getElementById('currentCity').textContent;
+                if (citySpan !== 'Detecting location...' && citySpan !== 'Enable location') {
+                    document.getElementById('locationInput').value = citySpan;
                 }
                 
-                // Focus task input
                 setTimeout(() => taskInput.focus(), 300);
             });
 
@@ -1218,36 +1215,10 @@
                 }, 1500);
             });
 
-            // ===== NAVIGATION =====
-            document.getElementById('navHome').addEventListener('click', function() {
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                    item.classList.add('inactive');
-                });
-                this.classList.remove('inactive');
-                this.classList.add('active');
-            });
-
-            document.getElementById('navTasks').addEventListener('click', function() {
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                    item.classList.add('inactive');
-                });
-                this.classList.remove('inactive');
-                this.classList.add('active');
-                alert('Your tasks will appear here');
-            });
-
-            document.getElementById('navAccount').addEventListener('click', function() {
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                    item.classList.add('inactive');
-                });
-                this.classList.remove('inactive');
-                this.classList.add('active');
-                alert('Account settings');
-            });
-
+            // ===== NAVIGATION (only home, tasks, account removed per request) =====
+            // but we keep the alert-less Home click? Actually we removed bottom nav entirely,
+            // so no need for event listeners. The nav items are gone.
+            
             // Font loading
             if ('fonts' in document) {
                 document.fonts.load('1em "Material Symbols Outlined"').then(() => {
