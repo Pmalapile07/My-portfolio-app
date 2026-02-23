@@ -15,6 +15,9 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
+    <!-- Cloudinary SDK -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+    
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     
@@ -29,7 +32,6 @@
         }
 
         body {
-            /* Manrope everywhere – exactly as requested */
             font-family: 'Manrope', sans-serif;
             background: #000;
             height: 100vh;
@@ -57,12 +59,12 @@
             z-index: 1;
         }
 
-        /* --- draggable location pin (replaces pulse + arrow) --- */
+        /* --- draggable location pin --- */
         .draggable-pin {
             position: absolute;
             top: 40%;
             left: 50%;
-            transform: translate(-50%, -100%); /* tip points to location */
+            transform: translate(-50%, -100%);
             width: 48px;
             height: 48px;
             background: #003E71;
@@ -70,11 +72,11 @@
             border-radius: 50% 50% 50% 0;
             rotate: -45deg;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            z-index: 100;  /* above map, below sheet */
+            z-index: 100;
             cursor: grab;
-            touch-action: none; /* better touch dragging */
-            transition: box-shadow 0.2s, transform 0.1s;
-            pointer-events: auto; /* make it draggable */
+            touch-action: none;
+            transition: box-shadow 0.2s;
+            pointer-events: auto;
         }
 
         .draggable-pin:active {
@@ -88,7 +90,7 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg); /* counter rotate */
+            transform: translate(-50%, -50%) rotate(45deg);
             width: 20px;
             height: 20px;
             background: white;
@@ -96,15 +98,97 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
 
-        /* === WHITE CONTAINER (LAYER 2) - sits above map, no bottom nav anymore === */
+        /* === LOCATION BAR (NEW - above white container) === */
+        .location-bar {
+            position: absolute;
+            bottom: 320px; /* Sits just above home sheet */
+            left: 20px;
+            right: 20px;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(0, 62, 113, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .location-info .material-symbols-outlined {
+            color: #003E71;
+            font-size: 22px !important;
+            flex-shrink: 0;
+        }
+
+        .location-text {
+            font-weight: 500;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.95rem;
+        }
+
+        .refresh-location {
+            background: #003E71;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .refresh-location:active {
+            transform: scale(0.9);
+            background: #002b4f;
+        }
+
+        .refresh-location .material-symbols-outlined {
+            color: white !important;
+            font-size: 20px !important;
+        }
+
+        .refresh-location.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .refresh-location.loading .material-symbols-outlined {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* === WHITE CONTAINER (LAYER 2) === */
         .home-sheet {
             position: absolute;
-            bottom: 0; /* was 82px, now flush because nav is gone */
+            bottom: 0;
             left: 0;
             width: 100%;
             background: white;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
             z-index: 10;
             padding: 24px 20px 28px;
@@ -119,12 +203,12 @@
             letter-spacing: -0.02em;
         }
 
-        /* Search bar - clickable */
+        /* Search bar */
         .help-search {
             display: flex;
             align-items: center;
             background: #f5f7fa;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 6px 6px 6px 18px;
             border: 1.5px solid rgba(0, 62, 113, 0.15);
             transition: all 0.2s;
@@ -151,24 +235,7 @@
             color: rgba(0, 62, 113, 0.5);
         }
 
-        /* Location hint */
-        .location-hint {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 16px;
-            color: #003E71;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .location-hint .material-symbols-outlined {
-            font-size: 18px !important;
-            color: #003E71 !important;
-        }
-
-        /* === BOTTOM NAV IS COMPLETELY REMOVED — no trace === */
-
-        /* === CREATE TASK FULL SCREEN (unchanged, only font is Manrope already) === */
+        /* === CREATE TASK FULL SCREEN === */
         .create-task-container {
             position: fixed;
             top: 0;
@@ -216,7 +283,6 @@
             width: 32px;
         }
 
-        /* Scrollable content */
         .create-task-content {
             flex: 1;
             overflow-y: auto;
@@ -242,7 +308,6 @@
             font-size: 20px !important;
         }
 
-        /* Location field */
         .location-field-wrapper {
             position: relative;
             margin-bottom: 0.5rem;
@@ -279,7 +344,6 @@
             font-size: 24px !important;
         }
 
-        /* Task input */
         .task-input {
             width: 100%;
             padding: 1.2rem 1.2rem;
@@ -308,7 +372,6 @@
             margin-top: 0.35rem;
         }
 
-        /* More details button */
         .more-details-btn-container {
             display: flex;
             justify-content: flex-end;
@@ -334,7 +397,6 @@
             color: #003E71 !important;
         }
 
-        /* Collapsible section */
         .collapsible-section {
             background: #f8fafc;
             border-radius: 16px;
@@ -344,7 +406,6 @@
             border: 1px solid rgba(0, 62, 113, 0.1);
         }
 
-        /* When options */
         .when-options {
             display: flex;
             gap: 1rem;
@@ -398,7 +459,6 @@
             color: #003E71 !important;
         }
 
-        /* Budget */
         .budget-options {
             display: flex;
             gap: 1rem;
@@ -452,13 +512,18 @@
             outline: none;
         }
 
-        /* Upload area */
         .upload-area {
             border: 1.5px dashed rgba(0, 62, 113, 0.3);
             border-radius: 12px;
             padding: 1.5rem;
             text-align: center;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover, .upload-area:active {
+            background: rgba(0, 62, 113, 0.05);
+            border-color: #003E71;
         }
 
         .upload-area .material-symbols-outlined {
@@ -478,10 +543,9 @@
             height: 70px;
             border-radius: 8px;
             object-fit: cover;
-            position: relative;
+            border: 2px solid #003E71;
         }
 
-        /* Extra notes */
         .extra-notes {
             width: 100%;
             padding: 1rem 1.2rem;
@@ -493,7 +557,6 @@
             outline: none;
         }
 
-        /* Post button */
         .post-btn-container {
             padding: 1rem 1.25rem 1.5rem;
             border-top: 1px solid rgba(0, 62, 113, 0.08);
@@ -524,54 +587,6 @@
 
         .post-button .material-symbols-outlined {
             color: white !important;
-        }
-
-        /* Image source menu */
-        .image-source-menu {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-            z-index: 2000000;
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .image-source-menu.active {
-            transform: translateY(0);
-        }
-
-        .menu-header {
-            padding: 1rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(0, 62, 113, 0.1);
-            color: #000000;
-            font-weight: 500;
-        }
-
-        .menu-option {
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            cursor: pointer;
-        }
-
-        .menu-option .material-symbols-outlined {
-            color: #003E71 !important;
-        }
-
-        .menu-cancel {
-            padding: 1rem;
-            text-align: center;
-            color: #003E71;
-            font-weight: 500;
-            cursor: pointer;
-            border-top: 1px solid rgba(0, 62, 113, 0.1);
         }
 
         /* Loading overlay */
@@ -681,7 +696,7 @@
             font-size: 1.1rem;
         }
 
-        #mapModal {
+        #mapModalContainer {
             height: 300px;
         }
     </style>
@@ -690,28 +705,32 @@
     <!-- LAYER 1: FULLSCREEN MAP -->
     <div id="map"></div>
 
-    <!-- Draggable location pin – replaces pulse + triangle arrow -->
+    <!-- Draggable location pin -->
     <div class="draggable-pin" id="locationPin"></div>
 
-    <!-- LAYER 2: WHITE CONTAINER (Get help nearby) – no bottom nav below it -->
+    <!-- NEW: Location refresh bar above home sheet -->
+    <div class="location-bar" id="locationBar">
+        <div class="location-info">
+            <span class="material-symbols-outlined">location_on</span>
+            <span class="location-text" id="preciseLocation">Getting precise location...</span>
+        </div>
+        <button class="refresh-location" id="refreshLocationBtn">
+            <span class="material-symbols-outlined">my_location</span>
+        </button>
+    </div>
+
+    <!-- LAYER 2: WHITE CONTAINER -->
     <div class="home-sheet">
         <h2>Get help nearby.</h2>
         
-        <!-- Clickable search bar - opens create task -->
+        <!-- Clickable search bar -->
         <div class="help-search" id="openCreateTaskBtn">
             <span class="material-symbols-outlined">search</span>
             <div class="search-placeholder">what do you need help with?</div>
         </div>
-        
-        <div class="location-hint">
-            <span class="material-symbols-outlined">my_location</span>
-            <span id="currentCity">Detecting location...</span>
-        </div>
     </div>
 
-    <!-- BOTTOM NAV COMPLETELY REMOVED -->
-
-    <!-- CREATE TASK FULL SCREEN (opens when search is clicked) -->
+    <!-- CREATE TASK FULL SCREEN -->
     <div class="create-task-container" id="createTaskContainer">
         <div class="create-task-header">
             <button class="close-btn" id="closeCreateTaskBtn">
@@ -791,7 +810,7 @@
                         </div>
                     </div>
 
-                    <!-- Images -->
+                    <!-- Images - FIXED with Cloudinary -->
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
@@ -819,20 +838,6 @@
         </div>
     </div>
 
-    <!-- Image Source Menu -->
-    <div class="image-source-menu" id="imageSourceMenu">
-        <div class="menu-header">Add photo</div>
-        <div class="menu-option" id="takePhotoOption">
-            <span class="material-symbols-outlined">photo_camera</span>
-            <span>Take photo</span>
-        </div>
-        <div class="menu-option" id="chooseFromGalleryOption">
-            <span class="material-symbols-outlined">photo_library</span>
-            <span>Choose from gallery</span>
-        </div>
-        <div class="menu-cancel" id="cancelImageMenu">Cancel</div>
-    </div>
-
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-content">
@@ -857,7 +862,7 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div id="mapModalContainer" style="height:300px;"></div>
+            <div id="mapModalContainer"></div>
             <div style="padding:1rem; display:flex; justify-content:flex-end;">
                 <button id="confirmLocationBtn" style="background:#003E71; color:white; border:none; padding:0.7rem 2rem; border-radius:8px; cursor:pointer;">Confirm</button>
             </div>
@@ -871,12 +876,16 @@
             // ===== CONFIG =====
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             
-            // Set Mapbox token
+            // Set Mapbox token from config.js
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
             }
 
-            // ===== INIT MAP (BACKGROUND) =====
+            // Cloudinary config - ADD YOUR CLOUD NAME HERE
+            const CLOUDINARY_CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME || 'your-cloud-name'; // Set in config.js
+            const CLOUDINARY_UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET || 'taskmart_preset'; // Create this in Cloudinary
+
+            // ===== INIT MAP =====
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/streets-v12',
@@ -885,31 +894,24 @@
                 attributionControl: false
             });
 
-            // ===== DRAGGABLE PIN (replaces pulse/arrow) =====
+            // ===== DRAGGABLE PIN =====
             const pin = document.getElementById('locationPin');
             let isDragging = false;
-            let startX, startY, startLeft, startTop;
-            const container = document.body; // pin moves relative to viewport
+            let startX, startY;
 
-            // Mouse/touch drag handlers
             pin.addEventListener('mousedown', startDrag);
             pin.addEventListener('touchstart', startDrag, {passive: false});
 
             function startDrag(e) {
-                e.preventDefault(); // prevent map pan
+                e.preventDefault();
                 isDragging = true;
                 pin.style.cursor = 'grabbing';
                 
                 const clientX = e.clientX ?? e.touches[0].clientX;
                 const clientY = e.clientY ?? e.touches[0].clientY;
                 
-                // Get current computed position (it's set via transform)
-                const rect = pin.getBoundingClientRect();
-                // We'll store the current viewport-relative center (approx)
                 startX = clientX;
                 startY = clientY;
-                startLeft = rect.left + rect.width/2; // approx pin base tip
-                startTop = rect.top + rect.height/2;
 
                 window.addEventListener('mousemove', drag);
                 window.addEventListener('touchmove', drag, {passive: false});
@@ -919,72 +921,217 @@
 
             function drag(e) {
                 if (!isDragging) return;
-                e.preventDefault(); // crucial to stop page scroll
+                e.preventDefault();
 
                 const clientX = e.clientX ?? e.touches[0].clientX;
                 const clientY = e.clientY ?? e.touches[0].clientY;
 
                 const dx = clientX - startX;
                 const dy = clientY - startY;
-
-                // Move pin with transform (maintaining the -50%, -100% offset)
-                // The pin originally has transform: translate(-50%, -100%) rotate(-45deg)
-                // We want to keep the rotation but shift the translation.
-                // So we apply a relative offset in addition.
-                // But easier: use top/left? But transform is used for centering. We'll override with style.transform.
-                // We'll compute new translation values: baseX = -50% + offsetX, baseY = -100% + offsetY
-                // offset in pixels relative to start.
-                const offsetX = dx / window.innerWidth * 100; // convert to percent of screen width (approx)
-                const offsetY = dy / window.innerHeight * 100;
                 
-                // Keep within -100% to 100% bounds roughly
+                const offsetX = (dx / window.innerWidth) * 100;
+                const offsetY = (dy / window.innerHeight) * 100;
+                
                 let newX = -50 + offsetX;
                 let newY = -100 + offsetY;
                 
                 pin.style.transform = `translate(${newX}%, ${newY}%) rotate(-45deg)`;
             }
 
-            function stopDrag(e) {
+            function stopDrag() {
                 isDragging = false;
                 pin.style.cursor = 'grab';
                 window.removeEventListener('mousemove', drag);
                 window.removeEventListener('touchmove', drag);
                 window.removeEventListener('mouseup', stopDrag);
                 window.removeEventListener('touchend', stopDrag);
-                
-                // On drop, reverse geocode the viewport center? But pin marks location.
-                // We'll update location city based on what's under the pin (map center didn't move, only pin moved)
-                // For simplicity, we keep map static; the pin just visually marks a spot.
-                // If needed, we can later link to actual map coords, but requirement is just "pin thing that points to location and you can drag around".
-                // We'll keep map center unchanged. User expects pin to mark location.
-                // To make it realistic, we could snap map center to pin? But that would move map. We'll leave as is.
             }
 
-            // Get user location for background map and also move pin there initially
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
+            // ===== ACCURATE LOCATION FUNCTIONS =====
+            let currentLat = null;
+            let currentLng = null;
+            let currentAddress = '';
+
+            function getAccurateLocation() {
+                return new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) {
+                        reject(new Error('Geolocation not supported'));
+                        return;
+                    }
+
+                    // Use high accuracy for precise location
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            currentLat = position.coords.latitude;
+                            currentLng = position.coords.longitude;
+                            
+                            // High accuracy check
+                            const accuracy = position.coords.accuracy;
+                            console.log(`Location accuracy: ${accuracy}m`);
+                            
+                            resolve({
+                                lat: currentLat,
+                                lng: currentLng,
+                                accuracy: accuracy
+                            });
+                        },
+                        (error) => {
+                            reject(error);
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        }
+                    );
+                });
+            }
+
+            async function updateLocationDisplay(showLoading = true) {
+                const refreshBtn = document.getElementById('refreshLocationBtn');
+                const preciseSpan = document.getElementById('preciseLocation');
+                const locationInput = document.getElementById('locationInput');
+                
+                if (showLoading) {
+                    refreshBtn.classList.add('loading');
+                    preciseSpan.textContent = 'Getting precise location...';
+                }
+                
+                try {
+                    const position = await getAccurateLocation();
+                    
+                    // Use Mapbox reverse geocoding for full address
+                    const response = await fetch(
+                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${position.lng},${position.lat}.json?` +
+                        `access_token=${mapboxgl.accessToken}&types=address,poi,street,neighborhood&limit=1`
+                    );
+                    
+                    const data = await response.json();
+                    
+                    if (data.features && data.features[0]) {
+                        const feature = data.features[0];
+                        currentAddress = feature.place_name;
+                        
+                        // Update displays
+                        preciseSpan.textContent = feature.text + ', ' + feature.context?.[0]?.text || feature.place_name;
+                        if (locationInput) locationInput.value = feature.place_name;
+                        
+                        // Also update the home sheet location hint? We'll keep both
+                        const citySpan = document.getElementById('currentCity');
+                        if (citySpan) {
+                            const parts = feature.place_name.split(',');
+                            citySpan.textContent = parts[0] + (parts[1] ? ', ' + parts[1] : '');
+                        }
+                        
+                        // Move map to this location
                         map.flyTo({
-                            center: [position.coords.longitude, position.coords.latitude],
-                            zoom: 16
+                            center: [position.lng, position.lat],
+                            zoom: 17,
+                            essential: true
+                        });
+                    }
+                } catch (error) {
+                    console.error('Location error:', error);
+                    preciseSpan.textContent = 'Location unavailable';
+                    if (locationInput) locationInput.placeholder = 'Enable location services';
+                } finally {
+                    refreshBtn.classList.remove('loading');
+                }
+            }
+
+            // ===== CLOUDINARY IMAGE UPLOAD (FIXED) =====
+            let uploadedImages = [];
+
+            function initCloudinaryUpload() {
+                const uploadArea = document.getElementById('uploadArea');
+                
+                // Check if Cloudinary is available
+                if (!window.cloudinary) {
+                    console.error('Cloudinary SDK not loaded');
+                    uploadArea.addEventListener('click', () => {
+                        alert('Please add your Cloudinary config to /config.js\n\n' +
+                              'Add these lines:\n' +
+                              'window.CLOUDINARY_CLOUD_NAME = "your-cloud-name";\n' +
+                              'window.CLOUDINARY_UPLOAD_PRESET = "your-upload-preset";');
+                    });
+                    return;
+                }
+
+                // Create upload widget
+                const myWidget = cloudinary.createUploadWidget({
+                    cloudName: CLOUDINARY_CLOUD_NAME,
+                    uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+                    multiple: true,
+                    maxFiles: 5,
+                    clientAllowedFormats: ['image'],
+                    maxFileSize: 5000000, // 5MB
+                    theme: 'minimal',
+                    styles: {
+                        palette: {
+                            window: '#FFFFFF',
+                            windowBorder: '#003E71',
+                            tabIcon: '#003E71',
+                            menuIcons: '#003E71',
+                            textDark: '#000000',
+                            textLight: '#FFFFFF',
+                            link: '#003E71',
+                            action: '#FF286F',
+                            inactiveTabIcon: '#6C7A89',
+                            error: '#F44235',
+                            inProgress: '#003E71',
+                            complete: '#20B832',
+                            sourceBg: '#F5F7FA'
+                        }
+                    }
+                }, (error, result) => {
+                    if (!error && result && result.event === 'success') {
+                        console.log('Upload success:', result.info);
+                        
+                        // Add to uploaded images array
+                        uploadedImages.push({
+                            url: result.info.secure_url,
+                            publicId: result.info.public_id
                         });
                         
-                        // Update city name
-                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${position.coords.longitude},${position.coords.latitude}.json?access_token=${mapboxgl.accessToken}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.features && data.features[0]) {
-                                    document.getElementById('currentCity').textContent = data.features[0].place_name.split(',')[0];
-                                }
-                            });
-                    },
-                    () => {
-                        document.getElementById('currentCity').textContent = 'Enable location';
+                        // Show preview
+                        displayImagePreviews();
                     }
-                );
+                });
+
+                uploadArea.addEventListener('click', () => {
+                    myWidget.open();
+                });
             }
 
-            // ===== ELEMENTS =====
+            function displayImagePreviews() {
+                const container = document.getElementById('imagePreviewContainer');
+                container.innerHTML = '';
+                
+                uploadedImages.forEach((img, index) => {
+                    const preview = document.createElement('img');
+                    preview.src = img.url;
+                    preview.className = 'image-preview';
+                    preview.addEventListener('click', () => {
+                        if (confirm('Remove this image?')) {
+                            uploadedImages.splice(index, 1);
+                            displayImagePreviews();
+                        }
+                    });
+                    container.appendChild(preview);
+                });
+            }
+
+            // ===== INITIAL LOCATION ON LOAD =====
+            setTimeout(() => {
+                updateLocationDisplay(true);
+            }, 500);
+
+            // ===== REFRESH LOCATION BUTTON =====
+            document.getElementById('refreshLocationBtn').addEventListener('click', () => {
+                updateLocationDisplay(true);
+            });
+
+            // ===== ELEMENTS FOR CREATE TASK =====
             const openCreateTaskBtn = document.getElementById('openCreateTaskBtn');
             const createTaskContainer = document.getElementById('createTaskContainer');
             const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
@@ -1009,37 +1156,19 @@
             const budgetAmount = document.getElementById('budgetAmount');
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
             
-            // Image upload
-            const uploadArea = document.getElementById('uploadArea');
-            const imageSourceMenu = document.getElementById('imageSourceMenu');
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            
             // Map modal
             const openMapBtn = document.getElementById('openMapBtn');
             const mapModal = document.getElementById('mapModal');
             const closeMapModalBtn = document.getElementById('closeMapModalBtn');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
             
-            // ===== STATE =====
-            let currentLat = null;
-            let currentLng = null;
-            let currentCoordinates = '';
-            let selectedWhen = 'now';
-            let budgetType = 'fixed';
-            let selectedDate = null;
-            let selectedTime = null;
-            let uploadedImages = [];
-            let mapModalInstance = null;
-            let marker = null;
-
-            // ===== OPEN CREATE TASK (when search is clicked) =====
+            // ===== OPEN CREATE TASK =====
             openCreateTaskBtn.addEventListener('click', function() {
                 createTaskContainer.style.display = 'flex';
                 
-                // Auto-fill location from background map (latest city)
-                const citySpan = document.getElementById('currentCity').textContent;
-                if (citySpan !== 'Detecting location...' && citySpan !== 'Enable location') {
-                    document.getElementById('locationInput').value = citySpan;
+                // Fill location if we have it
+                if (currentAddress) {
+                    document.getElementById('locationInput').value = currentAddress;
                 }
                 
                 setTimeout(() => taskInput.focus(), 300);
@@ -1076,14 +1205,12 @@
 
             // ===== WHEN OPTIONS =====
             whenNowBtn.addEventListener('click', function() {
-                selectedWhen = 'now';
                 whenNowBtn.className = 'when-option active';
                 whenLaterBtn.className = 'when-option inactive';
                 dateTimePickers.style.display = 'none';
             });
 
             whenLaterBtn.addEventListener('click', function() {
-                selectedWhen = 'later';
                 whenLaterBtn.className = 'when-option active';
                 whenNowBtn.className = 'when-option inactive';
                 dateTimePickers.style.display = 'flex';
@@ -1094,7 +1221,6 @@
 
             nativeDatePicker.addEventListener('change', function() {
                 if (this.value) {
-                    selectedDate = this.value;
                     const parts = this.value.split('-');
                     dateDisplay.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
@@ -1102,21 +1228,18 @@
 
             nativeTimePicker.addEventListener('change', function() {
                 if (this.value) {
-                    selectedTime = this.value;
                     timeDisplay.textContent = this.value;
                 }
             });
 
             // ===== BUDGET =====
             fixedBudgetBtn.addEventListener('click', function() {
-                budgetType = 'fixed';
                 fixedBudgetBtn.className = 'budget-option active';
                 openBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'block';
             });
 
             openBudgetBtn.addEventListener('click', function() {
-                budgetType = 'open';
                 openBudgetBtn.className = 'budget-option active';
                 fixedBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'none';
@@ -1127,32 +1250,10 @@
                 this.value = this.value.replace(/[^0-9]/g, '');
             });
 
-            // ===== IMAGE UPLOAD =====
-            uploadArea.addEventListener('click', () => imageSourceMenu.classList.add('active'));
-
-            document.getElementById('takePhotoOption').addEventListener('click', function() {
-                imageSourceMenu.classList.remove('active');
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.capture = 'environment';
-                input.click();
-            });
-
-            document.getElementById('chooseFromGalleryOption').addEventListener('click', function() {
-                imageSourceMenu.classList.remove('active');
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.multiple = true;
-                input.click();
-            });
-
-            document.getElementById('cancelImageMenu').addEventListener('click', () => {
-                imageSourceMenu.classList.remove('active');
-            });
-
             // ===== MAP MODAL =====
+            let mapModalInstance = null;
+            let marker = null;
+
             openMapBtn.addEventListener('click', function() {
                 mapModal.classList.add('active');
                 
@@ -1179,13 +1280,14 @@
                     const lngLat = marker.getLngLat();
                     currentLat = lngLat.lat;
                     currentLng = lngLat.lng;
-                    currentCoordinates = `${currentLat},${currentLng}`;
                     
                     fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
                         .then(res => res.json())
                         .then(data => {
                             if (data.features && data.features[0]) {
-                                document.getElementById('locationInput').value = data.features[0].place_name;
+                                currentAddress = data.features[0].place_name;
+                                document.getElementById('locationInput').value = currentAddress;
+                                document.getElementById('preciseLocation').textContent = data.features[0].text;
                             }
                         });
                 }
@@ -1196,16 +1298,18 @@
             postTaskBtn.addEventListener('click', function() {
                 document.getElementById('loadingOverlay').classList.add('active');
                 
+                // Here you would send the task data to your backend
+                // Including: taskInput.value, selectedWhen, budgetType, budgetAmount.value,
+                // uploadedImages array, extraNotes.value, currentLat, currentLng
+                
                 setTimeout(() => {
                     document.getElementById('loadingOverlay').classList.remove('active');
                     document.getElementById('successToast').textContent = 'Task posted!';
                     document.getElementById('successToast').classList.add('show');
                     setTimeout(() => document.getElementById('successToast').classList.remove('show'), 2000);
                     
-                    // Close create task
                     createTaskContainer.style.display = 'none';
                     
-                    // Fire confetti
                     confetti({
                         particleCount: 100,
                         spread: 70,
@@ -1215,17 +1319,23 @@
                 }, 1500);
             });
 
-            // ===== NAVIGATION (only home, tasks, account removed per request) =====
-            // but we keep the alert-less Home click? Actually we removed bottom nav entirely,
-            // so no need for event listeners. The nav items are gone.
-            
-            // Font loading
+            // ===== INIT CLOUDINARY =====
+            // Wait for SDK to load
+            if (window.cloudinary) {
+                initCloudinaryUpload();
+            } else {
+                // Load Cloudinary SDK if not already loaded
+                const script = document.createElement('script');
+                script.src = 'https://upload-widget.cloudinary.com/global/all.js';
+                script.onload = initCloudinaryUpload;
+                document.head.appendChild(script);
+            }
+
+            // ===== FONT LOADING =====
             if ('fonts' in document) {
                 document.fonts.load('1em "Material Symbols Outlined"').then(() => {
                     document.documentElement.classList.add('icons-loaded');
                 });
-            } else {
-                document.documentElement.classList.add('icons-loaded');
             }
         })();
     </script>
