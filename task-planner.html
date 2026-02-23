@@ -48,7 +48,7 @@
             line-height: 1 !important;
         }
 
-        /* === FULLSCREEN MAP === */
+        /* === FULLSCREEN MAP - DARK STYLE === */
         #map {
             position: absolute;
             top: 0;
@@ -319,7 +319,7 @@
             75%{ transform:translateX(4px); }
         }
 
-        /* Search icon - EXACT SPECS: 48x48, rgba(0,62,113,0.12), border-radius 5px */
+        /* Search icon - 48x48, rgba(0,62,113,0.12), border-radius 5px */
         .search-icon {
             position: absolute;
             right: 4px;
@@ -343,7 +343,7 @@
             filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(1000%) hue-rotate(180deg);
         }
 
-        /* Location hint - REMOVED (no longer displayed) */
+        /* Location hint - hidden */
         .location-hint {
             display: none;
         }
@@ -446,7 +446,7 @@
             border-color: #003E71;
         }
 
-        /* edit location icon - EXACT SPECS: 48x48, rgba(0,62,113,0.12), border-radius 5px */
+        /* edit location icon - 48x48, rgba(0,62,113,0.12), border-radius 5px */
         .location-icon {
             position: absolute;
             right: 4px;
@@ -647,7 +647,7 @@
             margin: 0;
         }
 
-        /* Upload area with status messages - FULLY STYLED */
+        /* Upload area with status messages */
         .upload-area {
             border: 1.5px dashed rgba(0, 62, 113, 0.3);
             border-radius: 5px;
@@ -679,7 +679,7 @@
             margin-top: 0.5rem;
         }
 
-        /* Upload status messages - FULLY STYLED */
+        /* Upload status messages */
         .upload-status {
             margin-top: 0.5rem;
             padding: 0.75rem;
@@ -716,20 +716,43 @@
             font-size: 20px !important;
         }
 
+        /* Upload progress indicator */
+        .upload-progress {
+            font-size: 0.75rem;
+            color: #045B92;
+            margin-top: 0.25rem;
+        }
+
+        /* Image preview container - RESTORED WITH EXACT STYLING */
         .image-preview-container {
+            margin-top: 0.5rem;
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
-            margin-top: 1rem;
         }
-
+        
         .image-preview {
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
             border-radius: 5px;
             object-fit: cover;
-            border: 2px solid #003E71;
+            border: 1px solid rgba(4, 91, 146, 0.2);
+        }
+        
+        .remove-image {
+            background: #FF286F;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            margin-left: -15px;
+            margin-top: -5px;
         }
 
         .image-source-menu {
@@ -801,7 +824,7 @@
     </style>
 </head>
 <body>
-    <!-- MAP -->
+    <!-- MAP - DARK STYLE -->
     <div id="map"></div>
 
     <!-- hamburger menu icon -->
@@ -853,8 +876,6 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Location hint removed completely -->
     </div>
 
     <!-- CREATE TASK FULL SCREEN -->
@@ -936,7 +957,7 @@
                         </div>
                     </div>
 
-                    <!-- Images with status - FULLY STYLED AND FUNCTIONAL -->
+                    <!-- Images with status - FULLY STYLED WITH PREVIEW AND PROGRESS -->
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
@@ -948,6 +969,9 @@
                             <span class="material-symbols-outlined">info</span>
                             <span id="uploadStatusText">Ready to upload</span>
                         </div>
+                        <!-- Upload progress indicator -->
+                        <div id="uploadProgress" class="upload-progress" style="display: none;"></div>
+                        <!-- Image preview container with remove button styling -->
                         <div id="imagePreviewContainer" class="image-preview-container"></div>
                     </div>
 
@@ -995,6 +1019,14 @@
             'use strict';
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+            // ===== MAP INIT - DARK STYLE =====
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [28.034088, -26.195246],
+                zoom: 15
+            });
 
             // ===== ENHANCED DEBUGGER =====
             const Debugger = {
@@ -1147,6 +1179,16 @@
                 }
             }
 
+            function showUploadProgress(message) {
+                const progress = document.getElementById('uploadProgress');
+                progress.textContent = message;
+                progress.style.display = 'block';
+            }
+
+            function hideUploadProgress() {
+                document.getElementById('uploadProgress').style.display = 'none';
+            }
+
             function isUserLoggedIn() { 
                 return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); 
             }
@@ -1154,16 +1196,8 @@
             // ===== STATE =====
             let currentLat = null, currentLng = null, uploadedImages = [];
 
-            // ===== MAP INIT =====
-            const map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [28.034088, -26.195246],
-                zoom: 15
-            });
-
             map.on('load', () => {
-                Debugger.log('Map loaded successfully', 'success');
+                Debugger.log('Dark map loaded successfully', 'success');
             });
 
             map.on('error', (e) => {
@@ -1309,7 +1343,7 @@
                 fixedInputDiv.style.display = 'none'; 
             });
 
-            // ===== IMAGE UPLOAD WITH PROGRESS MESSAGES =====
+            // ===== IMAGE UPLOAD WITH PROGRESS MESSAGES AND PREVIEW =====
             const uploadArea = document.getElementById('uploadArea');
             const imgMenu = document.getElementById('imageSourceMenu');
             
@@ -1333,6 +1367,7 @@
                 }
                 
                 showUploadStatus(`Uploading ${file.name}...`, 'info');
+                showUploadProgress('Upload in progress...');
                 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -1340,10 +1375,12 @@
                         uploadedImages.push(e.target.result);
                         displayPreviews();
                         showUploadStatus('Upload successful!', 'success');
+                        hideUploadProgress();
                     }, 800);
                 };
                 reader.onerror = () => {
                     showUploadStatus('Upload failed', 'error');
+                    hideUploadProgress();
                 };
                 reader.readAsDataURL(file);
             }
@@ -1381,35 +1418,26 @@
                 const container = document.getElementById('imagePreviewContainer');
                 container.innerHTML = '';
                 uploadedImages.forEach((url, idx) => {
-                    let div = document.createElement('div'); 
-                    div.style.position = 'relative'; 
-                    div.style.display = 'inline-block';
+                    let wrapper = document.createElement('div');
+                    wrapper.style.display = 'inline-block';
+                    wrapper.style.margin = '0 5px 5px 0';
                     
                     let img = document.createElement('img'); 
                     img.src = url; 
                     img.className = 'image-preview';
                     
                     let rm = document.createElement('button'); 
+                    rm.className = 'remove-image';
                     rm.textContent = '×'; 
-                    rm.style.position = 'absolute'; 
-                    rm.style.top = '-5px'; 
-                    rm.style.right = '-5px'; 
-                    rm.style.background = '#FF286F'; 
-                    rm.style.border = 'none'; 
-                    rm.style.borderRadius = '50%'; 
-                    rm.style.color = 'white'; 
-                    rm.style.width = '24px'; 
-                    rm.style.height = '24px';
-                    rm.style.cursor = 'pointer';
-                    
                     rm.onclick = () => { 
                         uploadedImages.splice(idx, 1); 
                         displayPreviews(); 
+                        showUploadStatus('Image removed', 'warning');
                     };
                     
-                    div.appendChild(img); 
-                    div.appendChild(rm); 
-                    container.appendChild(div);
+                    wrapper.appendChild(img); 
+                    wrapper.appendChild(rm); 
+                    container.appendChild(wrapper);
                 });
             }
 
