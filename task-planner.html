@@ -1090,6 +1090,14 @@
 
         <div class="debug-section">
             <div class="debug-section-title">
+                <span class="material-symbols-outlined">cloud_upload</span>
+                Cloudinary Upload Status
+            </div>
+            <div id="cloudinaryStatus"></div>
+        </div>
+
+        <div class="debug-section">
+            <div class="debug-section-title">
                 <span class="material-symbols-outlined">history</span>
                 Activity Log
             </div>
@@ -1106,8 +1114,8 @@
                 Export Report
             </button>
             <button class="debug-action-btn primary" id="debugFix">
-                <span class="material-symbols-outlined">build</span>
-                Test Cloudinary
+                <span class="material-symbols-outlined">cloud_upload</span>
+                Test Cloudinary Upload
             </button>
         </div>
     </div>
@@ -1217,7 +1225,7 @@
                         </div>
                     </div>
 
-                    <!-- Images - FIXED Cloudinary Upload -->
+                    <!-- Images - FIXED Cloudinary Upload with CLOUDINARY_URL support -->
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
@@ -1310,6 +1318,7 @@
                 warnings: [],
                 successes: [],
                 taskActions: [],
+                cloudinaryStatus: 'Unknown',
                 
                 init() {
                     this.panel = document.getElementById('debugPanel');
@@ -1321,12 +1330,13 @@
                     this.logsContainer = document.getElementById('debugLogs');
                     this.errorReports = document.getElementById('errorReports');
                     this.systemStatus = document.getElementById('systemStatus');
+                    this.cloudinaryStatus = document.getElementById('cloudinaryStatus');
                     
                     this.btn.addEventListener('click', () => this.open());
                     this.closeBtn.addEventListener('click', () => this.close());
                     this.clearBtn.addEventListener('click', () => this.clear());
                     this.exportBtn.addEventListener('click', () => this.exportReport());
-                    this.fixBtn.addEventListener('click', () => this.testCloudinary());
+                    this.fixBtn.addEventListener('click', () => this.testCloudinaryUpload());
                     
                     // Track all task actions
                     this.trackTaskActions();
@@ -1415,15 +1425,15 @@
                     let suggestion = '';
                     
                     if (message.includes('upload') || message.includes('Cloudinary')) {
-                        suggestion = 'Check if your backend /api/upload endpoint exists and is configured with your Cloudinary API keys. Make sure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set on your backend.';
+                        suggestion = 'Your backend needs CLOUDINARY_URL configured. Format: cloudinary://<api_key>:<api_secret>@<cloud_name>. Check your Render environment variables.';
                     } else if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
                         suggestion = 'Check if your backend server is running at https://taskmartapp.onrender.com. CORS might be blocking the request.';
                     } else if (message.includes('Geolocation')) {
                         suggestion = 'Make sure you\'ve granted location permissions. On iOS, check Settings > Privacy > Location Services.';
                     } else if (message.includes('Mapbox')) {
                         suggestion = 'Your Mapbox token might be invalid or expired. Check /config.js file.';
-                    } else if (message.includes('JSON')) {
-                        suggestion = 'Backend returned invalid JSON. Check if the endpoint returns proper JSON format.';
+                    } else if (message.includes('pattern')) {
+                        suggestion = 'CLOUDINARY_URL format is incorrect. It should be: cloudinary://<your_api_key>:<your_api_secret>@dmutxo1gk';
                     }
                     
                     if (suggestion) {
@@ -1443,7 +1453,6 @@
                         'Geolocation': navigator.geolocation ? '✅ Supported' : '❌ Not Supported',
                         'Backend URL': API_BASE_URL,
                         'Online Status': navigator.onLine ? '✅ Online' : '❌ Offline',
-                        'Cloudinary Status': '⏳ Testing...',
                         'User Agent': navigator.userAgent
                     };
                     
@@ -1453,6 +1462,18 @@
                                 <strong>${key}:</strong> ${value}
                             </div>
                         `).join('');
+                        
+                    this.cloudinaryStatus.innerHTML = `
+                        <div class="debug-log info">
+                            <strong>Status:</strong> ${this.cloudinaryStatus}
+                        </div>
+                        <div class="debug-log info">
+                            <strong>Required Format:</strong> CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+                        </div>
+                        <div class="debug-log warning">
+                            <strong>Your Cloud Name:</strong> dmutxo1gk (from your error message)
+                        </div>
+                    `;
                 },
                 
                 renderLogs() {
@@ -1481,41 +1502,59 @@
                     let suggestion = '';
                     
                     if (message.includes('upload')) {
-                        suggestion = 'Make sure your backend /api/upload endpoint is configured with Cloudinary API keys';
+                        suggestion = 'Make sure your backend has CLOUDINARY_URL environment variable set';
+                    } else if (message.includes('pattern')) {
+                        suggestion = 'Set CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@dmutxo1gk in your backend environment variables';
                     } else if (message.includes('location')) {
                         suggestion = 'Check location permissions in browser settings';
-                    } else if (message.includes('network')) {
-                        suggestion = 'Verify backend server is running and CORS is configured';
                     }
                     
                     return suggestion ? `<div class="debug-suggestion">${suggestion}</div>` : '';
                 },
                 
-                async testCloudinary() {
-                    this.log('Testing Cloudinary connection...', 'info');
+                async testCloudinaryUpload() {
+                    this.log('Testing Cloudinary configuration...', 'info');
+                    this.cloudinaryStatus = 'Testing...';
+                    this.updateSystemStatus();
                     
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/test-cloudinary`);
-                        const data = await response.json();
+                        // Test with a small dummy file to check configuration
+                        const formData = new FormData();
+                        const testBlob = new Blob(['test'], { type: 'text/plain' });
+                        formData.append('image', testBlob, 'test.txt');
                         
-                        if (data.success) {
-                            this.log(`✅ Cloudinary configured with cloud: ${data.cloudName}`, 'success');
-                            document.querySelector('#systemStatus').innerHTML += `
-                                <div class="debug-log success">✅ Cloudinary: Connected (${data.cloudName})</div>
-                            `;
+                        const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.status === 400) {
+                            const error = await response.text();
+                            this.log(`❌ Cloudinary config error: ${error}`, 'error');
+                            this.cloudinaryStatus = '❌ Not Configured';
+                            
+                            if (error.includes('CLOUDINARY_URL')) {
+                                this.log('💡 Set CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@dmutxo1gk in your backend', 'warning');
+                            }
+                        } else if (response.ok) {
+                            this.log('✅ Cloudinary is properly configured!', 'success');
+                            this.cloudinaryStatus = '✅ Configured';
                         } else {
-                            this.log(`❌ Cloudinary error: ${data.error}`, 'error');
+                            this.log(`❌ Unexpected response: ${response.status}`, 'error');
                         }
                     } catch (error) {
                         this.log(`❌ Cloudinary test failed: ${error.message}`, 'error');
+                        this.cloudinaryStatus = '❌ Connection Failed';
                     }
+                    
+                    this.updateSystemStatus();
                 },
                 
                 open() {
                     this.panel.classList.add('active');
                     this.updateSystemStatus();
                     this.log('Debug panel opened', 'info');
-                    this.testCloudinary();
+                    this.testCloudinaryUpload();
                 },
                 
                 close() {
@@ -1547,7 +1586,8 @@
                             geolocation: !!navigator.geolocation,
                             online: navigator.onLine,
                             userAgent: navigator.userAgent,
-                            backendUrl: API_BASE_URL
+                            backendUrl: API_BASE_URL,
+                            cloudinaryStatus: this.cloudinaryStatus
                         },
                         recentErrors: this.errors.slice(0, 10),
                         taskActions: this.logs.filter(l => l.message.includes('TASK ACTION')).slice(0, 20),
@@ -1727,7 +1767,7 @@
 
             document.getElementById('refreshLocationBtn').addEventListener('click', refreshLocation);
 
-            // ===== CLOUDINARY IMAGE UPLOAD - FIXED =====
+            // ===== CLOUDINARY IMAGE UPLOAD - FIXED for CLOUDINARY_URL format =====
             const uploadArea = document.getElementById('uploadArea');
             const imageSourceMenu = document.getElementById('imageSourceMenu');
             const imagePreviewContainer = document.getElementById('imagePreviewContainer');
@@ -1791,7 +1831,7 @@
                 Debugger.log('Image menu cancelled', 'info');
             });
 
-            // Upload to Cloudinary via backend
+            // Upload to Cloudinary via backend (supports CLOUDINARY_URL)
             async function uploadToCloudinary(file) {
                 const formData = new FormData();
                 formData.append('image', file);
@@ -1811,6 +1851,10 @@
                     
                     if (!response.ok) {
                         const errorText = await response.text();
+                        if (errorText.includes('CLOUDINARY_URL')) {
+                            Debugger.log('❌ Cloudinary URL format error - check your backend environment variables', 'error');
+                            showError('Cloudinary not configured. Set CLOUDINARY_URL in backend.');
+                        }
                         throw new Error(`Upload failed: ${response.status} - ${errorText}`);
                     }
                     
@@ -1828,7 +1872,7 @@
                     
                 } catch (error) {
                     Debugger.log(`❌ Cloudinary upload error: ${error.message}`, 'error');
-                    showError('Failed to upload to Cloudinary: ' + error.message);
+                    showError('Failed to upload to Cloudinary. Check backend configuration.');
                 } finally {
                     uploadArea.style.opacity = '1';
                     uploadArea.style.pointerEvents = 'auto';
@@ -2047,7 +2091,7 @@
                     } : {
                         type: 'open'
                     },
-                    images: uploadedImages, // These are Cloudinary URLs
+                    images: uploadedImages,
                     notes: document.getElementById('extraNotes').value
                 };
                 
