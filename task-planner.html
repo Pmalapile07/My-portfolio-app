@@ -15,9 +15,6 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Cloudinary -->
-    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
-    
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     
@@ -327,7 +324,7 @@
             font-size: 24px !important;
         }
 
-        /* NEW: Street address field */
+        /* Street address field */
         .street-input {
             width: 100%;
             padding: 1rem 1.2rem;
@@ -490,7 +487,7 @@
             outline: none;
         }
 
-        /* FIXED: Upload area with proper click handling */
+        /* Upload area */
         .upload-area {
             border: 1.5px dashed rgba(0, 62, 113, 0.3);
             border-radius: 12px;
@@ -542,7 +539,7 @@
             transform: scale(1.05);
         }
 
-        /* NEW: Bottom image source menu */
+        /* Image source menu (bottom sheet) */
         .image-source-menu {
             position: fixed;
             bottom: 0;
@@ -838,7 +835,7 @@
                     </button>
                 </div>
                 
-                <!-- NEW: Street address field -->
+                <!-- Street address field -->
                 <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
             </div>
 
@@ -895,7 +892,7 @@
                         </div>
                     </div>
 
-                    <!-- Images - FIXED with working upload -->
+                    <!-- Images - FIXED to use backend API -->
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
@@ -922,7 +919,7 @@
         </div>
     </div>
 
-    <!-- NEW: Image source menu (bottom sheet) -->
+    <!-- Image source menu (bottom sheet) -->
     <div class="image-source-menu" id="imageSourceMenu">
         <div class="menu-header">Add photo</div>
         <div class="menu-option" id="takePhotoOption">
@@ -975,13 +972,11 @@
             'use strict';
 
             // ===== CONFIG =====
+            const API_BASE_URL = 'https://taskmartapp.onrender.com'; // Your backend URL
+            
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
             }
-
-            // Cloudinary config from your backend
-            const CLOUDINARY_CLOUD_NAME = window.CLOUDINARY_CLOUD_NAME;
-            const CLOUDINARY_UPLOAD_PRESET = window.CLOUDINARY_UPLOAD_PRESET;
 
             // ===== ERROR HANDLING =====
             function showError(message) {
@@ -989,6 +984,13 @@
                 toast.textContent = message;
                 toast.classList.add('show');
                 setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+
+            function showSuccess(message) {
+                const toast = document.getElementById('successToast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
             }
 
             // ===== INIT MAP =====
@@ -1109,7 +1111,7 @@
             setTimeout(refreshLocation, 500);
             document.getElementById('refreshLocationBtn').addEventListener('click', refreshLocation);
 
-            // ===== IMAGE UPLOAD - FIXED =====
+            // ===== IMAGE UPLOAD - FIXED to use backend API =====
             const uploadArea = document.getElementById('uploadArea');
             const imageSourceMenu = document.getElementById('imageSourceMenu');
             const imagePreviewContainer = document.getElementById('imagePreviewContainer');
@@ -1128,11 +1130,6 @@
             document.getElementById('takePhotoOption').addEventListener('click', () => {
                 imageSourceMenu.classList.remove('active');
                 
-                if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-                    showError('Cloudinary not configured');
-                    return;
-                }
-
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
@@ -1141,7 +1138,7 @@
                 input.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (file) {
-                        await uploadToCloudinary(file);
+                        await uploadToBackend(file);
                     }
                 };
                 
@@ -1152,11 +1149,6 @@
             document.getElementById('chooseFromGalleryOption').addEventListener('click', () => {
                 imageSourceMenu.classList.remove('active');
                 
-                if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-                    showError('Cloudinary not configured');
-                    return;
-                }
-
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
@@ -1165,7 +1157,7 @@
                 input.onchange = async (e) => {
                     const files = Array.from(e.target.files);
                     for (const file of files) {
-                        await uploadToCloudinary(file);
+                        await uploadToBackend(file);
                     }
                 };
                 
@@ -1177,35 +1169,43 @@
                 imageSourceMenu.classList.remove('active');
             });
 
-            // Upload to Cloudinary
-            async function uploadToCloudinary(file) {
+            // Upload to your backend (which handles Cloudinary)
+            async function uploadToBackend(file) {
                 const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('image', file);
+                
+                // Show loading state
+                uploadArea.style.opacity = '0.5';
+                uploadArea.style.pointerEvents = 'none';
                 
                 try {
-                    const response = await fetch(
-                        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                        {
-                            method: 'POST',
-                            body: formData
-                        }
-                    );
+                    const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
                     
-                    if (!response.ok) throw new Error('Upload failed');
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Upload failed');
+                    }
                     
                     const data = await response.json();
                     
                     uploadedImages.push({
-                        url: data.secure_url,
-                        publicId: data.public_id
+                        url: data.url,
+                        publicId: data.publicId,
+                        id: data.id
                     });
                     
                     displayImagePreviews();
+                    showSuccess('Image uploaded successfully');
                     
                 } catch (error) {
                     console.error('Upload error:', error);
-                    showError('Failed to upload image');
+                    showError(error.message || 'Failed to upload image');
+                } finally {
+                    uploadArea.style.opacity = '1';
+                    uploadArea.style.pointerEvents = 'auto';
                 }
             }
 
@@ -1253,6 +1253,10 @@
             const closeMapModalBtn = document.getElementById('closeMapModalBtn');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
             
+            let selectedDate = null;
+            let selectedTime = null;
+            let budgetType = 'fixed';
+            
             openCreateTaskBtn.addEventListener('click', function() {
                 createTaskContainer.style.display = 'flex';
                 setTimeout(() => taskInput.focus(), 300);
@@ -1295,6 +1299,7 @@
 
             nativeDatePicker.addEventListener('change', function() {
                 if (this.value) {
+                    selectedDate = this.value;
                     const parts = this.value.split('-');
                     dateDisplay.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
@@ -1302,17 +1307,20 @@
 
             nativeTimePicker.addEventListener('change', function() {
                 if (this.value) {
+                    selectedTime = this.value;
                     timeDisplay.textContent = this.value;
                 }
             });
 
             fixedBudgetBtn.addEventListener('click', function() {
+                budgetType = 'fixed';
                 fixedBudgetBtn.className = 'budget-option active';
                 openBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'block';
             });
 
             openBudgetBtn.addEventListener('click', function() {
+                budgetType = 'open';
                 openBudgetBtn.className = 'budget-option active';
                 fixedBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'none';
@@ -1365,40 +1373,73 @@
                 mapModal.classList.remove('active');
             });
 
-            postTaskBtn.addEventListener('click', function() {
+            postTaskBtn.addEventListener('click', async function() {
                 document.getElementById('loadingOverlay').classList.add('active');
                 
                 // Collect all task data
                 const taskData = {
-                    location: document.getElementById('locationInput').value,
-                    streetAddress: document.getElementById('streetInput').value,
+                    location: {
+                        city: document.getElementById('locationInput').value,
+                        streetAddress: document.getElementById('streetInput').value,
+                        coordinates: currentLat && currentLng ? {
+                            lat: currentLat,
+                            lng: currentLng
+                        } : null
+                    },
                     task: taskInput.value,
-                    when: whenNowBtn.classList.contains('active') ? 'now' : 'later',
-                    date: selectedDate,
-                    time: selectedTime,
-                    budget: budgetType === 'fixed' ? budgetAmount.value : 'open',
+                    when: {
+                        type: whenNowBtn.classList.contains('active') ? 'now' : 'later',
+                        date: selectedDate,
+                        time: selectedTime
+                    },
+                    budget: budgetType === 'fixed' ? {
+                        type: 'fixed',
+                        amount: budgetAmount.value
+                    } : {
+                        type: 'open'
+                    },
                     images: uploadedImages,
-                    notes: document.getElementById('extraNotes').value,
-                    coordinates: currentLat && currentLng ? { lat: currentLat, lng: currentLng } : null
+                    notes: document.getElementById('extraNotes').value
                 };
                 
-                console.log('Posting task:', taskData);
-                
-                setTimeout(() => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to post task');
+                    }
+                    
                     document.getElementById('loadingOverlay').classList.remove('active');
-                    document.getElementById('successToast').textContent = 'Task posted!';
-                    document.getElementById('successToast').classList.add('show');
-                    setTimeout(() => document.getElementById('successToast').classList.remove('show'), 2000);
+                    showSuccess('Task posted!');
                     
+                    // Reset form
                     createTaskContainer.style.display = 'none';
+                    taskInput.value = '';
+                    uploadedImages = [];
+                    imagePreviewContainer.innerHTML = '';
+                    document.getElementById('streetInput').value = '';
+                    document.getElementById('extraNotes').value = '';
+                    postTaskBtn.disabled = true;
                     
+                    // Fire confetti
                     confetti({
                         particleCount: 100,
                         spread: 70,
                         origin: { y: 0.6 },
                         colors: ['#003E71', '#FF286F']
                     });
-                }, 1500);
+                    
+                } catch (error) {
+                    console.error('Post error:', error);
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    showError('Failed to post task');
+                }
             });
 
             // Click outside to close menu
