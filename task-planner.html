@@ -179,7 +179,6 @@
             transition: all 0.2s;
             box-shadow: 0 4px 10px rgba(0, 62, 113, 0.3);
             flex-shrink: 0;
-            position: relative;
         }
 
         .refresh-location-btn:active {
@@ -944,6 +943,22 @@
             font-size: 18px !important;
         }
 
+        .auth-message {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: rgba(255, 193, 7, 0.1);
+            color: #856404;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .auth-message .material-symbols-outlined {
+            font-size: 18px !important;
+        }
+
         .error-toast {
             position: fixed;
             top: 20px;
@@ -1247,12 +1262,16 @@
                         </div>
                     </div>
 
-                    <!-- Images with status -->
+                    <!-- Images with status and auth warning -->
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
                             <span class="material-symbols-outlined">cloud_upload</span>
                             <p>Tap to upload photos</p>
+                        </div>
+                        <div id="authMessage" class="auth-message" style="display: none;">
+                            <span class="material-symbols-outlined">info</span>
+                            <span id="authMessageText">You need to be logged in to upload images</span>
                         </div>
                         <div id="uploadStatus" class="upload-status info" style="display: none;">
                             <span class="material-symbols-outlined">info</span>
@@ -1401,13 +1420,18 @@
                 },
                 
                 updateSystemStatus() {
+                    const token = getAuthToken();
+                    const user = getCurrentUser();
+                    
                     const status = {
                         'Mapbox Token': window.MAPBOX_TOKEN ? '✅ Present' : '❌ Missing',
                         'Geolocation': navigator.geolocation ? '✅ Supported' : '❌ Not Supported',
                         'Backend URL': API_BASE_URL,
                         'Online Status': navigator.onLine ? '✅ Online' : '❌ Offline',
                         'Upload Endpoint': '/api/upload/task-image',
-                        'Auth Required': '✅ Yes (Bearer token)'
+                        'Auth Token': token ? '✅ Present' : '❌ Missing',
+                        'Logged In': user ? `✅ ${user.name || user.email}` : '❌ Not logged in',
+                        'User Role': user ? user.role || 'poster' : 'N/A'
                     };
                     
                     this.systemStatus.innerHTML = Object.entries(status)
@@ -1443,24 +1467,33 @@
                 async testUpload() {
                     this.log('Testing upload endpoint...', 'info');
                     
+                    const token = getAuthToken();
+                    if (!token) {
+                        this.log('❌ No auth token found - please log in first', 'error');
+                        showAuthMessage('Please log in to test uploads');
+                        return;
+                    }
+                    
                     // Create a tiny test file
                     const testFile = new File(['test'], 'test.txt', { type: 'text/plain' });
                     const formData = new FormData();
                     formData.append('image', testFile);
                     
                     try {
-                        const token = getAuthToken();
                         const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
                             method: 'POST',
                             headers: {
-                                'Authorization': token ? `Bearer ${token}` : ''
+                                'Authorization': `Bearer ${token}`
                             },
                             body: formData
                         });
                         
                         this.log(`Upload test response: ${response.status} ${response.statusText}`, 'info');
                         
-                        if (response.ok) {
+                        if (response.status === 401) {
+                            this.log('❌ Authentication failed - token may be invalid or expired', 'error');
+                            showAuthMessage('Authentication failed - please log in again');
+                        } else if (response.ok) {
                             const data = await response.json();
                             this.log('✅ Upload test successful!', 'success');
                             this.log('Response: ' + JSON.stringify(data), 'info');
@@ -1504,7 +1537,9 @@
                             mapboxToken: !!window.MAPBOX_TOKEN,
                             geolocation: !!navigator.geolocation,
                             online: navigator.onLine,
-                            userAgent: navigator.userAgent
+                            userAgent: navigator.userAgent,
+                            authToken: !!getAuthToken(),
+                            user: getCurrentUser()
                         }
                     };
                     
@@ -1521,6 +1556,30 @@
 
             // Initialize debugger
             Debugger.init();
+
+            // ===== AUTH FUNCTIONS =====
+            function getCurrentUser() {
+                const user = localStorage.getItem('taskmart_user');
+                return user ? JSON.parse(user) : null;
+            }
+
+            function getAuthToken() {
+                return localStorage.getItem('taskmart_token');
+            }
+
+            function isUserLoggedIn() {
+                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
+            }
+
+            function showAuthMessage(message) {
+                const authMsg = document.getElementById('authMessage');
+                const authMsgText = document.getElementById('authMessageText');
+                authMsgText.textContent = message;
+                authMsg.style.display = 'flex';
+                setTimeout(() => {
+                    authMsg.style.display = 'none';
+                }, 5000);
+            }
 
             // ===== ERROR HANDLING =====
             function showError(message) {
@@ -1555,11 +1614,6 @@
                 else icon.textContent = 'info';
                 
                 Debugger.log(`Upload: ${message}`, type);
-            }
-
-            // Auth helper functions
-            function getAuthToken() {
-                return localStorage.getItem('taskmart_token');
             }
 
             // ===== INIT MAP =====
@@ -1703,12 +1757,38 @@
 
             document.getElementById('refreshLocationBtn').addEventListener('click', refreshLocation);
 
-            // ===== IMAGE UPLOAD - FIXED with correct endpoint =====
+            // ===== IMAGE UPLOAD - FIXED with auth check =====
             const uploadArea = document.getElementById('uploadArea');
             const imageSourceMenu = document.getElementById('imageSourceMenu');
             const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 
             function openImageSourceMenu() {
+                // Check if user is logged in first
+                if (!isUserLoggedIn()) {
+                    showAuthMessage('Please log in to upload images');
+                    Debugger.log('Upload blocked - user not logged in', 'warning');
+                    
+                    // Store task data and redirect to login
+                    const taskData = {
+                        location: document.getElementById('locationInput').value,
+                        streetName: document.getElementById('streetInput').value,
+                        taskDescription: taskInput.value,
+                        budgetType: budgetType,
+                        budgetAmount: budgetAmount.value,
+                        selectedWhen: whenNowBtn.classList.contains('active') ? 'now' : 'later',
+                        selectedDate: selectedDate,
+                        selectedTime: selectedTime,
+                        selectedPayment: 'cash',
+                        moreDetails: document.getElementById('extraNotes').value,
+                        uploadedImages: uploadedImages
+                    };
+                    sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
+                    
+                    const returnUrl = encodeURIComponent(window.location.href);
+                    window.location.href = '/login.html?returnTo=' + returnUrl;
+                    return;
+                }
+                
                 imageSourceMenu.classList.add('active');
                 Debugger.log('Image source menu opened', 'info');
             }
@@ -1774,7 +1854,7 @@
                 }, 2000);
             });
 
-            // Upload to backend - CORRECT ENDPOINT: /api/upload/task-image
+            // Upload to backend - CORRECT ENDPOINT with auth
             async function uploadToBackend(file) {
                 const formData = new FormData();
                 formData.append('image', file);
@@ -1783,18 +1863,25 @@
                 uploadArea.style.pointerEvents = 'none';
                 
                 const token = getAuthToken();
+                if (!token) {
+                    showAuthMessage('Authentication required - please log in');
+                    uploadArea.style.opacity = '1';
+                    uploadArea.style.pointerEvents = 'auto';
+                    return;
+                }
+                
                 const endpoint = `${API_BASE_URL}/api/upload/task-image`;
                 
                 Debugger.log(`Uploading to ${endpoint}...`, 'info');
                 
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                    const timeoutId = setTimeout(() => controller.abort(), 30000);
                     
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
-                            'Authorization': token ? `Bearer ${token}` : ''
+                            'Authorization': `Bearer ${token}`
                         },
                         body: formData,
                         signal: controller.signal
@@ -1803,6 +1890,13 @@
                     clearTimeout(timeoutId);
                     
                     Debugger.log(`Upload response status: ${response.status}`, 'info');
+                    
+                    if (response.status === 401) {
+                        showAuthMessage('Authentication expired - please log in again');
+                        localStorage.removeItem('taskmart_token');
+                        localStorage.removeItem('taskmart_user');
+                        throw new Error('Authentication expired');
+                    }
                     
                     if (!response.ok) {
                         const errorText = await response.text();
