@@ -278,7 +278,7 @@
         .search-input:focus {
             border-color: #003e71 !important;
         }
-        /* search bar border color on focus etc */
+        /* search bar focus effect */
         .search-input:focus {
             border-color: #003e71 !important;
             background-color: rgba(255, 40, 111, 0.03);
@@ -290,19 +290,42 @@
             75%{ transform:translateX(4px); }
         }
 
+        /* Search icon on the right with background */
+        .search-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e8f0fe;  /* subtle background similar to search bar focus */
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            color: #003E71;
+        }
+        .search-icon .material-symbols-outlined {
+            font-size: 22px !important;
+            color: #003E71 !important;
+        }
+
         .location-hint {
             display: flex;
             align-items: center;
-            gap: 6px;
-            color: #003E71;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-top: 8px;
+            gap: 0.5rem;          /* as requested gap: 0.5rem */
+            color: black;
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-decoration: none;
+            margin-top: 0.25rem;
+            padding: 8px;
         }
 
         .location-hint .material-symbols-outlined {
-            font-size: 18px !important;
-            color: #003E71 !important;
+            color: black !important;
+            font-size: 24px !important;
         }
 
         /* === CREATE TASK FULL SCREEN === */
@@ -405,19 +428,25 @@
             border-color: #003E71;
         }
 
+        /* edit location icon (pencil) with background similar to search icon */
         .location-icon {
             position: absolute;
-            right: 12px;
+            right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            background: transparent;
+            background: #e8f0fe;        /* same subtle background */
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border: none;
             cursor: pointer;
         }
-
         .location-icon .material-symbols-outlined {
             color: #003E71 !important;
-            font-size: 24px !important;
+            font-size: 22px !important;
         }
 
         .street-input {
@@ -476,7 +505,7 @@
 
         .more-details-btn-container {
             display: flex;
-            justify-content: flex-end;  /* Right aligned as requested */
+            justify-content: flex-end;
             margin: 0.75rem 0 0.5rem;
         }
 
@@ -498,6 +527,7 @@
         .more-details-btn .material-symbols-outlined {
             font-size: 18px !important;
             color: #003E71 !important;
+            background: none;  /* no background */
         }
 
         .collapsible-section {
@@ -560,6 +590,7 @@
 
         .date-time-box .material-symbols-outlined {
             color: #003E71 !important;
+            background: none;  /* no background */
         }
 
         .budget-field-wrapper {
@@ -609,6 +640,7 @@
             color: #003E71 !important;
             font-size: 32px !important;
             pointer-events: none;
+            background: none;
         }
 
         .upload-area p {
@@ -632,7 +664,6 @@
             object-fit: cover;
             border: 2px solid #003E71;
             cursor: pointer;
-            transition: transform 0.2s;
         }
 
         .image-source-menu {
@@ -716,7 +747,7 @@
     <!-- Draggable pin -->
     <div class="draggable-pin" id="locationPin"></div>
 
-    <!-- Debug Panel (fully functional) -->
+    <!-- Debug Panel -->
     <div class="debug-panel" id="debugPanel">
         <div class="debug-header" style="display:flex; justify-content:space-between;">
             <h3 style="color:#FF286F;">Debug Console</h3>
@@ -742,11 +773,13 @@
             </div>
         </div>
         
-        <!-- search container as specified -->
+        <!-- search container with icon on right with background -->
         <div class="search-container" id="openCreateTaskBtn">
             <div class="search-wrapper">
                 <input type="text" class="search-input" placeholder="what do you need help with?" readonly>
-                <span class="material-symbols-outlined" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#003E71;">search</span>
+                <div class="search-icon">
+                    <span class="material-symbols-outlined">search</span>
+                </div>
             </div>
         </div>
         
@@ -890,7 +923,7 @@
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
-            // Debugger object (simplified but functional)
+            // Debugger object
             const Debugger = {
                 panel: document.getElementById('debugPanel'),
                 btn: document.getElementById('debugBtn'),
@@ -914,7 +947,7 @@
             // state
             let currentLat = null, currentLng = null, uploadedImages = [];
 
-            // ===== MAP INIT with immediate location =====
+            // map init with immediate location
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/streets-v12',
@@ -922,14 +955,12 @@
                 zoom: 15
             });
 
-            // request location immediately and move map
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         currentLat = pos.coords.latitude;
                         currentLng = pos.coords.longitude;
                         map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                        // reverse geocode city
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place,locality`)
                             .then(r => r.json())
                             .then(d => { if (d.features?.[0]) {
@@ -942,7 +973,7 @@
                 );
             } else { document.getElementById('currentCity').textContent = 'Not supported'; }
 
-            // draggable pin updates location on stop (simplified but working)
+            // draggable pin (simplified)
             const pin = document.getElementById('locationPin');
             let dragActive = false;
             pin.addEventListener('mousedown', startDrag);
@@ -951,7 +982,7 @@
             function onDrag(e) { if (!dragActive) return; e.preventDefault(); }
             function stopDrag() { dragActive = false; window.removeEventListener('mousemove', onDrag); window.removeEventListener('touchmove', onDrag); window.removeEventListener('mouseup', stopDrag); window.removeEventListener('touchend', stopDrag); }
 
-            // Refresh location button
+            // refresh location
             document.getElementById('refreshLocationBtn').addEventListener('click', function() {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
@@ -971,7 +1002,7 @@
                 document.getElementById('createTaskContainer').style.display = 'none';
             });
 
-            // task input char count & enable post
+            // task input
             const taskInput = document.getElementById('taskInput');
             const postBtn = document.getElementById('postTaskBtn');
             taskInput.addEventListener('input', function() {
@@ -980,7 +1011,7 @@
                 postBtn.disabled = this.value.trim() === '';
             });
 
-            // more details button (right aligned already)
+            // more details toggle
             const moreBtn = document.getElementById('moreDetailsBtn');
             const collapsible = document.getElementById('collapsibleSection');
             moreBtn.addEventListener('click', ()=>{
@@ -993,7 +1024,7 @@
                 }
             });
 
-            // when now/later
+            // when
             const whenNow = document.getElementById('whenNowBtn');
             const whenLater = document.getElementById('whenLaterBtn');
             const datePickers = document.getElementById('dateTimePickers');
@@ -1007,7 +1038,7 @@
             fixedBtn.addEventListener('click', ()=>{ fixedBtn.className='budget-option active'; openBtn.className='budget-option inactive'; fixedInput.style.display='block'; });
             openBtn.addEventListener('click', ()=>{ openBtn.className='budget-option active'; fixedBtn.className='budget-option inactive'; fixedInput.style.display='none'; });
 
-            // image upload (mock)
+            // image upload mock
             const uploadArea = document.getElementById('uploadArea');
             const imgMenu = document.getElementById('imageSourceMenu');
             uploadArea.addEventListener('click', ()=>{
@@ -1042,8 +1073,8 @@
                 document.getElementById('createTaskContainer').style.display = 'none';
             });
 
-            // hamburger menu placeholder
-            document.getElementById('menuBtn').addEventListener('click', ()=> alert('Navigation menu (to be implemented)'));
+            // menu placeholder
+            document.getElementById('menuBtn').addEventListener('click', ()=> alert('Navigation menu'));
         })();
     </script>
 </body>
