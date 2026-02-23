@@ -147,6 +147,7 @@
             transition: all 0.2s;
             box-shadow: 0 4px 10px rgba(108, 117, 125, 0.3);
             flex-shrink: 0;
+            position: relative;
         }
 
         .debug-btn:active {
@@ -314,6 +315,10 @@
 
         .debug-stat-value.success {
             color: #28a745;
+        }
+
+        .debug-stat-value.warning {
+            color: #ffc107;
         }
 
         .debug-section {
@@ -1102,7 +1107,7 @@
             </button>
             <button class="debug-action-btn primary" id="debugFix">
                 <span class="material-symbols-outlined">build</span>
-                Attempt Fix
+                Test Cloudinary
             </button>
         </div>
     </div>
@@ -1212,12 +1217,12 @@
                         </div>
                     </div>
 
-                    <!-- Images -->
+                    <!-- Images - FIXED Cloudinary Upload -->
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
                             <span class="material-symbols-outlined">cloud_upload</span>
-                            <p>Tap to upload photos</p>
+                            <p>Tap to upload photos to Cloudinary</p>
                         </div>
                         <div id="imagePreviewContainer" class="image-preview-container"></div>
                     </div>
@@ -1241,7 +1246,7 @@
 
     <!-- Image source menu -->
     <div class="image-source-menu" id="imageSourceMenu">
-        <div class="menu-header">Add photo</div>
+        <div class="menu-header">Add photo to Cloudinary</div>
         <div class="menu-option" id="takePhotoOption">
             <span class="material-symbols-outlined">photo_camera</span>
             <span>Take photo</span>
@@ -1291,12 +1296,20 @@
         (function() {
             'use strict';
 
+            // ===== CONFIG =====
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            
+            if (window.MAPBOX_TOKEN) {
+                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+            }
+
             // ===== ADVANCED DEBUG SYSTEM =====
             const Debugger = {
                 logs: [],
                 errors: [],
                 warnings: [],
                 successes: [],
+                taskActions: [],
                 
                 init() {
                     this.panel = document.getElementById('debugPanel');
@@ -1313,7 +1326,10 @@
                     this.closeBtn.addEventListener('click', () => this.close());
                     this.clearBtn.addEventListener('click', () => this.clear());
                     this.exportBtn.addEventListener('click', () => this.exportReport());
-                    this.fixBtn.addEventListener('click', () => this.attemptFix());
+                    this.fixBtn.addEventListener('click', () => this.testCloudinary());
+                    
+                    // Track all task actions
+                    this.trackTaskActions();
                     
                     // Track uncaught errors
                     window.onerror = (msg, url, line, col, error) => {
@@ -1327,6 +1343,45 @@
                     
                     this.log('Debug system initialized', 'success');
                     this.updateSystemStatus();
+                },
+                
+                trackTaskActions() {
+                    // Track create task open
+                    document.getElementById('openCreateTaskBtn').addEventListener('click', () => {
+                        this.log('TASK ACTION: Create task opened', 'info');
+                    });
+                    
+                    // Track image upload attempts
+                    document.getElementById('takePhotoOption').addEventListener('click', () => {
+                        this.log('TASK ACTION: Take photo selected', 'info');
+                    });
+                    
+                    document.getElementById('chooseFromGalleryOption').addEventListener('click', () => {
+                        this.log('TASK ACTION: Choose from gallery selected', 'info');
+                    });
+                    
+                    // Track when options
+                    document.getElementById('whenNowBtn').addEventListener('click', () => {
+                        this.log('TASK ACTION: When - Now selected', 'info');
+                    });
+                    
+                    document.getElementById('whenLaterBtn').addEventListener('click', () => {
+                        this.log('TASK ACTION: When - Later selected', 'info');
+                    });
+                    
+                    // Track budget options
+                    document.getElementById('fixedBudgetBtn').addEventListener('click', () => {
+                        this.log('TASK ACTION: Budget - Fixed selected', 'info');
+                    });
+                    
+                    document.getElementById('openBudgetBtn').addEventListener('click', () => {
+                        this.log('TASK ACTION: Budget - Open to offers selected', 'info');
+                    });
+                    
+                    // Track map modal
+                    document.getElementById('openMapBtn').addEventListener('click', () => {
+                        this.log('TASK ACTION: Map modal opened', 'info');
+                    });
                 },
                 
                 log(message, type = 'info', data = null) {
@@ -1353,17 +1408,16 @@
                     this.renderLogs();
                     this.renderErrorReports();
                     
-                    // Also console.log for debugging
                     console.log(`[${type.toUpperCase()}] ${message}`, data || '');
                 },
                 
                 analyzeError(message, data) {
                     let suggestion = '';
                     
-                    if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+                    if (message.includes('upload') || message.includes('Cloudinary')) {
+                        suggestion = 'Check if your backend /api/upload endpoint exists and is configured with your Cloudinary API keys. Make sure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set on your backend.';
+                    } else if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
                         suggestion = 'Check if your backend server is running at https://taskmartapp.onrender.com. CORS might be blocking the request.';
-                    } else if (message.includes('Upload failed')) {
-                        suggestion = 'Verify that your /api/upload endpoint exists and accepts multipart/form-data. Check Cloudinary configuration on backend.';
                     } else if (message.includes('Geolocation')) {
                         suggestion = 'Make sure you\'ve granted location permissions. On iOS, check Settings > Privacy > Location Services.';
                     } else if (message.includes('Mapbox')) {
@@ -1387,8 +1441,9 @@
                     const status = {
                         'Mapbox Token': window.MAPBOX_TOKEN ? '✅ Present' : '❌ Missing',
                         'Geolocation': navigator.geolocation ? '✅ Supported' : '❌ Not Supported',
-                        'Backend URL': 'https://taskmartapp.onrender.com',
+                        'Backend URL': API_BASE_URL,
                         'Online Status': navigator.onLine ? '✅ Online' : '❌ Offline',
+                        'Cloudinary Status': '⏳ Testing...',
                         'User Agent': navigator.userAgent
                     };
                     
@@ -1426,7 +1481,7 @@
                     let suggestion = '';
                     
                     if (message.includes('upload')) {
-                        suggestion = 'Make sure your backend /api/upload endpoint is working';
+                        suggestion = 'Make sure your backend /api/upload endpoint is configured with Cloudinary API keys';
                     } else if (message.includes('location')) {
                         suggestion = 'Check location permissions in browser settings';
                     } else if (message.includes('network')) {
@@ -1436,10 +1491,31 @@
                     return suggestion ? `<div class="debug-suggestion">${suggestion}</div>` : '';
                 },
                 
+                async testCloudinary() {
+                    this.log('Testing Cloudinary connection...', 'info');
+                    
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/test-cloudinary`);
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            this.log(`✅ Cloudinary configured with cloud: ${data.cloudName}`, 'success');
+                            document.querySelector('#systemStatus').innerHTML += `
+                                <div class="debug-log success">✅ Cloudinary: Connected (${data.cloudName})</div>
+                            `;
+                        } else {
+                            this.log(`❌ Cloudinary error: ${data.error}`, 'error');
+                        }
+                    } catch (error) {
+                        this.log(`❌ Cloudinary test failed: ${error.message}`, 'error');
+                    }
+                },
+                
                 open() {
                     this.panel.classList.add('active');
                     this.updateSystemStatus();
                     this.log('Debug panel opened', 'info');
+                    this.testCloudinary();
                 },
                 
                 close() {
@@ -1470,9 +1546,11 @@
                             mapboxToken: !!window.MAPBOX_TOKEN,
                             geolocation: !!navigator.geolocation,
                             online: navigator.onLine,
-                            userAgent: navigator.userAgent
+                            userAgent: navigator.userAgent,
+                            backendUrl: API_BASE_URL
                         },
                         recentErrors: this.errors.slice(0, 10),
+                        taskActions: this.logs.filter(l => l.message.includes('TASK ACTION')).slice(0, 20),
                         recentLogs: this.logs.slice(0, 20)
                     };
                     
@@ -1484,49 +1562,8 @@
                     a.click();
                     
                     this.log('Debug report exported', 'success');
-                },
-                
-                attemptFix() {
-                    this.log('Attempting to fix common issues...', 'info');
-                    
-                    // Check Mapbox token
-                    if (!window.MAPBOX_TOKEN) {
-                        this.log('❌ Mapbox token missing - Add to /config.js', 'error');
-                    } else {
-                        this.log('✅ Mapbox token present', 'success');
-                    }
-                    
-                    // Test backend connection
-                    fetch('https://taskmartapp.onrender.com/health', { 
-                        method: 'HEAD',
-                        mode: 'no-cors'
-                    }).then(() => {
-                        this.log('✅ Backend is reachable', 'success');
-                    }).catch(err => {
-                        this.log(`❌ Backend unreachable: ${err.message}`, 'error');
-                    });
-                    
-                    // Request location permissions again
-                    if (navigator.permissions) {
-                        navigator.permissions.query({ name: 'geolocation' }).then(result => {
-                            if (result.state === 'denied') {
-                                this.log('❌ Location permission denied - Please enable in browser settings', 'error');
-                            } else {
-                                this.log(`✅ Location permission: ${result.state}`, 'success');
-                            }
-                        });
-                    }
-                    
-                    this.log('Fix attempts completed. Check errors above.', 'warning');
                 }
             };
-
-            // ===== CONFIG =====
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
-            
-            if (window.MAPBOX_TOKEN) {
-                mapboxgl.accessToken = window.MAPBOX_TOKEN;
-            }
 
             // Initialize debugger
             Debugger.init();
@@ -1690,7 +1727,7 @@
 
             document.getElementById('refreshLocationBtn').addEventListener('click', refreshLocation);
 
-            // ===== IMAGE UPLOAD =====
+            // ===== CLOUDINARY IMAGE UPLOAD - FIXED =====
             const uploadArea = document.getElementById('uploadArea');
             const imageSourceMenu = document.getElementById('imageSourceMenu');
             const imagePreviewContainer = document.getElementById('imagePreviewContainer');
@@ -1709,7 +1746,7 @@
             // Take photo
             document.getElementById('takePhotoOption').addEventListener('click', () => {
                 imageSourceMenu.classList.remove('active');
-                Debugger.log('Take photo selected', 'info');
+                Debugger.log('TASK ACTION: Take photo selected - opening camera', 'info');
                 
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -1719,8 +1756,8 @@
                 input.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (file) {
-                        Debugger.log(`File selected: ${file.name} (${file.type}, ${file.size} bytes)`, 'info');
-                        await uploadToBackend(file);
+                        Debugger.log(`File selected from camera: ${file.name} (${file.type}, ${Math.round(file.size/1024)}KB)`, 'info');
+                        await uploadToCloudinary(file);
                     }
                 };
                 
@@ -1730,7 +1767,7 @@
             // Choose from gallery
             document.getElementById('chooseFromGalleryOption').addEventListener('click', () => {
                 imageSourceMenu.classList.remove('active');
-                Debugger.log('Choose from gallery selected', 'info');
+                Debugger.log('TASK ACTION: Choose from gallery selected', 'info');
                 
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -1739,9 +1776,9 @@
                 
                 input.onchange = async (e) => {
                     const files = Array.from(e.target.files);
-                    Debugger.log(`${files.length} file(s) selected`, 'info');
+                    Debugger.log(`${files.length} file(s) selected from gallery`, 'info');
                     for (const file of files) {
-                        await uploadToBackend(file);
+                        await uploadToCloudinary(file);
                     }
                 };
                 
@@ -1754,15 +1791,15 @@
                 Debugger.log('Image menu cancelled', 'info');
             });
 
-            // Upload to backend
-            async function uploadToBackend(file) {
+            // Upload to Cloudinary via backend
+            async function uploadToCloudinary(file) {
                 const formData = new FormData();
                 formData.append('image', file);
                 
                 uploadArea.style.opacity = '0.5';
                 uploadArea.style.pointerEvents = 'none';
                 
-                Debugger.log(`Uploading to ${API_BASE_URL}/api/upload...`, 'info');
+                Debugger.log(`Uploading to Cloudinary via ${API_BASE_URL}/api/upload...`, 'info');
                 
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/upload`, {
@@ -1778,7 +1815,7 @@
                     }
                     
                     const data = await response.json();
-                    Debugger.log(`Upload successful: ${JSON.stringify(data)}`, 'success');
+                    Debugger.log(`✅ Cloudinary upload successful: ${JSON.stringify(data)}`, 'success');
                     
                     uploadedImages.push({
                         url: data.url,
@@ -1787,11 +1824,11 @@
                     });
                     
                     displayImagePreviews();
-                    showSuccess('Image uploaded');
+                    showSuccess('Image uploaded to Cloudinary');
                     
                 } catch (error) {
-                    Debugger.log(`Upload error: ${error.message}`, 'error');
-                    showError(error.message);
+                    Debugger.log(`❌ Cloudinary upload error: ${error.message}`, 'error');
+                    showError('Failed to upload to Cloudinary: ' + error.message);
                 } finally {
                     uploadArea.style.opacity = '1';
                     uploadArea.style.pointerEvents = 'auto';
@@ -1813,7 +1850,7 @@
                     });
                     imagePreviewContainer.appendChild(preview);
                 });
-                Debugger.log(`Displaying ${uploadedImages.length} image previews`, 'info');
+                Debugger.log(`Displaying ${uploadedImages.length} Cloudinary image previews`, 'info');
             }
 
             // ===== REST OF YOUR WORKING CODE =====
@@ -1850,13 +1887,13 @@
             
             openCreateTaskBtn.addEventListener('click', function() {
                 createTaskContainer.style.display = 'flex';
-                Debugger.log('Create task opened', 'info');
+                Debugger.log('TASK ACTION: Create task opened', 'info');
                 setTimeout(() => taskInput.focus(), 300);
             });
 
             closeCreateTaskBtn.addEventListener('click', function() {
                 createTaskContainer.style.display = 'none';
-                Debugger.log('Create task closed', 'info');
+                Debugger.log('TASK ACTION: Create task closed', 'info');
             });
 
             taskInput.addEventListener('input', function() {
@@ -1869,11 +1906,11 @@
                 if (collapsibleSection.style.display === 'none') {
                     collapsibleSection.style.display = 'block';
                     moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
-                    Debugger.log('More details expanded', 'info');
+                    Debugger.log('TASK ACTION: More details expanded', 'info');
                 } else {
                     collapsibleSection.style.display = 'none';
                     moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
-                    Debugger.log('More details collapsed', 'info');
+                    Debugger.log('TASK ACTION: More details collapsed', 'info');
                 }
             });
 
@@ -1881,14 +1918,14 @@
                 whenNowBtn.className = 'when-option active';
                 whenLaterBtn.className = 'when-option inactive';
                 dateTimePickers.style.display = 'none';
-                Debugger.log('When: Now selected', 'info');
+                Debugger.log('TASK ACTION: When - Now selected', 'info');
             });
 
             whenLaterBtn.addEventListener('click', function() {
                 whenLaterBtn.className = 'when-option active';
                 whenNowBtn.className = 'when-option inactive';
                 dateTimePickers.style.display = 'flex';
-                Debugger.log('When: Later selected', 'info');
+                Debugger.log('TASK ACTION: When - Later selected', 'info');
             });
 
             document.getElementById('pickDateBtn').addEventListener('click', () => nativeDatePicker.showPicker());
@@ -1899,7 +1936,7 @@
                     selectedDate = this.value;
                     const parts = this.value.split('-');
                     dateDisplay.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                    Debugger.log(`Date selected: ${this.value}`, 'info');
+                    Debugger.log(`TASK ACTION: Date selected: ${this.value}`, 'info');
                 }
             });
 
@@ -1907,7 +1944,7 @@
                 if (this.value) {
                     selectedTime = this.value;
                     timeDisplay.textContent = this.value;
-                    Debugger.log(`Time selected: ${this.value}`, 'info');
+                    Debugger.log(`TASK ACTION: Time selected: ${this.value}`, 'info');
                 }
             });
 
@@ -1916,7 +1953,7 @@
                 fixedBudgetBtn.className = 'budget-option active';
                 openBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'block';
-                Debugger.log('Budget: Fixed selected', 'info');
+                Debugger.log('TASK ACTION: Budget - Fixed selected', 'info');
             });
 
             openBudgetBtn.addEventListener('click', function() {
@@ -1925,7 +1962,7 @@
                 fixedBudgetBtn.className = 'budget-option inactive';
                 fixedBudgetInput.style.display = 'none';
                 budgetAmount.value = '';
-                Debugger.log('Budget: Open to offers selected', 'info');
+                Debugger.log('TASK ACTION: Budget - Open to offers selected', 'info');
             });
 
             budgetAmount.addEventListener('input', function() {
@@ -1937,7 +1974,7 @@
 
             openMapBtn.addEventListener('click', function() {
                 mapModal.classList.add('active');
-                Debugger.log('Map modal opened', 'info');
+                Debugger.log('TASK ACTION: Map modal opened', 'info');
                 
                 setTimeout(() => {
                     if (mapModalInstance) mapModalInstance.remove();
@@ -1959,7 +1996,7 @@
 
             closeMapModalBtn.addEventListener('click', () => {
                 mapModal.classList.remove('active');
-                Debugger.log('Map modal closed', 'info');
+                Debugger.log('TASK ACTION: Map modal closed', 'info');
             });
             
             confirmLocationBtn.addEventListener('click', function() {
@@ -1967,7 +2004,7 @@
                     const lngLat = marker.getLngLat();
                     currentLat = lngLat.lat;
                     currentLng = lngLat.lng;
-                    Debugger.log(`Location selected: ${currentLat}, ${currentLng}`, 'info');
+                    Debugger.log(`TASK ACTION: Location selected from map: ${currentLat}, ${currentLng}`, 'info');
                     
                     fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
                         .then(res => res.json())
@@ -1987,7 +2024,7 @@
 
             postTaskBtn.addEventListener('click', async function() {
                 document.getElementById('loadingOverlay').classList.add('active');
-                Debugger.log('Posting task...', 'info');
+                Debugger.log('TASK ACTION: Posting task...', 'info');
                 
                 const taskData = {
                     location: {
@@ -2010,11 +2047,11 @@
                     } : {
                         type: 'open'
                     },
-                    images: uploadedImages,
+                    images: uploadedImages, // These are Cloudinary URLs
                     notes: document.getElementById('extraNotes').value
                 };
                 
-                Debugger.log(`Task data: ${JSON.stringify(taskData, null, 2)}`, 'info');
+                Debugger.log(`Task data being sent: ${JSON.stringify(taskData, null, 2)}`, 'info');
                 
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/tasks`, {
@@ -2033,7 +2070,7 @@
                     }
                     
                     const result = await response.json();
-                    Debugger.log(`Task posted successfully: ${JSON.stringify(result)}`, 'success');
+                    Debugger.log(`✅ Task posted successfully: ${JSON.stringify(result)}`, 'success');
                     
                     document.getElementById('loadingOverlay').classList.remove('active');
                     showSuccess('Task posted!');
@@ -2055,7 +2092,7 @@
                     });
                     
                 } catch (error) {
-                    Debugger.log(`Post error: ${error.message}`, 'error');
+                    Debugger.log(`❌ Post error: ${error.message}`, 'error');
                     document.getElementById('loadingOverlay').classList.remove('active');
                     showError(error.message);
                 }
