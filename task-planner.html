@@ -1197,6 +1197,49 @@
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
+            // Enhanced Debug Logger
+            const Debug = {
+                log: function(message, data = null) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const logMsg = `[${timestamp}] ${message}`;
+                    console.log(logMsg, data || '');
+                    
+                    // Also add to debug panel if it exists
+                    const logsContainer = document.getElementById('debugLogs');
+                    if (logsContainer) {
+                        const entry = document.createElement('div');
+                        entry.className = 'debug-info-item';
+                        entry.innerHTML = `<span style="opacity:0.7;">[${timestamp}]</span> ${message}`;
+                        logsContainer.prepend(entry);
+                    }
+                },
+                error: function(message, error = null) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const logMsg = `[${timestamp}] ERROR: ${message}`;
+                    console.error(logMsg, error || '');
+                    
+                    const logsContainer = document.getElementById('debugLogs');
+                    if (logsContainer) {
+                        const entry = document.createElement('div');
+                        entry.className = 'debug-error-item';
+                        entry.innerHTML = `<span style="opacity:0.7;">[${timestamp}]</span> ❌ ${message}`;
+                        logsContainer.prepend(entry);
+                    }
+                },
+                success: function(message) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    console.log(`[${timestamp}] ✅ ${message}`);
+                    
+                    const logsContainer = document.getElementById('debugLogs');
+                    if (logsContainer) {
+                        const entry = document.createElement('div');
+                        entry.className = 'debug-success-item';
+                        entry.innerHTML = `<span style="opacity:0.7;">[${timestamp}]</span> ✅ ${message}`;
+                        logsContainer.prepend(entry);
+                    }
+                }
+            };
+
             // ===== MAP INIT - DARK STYLE =====
             const map = new mapboxgl.Map({
                 container: 'map',
@@ -1204,6 +1247,8 @@
                 center: [28.034088, -26.195246],
                 zoom: 15
             });
+
+            Debug.log('Map initialized');
 
             // ===== DEBUGGER =====
             const Debugger = {
@@ -1226,14 +1271,19 @@
                     this.clearBtn.addEventListener('click', () => this.clear());
                     this.testBtn.addEventListener('click', () => this.testUpload());
                     this.checkSystem();
+                    Debug.log('Debug system initialized');
                 },
                 
                 toggle() {
                     this.panel.classList.toggle('active');
                     if (this.panel.classList.contains('active')) this.refreshDisplay();
+                    Debug.log('Debug panel toggled');
                 },
                 
-                close() { this.panel.classList.remove('active'); },
+                close() { 
+                    this.panel.classList.remove('active');
+                    Debug.log('Debug panel closed');
+                },
                 
                 log(message, type = 'info', data = null) {
                     const entry = { timestamp: new Date().toLocaleTimeString(), message, type, data: data ? JSON.stringify(data) : null };
@@ -1241,15 +1291,10 @@
                     if (type === 'error') { 
                         this.errors.push(entry); 
                         this.btn.classList.add('has-errors');
-                        console.error(`[${type}] ${message}`, data || '');
                     } else if (type === 'warning') {
                         this.warnings.push(entry);
-                        console.warn(`[${type}] ${message}`, data || '');
                     } else if (type === 'success') {
                         this.successes.push(entry);
-                        console.log(`[${type}] ${message}`, data || '');
-                    } else {
-                        console.log(`[${type}] ${message}`, data || '');
                     }
                     
                     this.errorCount.textContent = this.errors.length;
@@ -1277,25 +1322,25 @@
                     this.logsContainer.innerHTML = '';
                     this.errorCount.textContent = this.warningCount.textContent = this.successCount.textContent = '0';
                     this.btn.classList.remove('has-errors');
-                    this.log('Debug logs cleared', 'warning');
+                    Debug.log('Debug logs cleared');
                 },
                 
                 checkSystem() {
-                    if (!window.MAPBOX_TOKEN) this.log('Mapbox token missing', 'error');
-                    else this.log('Mapbox token detected', 'success');
-                    if (!navigator.geolocation) this.log('Geolocation not supported', 'error');
-                    else this.log('Geolocation available', 'success');
-                    if (!navigator.onLine) this.log('App is offline', 'warning');
+                    if (!window.MAPBOX_TOKEN) Debug.error('Mapbox token missing');
+                    else Debug.success('Mapbox token detected');
+                    if (!navigator.geolocation) Debug.error('Geolocation not supported');
+                    else Debug.success('Geolocation available');
+                    if (!navigator.onLine) Debug.error('App is offline');
                 },
                 
                 testUpload() {
-                    this.log('Testing upload endpoint...', 'info');
+                    Debug.log('Testing upload endpoint...');
                     setTimeout(() => {
                         const success = Math.random() > 0.3;
                         if (success) {
-                            this.log('✅ Upload test successful - server responded with 200', 'success');
+                            Debug.success('Upload test successful');
                         } else {
-                            this.log('❌ Upload test failed - network timeout', 'error');
+                            Debug.error('Upload test failed');
                         }
                     }, 1000);
                 }
@@ -1317,7 +1362,7 @@
                 else if (type === 'warning') icon.textContent = 'warning';
                 else icon.textContent = 'info';
                 
-                Debugger.log(`Upload: ${message}`, type);
+                Debug.log(`Upload: ${message}`);
                 if (type === 'success' || type === 'error') setTimeout(() => status.style.display = 'none', 4000);
             }
 
@@ -1336,8 +1381,8 @@
             // ===== STATE =====
             let currentLat = null, currentLng = null, uploadedImages = [];
 
-            map.on('load', () => Debugger.log('Dark map loaded', 'success'));
-            map.on('error', (e) => Debugger.log(`Map error: ${e.error.message}`, 'error'));
+            map.on('load', () => Debug.success('Dark map loaded'));
+            map.on('error', (e) => Debug.error(`Map error: ${e.error.message}`));
 
             // ===== GET LOCATION IMMEDIATELY =====
             if (navigator.geolocation) {
@@ -1346,20 +1391,20 @@
                         currentLat = pos.coords.latitude;
                         currentLng = pos.coords.longitude;
                         map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                        Debugger.log(`Location received: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`, 'success');
+                        Debug.success(`Location received: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`);
                         
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
                             .then(r => r.json())
                             .then(d => { 
                                 if (d.features && d.features[0]) {
                                     document.getElementById('locationInput').value = d.features[0].place_name;
-                                    Debugger.log('City detected', 'success');
+                                    Debug.success('City detected');
                                 }
                             })
-                            .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
+                            .catch(err => Debug.error(`Geocoding error: ${err.message}`));
                     },
                     (error) => { 
-                        Debugger.log(`Geolocation error: ${error.message}`, 'error');
+                        Debug.error(`Geolocation error: ${error.message}`);
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
@@ -1369,18 +1414,18 @@
             document.getElementById('refreshLocationBtn').addEventListener('click', function() {
                 const btn = this;
                 btn.classList.add('loading');
-                Debugger.log('Manual location refresh', 'info');
+                Debug.log('Manual location refresh');
                 
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => { 
                             currentLat = pos.coords.latitude; currentLng = pos.coords.longitude; 
                             map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                            Debugger.log('Location refreshed', 'success');
+                            Debug.success('Location refreshed');
                             btn.classList.remove('loading');
                         },
                         (e) => { 
-                            Debugger.log(`Refresh failed: ${e.message}`, 'error');
+                            Debug.error(`Refresh failed: ${e.message}`);
                             btn.classList.remove('loading');
                         }
                     );
@@ -1414,12 +1459,12 @@
             // ===== OPEN/CLOSE TASK =====
             openCreateTaskBtn.addEventListener('click', ()=>{
                 createTaskContainer.style.display = 'flex';
-                Debugger.log('Create task opened', 'info');
+                Debug.log('Create task opened');
             });
             
             closeCreateTaskBtn.addEventListener('click', ()=>{
                 createTaskContainer.style.display = 'none';
-                Debugger.log('Create task closed', 'info');
+                Debug.log('Create task closed');
             });
 
             // ===== TASK INPUT & VALIDATION =====
@@ -1456,11 +1501,11 @@
                 if (collapsibleSection.style.display === 'none') {
                     collapsibleSection.style.display = 'block';
                     moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
-                    Debugger.log('More details expanded', 'info');
+                    Debug.log('More details expanded');
                 } else {
                     collapsibleSection.style.display = 'none';
                     moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
-                    Debugger.log('More details collapsed', 'info');
+                    Debug.log('More details collapsed');
                 }
             });
 
@@ -1470,7 +1515,7 @@
                 whenLaterBtn.className = 'when-option inactive'; 
                 dateTimePickers.style.display = 'none'; 
                 validateForm();
-                Debugger.log('When: Now selected', 'info');
+                Debug.log('When: Now selected');
             });
             
             whenLaterBtn.addEventListener('click', ()=>{ 
@@ -1478,7 +1523,7 @@
                 whenNowBtn.className = 'when-option inactive'; 
                 dateTimePickers.style.display = 'flex'; 
                 validateForm();
-                Debugger.log('When: Later selected', 'info');
+                Debug.log('When: Later selected');
             });
 
             // ===== DATE & TIME =====
@@ -1490,7 +1535,7 @@
                     const d = new Date(this.value);
                     dateDisplay.textContent = d.toLocaleDateString('en-GB');
                     validateForm();
-                    Debugger.log(`Date selected: ${this.value}`, 'success');
+                    Debug.log(`Date selected: ${this.value}`);
                 }
             });
             
@@ -1498,7 +1543,7 @@
                 if (this.value) {
                     timeDisplay.textContent = this.value;
                     validateForm();
-                    Debugger.log(`Time selected: ${this.value}`, 'success');
+                    Debug.log(`Time selected: ${this.value}`);
                 }
             });
 
@@ -1508,7 +1553,7 @@
                 openBudgetBtn.className = 'budget-option inactive'; 
                 fixedBudgetInput.style.display = 'block'; 
                 validateForm();
-                Debugger.log('Budget: Fixed selected', 'info');
+                Debug.log('Budget: Fixed selected');
             });
             
             openBudgetBtn.addEventListener('click', ()=>{ 
@@ -1516,7 +1561,7 @@
                 fixedBudgetBtn.className = 'budget-option inactive'; 
                 fixedBudgetInput.style.display = 'none'; 
                 validateForm();
-                Debugger.log('Budget: Open to offers selected', 'info');
+                Debug.log('Budget: Open to offers selected');
             });
 
             // ===== IMAGE UPLOAD =====
@@ -1525,7 +1570,7 @@
             uploadArea.addEventListener('click', ()=>{
                 if (!isUserLoggedIn()) { 
                     showUploadStatus('Please log in to upload images', 'warning');
-                    Debugger.log('Upload blocked - user not logged in', 'warning');
+                    Debug.log('Upload blocked - user not logged in');
                     return; 
                 }
                 
@@ -1536,7 +1581,7 @@
                 
                 input.onchange = (e) => {
                     const files = Array.from(e.target.files);
-                    Debugger.log(`${files.length} file(s) selected`, 'info');
+                    Debug.log(`${files.length} file(s) selected`);
                     files.forEach(file => handleFileUpload(file));
                 };
                 
@@ -1546,19 +1591,19 @@
             function handleFileUpload(file) {
                 if (!file.type.startsWith('image/')) {
                     showUploadStatus('File must be an image', 'error');
-                    Debugger.log(`Upload failed: ${file.name} is not an image`, 'error');
+                    Debug.error(`Upload failed: ${file.name} is not an image`);
                     return;
                 }
                 
                 if (file.size > 5 * 1024 * 1024) {
                     showUploadStatus('File too large (max 5MB)', 'error');
-                    Debugger.log(`Upload failed: ${file.name} exceeds 5MB`, 'error');
+                    Debug.error(`Upload failed: ${file.name} exceeds 5MB`);
                     return;
                 }
                 
                 showUploadStatus(`Uploading ${file.name}...`, 'info');
                 showUploadProgress('Upload in progress...');
-                Debugger.log(`Upload started: ${file.name} (${(file.size/1024).toFixed(1)}KB)`, 'info');
+                Debug.log(`Upload started: ${file.name} (${(file.size/1024).toFixed(1)}KB)`);
                 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -1567,13 +1612,13 @@
                         displayPreviews();
                         showUploadStatus('Upload successful!', 'success');
                         hideUploadProgress();
-                        Debugger.log(`Upload successful: ${file.name}`, 'success');
+                        Debug.success(`Upload successful: ${file.name}`);
                     }, 800);
                 };
                 reader.onerror = () => {
                     showUploadStatus('Upload failed - file read error', 'error');
                     hideUploadProgress();
-                    Debugger.log(`Upload failed: file read error for ${file.name}`, 'error');
+                    Debug.error(`Upload failed: file read error for ${file.name}`);
                 };
                 reader.readAsDataURL(file);
             }
@@ -1596,14 +1641,14 @@
                         uploadedImages.splice(idx, 1); 
                         displayPreviews(); 
                         showUploadStatus('Image removed', 'warning');
-                        Debugger.log('Image removed', 'warning');
+                        Debug.log('Image removed');
                     };
                     
                     wrapper.appendChild(img); 
                     wrapper.appendChild(rm); 
                     container.appendChild(wrapper);
                 });
-                Debugger.log(`Displaying ${uploadedImages.length} image previews`, 'info');
+                Debug.log(`Displaying ${uploadedImages.length} image previews`);
             }
 
             // ===== MAP MODAL =====
@@ -1618,7 +1663,7 @@
 
             openMapBtn.addEventListener('click', ()=> {
                 mapModal.classList.add('active');
-                Debugger.log('Map modal opened', 'info');
+                Debug.log('Map modal opened');
                 
                 setTimeout(() => {
                     if (mapModalInstance) mapModalInstance.remove();
@@ -1641,26 +1686,26 @@
                         const lngLat = marker.getLngLat();
                         currentLat = lngLat.lat;
                         currentLng = lngLat.lng;
-                        Debugger.log('Marker dragged to new position', 'info');
+                        Debug.log('Marker dragged to new position');
                         
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
                             .then(res => res.json())
                             .then(data => {
                                 if (data.features && data.features[0]) {
                                     locationInput.value = data.features[0].place_name;
-                                    Debugger.log('Address updated from drag', 'success');
+                                    Debug.success('Address updated from drag');
                                 }
                             })
-                            .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
+                            .catch(err => Debug.error(`Geocoding error: ${err.message}`));
                     });
                     
-                    Debugger.log('Map modal initialized', 'success');
+                    Debug.success('Map modal initialized');
                 }, 100);
             });
 
             closeMapModalBtn.addEventListener('click', () => {
                 mapModal.classList.remove('active');
-                Debugger.log('Map modal closed', 'info');
+                Debug.log('Map modal closed');
             });
             
             confirmLocationBtn.addEventListener('click', () => {
@@ -1674,10 +1719,10 @@
                         .then(data => {
                             if (data.features && data.features[0]) {
                                 locationInput.value = data.features[0].place_name;
-                                Debugger.log('Location confirmed from map', 'success');
+                                Debug.success('Location confirmed from map');
                             }
                         })
-                        .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
+                        .catch(err => Debug.error(`Geocoding error: ${err.message}`));
                 }
                 mapModal.classList.remove('active');
                 validateForm();
@@ -1690,7 +1735,7 @@
             nextBtn.addEventListener('click', ()=>{
                 createTaskContainer.style.display = 'none';
                 offersContainer.classList.add('active');
-                Debugger.log('Offers page opened', 'info');
+                Debug.log('Offers page opened');
                 
                 setTimeout(() => {
                     if (offersMap) offersMap.remove();
@@ -1706,7 +1751,7 @@
                         .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
                         .addTo(offersMap);
                     
-                    Debugger.log('Offers map initialized', 'success');
+                    Debug.success('Offers map initialized');
                 }, 100);
             });
 
@@ -1718,20 +1763,20 @@
                     e.stopPropagation();
                     offersContainer.classList.remove('active');
                     createTaskContainer.style.display = 'flex';
-                    Debugger.log('Back to create task', 'info');
+                    Debug.log('Back to create task');
                 });
             }
 
             // ===== POST OFFER BUTTON =====
             document.getElementById('postOfferBtn').addEventListener('click', ()=>{
                 document.getElementById('loadingOverlay').classList.add('active');
-                Debugger.log('Posting task...', 'info');
+                Debug.log('Posting task...');
                 
                 setTimeout(() => {
                     document.getElementById('loadingOverlay').classList.remove('active');
                     showUploadStatus('Task posted successfully!', 'success');
                     offersContainer.classList.remove('active');
-                    Debugger.log('Task posted successfully!', 'success');
+                    Debug.success('Task posted successfully!');
                     
                     // Reset form
                     taskInput.value = '';
@@ -1759,17 +1804,80 @@
 
             // Initial validation
             validateForm();
+            Debug.log('Task planner initialized');
         })();
     </script>
 
-    <!-- Load profile menu from GitHub -->
+    <!-- Load profile menu from GitHub with debug -->
     <script>
-        fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('profile-menu-container').innerHTML = html;
-            })
-            .catch(error => console.error('Failed to load profile menu:', error));
+        (function() {
+            console.log('🔄 Starting to load profile menu...');
+            
+            const container = document.getElementById('profile-menu-container');
+            if (!container) {
+                console.error('❌ Profile menu container not found!');
+                return;
+            }
+            
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(response => {
+                    console.log('📥 Profile menu fetch response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    console.log('✅ Profile menu HTML loaded, length:', html.length);
+                    container.innerHTML = html;
+                    
+                    // Check if the menu button exists after insertion
+                    setTimeout(() => {
+                        const menuBtn = document.querySelector('.profile-menu .menu-btn, #profileMenuBtn');
+                        if (menuBtn) {
+                            console.log('✅ Profile menu button found in DOM');
+                            
+                            // Add a direct click handler for debugging
+                            menuBtn.addEventListener('click', function(e) {
+                                console.log('👆 Profile menu button clicked!');
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Try to find and open the modal
+                                const overlay = document.querySelector('.profile-menu .modal-overlay, #profileModalOverlay');
+                                if (overlay) {
+                                    console.log('📱 Modal overlay found, adding active class');
+                                    overlay.classList.add('active');
+                                    document.body.classList.add('modal-open');
+                                    
+                                    // Try to render profile content
+                                    const renderFunction = window.renderProfile || function() {
+                                        console.log('⚠️ No renderProfile function found');
+                                    };
+                                    if (typeof renderFunction === 'function') {
+                                        renderFunction();
+                                    }
+                                } else {
+                                    console.error('❌ Modal overlay not found');
+                                }
+                            });
+                            
+                            console.log('✅ Debug click handler attached to menu button');
+                        } else {
+                            console.error('❌ Profile menu button not found after insertion');
+                            console.log('Container HTML:', container.innerHTML.substring(0, 200));
+                        }
+                    }, 500);
+                })
+                .catch(error => {
+                    console.error('❌ Failed to load profile menu:', error);
+                    container.innerHTML = `
+                        <button style="position:fixed; top:20px; left:20px; width:44px; height:44px; background:white; border-radius:50%; border:none; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000;" onclick="alert('Menu failed to load: ' + '${error.message}')">
+                            <span class="material-symbols-outlined" style="color:#000;">menu</span>
+                        </button>
+                    `;
+                });
+        })();
     </script>
 </body>
 </html>
