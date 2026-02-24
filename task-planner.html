@@ -942,19 +942,21 @@
             color: #003E71 !important;
         }
 
+        /* Payment full screen - FIXED */
         .payment-fullscreen {
             position: fixed;
-            bottom: 0;
+            top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: white;
-            z-index: 3000000;
+            z-index: 4000000;
             transform: translateY(100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease-in-out;
             border-top-left-radius: 7px;
             border-top-right-radius: 7px;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            visibility: visible;
         }
 
         .payment-fullscreen.active {
@@ -967,6 +969,7 @@
             justify-content: space-between;
             padding: 1.5rem 1.25rem 1rem;
             border-bottom: 1px solid rgba(0, 62, 113, 0.08);
+            background: white;
         }
 
         .payment-fullscreen-header h3 {
@@ -979,16 +982,28 @@
             background: transparent;
             border: none;
             cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-payment-btn:hover {
+            background: rgba(0, 62, 113, 0.05);
         }
 
         .close-payment-btn .material-symbols-outlined {
             color: #000 !important;
+            font-size: 28px !important;
         }
 
         .payment-fullscreen-content {
             padding: 1.5rem 1.25rem;
             height: calc(100% - 80px);
             overflow-y: auto;
+            background: white;
         }
 
         .post-offer-button {
@@ -1789,21 +1804,46 @@
                 createTaskContainer.style.display = 'flex';
             });
 
-            // ===== PAYMENT FULL SCREEN =====
+            // ===== PAYMENT FULL SCREEN - FIXED =====
             const paymentHeader = document.getElementById('paymentHeader');
             const paymentFullscreen = document.getElementById('paymentFullscreen');
             const closePaymentBtn = document.getElementById('closePaymentBtn');
             const paymentChevron = document.getElementById('paymentChevron');
 
-            paymentHeader.addEventListener('click', ()=>{
-                paymentFullscreen.classList.add('active');
-                paymentChevron.textContent = 'expand_less';
-            });
+            console.log('Payment elements:', paymentHeader, paymentFullscreen);
 
-            closePaymentBtn.addEventListener('click', ()=>{
-                paymentFullscreen.classList.remove('active');
-                paymentChevron.textContent = 'chevron_right';
-            });
+            if (paymentHeader && paymentFullscreen) {
+                paymentHeader.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Payment clicked - opening full screen');
+                    paymentFullscreen.classList.add('active');
+                    paymentChevron.textContent = 'expand_less';
+                    document.body.style.overflow = 'hidden';
+                });
+            }
+
+            if (closePaymentBtn && paymentFullscreen) {
+                closePaymentBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Close clicked - closing full screen');
+                    paymentFullscreen.classList.remove('active');
+                    paymentChevron.textContent = 'chevron_right';
+                    document.body.style.overflow = '';
+                });
+            }
+
+            // Close by clicking outside (optional)
+            if (paymentFullscreen) {
+                paymentFullscreen.addEventListener('click', (e) => {
+                    if (e.target === paymentFullscreen) {
+                        paymentFullscreen.classList.remove('active');
+                        paymentChevron.textContent = 'chevron_right';
+                        document.body.style.overflow = '';
+                    }
+                });
+            }
 
             // ===== POST OFFER BUTTON =====
             document.getElementById('postOfferBtn').addEventListener('click', ()=>{
