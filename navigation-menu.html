@@ -346,30 +346,40 @@
 
             // ==================== MODAL CONTROLS ====================
             function openNav() {
-                document.getElementById('navProfileOverlay').classList.add('active');
-                document.body.classList.add('modal-open');
-                renderProfileContent();
+                const overlay = document.getElementById('navProfileOverlay');
+                if (overlay) {
+                    overlay.classList.add('active');
+                    document.body.classList.add('modal-open');
+                    renderProfileContent();
+                }
             }
 
             function closeNav() {
-                document.getElementById('navProfileOverlay').classList.remove('active');
-                document.body.classList.remove('modal-open');
+                const overlay = document.getElementById('navProfileOverlay');
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
             }
 
             // ==================== TOAST ====================
             function showToast(message, isError = false) {
                 const toast = document.getElementById('navToast');
-                toast.textContent = message;
-                toast.className = 'toast' + (isError ? ' error' : '') + ' show';
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
+                if (toast) {
+                    toast.textContent = message;
+                    toast.className = 'toast' + (isError ? ' error' : '') + ' show';
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                    }, 3000);
+                }
             }
 
             // ==================== RENDER PROFILE CONTENT ====================
             function renderProfileContent() {
                 currentUser = getCurrentUser();
                 const content = document.getElementById('navModalContent');
+                
+                if (!content) return;
                 
                 if (!currentUser) {
                     content.innerHTML = `
@@ -526,20 +536,33 @@
             }
 
             // ==================== INITIALIZE ====================
-            document.getElementById('navMenuBtn').addEventListener('click', openNav);
-            document.getElementById('navCloseBtn').addEventListener('click', closeNav);
+            // Use setTimeout to ensure DOM is fully loaded
+            function init() {
+                const menuBtn = document.getElementById('navMenuBtn');
+                const closeBtn = document.getElementById('navCloseBtn');
+                const overlay = document.getElementById('navProfileOverlay');
 
-            // Close on overlay click
-            document.getElementById('navProfileOverlay').addEventListener('click', function(e) {
-                if (e.target === this) closeNav();
-            });
-
-            // Prevent body scroll when modal is open
-            document.addEventListener('visibilitychange', function() {
-                if (document.getElementById('navProfileOverlay').classList.contains('active')) {
-                    document.body.classList.add('modal-open');
+                if (menuBtn) {
+                    menuBtn.addEventListener('click', openNav);
                 }
-            });
+
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closeNav);
+                }
+
+                if (overlay) {
+                    overlay.addEventListener('click', function(e) {
+                        if (e.target === this) closeNav();
+                    });
+                }
+            }
+
+            // Run init when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
         })();
     </script>
 </body>
