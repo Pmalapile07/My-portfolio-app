@@ -1,544 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Navigation Menu Component</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
-    
-    <style>
-        /* ALL STYLES ARE SCOPED TO THIS COMPONENT ONLY */
-        .nav-component * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navigation Menu Component</title>
 
-        .nav-component {
-            font-family: 'Manrope', sans-serif;
-            position: relative;
-            z-index: 9999;
-        }
+<!-- Fonts -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
 
-        /* Hamburger Menu Button */
-        .nav-component .nav-hamburger {
-            position: fixed !important;
-            top: 20px !important;
-            left: 20px !important;
-            width: 44px !important;
-            height: 44px !important;
-            background: white !important;
-            border-radius: 50% !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 10000 !important;
-            cursor: pointer !important;
-            border: none !important;
-        }
+<style>
+/* --- Scoped Styles --- */
+.nav-component * { margin:0; padding:0; box-sizing:border-box; }
+.nav-component { font-family:'Manrope', sans-serif; position:relative; z-index:9999; }
 
-        .nav-component .nav-hamburger .material-symbols-outlined {
-            color: #000 !important;
-            font-size: 24px !important;
-        }
+/* Hamburger Button */
+.nav-hamburger {
+    position: fixed; top:20px; left:20px; width:44px; height:44px;
+    background:white; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:10000; cursor:pointer; border:none;
+}
+.nav-hamburger .material-symbols-outlined { font-size:24px; color:#000; }
 
-        /* Modal Overlay */
-        .nav-component .nav-overlay {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: rgba(0, 0, 0, 0.5) !important;
-            backdrop-filter: blur(8px) !important;
-            display: none !important;
-            align-items: flex-end !important;
-            justify-content: center !important;
-            z-index: 999999 !important;
-            padding: 1rem !important;
-        }
+/* Overlay */
+.nav-overlay {
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    display: none; align-items:flex-end; justify-content:center;
+    z-index:999999; padding:1rem;
+}
+.nav-overlay.active { display:flex; }
 
-        .nav-component .nav-overlay.active {
-            display: flex !important;
-        }
+/* Profile Modal */
+.profile-modal {
+    background:white; border-top-left-radius:24px; border-top-right-radius:24px;
+    width:100%; max-width:500px; height:70vh; transform:translateY(100%);
+    transition: transform 0.3s ease-out; display:flex; flex-direction:column;
+    box-shadow:0 -20px 60px rgba(0,0,0,0.3);
+}
+.nav-overlay.active .profile-modal { transform:translateY(0); }
 
-        .nav-component .profile-modal {
-            background: white !important;
-            border-top-left-radius: 24px !important;
-            border-top-right-radius: 24px !important;
-            width: 100% !important;
-            max-width: 500px !important;
-            height: 70vh !important;
-            transform: translateY(100%) !important;
-            transition: transform 0.3s ease-out !important;
-            display: flex !important;
-            flex-direction: column !important;
-            box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.3) !important;
-        }
+.modal-header { display:flex; justify-content:space-between; align-items:center; padding:1.5rem; border-bottom:1px solid rgba(0,0,0,0.1); background:white; }
+.modal-header h2 { font-size:1.2rem; color:#045B92; font-weight:600; }
+.close-btn { background:none; border:none; cursor:pointer; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+.close-btn .material-symbols-outlined { color:#FF286F; font-size:24px; }
 
-        .nav-component .nav-overlay.active .profile-modal {
-            transform: translateY(0) !important;
-        }
+.modal-content { flex:1; overflow-y:auto; padding:1.5rem; }
 
-        .nav-component .modal-header {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            padding: 1.5rem !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-            background: white !important;
-        }
+/* Profile Info */
+.profile-info { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; padding:1rem; background:#f8fafd; border-radius:12px; }
+.avatar { width:60px; height:60px; border-radius:50%; background: linear-gradient(135deg,#045B92,#FF286F); display:flex; align-items:center; justify-content:center; color:white; font-weight:600; font-size:1.5rem; }
+.profile-details h3 { font-size:1.1rem; color:#045B92; margin-bottom:0.25rem; font-weight:600; }
+.profile-details p { font-size:0.9rem; color:#64748b; }
 
-        .nav-component .modal-header h2 {
-            font-size: 1.2rem !important;
-            color: #045B92 !important;
-            margin: 0 !important;
-            font-weight: 600 !important;
-        }
+/* Edit Form */
+.edit-form { margin-bottom:2rem; padding:1rem; background:#f8fafd; border-radius:12px; display:none; }
+.form-group { margin-bottom:1rem; }
+.form-group label { font-size:0.8rem; color:#64748b; margin-bottom:0.25rem; display:block; }
+.form-group input { width:100%; padding:0.75rem; border:1px solid rgba(4,91,146,0.2); border-radius:8px; font-family:'Manrope',sans-serif; font-size:0.95rem; }
+.form-group input:focus { outline:none; border-color:#FF286F; }
+.save-btn { width:100%; padding:0.75rem; background:#FF286F; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-top:0.5rem; }
 
-        .nav-component .close-btn {
-            background: none !important;
-            border: none !important;
-            cursor: pointer !important;
-            padding: 8px !important;
-            width: 40px !important;
-            height: 40px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
+/* Menu Items */
+.menu-items { margin-top:1rem; }
+.menu-item { display:flex; flex-direction:column; border-bottom:1px solid rgba(0,0,0,0.05); cursor:pointer; transition:background 0.2s; }
+.menu-item > .menu-header { display:flex; align-items:center; justify-content:space-between; padding:1rem; }
+.menu-item:hover { background: rgba(255,40,111,0.05); }
+.menu-item-left { display:flex; align-items:center; gap:1rem; }
+.menu-item-left .material-symbols-outlined { color:#045B92; }
+.menu-item.delete .menu-item-left span,
+.menu-item.delete .menu-item-left .material-symbols-outlined { color:#ef4444; }
+.menu-arrow { color:#94a3b8; transition: transform 0.3s ease; }
+.menu-item.expanded .menu-arrow { transform: rotate(90deg); }
 
-        .nav-component .close-btn .material-symbols-outlined {
-            color: #FF286F !important;
-            font-size: 24px !important;
-        }
+/* Submenu */
+.submenu { display:none; flex-direction:column; padding-left:1rem; padding-bottom:0.5rem; }
+.submenu p { padding:0.5rem 0; font-size:0.9rem; color:#333; cursor:pointer; }
 
-        .nav-component .modal-content {
-            flex: 1 !important;
-            overflow-y: auto !important;
-            padding: 1.5rem !important;
-        }
+/* Toast */
+.toast { position: fixed; bottom:2rem; left:1rem; right:1rem; max-width:400px; margin:0 auto; background:#10b981; color:white; padding:1rem; border-radius:12px; text-align:center; display:none; z-index:1000000; }
+.toast.show { display:block; }
+.toast.error { background:#ef4444; }
 
-        /* Profile Info */
-        .nav-component .profile-info {
-            display: flex !important;
-            align-items: center !important;
-            gap: 1rem !important;
-            margin-bottom: 2rem !important;
-            padding: 1rem !important;
-            background: #f8fafd !important;
-            border-radius: 12px !important;
-        }
-
-        .nav-component .avatar {
-            width: 60px !important;
-            height: 60px !important;
-            border-radius: 50% !important;
-            background: linear-gradient(135deg, #045B92, #FF286F) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            color: white !important;
-            font-weight: 600 !important;
-            font-size: 1.5rem !important;
-            flex-shrink: 0 !important;
-        }
-
-        .nav-component .profile-details {
-            flex: 1 !important;
-        }
-
-        .nav-component .profile-details h3 {
-            font-size: 1.1rem !important;
-            color: #045B92 !important;
-            margin-bottom: 0.25rem !important;
-            font-weight: 600 !important;
-        }
-
-        .nav-component .profile-details p {
-            color: #64748b !important;
-            font-size: 0.9rem !important;
-        }
-
-        /* Edit Profile Form */
-        .nav-component .edit-form {
-            margin-bottom: 2rem !important;
-            padding: 1rem !important;
-            background: #f8fafd !important;
-            border-radius: 12px !important;
-        }
-
-        .nav-component .form-group {
-            margin-bottom: 1rem !important;
-        }
-
-        .nav-component .form-group label {
-            display: block !important;
-            font-size: 0.8rem !important;
-            color: #64748b !important;
-            margin-bottom: 0.25rem !important;
-        }
-
-        .nav-component .form-group input {
-            width: 100% !important;
-            padding: 0.75rem !important;
-            border: 1px solid rgba(4, 91, 146, 0.2) !important;
-            border-radius: 8px !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-size: 0.95rem !important;
-        }
-
-        .nav-component .form-group input:focus {
-            outline: none !important;
-            border-color: #FF286F !important;
-        }
-
-        .nav-component .save-btn {
-            width: 100% !important;
-            padding: 0.75rem !important;
-            background: #FF286F !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-            cursor: pointer !important;
-            margin-top: 0.5rem !important;
-        }
-
-        /* Menu Items */
-        .nav-component .menu-items {
-            margin-top: 1rem !important;
-        }
-
-        .nav-component .menu-item {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            padding: 1rem !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-            cursor: pointer !important;
-            transition: background 0.2s !important;
-        }
-
-        .nav-component .menu-item:hover {
-            background: rgba(255, 40, 111, 0.05) !important;
-        }
-
-        .nav-component .menu-item-left {
-            display: flex !important;
-            align-items: center !important;
-            gap: 1rem !important;
-        }
-
-        .nav-component .menu-item-left .material-symbols-outlined {
-            color: #045B92 !important;
-        }
-
-        .nav-component .menu-item.delete .menu-item-left .material-symbols-outlined,
-        .nav-component .menu-item.delete .menu-item-left span {
-            color: #ef4444 !important;
-        }
-
-        .nav-component .menu-arrow {
-            color: #94a3b8 !important;
-        }
-
-        /* Toast */
-        .nav-component .toast {
-            position: fixed !important;
-            bottom: 2rem !important;
-            left: 1rem !important;
-            right: 1rem !important;
-            background: #10b981 !important;
-            color: white !important;
-            padding: 1rem !important;
-            border-radius: 12px !important;
-            text-align: center !important;
-            z-index: 1000000 !important;
-            display: none !important;
-            max-width: 400px !important;
-            margin: 0 auto !important;
-        }
-
-        .nav-component .toast.show {
-            display: block !important;
-        }
-
-        .nav-component .toast.error {
-            background: #ef4444 !important;
-        }
-
-        /* Loading State */
-        .nav-component .loading {
-            text-align: center !important;
-            padding: 2rem !important;
-            color: #64748b !important;
-        }
-    </style>
+/* Loading */
+.loading { text-align:center; padding:2rem; color:#64748b; }
+</style>
 </head>
 <body style="margin:0; padding:0; background:transparent;">
-    <div class="nav-component">
-        <!-- Hamburger Menu Button -->
-        <button class="nav-hamburger" id="navMenuBtn">
-            <span class="material-symbols-outlined">menu</span>
-        </button>
+<div class="nav-component">
+    <!-- Hamburger Menu -->
+    <button class="nav-hamburger" id="navMenuBtn"><span class="material-symbols-outlined">menu</span></button>
 
-        <!-- Profile Modal -->
-        <div class="nav-overlay" id="navProfileOverlay">
-            <div class="profile-modal">
-                <div class="modal-header">
-                    <h2>Your Profile</h2>
-                    <button class="close-btn" id="navCloseBtn">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-                <div class="modal-content" id="navModalContent">
-                    <!-- Content will be populated by JavaScript -->
-                    <div class="loading">Loading profile...</div>
-                </div>
+    <!-- Overlay + Profile Modal -->
+    <div class="nav-overlay" id="navProfileOverlay">
+        <div class="profile-modal">
+            <div class="modal-header">
+                <h2>Your Profile</h2>
+                <button class="close-btn" id="navCloseBtn"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal-content" id="navModalContent">
+                <div class="loading">Loading profile...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="navToast"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+let currentUser = null;
+
+function getCurrentUser() {
+    try { return JSON.parse(localStorage.getItem('taskmart_user')); } catch(e){ return null; }
+}
+
+/* Open/Close Overlay */
+function openNav() { 
+    const overlay = document.getElementById('navProfileOverlay'); 
+    overlay.classList.add('active'); 
+    renderProfileContent(); 
+}
+function closeNav() { 
+    const overlay = document.getElementById('navProfileOverlay'); 
+    overlay.classList.remove('active'); 
+}
+
+/* Toast */
+function showToast(msg, isError=false){
+    const toast = document.getElementById('navToast');
+    toast.textContent = msg;
+    toast.className = 'toast' + (isError?' error':'') + ' show';
+    setTimeout(()=>toast.classList.remove('show'),3000);
+}
+
+/* Render Profile Content */
+function renderProfileContent(){
+    currentUser = getCurrentUser();
+    const content = document.getElementById('navModalContent');
+    if(!content) return;
+
+    if(!currentUser){
+        content.innerHTML = '<div style="text-align:center; padding:2rem;"><p>Please log in to view your profile</p></div>';
+        return;
+    }
+
+    content.innerHTML = `
+        <div class="profile-info" id="navProfileInfo">
+            <div class="avatar" id="navAvatarDisplay">${currentUser.name?currentUser.name.substring(0,2).toUpperCase():'U'}</div>
+            <div class="profile-details">
+                <h3 id="navDisplayName">${currentUser.name||'User'}</h3>
+                <p id="navDisplayEmail">${currentUser.email||'No email'}</p>
             </div>
         </div>
 
-        <!-- Toast Notification -->
-        <div class="toast" id="navToast"></div>
-    </div>
+        <div class="edit-form" id="navEditForm">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="navEditNameInput" value="${currentUser.name||''}" placeholder="Enter your name">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="navEditEmailInput" value="${currentUser.email||''}" readonly>
+                <small style="color:#64748b;font-size:0.7rem;">Email cannot be changed</small>
+            </div>
+            <button class="save-btn" id="navSaveProfileBtn">Save Changes</button>
+        </div>
 
-    <script>
-        (function() {
-            'use strict';
+        <div class="menu-items">
+            <div class="menu-item" id="navEditProfileBtn">
+                <div class="menu-header">
+                    <div class="menu-item-left"><span class="material-symbols-outlined">edit</span><span>Edit Profile</span></div>
+                    <span class="menu-arrow material-symbols-outlined">chevron_right</span>
+                </div>
+            </div>
 
-            // ==================== STATE ====================
-            let currentUser = null;
+            <div class="menu-item" id="navSettingsBtn">
+                <div class="menu-header">
+                    <div class="menu-item-left"><span class="material-symbols-outlined">settings</span><span>Settings</span></div>
+                    <span class="menu-arrow material-symbols-outlined">chevron_right</span>
+                </div>
+                <div class="submenu">
+                    <p>General</p>
+                    <p>Notifications</p>
+                </div>
+            </div>
 
-            // ==================== AUTH HELPERS ====================
-            function getCurrentUser() {
-                try {
-                    const user = localStorage.getItem('taskmart_user');
-                    return user ? JSON.parse(user) : null;
-                } catch (e) {
-                    return null;
-                }
+            <div class="menu-item" id="navHelpBtn">
+                <div class="menu-header">
+                    <div class="menu-item-left"><span class="material-symbols-outlined">help</span><span>Help & Support</span></div>
+                    <span class="menu-arrow material-symbols-outlined">chevron_right</span>
+                </div>
+                <div class="submenu">
+                    <p>FAQ</p>
+                    <p>Contact Support</p>
+                </div>
+            </div>
+
+            <div class="menu-item delete" id="navDeleteAccountBtn">
+                <div class="menu-header">
+                    <div class="menu-item-left"><span class="material-symbols-outlined">delete_forever</span><span>Delete Account</span></div>
+                    <span class="menu-arrow material-symbols-outlined">chevron_right</span>
+                </div>
+            </div>
+
+            <div class="menu-item delete" id="navLogoutBtn">
+                <div class="menu-header">
+                    <div class="menu-item-left"><span class="material-symbols-outlined">logout</span><span>Logout</span></div>
+                    <span class="menu-arrow material-symbols-outlined">chevron_right</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    attachMenuEventListeners();
+}
+
+/* Menu Actions */
+function attachMenuEventListeners(){
+    // Edit Profile toggle
+    const editBtn = document.getElementById('navEditProfileBtn');
+    if(editBtn){
+        editBtn.onclick = ()=>{
+            const info = document.getElementById('navProfileInfo');
+            const form = document.getElementById('navEditForm');
+            if(info.style.display !== 'none'){
+                info.style.display='none';
+                form.style.display='block';
+            } else {
+                info.style.display='flex';
+                form.style.display='none';
             }
+        };
+    }
 
-            // ==================== MODAL CONTROLS ====================
-            window.openNav = function() {
-                const overlay = document.getElementById('navProfileOverlay');
-                if (overlay) {
-                    overlay.classList.add('active');
-                    document.body.classList.add('modal-open');
-                    renderProfileContent();
-                }
-            };
+    // Save profile
+    const saveBtn = document.getElementById('navSaveProfileBtn');
+    if(saveBtn){
+        saveBtn.onclick = ()=>{
+            const newName = document.getElementById('navEditNameInput').value;
+            if(currentUser && newName){
+                currentUser.name = newName;
+                localStorage.setItem('taskmart_user', JSON.stringify(currentUser));
+                document.getElementById('navDisplayName').textContent = newName;
+                document.getElementById('navAvatarDisplay').textContent = newName.substring(0,2).toUpperCase();
+                document.getElementById('navEditForm').style.display='none';
+                document.getElementById('navProfileInfo').style.display='flex';
+                showToast('Profile updated successfully!');
+            }
+        };
+    }
 
-            window.closeNav = function() {
-                const overlay = document.getElementById('navProfileOverlay');
-                if (overlay) {
-                    overlay.classList.remove('active');
-                    document.body.classList.remove('modal-open');
-                }
-            };
+    // Settings, Help, Delete, Logout
+    document.getElementById('navSettingsBtn')?.addEventListener('click', toggleSubmenu);
+    document.getElementById('navHelpBtn')?.addEventListener('click', toggleSubmenu);
 
-            // ==================== TOAST ====================
-            window.showToast = function(message, isError = false) {
-                const toast = document.getElementById('navToast');
-                if (toast) {
-                    toast.textContent = message;
-                    toast.className = 'toast' + (isError ? ' error' : '') + ' show';
-                    setTimeout(() => {
-                        toast.classList.remove('show');
-                    }, 3000);
-                }
-            };
+    document.getElementById('navDeleteAccountBtn')?.addEventListener('click', ()=>{
+        if(confirm('Are you sure?')){ 
+            localStorage.removeItem('taskmart_user');
+            localStorage.removeItem('taskmart_token');
+            showToast('Account deleted'); 
+            setTimeout(()=>window.location.href='/login.html',1500);
+        }
+    });
 
-            // ==================== RENDER PROFILE CONTENT ====================
-            window.renderProfileContent = function() {
-                currentUser = getCurrentUser();
-                const content = document.getElementById('navModalContent');
-                
-                if (!content) return;
-                
-                if (!currentUser) {
-                    content.innerHTML = `
-                        <div style="text-align:center; padding:2rem;">
-                            <p>Please log in to view your profile</p>
-                        </div>
-                    `;
-                    return;
-                }
+    document.getElementById('navLogoutBtn')?.addEventListener('click', ()=>{
+        localStorage.removeItem('taskmart_user');
+        localStorage.removeItem('taskmart_token');
+        window.location.href='/login.html';
+    });
+}
 
-                content.innerHTML = `
-                    <!-- Profile Info Display -->
-                    <div class="profile-info" id="navProfileInfo">
-                        <div class="avatar" id="navAvatarDisplay">${currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}</div>
-                        <div class="profile-details">
-                            <h3 id="navDisplayName">${currentUser.name || 'User'}</h3>
-                            <p id="navDisplayEmail">${currentUser.email || 'No email'}</p>
-                        </div>
-                    </div>
+// Submenu toggle
+function toggleSubmenu(e){
+    const item = e.currentTarget;
+    item.classList.toggle('expanded');
+    const submenu = item.querySelector('.submenu');
+    if(submenu) submenu.style.display = submenu.style.display==='block'?'none':'block';
+}
 
-                    <!-- Edit Profile Form (hidden by default) -->
-                    <div class="edit-form" id="navEditForm" style="display: none;">
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" id="navEditNameInput" value="${currentUser.name || ''}" placeholder="Enter your name">
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="navEditEmailInput" value="${currentUser.email || ''}" readonly>
-                            <small style="color: #64748b; font-size: 0.7rem;">Email cannot be changed</small>
-                        </div>
-                        <button class="save-btn" id="navSaveProfileBtn">Save Changes</button>
-                    </div>
+/* Initialize */
+document.addEventListener('DOMContentLoaded', ()=>{
+    const menuBtn = document.getElementById('navMenuBtn');
+    const closeBtn = document.getElementById('navCloseBtn');
+    const overlay = document.getElementById('navProfileOverlay');
 
-                    <!-- Menu Items -->
-                    <div class="menu-items">
-                        <div class="menu-item" id="navEditProfileBtn">
-                            <div class="menu-item-left">
-                                <span class="material-symbols-outlined">edit</span>
-                                <span>Edit Profile</span>
-                            </div>
-                            <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                        </div>
-
-                        <div class="menu-item" id="navSettingsBtn">
-                            <div class="menu-item-left">
-                                <span class="material-symbols-outlined">settings</span>
-                                <span>Settings</span>
-                            </div>
-                            <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                        </div>
-
-                        <div class="menu-item" id="navHelpBtn">
-                            <div class="menu-item-left">
-                                <span class="material-symbols-outlined">help</span>
-                                <span>Help & Support</span>
-                            </div>
-                            <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                        </div>
-
-                        <div class="menu-item delete" id="navDeleteAccountBtn">
-                            <div class="menu-item-left">
-                                <span class="material-symbols-outlined">delete_forever</span>
-                                <span>Delete Account</span>
-                            </div>
-                            <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                        </div>
-
-                        <div class="menu-item delete" id="navLogoutBtn">
-                            <div class="menu-item-left">
-                                <span class="material-symbols-outlined">logout</span>
-                                <span>Logout</span>
-                            </div>
-                            <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                        </div>
-                    </div>
-                `;
-
-                // Attach event listeners
-                attachMenuEventListeners();
-            };
-
-            // ==================== MENU ACTIONS ====================
-            window.attachMenuEventListeners = function() {
-                // Edit Profile
-                const editBtn = document.getElementById('navEditProfileBtn');
-                if (editBtn) {
-                    editBtn.onclick = function() {
-                        document.getElementById('navProfileInfo').style.display = 'none';
-                        document.getElementById('navEditForm').style.display = 'block';
-                    };
-                }
-
-                // Save Profile
-                const saveBtn = document.getElementById('navSaveProfileBtn');
-                if (saveBtn) {
-                    saveBtn.onclick = function() {
-                        const newName = document.getElementById('navEditNameInput').value;
-                        if (currentUser && newName) {
-                            currentUser.name = newName;
-                            localStorage.setItem('taskmart_user', JSON.stringify(currentUser));
-                            
-                            document.getElementById('navDisplayName').textContent = newName;
-                            document.getElementById('navAvatarDisplay').textContent = newName.substring(0, 2).toUpperCase();
-                            
-                            document.getElementById('navEditForm').style.display = 'none';
-                            document.getElementById('navProfileInfo').style.display = 'flex';
-                            
-                            showToast('Profile updated successfully!');
-                        }
-                    };
-                }
-
-                // Settings
-                const settingsBtn = document.getElementById('navSettingsBtn');
-                if (settingsBtn) {
-                    settingsBtn.onclick = function() {
-                        showToast('Settings page coming soon');
-                    };
-                }
-
-                // Help
-                const helpBtn = document.getElementById('navHelpBtn');
-                if (helpBtn) {
-                    helpBtn.onclick = function() {
-                        showToast('Help & Support coming soon');
-                    };
-                }
-
-                // Delete Account
-                const deleteBtn = document.getElementById('navDeleteAccountBtn');
-                if (deleteBtn) {
-                    deleteBtn.onclick = function() {
-                        if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
-                            localStorage.removeItem('taskmart_user');
-                            localStorage.removeItem('taskmart_token');
-                            showToast('Account deleted');
-                            setTimeout(() => {
-                                window.location.href = '/login.html';
-                            }, 1500);
-                        }
-                    };
-                }
-
-                // Logout
-                const logoutBtn = document.getElementById('navLogoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.onclick = function() {
-                        localStorage.removeItem('taskmart_user');
-                        localStorage.removeItem('taskmart_token');
-                        window.location.href = '/login.html';
-                    };
-                }
-            };
-
-            // ==================== INITIALIZE ====================
-            // Set up event listeners after DOM is loaded
-            document.addEventListener('DOMContentLoaded', function() {
-                const menuBtn = document.getElementById('navMenuBtn');
-                const closeBtn = document.getElementById('navCloseBtn');
-                const overlay = document.getElementById('navProfileOverlay');
-
-                if (menuBtn) {
-                    menuBtn.onclick = openNav;
-                }
-
-                if (closeBtn) {
-                    closeBtn.onclick = closeNav;
-                }
-
-                if (overlay) {
-                    overlay.onclick = function(e) {
-                        if (e.target === this) closeNav();
-                    };
-                }
-            });
-        })();
-    </script>
+    menuBtn?.addEventListener('click', openNav);
+    closeBtn?.addEventListener('click', closeNav);
+    overlay?.addEventListener('click', e=>{
+        if(!e.target.closest('.profile-modal')) closeNav();
+    });
+});
+})();
+</script>
 </body>
 </html>
