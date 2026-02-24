@@ -1798,37 +1798,56 @@
                 }, 100);
             });
 
-            // ===== BACK BUTTON =====
+            // ===== BACK BUTTON - COMPLETELY ISOLATED =====
             const offersBackBtn = document.getElementById('offersBackBtn');
             if (offersBackBtn) {
-                offersBackBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Stop event from bubbling
+                offersBackBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     offersContainer.classList.remove('active');
                     createTaskContainer.style.display = 'flex';
+                    return false;
                 });
             }
 
-            // ===== PAYMENT FULL SCREEN - FIXED =====
+            // ===== PAYMENT FULL SCREEN - COMPLETELY ISOLATED =====
             const paymentHeader = document.getElementById('paymentHeader');
             const paymentFullscreen = document.getElementById('paymentFullscreen');
             const closePaymentBtn = document.getElementById('closePaymentBtn');
             const paymentChevron = document.getElementById('paymentChevron');
 
-            // Open payment sheet
-            if (paymentHeader && paymentFullscreen) {
-                paymentHeader.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Stop event from bubbling
+            // Open payment sheet - with maximum isolation
+            if (paymentHeader) {
+                paymentHeader.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     paymentFullscreen.classList.add('active');
                     if (paymentChevron) paymentChevron.textContent = 'expand_less';
-                });
+                    return false;
+                };
             }
 
             // Close payment sheet
-            if (closePaymentBtn && paymentFullscreen) {
-                closePaymentBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Stop event from bubbling
+            if (closePaymentBtn) {
+                closePaymentBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     paymentFullscreen.classList.remove('active');
                     if (paymentChevron) paymentChevron.textContent = 'chevron_right';
+                    return false;
+                };
+            }
+
+            // Close by clicking outside
+            if (paymentFullscreen) {
+                paymentFullscreen.addEventListener('click', function(e) {
+                    if (e.target === paymentFullscreen) {
+                        paymentFullscreen.classList.remove('active');
+                        if (paymentChevron) paymentChevron.textContent = 'chevron_right';
+                    }
                 });
             }
 
