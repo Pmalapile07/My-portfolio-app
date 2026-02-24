@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TaskMart · Helper Dashboard</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
+    
+    <!-- Custom Font -->
+    <style>
+        @font-face {
+            font-family: 'Codec Cold News';
+            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: #000;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined' !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+        }
+
+        /* === FULLSCREEN MAP - DARK STYLE === */
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* === PROFILE MENU BUTTON === */
+        .profile-menu-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            z-index: 1000;
+            transition: all 0.2s;
+        }
+
+        .profile-menu-btn:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .profile-menu-btn .material-symbols-outlined {
+            color: #000;
+            font-size: 24px;
+        }
+
+        /* === BOTTOM SHEET - TASKS LIST === */
+        .tasks-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+            max-height: 40%;
+            display: flex;
+            flex-direction: column;
+            transition: max-height 0.3s ease;
+        }
+
+        .tasks-sheet.expanded {
+            max-height: 80%;
+        }
+
+        .sheet-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .sheet-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sheet-header .material-symbols-outlined {
+            font-size: 20px !important;
+            color: #666;
+        }
+
+        .sheet-header .expand-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .tasks-sheet.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .tasks-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.5rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-chip {
+            padding: 0.5rem 1rem;
+            background: #f5f5f5;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #666;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .filter-chip:hover {
+            background: #eee;
+        }
+
+        .filter-chip.active {
+            background: #000;
+            color: white;
+        }
+
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .task-card {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .task-card:hover {
+            background: #f0f0f0;
+        }
+
+        .task-card.expanded {
+            background: white;
+            border-color: rgba(0,0,0,0.1);
+        }
+
+        .task-preview {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .task-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            flex-shrink: 0;
+        }
+
+        .task-icon .material-symbols-outlined {
+            font-size: 24px !important;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .task-budget {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .task-budget.open {
+            color: #f59e0b;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .task-location {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-location .material-symbols-outlined {
+            font-size: 14px !important;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        .task-distance {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .task-distance .material-symbols-outlined {
+            font-size: 14px !important;
+        }
+
+        .task-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            margin-top: 0;
+        }
+
+        .task-card.expanded .task-details {
+            max-height: 400px;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .task-description {
+            font-size: 0.9rem;
+            color: #000;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .task-detail-row {
+            display: flex;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .task-detail-label {
+            width: 100px;
+            color: #666;
+        }
+
+        .task-detail-value {
+            flex: 1;
+            color: #000;
+        }
+
+        .poster-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .poster-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .poster-details {
+            flex: 1;
+        }
+
+        .poster-name {
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 0.25rem;
+        }
+
+        .poster-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            color: #f59e0b;
+        }
+
+        .poster-rating .material-symbols-outlined {
+            font-size: 16px !important;
+        }
+
+        .accept-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .accept-btn:hover {
+            background: #222;
+        }
+
+        .accept-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .no-tasks {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .loading-tasks {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        /* === VERIFICATION BANNER === */
+        .verification-banner {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 40px;
+            z-index: 2000;
+            display: none;
+            backdrop-filter: blur(4px);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .verification-banner.active {
+            display: block;
+        }
+
+        .verification-banner .material-symbols-outlined {
+            color: #f59e0b;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        .verification-banner button {
+            background: white;
+            color: black;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 0.75rem;
+            cursor: pointer;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 1rem;
+            right: 1rem;
+            background: #000;
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+            z-index: 3000;
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            font-size: 0.9rem;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            .tasks-sheet {
+                width: 400px;
+                left: 1rem;
+                bottom: 1rem;
+                border-radius: 16px;
+                max-height: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Profile Menu Container -->
+    <div id="profile-menu-container"></div>
+
+    <!-- MAP - DARK STYLE -->
+    <div id="map"></div>
+
+    <!-- Verification Banner -->
+    <div class="verification-banner" id="verificationBanner">
+        <span class="material-symbols-outlined">verified</span>
+        <span>Complete your profile to start helping</span>
+        <button onclick="window.location.href='#'">Complete Profile</button>
+    </div>
+
+    <!-- Tasks Bottom Sheet -->
+    <div class="tasks-sheet" id="tasksSheet">
+        <div class="sheet-header" id="sheetHeader">
+            <h2>
+                <span class="material-symbols-outlined">assignment</span>
+                Available Tasks Near You
+            </h2>
+            <span class="material-symbols-outlined expand-icon">expand_less</span>
+        </div>
+
+        <div class="tasks-container">
+            <!-- Filter Chips -->
+            <div class="filter-bar" id="filterBar">
+                <span class="filter-chip active" data-filter="all">All</span>
+                <span class="filter-chip" data-filter="nearby">Nearby</span>
+                <span class="filter-chip" data-filter="urgent">Urgent</span>
+                <span class="filter-chip" data-filter="highest">Highest Pay</span>
+            </div>
+
+            <!-- Tasks List -->
+            <div class="tasks-list" id="tasksList">
+                <div class="loading-tasks">Finding tasks near you...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+            // ===== MAP INIT =====
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [28.034088, -26.195246],
+                zoom: 13
+            });
+
+            // ===== STATE =====
+            let currentUser = null;
+            let currentLat = null;
+            let currentLng = null;
+            let allTasks = [];
+            let markers = [];
+
+            // ===== DOM ELEMENTS =====
+            const tasksSheet = document.getElementById('tasksSheet');
+            const sheetHeader = document.getElementById('sheetHeader');
+            const tasksList = document.getElementById('tasksList');
+            const filterChips = document.querySelectorAll('.filter-chip');
+            const toast = document.getElementById('toast');
+            const verificationBanner = document.getElementById('verificationBanner');
+
+            // ===== TOAST =====
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // ===== GET USER =====
+            function getCurrentUser() {
+                try {
+                    const user = localStorage.getItem('taskmart_user');
+                    return user ? JSON.parse(user) : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            // ===== CHECK VERIFICATION =====
+            function checkVerification() {
+                const user = getCurrentUser();
+                if (user && (!user.profileImage || !user.email)) {
+                    verificationBanner.classList.add('active');
+                } else {
+                    verificationBanner.classList.remove('active');
+                }
+            }
+
+            // ===== GET LOCATION =====
+            function getUserLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
+                            fetchTasks();
+                        },
+                        (error) => {
+                            console.error('Location error:', error);
+                            fetchTasks(); // Still fetch tasks even without location
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                } else {
+                    fetchTasks();
+                }
+            }
+
+            // ===== FETCH TASKS =====
+            async function fetchTasks() {
+                tasksList.innerHTML = '<div class="loading-tasks">Finding tasks near you...</div>';
+                
+                try {
+                    // Fetch all active tasks (not created by current user)
+                    const response = await fetch(`${API_BASE_URL}/api/tasks?status=active`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const tasks = Array.isArray(data) ? data : (data.tasks || data.data || []);
+                        
+                        // Filter out tasks created by current user
+                        if (currentUser) {
+                            allTasks = tasks.filter(task => task.userEmail !== currentUser.email);
+                        } else {
+                            allTasks = tasks;
+                        }
+                        
+                        renderTasks(allTasks);
+                        addTaskMarkers(allTasks);
+                    } else {
+                        tasksList.innerHTML = '<div class="no-tasks">Unable to load tasks</div>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching tasks:', error);
+                    tasksList.innerHTML = '<div class="no-tasks">Error loading tasks</div>';
+                }
+            }
+
+            // ===== CALCULATE DISTANCE =====
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+                
+                const R = 6371; // Radius of the earth in km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const distance = R * c; // Distance in km
+                return distance;
+            }
+
+            // ===== RENDER TASKS =====
+            function renderTasks(tasks) {
+                if (!tasks || tasks.length === 0) {
+                    tasksList.innerHTML = '<div class="no-tasks">No tasks available in your area</div>';
+                    return;
+                }
+
+                let tasksHtml = '';
+
+                tasks.forEach(task => {
+                    const taskId = task._id || task.id;
+                    const budget = task.budgetAmount || task.budget;
+                    const budgetDisplay = task.budgetType === 'open' ? 
+                        '<span class="task-budget open">Open to offers</span>' : 
+                        `<span class="task-budget">R ${budget}</span>`;
+                    
+                    // Calculate distance
+                    let distanceText = '';
+                    if (currentLat && currentLng && task.coordinates) {
+                        const [taskLng, taskLat] = task.coordinates.split(',').map(Number);
+                        const distance = calculateDistance(currentLat, currentLng, taskLat, taskLng);
+                        if (distance !== null) {
+                            distanceText = distance < 1 ? 
+                                `${Math.round(distance * 1000)}m away` : 
+                                `${distance.toFixed(1)}km away`;
+                        }
+                    }
+
+                    // Get poster name
+                    const posterName = task.userName || 'Anonymous';
+
+                    tasksHtml += `
+                        <div class="task-card" data-task-id="${taskId}">
+                            <div class="task-preview">
+                                <div class="task-icon">
+                                    <span class="material-symbols-outlined">task</span>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-header">
+                                        <span class="task-title">${task.taskDescription || 'Help needed'}</span>
+                                        ${budgetDisplay}
+                                    </div>
+                                    <div class="task-location">
+                                        <span class="material-symbols-outlined">location_on</span>
+                                        <span>${task.location || 'Location not specified'}</span>
+                                    </div>
+                                    <div class="task-meta">
+                                        <span class="task-distance">
+                                            <span class="material-symbols-outlined">near_me</span>
+                                            ${distanceText || 'Distance unknown'}
+                                        </span>
+                                        <span>📅 ${task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'Recently'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-details">
+                                <div class="task-description">${task.taskDescription || 'No description'}</div>
+                                
+                                ${task.streetName ? `
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">Address:</span>
+                                    <span class="task-detail-value">${task.streetName}</span>
+                                </div>
+                                ` : ''}
+                                
+                                ${task.when ? `
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">When:</span>
+                                    <span class="task-detail-value">${task.when}</span>
+                                </div>
+                                ` : ''}
+                                
+                                ${task.scheduledDate ? `
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">Date:</span>
+                                    <span class="task-detail-value">${task.scheduledDate}</span>
+                                </div>
+                                ` : ''}
+                                
+                                ${task.moreDetails ? `
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">Notes:</span>
+                                    <span class="task-detail-value">${task.moreDetails}</span>
+                                </div>
+                                ` : ''}
+
+                                <div class="poster-info">
+                                    <div class="poster-avatar">${posterName.substring(0, 2).toUpperCase()}</div>
+                                    <div class="poster-details">
+                                        <div class="poster-name">${posterName}</div>
+                                        <div class="poster-rating">
+                                            <span class="material-symbols-outlined">star</span>
+                                            <span>4.8 (12 tasks)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="accept-btn" onclick="acceptTask('${taskId}')">
+                                    Accept Task
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                tasksList.innerHTML = tasksHtml;
+
+                // Add click handlers for task cards
+                document.querySelectorAll('.task-card').forEach(card => {
+                    card.addEventListener('click', function(e) {
+                        // Don't toggle if clicking the accept button
+                        if (e.target.classList.contains('accept-btn')) return;
+                        this.classList.toggle('expanded');
+                    });
+                });
+            }
+
+            // ===== ADD MARKERS TO MAP =====
+            function addTaskMarkers(tasks) {
+                // Clear existing markers
+                markers.forEach(marker => marker.remove());
+                markers = [];
+
+                tasks.forEach(task => {
+                    if (task.coordinates) {
+                        const [lng, lat] = task.coordinates.split(',').map(Number);
+                        
+                        // Create marker element
+                        const marker = new mapboxgl.Marker({ color: '#FF286F' })
+                            .setLngLat([lng, lat])
+                            .setPopup(new mapboxgl.Popup().setHTML(`
+                                <div style="font-family: 'Manrope', sans-serif; padding: 0.5rem;">
+                                    <strong>${task.taskDescription || 'Help needed'}</strong><br>
+                                    Budget: ${task.budgetAmount ? 'R ' + task.budgetAmount : 'Open to offers'}<br>
+                                    <button onclick="window.acceptTask('${task._id || task.id}')" 
+                                        style="background:#000; color:white; border:none; padding:0.5rem 1rem; border-radius:5px; margin-top:0.5rem; cursor:pointer;">
+                                        Accept
+                                    </button>
+                                </div>
+                            `))
+                            .addTo(map);
+                        
+                        markers.push(marker);
+                    }
+                });
+            }
+
+            // ===== FILTER TASKS =====
+            function filterTasks(filter) {
+                let filtered = [...allTasks];
+
+                switch(filter) {
+                    case 'nearby':
+                        if (currentLat && currentLng) {
+                            filtered = filtered.filter(task => {
+                                if (task.coordinates) {
+                                    const [lng, lat] = task.coordinates.split(',').map(Number);
+                                    const distance = calculateDistance(currentLat, currentLng, lat, lng);
+                                    return distance !== null && distance < 5; // Within 5km
+                                }
+                                return false;
+                            });
+                        }
+                        break;
+                    case 'urgent':
+                        filtered = filtered.filter(task => task.when === 'Now' || task.urgent === true);
+                        break;
+                    case 'highest':
+                        filtered = filtered.filter(task => task.budgetType !== 'open' && task.budgetAmount);
+                        filtered.sort((a, b) => (b.budgetAmount || 0) - (a.budgetAmount || 0));
+                        break;
+                    default:
+                        // 'all' - no filtering
+                        break;
+                }
+
+                renderTasks(filtered);
+            }
+
+            // ===== ACCEPT TASK =====
+            window.acceptTask = async function(taskId) {
+                const user = getCurrentUser();
+                
+                if (!user) {
+                    showToast('Please log in to accept tasks');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (!user.profileImage || !user.email) {
+                    showToast('Complete your profile first');
+                    verificationBanner.classList.add('active');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/accept`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('taskmart_token')}`
+                        },
+                        body: JSON.stringify({ helperId: user.email, helperName: user.name })
+                    });
+
+                    if (response.ok) {
+                        showToast('Task accepted! You can now chat with the poster.');
+                        // Remove task from list
+                        allTasks = allTasks.filter(t => (t._id || t.id) !== taskId);
+                        renderTasks(allTasks);
+                        addTaskMarkers(allTasks);
+                    } else {
+                        const data = await response.json();
+                        showToast(data.error || 'Failed to accept task');
+                    }
+                } catch (error) {
+                    console.error('Error accepting task:', error);
+                    showToast('Error accepting task');
+                }
+            };
+
+            // ===== EVENT LISTENERS =====
+            // Sheet header toggle
+            sheetHeader.addEventListener('click', () => {
+                tasksSheet.classList.toggle('expanded');
+            });
+
+            // Filter chips
+            filterChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    filterChips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    filterTasks(chip.dataset.filter);
+                });
+            });
+
+            // ===== INIT =====
+            map.on('load', () => {
+                currentUser = getCurrentUser();
+                
+                if (!currentUser) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                checkVerification();
+                getUserLocation();
+            });
+
+            // Load profile menu
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('profile-menu-container').innerHTML = html;
+                    
+                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = document.createElement('script');
+                        script.textContent = scripts[i].textContent;
+                        document.body.appendChild(script);
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load profile menu:', error);
+                });
+        })();
+    </script>
+</body>
+</html>
