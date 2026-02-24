@@ -11,6 +11,17 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
+    <!-- Custom Font -->
+    <style>
+        @font-face {
+            font-family: 'Codec Cold News';
+            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
@@ -46,6 +57,96 @@
             font-style: normal !important;
             font-size: 24px !important;
             line-height: 1 !important;
+        }
+
+        /* === SPLASH SCREEN === */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            z-index: 9999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            font-family: 'Codec Cold News', sans-serif;
+            font-size: 4rem;
+            color: white;
+            letter-spacing: 4px;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: logoAppear 1.5s ease forwards;
+        }
+
+        @keyframes logoAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+                letter-spacing: 4px;
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1);
+                letter-spacing: 8px;
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                letter-spacing: 4px;
+            }
+        }
+
+        /* === VERIFICATION BANNER === */
+        .verification-banner {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 40px;
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(4px);
+            font-family: 'Manrope', sans-serif;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .verification-banner.active {
+            display: block;
+        }
+
+        .verification-banner .material-symbols-outlined {
+            color: #f59e0b;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        .verification-banner button {
+            background: white;
+            color: black;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 0.75rem;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
         }
 
         /* === FULLSCREEN MAP - DARK STYLE === */
@@ -984,6 +1085,18 @@
     </style>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">TASKMART</div>
+    </div>
+
+    <!-- Verification Banner -->
+    <div class="verification-banner" id="verificationBanner">
+        <span class="material-symbols-outlined">verified</span>
+        <span>Your account is pending verification. You cannot post tasks until verified.</span>
+        <button onclick="window.location.href='/profile-menu.html'">Check Status</button>
+    </div>
+
     <!-- Profile Menu Container (loads from GitHub) -->
     <div id="profile-menu-container"></div>
 
@@ -1014,7 +1127,7 @@
     <!-- WHITE CONTAINER -->
     <div class="home-sheet">
         <div class="sheet-header">
-            <h2><b></b>Find trusted help nearby.</b></h2>
+            <h2>Find trusted help nearby.</h2>
             <div class="header-actions">
                 <button class="debug-btn" id="debugBtn">
                     <span class="material-symbols-outlined">bug_report</span>
@@ -1197,6 +1310,47 @@
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
+            // ===== SPLASH SCREEN =====
+            const splashScreen = document.getElementById('splashScreen');
+            const splashShown = localStorage.getItem('splashShown');
+
+            if (!splashShown) {
+                // Show splash screen for first time
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    localStorage.setItem('splashShown', 'true');
+                }, 2000);
+            } else {
+                // Hide splash immediately if already shown
+                splashScreen.style.display = 'none';
+            }
+
+            // ===== VERIFICATION CHECK =====
+            function checkVerificationStatus() {
+                const user = getCurrentUser();
+                const banner = document.getElementById('verificationBanner');
+                
+                if (user && (!user.profileImage || !user.email)) {
+                    banner.classList.add('active');
+                } else {
+                    banner.classList.remove('active');
+                }
+            }
+
+            // ===== CHECK BEFORE POSTING =====
+            function canUserPost() {
+                const user = getCurrentUser();
+                if (!user) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                if (!user.profileImage || !user.email) {
+                    document.getElementById('verificationBanner').classList.add('active');
+                    return false;
+                }
+                return true;
+            }
+
             // ===== MAP INIT - DARK STYLE =====
             const map = new mapboxgl.Map({
                 container: 'map',
@@ -1331,6 +1485,15 @@
                 document.getElementById('uploadProgress').style.display = 'none';
             }
 
+            function getCurrentUser() {
+                try {
+                    const user = localStorage.getItem('taskmart_user');
+                    return user ? JSON.parse(user) : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+
             function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
 
             // ===== STATE =====
@@ -1413,6 +1576,7 @@
 
             // ===== OPEN/CLOSE TASK =====
             openCreateTaskBtn.addEventListener('click', ()=>{
+                if (!canUserPost()) return;
                 createTaskContainer.style.display = 'flex';
                 Debugger.log('Create task opened', 'info');
             });
@@ -1759,6 +1923,7 @@
 
             // Initial validation
             validateForm();
+            checkVerificationStatus();
         })();
     </script>
 
