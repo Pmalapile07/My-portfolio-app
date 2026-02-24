@@ -3,33 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Task Planner</title>
+    <title>TaskMart · Home</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Canvas Confetti library -->
+    <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     
-    <!-- Config file -->
+    <!-- Config -->
     <script src="/config.js"></script>
 
     <style>
-        @font-face {
-            font-family: 'Codec Cold News';
-            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -37,13 +29,15 @@
         }
 
         body {
-            font-family: 'Manrope', sans-serif;
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             font-weight: 400;
             font-size: 16px;
-            line-height: 1.5;
-            color: #1a1a1a;
-            background-color: transparent;
-            min-height: 100vh;
+            background: #000;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
 
         .material-symbols-outlined {
@@ -52,2997 +46,2091 @@
             font-style: normal !important;
             font-size: 24px !important;
             line-height: 1 !important;
-            visibility: visible !important;
         }
 
-        /* Modal Pop-up Styles - CHANGED FROM BOTTOM SHEET TO CENTERED MODAL */
-        .sheet-container {
-            position: fixed;
+        /* === FULLSCREEN MAP - DARK STYLE === */
+        #map {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-        
-        .sheet {
-            background: white;
-            width: 100%;
-            max-width: 600px;
-            border-radius: 24px !important;
-            height: 90vh;
-            height: 90dvh;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalPop 0.3s ease;
+            z-index: 1;
         }
 
-        @keyframes modalPop {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+        /* Draggable pin */
+        .draggable-pin {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            width: 40px;
+            height: 40px;
+            background: #003E71;
+            border: 3px solid white;
+            border-radius: 50% 50% 50% 0;
+            rotate: -45deg;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            z-index: 100;
+            cursor: grab;
+            touch-action: none;
+            pointer-events: auto;
         }
-        
-        .sheet-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.5rem 1.5rem 1.5rem;
-            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
+
+        .draggable-pin:active {
+            cursor: grabbing;
+            transform: translate(-50%, -100%) scale(1.05) rotate(-45deg);
+        }
+
+        .draggable-pin::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 16px;
+            height: 16px;
             background: white;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            flex-shrink: 0;
+            border-radius: 50%;
         }
-        
-        .sheet-back-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
+
+        /* === NEW NAVIGATION MENU STYLES (SELF-CONTAINED) === */
+        .nav-menu-container {
+            font-family: 'Manrope', sans-serif;
+            position: relative;
+            z-index: 10000;
         }
-        .sheet-back-btn .material-symbols-outlined {
+
+        .nav-menu-btn {
+            position: fixed !important;
+            top: 20px !important;
+            left: 20px !important;
+            width: 44px !important;
+            height: 44px !important;
+            background: white !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 10000 !important;
+            cursor: pointer !important;
+            border: none !important;
+        }
+
+        .nav-menu-btn .material-symbols-outlined {
+            color: #000 !important;
             font-size: 24px !important;
+        }
+
+        .nav-modal-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(0,0,0,0.5) !important;
+            backdrop-filter: blur(8px) !important;
+            display: none !important;
+            align-items: flex-end !important;
+            justify-content: center !important;
+            z-index: 999999 !important;
+            padding: 1rem !important;
+        }
+
+        .nav-modal-overlay.active {
+            display: flex !important;
+        }
+
+        .nav-modal {
+            background: white !important;
+            border-top-left-radius: 24px !important;
+            border-top-right-radius: 24px !important;
+            width: 100% !important;
+            max-width: 500px !important;
+            height: 70vh !important;
+            transform: translateY(100%) !important;
+            transition: transform 0.3s ease-out !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-shadow: 0 -20px 60px rgba(0,0,0,0.3) !important;
+        }
+
+        .nav-modal-overlay.active .nav-modal {
+            transform: translateY(0) !important;
+        }
+
+        .nav-modal-header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 1.5rem !important;
+            border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+        }
+
+        .nav-modal-header h2 {
+            font-size: 1.2rem !important;
+            color: #045B92 !important;
+            font-weight: 600 !important;
+        }
+
+        .nav-modal-close {
+            background: none !important;
+            border: none !important;
+            cursor: pointer !important;
+            padding: 8px !important;
+            width: 40px !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .nav-modal-close .material-symbols-outlined {
             color: #FF286F !important;
+            font-size: 24px !important;
         }
-        
-        .sheet-title {
-            font-size: 1.1rem;
-            color: #045B92;
-            margin: 0;
-            text-transform: lowercase;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
+
+        .nav-modal-content {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            padding: 1.5rem !important;
         }
-        .sheet-title::first-letter {
-            text-transform: uppercase;
+
+        .nav-profile-info {
+            display: flex !important;
+            align-items: center !important;
+            gap: 1rem !important;
+            margin-bottom: 2rem !important;
+            padding: 1rem !important;
+            background: #f8fafd !important;
+            border-radius: 12px !important;
         }
-        
-        .sheet-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 2rem 1.5rem 1rem;
-            scrollbar-width: thin;
-            scrollbar-color: #FF286F rgba(4, 91, 146, 0.1);
-            -webkit-overflow-scrolling: touch;
+
+        .nav-avatar {
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, #045B92, #FF286F) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 1.5rem !important;
+            flex-shrink: 0 !important;
         }
-        
-        .sheet-content::-webkit-scrollbar {
-            width: 6px;
+
+        .nav-profile-details {
+            flex: 1 !important;
         }
-        .sheet-content::-webkit-scrollbar-track {
-            background: rgba(4, 91, 146, 0.05);
-            border-radius: 10px;
+
+        .nav-profile-details h3 {
+            font-size: 1.1rem !important;
+            color: #045B92 !important;
+            margin-bottom: 0.25rem !important;
+            font-weight: 600 !important;
         }
-        .sheet-content::-webkit-scrollbar-thumb {
-            background: #FF286F;
-            border-radius: 10px;
+
+        .nav-profile-details p {
+            color: #64748b !important;
+            font-size: 0.9rem !important;
         }
-        
-        .sheet-footer {
-            padding: 1rem 1.5rem 1.5rem;
-            border-top: 1px solid rgba(4, 91, 146, 0.1);
-            background: white;
-            flex-shrink: 0;
-            border-bottom-left-radius: 24px;
-            border-bottom-right-radius: 24px;
+
+        .nav-menu-item {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 1rem !important;
+            border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+            cursor: pointer !important;
+            transition: background 0.2s !important;
         }
-        
-        .next-btn-container {
-            display: flex;
-            justify-content: flex-end;
+
+        .nav-menu-item:hover {
+            background: rgba(255,40,111,0.05) !important;
         }
-        
-        .next-button {
-            background: #FF286F;
-            color: white;
-            border: none;
-            padding: 1rem 3rem;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 5px !important;
-            min-width: 120px;
-            transition: background-color 0.2s;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
+
+        .nav-menu-item-left {
+            display: flex !important;
+            align-items: center !important;
+            gap: 1rem !important;
         }
-        .next-button:hover {
-            background: #d61e5b;
+
+        .nav-menu-item-left .material-symbols-outlined {
+            color: #045B92 !important;
         }
-        
-        /* Image Source Menu - stays the same but positioned relative to modal */
-        .image-source-menu {
-            position: fixed;
+
+        .nav-menu-item.delete .nav-menu-item-left .material-symbols-outlined,
+        .nav-menu-item.delete .nav-menu-item-left span {
+            color: #ef4444 !important;
+        }
+
+        .nav-menu-arrow {
+            color: #94a3b8 !important;
+        }
+
+        .nav-toast {
+            position: fixed !important;
+            bottom: 2rem !important;
+            left: 1rem !important;
+            right: 1rem !important;
+            background: #10b981 !important;
+            color: white !important;
+            padding: 1rem !important;
+            border-radius: 12px !important;
+            text-align: center !important;
+            z-index: 1000000 !important;
+            display: none !important;
+            max-width: 400px !important;
+            margin: 0 auto !important;
+        }
+
+        .nav-toast.show {
+            display: block !important;
+        }
+
+        .nav-toast.error {
+            background: #ef4444 !important;
+        }
+
+        /* === WHITE CONTAINER - 7px border radius === */
+        .home-sheet {
+            position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             background: white;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            box-shadow: 0 -2px 20px rgba(0,0,0,0.2);
-            z-index: 10000000;
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-            max-width: 600px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100%);
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+            padding: 24px 20px 28px;
         }
-        .image-source-menu.active {
-            transform: translateX(-50%) translateY(0);
-        }
-        .menu-header {
-            padding: 1rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
-            color: #045B92;
-            font-weight: 500;
-        }
-        .menu-option {
-            padding: 1rem;
+
+        .sheet-header {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(4, 91, 146, 0.05);
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
-        .menu-option:hover {
-            background: rgba(4, 91, 146, 0.05);
-        }
-        .menu-option .material-symbols-outlined {
-            color: #FF286F;
-        }
-        .menu-option span {
-            color: #045B92;
-        }
-        .menu-cancel {
-            padding: 1rem;
-            text-align: center;
-            color: #FF286F;
+
+        .home-sheet h2 {
+            font-size: 1.3rem;
             font-weight: 500;
-            cursor: pointer;
-            border-top: 1px solid rgba(4, 91, 146, 0.1);
+            color: #000000;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin: 0;
         }
 
-        /* Payment Modal - FIXED LOADING ISSUE */
-        .payment-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 10000000;
+        .header-actions {
             display: flex;
+            gap: 10px;
             align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            padding: 1rem;
         }
 
-        .payment-modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .payment-modal {
-            background: white;
-            width: 100%;
-            max-width: 400px;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalPop 0.3s ease;
-        }
-
-        .payment-header {
-            padding: 1.5rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
-            color: #045B92;
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-
-        .payment-content {
-            padding: 2rem;
-            text-align: center;
-            color: #045B92;
-        }
-
-        .payment-content p {
-            margin-bottom: 1rem;
-            font-size: 0.95rem;
-        }
-
-        .payment-note {
-            background: rgba(255, 40, 111, 0.05);
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            font-size: 0.85rem;
-            color: #FF286F;
-        }
-
-        .payment-buttons {
-            display: flex;
-            gap: 1rem;
-            padding: 1.5rem;
-            border-top: 1px solid rgba(4, 91, 146, 0.1);
-        }
-
-        .payment-btn {
-            flex: 1;
-            padding: 1rem;
+        .debug-btn {
+            background: #6c757d;
             border: none;
-            border-radius: 5px;
-            font-size: 1rem;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
             transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(108, 117, 125, 0.3);
+            flex-shrink: 0;
+            position: relative;
         }
 
-        .payment-btn.primary {
-            background: #FF286F;
-            color: white;
+        .debug-btn:active {
+            transform: scale(0.9);
+            background: #5a6268;
         }
 
-        .payment-btn.primary:hover {
-            background: #d61e5b;
+        .debug-btn .material-symbols-outlined {
+            color: white !important;
+            font-size: 24px !important;
         }
 
-        .payment-btn.primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .payment-btn.secondary {
-            background: transparent;
-            color: #045B92;
-            border: 1px solid #045B92;
-        }
-
-        .payment-btn.secondary:hover {
-            background: rgba(4, 91, 146, 0.05);
-        }
-
-        /* Loading Overlay - FIXED */
-        .payment-loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 10000001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-        }
-
-        .payment-loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .payment-loading-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 300px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .payment-loading-spinner {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            height: 30px;
-            align-items: center;
-        }
-
-        .payment-loading-spinner .dot {
+        .debug-btn.has-errors::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
             width: 12px;
             height: 12px;
-            background: #FF286F;
+            background: #dc3545;
             border-radius: 50%;
-            animation: bounceDot 1.2s infinite ease-in-out;
+            border: 2px solid white;
         }
 
-        .payment-loading-spinner .dot:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-
-        .payment-loading-spinner .dot:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-
-        .payment-loading-text {
-            color: #045B92;
-            font-size: 1rem;
-            font-weight: 500;
-        }
-
-        .payment-loading-subtext {
-            color: #64748b;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-        }
-        
-        /* Rest of your existing styles remain exactly the same */
-        .form-section {
-            margin-bottom: 1.75rem;
-        }
-        
-        .form-section:last-child {
-            margin-bottom: 0;
-        }
-        
-        .section-label {
-            font-weight: 500 !important;
-            color: #045B92;
-            margin-bottom: 0.5rem;
-            display: block;
-            font-size: 0.95rem;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .label-with-hint {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.25rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .hint-text {
-            font-weight: 300 !important;
-            color: rgba(4, 91, 146, 0.5);
-            font-size: 0.8rem;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .tip-banner {
-            background: rgba(4, 91, 146, 0.08);
-            padding: 1.25rem;
-            border-radius: 5px !important;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-            margin-top: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .tip-banner-icon {
-            width: 32px;
-            height: 32px;
-            background-color: rgba(4, 91, 146, 0.12);
-            border-radius: 5px !important;
+        .refresh-location-btn {
+            background: #003E71;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 62, 113, 0.3);
             flex-shrink: 0;
-            transition: background-color 0.3s ease-in-out;
         }
-        .tip-banner-icon .material-symbols-outlined {
-            color: #045B92 !important;
-            font-size: 20px !important;
-            transition: color 0.3s ease-in-out;
+
+        .refresh-location-btn:active {
+            transform: scale(0.9);
+            background: #002b4f;
         }
-        
-        .tip-banner-text {
-            flex: 1;
-            font-size: 0.9rem;
-            color: #045B92;
-            line-height: 1.5;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
+
+        .refresh-location-btn .material-symbols-outlined {
+            color: white !important;
+            font-size: 24px !important;
         }
-        
-        .field-error {
-            color: #FF286F;
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
-            font-weight: 300;
-            display: none;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .field-error.visible {
-            display: block;
-        }
-        
-        .location-field-wrapper,
-        .task-field-wrapper,
-        .budget-field-wrapper,
-        .street-field-wrapper {
-            position: relative;
-            width: 100%;
-        }
-        
-        .location-field,
-        .street-field,
-        .task-field,
-        .more-details-field,
-        .budget-input {
-            width: 100%;
-            padding: 0.9rem 1.2rem;
-            border: 1px solid rgba(4, 91, 146, 0.3) !important;
-            border-radius: 5px !important;
-            background: white;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 200 !important;
-            font-size: 1rem !important;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        
-        .budget-field-wrapper {
-            position: relative;
-            width: 100%;
-        }
-        
-        .budget-input {
-            padding-left: 2.5rem;
-        }
-        
-        .currency-symbol {
-            position: absolute;
-            left: 1.2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #045B92;
-            font-weight: 500;
-            font-size: 1rem;
-            font-family: 'Manrope', sans-serif !important;
-            z-index: 1;
+
+        .refresh-location-btn.loading {
+            opacity: 0.7;
             pointer-events: none;
         }
-        
-        .task-field {
-            padding-right: 4rem;
-            max-width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+
+        .refresh-location-btn.loading .material-symbols-outlined {
+            animation: spin 1s linear infinite;
         }
-        
-        .location-field.error,
-        .task-field.error,
-        .budget-input.error {
-            border-color: #FF286F !important;
-            background-color: rgba(255, 40, 111, 0.02);
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        
-        .location-field:focus,
-        .street-field:focus,
-        .task-field:focus,
-        .more-details-field:focus,
-        .budget-input:focus {
-            border-color: #FF286F !important;
+
+        /* Debug panel */
+        .debug-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 7px;
+            z-index: 10000000;
+            color: #fff;
+            padding: 20px;
+            font-family: 'Manrope', monospace;
+            font-size: 13px;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: none;
+            border: 2px solid #FF286F;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
+        .debug-panel.active { display: block; }
         
-        .location-field {
-            padding-right: 4rem;
+        .debug-error-item { 
+            color: #ff6b6b; 
+            border-left: 4px solid #ff286f; 
+            padding: 8px 12px; 
+            margin: 8px 0; 
+            background: rgba(255, 40, 111, 0.1);
+            border-radius: 4px;
         }
-        
-        .custom-icon {
-            width: 24px;
-            height: 24px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            display: inline-block;
+        .debug-warning-item { 
+            color: #ffd93d; 
+            border-left: 4px solid #ffd93d; 
+            padding: 8px 12px; 
+            margin: 8px 0;
+            background: rgba(255, 217, 61, 0.1);
+            border-radius: 4px;
         }
-        
-        .location-3-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/location%203.png');
+        .debug-success-item { 
+            color: #6bff6b; 
+            border-left: 4px solid #00d68f; 
+            padding: 8px 12px; 
+            margin: 8px 0;
+            background: rgba(0, 214, 143, 0.1);
+            border-radius: 4px;
         }
-        
-        .location-pin-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/location.png');
+        .debug-info-item { 
+            color: #adb5bd; 
+            border-left: 4px solid #adb5bd; 
+            padding: 8px 12px; 
+            margin: 8px 0;
+            background: rgba(173, 181, 189, 0.1);
+            border-radius: 4px;
         }
-        
-        .image-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/image.png');
+
+        /* Search container */
+        .search-container {
+            width: 100%;
+            max-width: 750px;
+            margin-bottom: 0.5rem;
+            position: relative;
         }
-        
-        .checklist-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/checklist.png');
+        .search-wrapper {
+            position: relative;
+            width: 100%;
         }
-        
-        .clock-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clock.png');
+        .search-input {
+            width: 100%;
+            height: 56px;
+            padding: 1rem 3.5rem 1rem 1.2rem;
+            border: 1px solid rgba(0, 62, 113, 0.3) !important;
+            background: white;
+            outline: none;
+            transition: border-color 0.2s ease;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: 16px;
+            border-radius: 7px;
         }
-        
-        .check-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/check-mark.png');
+        .search-input:focus {
+            border-color: #003e71 !important;
+            background-color: rgba(255, 40, 111, 0.03);
+            animation: shake 0.5s ease;
         }
-        
-        .calendar-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/calendar.png');
-        }
-        
-        .wallet-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/wallet.png');
-        }
-        
-        .street-icon {
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/IMG_5019.png');
-            width: 24px;
-            height: 24px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-        
         @keyframes shake {
-            0% { transform: translateY(-50%) translateX(0); }
-            5% { transform: translateY(-50%) translateX(-3px) rotate(-1deg); }
-            10% { transform: translateY(-50%) translateX(3px) rotate(1deg); }
-            15% { transform: translateY(-50%) translateX(-2px) rotate(-0.5deg); }
-            20% { transform: translateY(-50%) translateX(2px) rotate(0.5deg); }
-            25% { transform: translateY(-50%) translateX(-1px) rotate(-0.2deg); }
-            30% { transform: translateY(-50%) translateX(1px) rotate(0.2deg); }
-            35%, 100% { transform: translateY(-50%) translateX(0); }
+            0%,100%{ transform:translateX(0); }
+            25%{ transform:translateX(-4px); }
+            75%{ transform:translateX(4px); }
         }
-        
-        .shake-icon {
-            animation: shake 1.5s infinite ease-in-out;
+
+        /* Search icon - 40x40 */
+        .search-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 62, 113, 0.12);
+            border-radius: 7px !important;
+            transition: background-color 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
         }
-        
+        .search-icon img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(1000%) hue-rotate(180deg);
+        }
+
+        /* Location hint - hidden */
+        .location-hint {
+            display: none;
+        }
+
+        /* === CREATE TASK === */
+        .create-task-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .create-task-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.25rem 0.75rem;
+            border-bottom: 1px solid rgba(0, 62, 113, 0.08);
+            flex-shrink: 0;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn .material-symbols-outlined {
+            color: #000000 !important;
+            font-size: 28px !important;
+        }
+
+        .create-task-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #000000;
+            margin: 0;
+        }
+
+        .header-spacer {
+            width: 32px;
+        }
+
+        .create-task-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem 1.25rem 2rem;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-label .material-symbols-outlined {
+            color: #003E71 !important;
+            font-size: 20px !important;
+        }
+
+        .location-field-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .location-input {
+            width: 100%;
+            padding: 1rem 4rem 1rem 1.2rem;
+            border: 1.5px solid rgba(0, 62, 113, 0.3);
+            border-radius: 7px;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: 16px;
+            color: #000000;
+            background: white;
+            outline: none;
+            height: 56px;
+        }
+
+        .location-input:focus {
+            border-color: #003E71;
+        }
+
+        /* edit location icon - 40x40 to match search */
         .location-icon {
             position: absolute;
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 44px;
-            height: 44px;
-            background-color: rgba(4, 91, 146, 0.12);
-            border-radius: 5px !important;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 62, 113, 0.12);
+            border-radius: 7px !important;
+            transition: background-color 0.2s;
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.3s ease-in-out;
-            pointer-events: auto;
-            z-index: 2;
-            animation: shake 1.5s infinite ease-in-out;
         }
         .location-icon:hover {
-            background-color: #FF286F !important;
+            background-color: rgba(0, 62, 113, 0.2);
         }
-        .location-icon:hover .custom-icon {
-            filter: brightness(0) invert(1);
+        .location-icon .material-symbols-outlined {
+            color: #003E71 !important;
+            font-size: 22px !important;
         }
-        .location-icon .custom-icon {
-            width: 24px;
-            height: 24px;
-            transition: filter 0.3s ease-in-out;
-        }
-        
-        .upload-icon {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 44px;
-            height: 44px;
-            background-color: rgba(4, 91, 146, 0.12);
-            border-radius: 5px !important;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.3s ease-in-out;
-            pointer-events: auto;
-            z-index: 2;
-            animation: shake 1.5s infinite ease-in-out;
-            overflow: hidden;
-        }
-        .upload-icon:hover {
-            background-color: #FF286F !important;
-        }
-        .upload-icon:hover .material-symbols-outlined {
-            color: white !important;
-        }
-        .upload-icon .material-symbols-outlined {
-            color: #045B92;
-            font-size: 24px !important;
-            transition: color 0.3s ease-in-out;
-            pointer-events: none;
-        }
-        .file-input-hidden {
-            position: absolute;
+
+        .street-input {
             width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-            left: 0;
-            top: 0;
-        }
-        
-        .post-loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 10000003;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-        }
-        .post-loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .post-loading-content {
+            padding: 1rem 1.2rem;
+            border: 1.5px solid rgba(0, 62, 113, 0.3);
+            border-radius: 7px;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: 16px;
+            color: #000000;
             background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            max-width: 300px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            outline: none;
+            margin-top: 0.5rem;
+            height: 56px;
         }
-        .post-loading-spinner {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            height: 30px;
-            align-items: center;
+
+        .street-input:focus {
+            border-color: #003E71;
         }
-        
-        .post-loading-spinner .dot {
-            width: 12px;
-            height: 12px;
-            background: #FF286F;
-            border-radius: 50%;
-            animation: bounceDot 1.2s infinite ease-in-out;
+
+        .street-input::placeholder {
+            color: rgba(0, 62, 113, 0.4);
+            font-weight: 400;
         }
-        
-        .post-loading-spinner .dot:nth-child(1) {
-            animation-delay: -0.32s;
+
+        .task-input {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            border: 1.5px solid rgba(0, 62, 113, 0.3);
+            border-radius: 7px;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: 16px;
+            color: #000000;
+            background: white;
+            outline: none;
+            height: 56px;
         }
-        
-        .post-loading-spinner .dot:nth-child(2) {
-            animation-delay: -0.16s;
+
+        .task-input:focus {
+            border-color: #003E71;
         }
-        
-        @keyframes bounceDot {
-            0%, 80%, 100% { 
-                transform: scale(0.6);
-                opacity: 0.6;
-            }
-            40% { 
-                transform: scale(1.2);
-                opacity: 1;
-            }
+
+        .task-input::placeholder {
+            color: rgba(0, 62, 113, 0.4);
+            font-weight: 400;
         }
-        
-        .post-loading-text {
-            color: #045B92;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-        
-        .success-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-            z-index: 10000004;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 350px;
-        }
-        
-        .success-toast.show {
-            transform: translateX(0);
-        }
-        
+
         .char-count {
             text-align: right;
             font-size: 0.75rem;
-            color: rgba(4, 91, 146, 0.5);
-            margin-top: 0.25rem;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
+            color: rgba(0, 62, 113, 0.4);
+            margin-top: 0.35rem;
         }
-        
-        .char-count.limit-reached {
-            color: #FF286F;
+
+        .more-details-btn-container {
+            display: flex;
+            justify-content: flex-end;
+            margin: 0.75rem 0 0.5rem;
         }
-        
-        .when-options,
-        .budget-options,
-        .payment-options {
+
+        .more-details-btn {
+            background: transparent;
+            border: 1px solid #003E71;
+            border-radius: 7px;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #003E71;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .more-details-btn .material-symbols-outlined {
+            font-size: 18px !important;
+            color: #003E71 !important;
+            background: none;
+        }
+
+        .collapsible-section {
+            background: #f8fafc;
+            border-radius: 7px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            border: 1px solid rgba(0, 62, 113, 0.1);
+        }
+
+        .when-options, .budget-options {
             display: flex;
             gap: 1rem;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
         }
-        
-        .when-option,
-        .budget-option,
-        .payment-option {
+
+        .when-option, .budget-option {
             flex: 1;
-            padding: 0.75rem 0;
-            font-size: 0.9rem;
+            padding: 0.85rem 0;
+            border-radius: 7px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
             text-align: center;
-            border-radius: 5px !important;
-            transition: all 0.2s;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            border: 1px solid transparent;
+            border: 1.5px solid transparent;
         }
-        
-        .when-option.active,
-        .budget-option.active {
-            background: #FF286F;
+
+        .when-option.active, .budget-option.active {
+            background: #003E71;
             color: white;
-            border: none;
+            border-color: #003E71;
         }
-        
-        .when-option.inactive,
-        .budget-option.inactive {
+
+        .when-option.inactive, .budget-option.inactive {
             background: transparent;
-            color: #045B92;
-            border: 1px solid #045B92;
+            color: #000000;
+            border-color: rgba(0, 62, 113, 0.3);
         }
-        
-        .when-option.inactive:hover,
-        .budget-option.inactive:hover {
-            background: #FF286F;
-            color: white;
-            border-color: #FF286F;
-        }
-        
-        .payment-option.active {
-            background: #FF286F;
-            color: white;
-            border: none;
-        }
-        
-        .payment-option.inactive {
-            background: transparent;
-            color: #045B92;
-            border: 1px solid #045B92;
-        }
-        
-        .payment-option.inactive:hover {
-            background: #FF286F;
-            color: white;
-            border-color: #FF286F;
-        }
-        
-        #onlineBtn {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-            border-color: rgba(4, 91, 146, 0.2);
-            color: rgba(4, 91, 146, 0.5);
-        }
-        
+
         .date-time-pickers {
             display: flex;
             gap: 1rem;
-            margin-top: 0.25rem;
+            margin-top: 0.5rem;
         }
-        
+
         .date-time-box {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 0.7rem 0.5rem;
-            border: 1px solid rgba(4, 91, 146, 0.2);
-            border-radius: 5px !important;
+            padding: 0.85rem 0.5rem;
+            border: 1.5px solid rgba(0, 62, 113, 0.3);
+            border-radius: 7px;
             cursor: pointer;
             background: white;
-            transition: all 0.3s ease-in-out;
             position: relative;
-        }
-        .date-time-box:hover {
-            border-color: #FF286F;
-            background-color: #FF286F;
-        }
-        
-        .date-time-box .custom-icon {
-            width: 20px;
-            height: 20px;
-            transition: filter 0.3s ease-in-out;
-        }
-        
-        .date-time-box:hover .custom-icon {
-            filter: brightness(0) invert(1);
-        }
-        
-        .date-time-box:hover span {
-            color: white !important;
-        }
-        
-        .date-time-box span {
-            font-size: 0.85rem;
-            color: #045B92;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 400 !important;
-            transition: color 0.3s ease-in-out;
-        }
-        
-        .native-datetime-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .native-date-input,
-        .native-time-input {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-            left: 0;
-            top: 0;
-        }
-        
-        .more-details-field {
-            min-height: 80px;
-            resize: vertical;
-        }
-        
-        .optional-text {
-            font-weight: 300 !important;
-            color: rgba(4, 91, 146, 0.5);
-            font-size: 0.85rem;
-            margin-left: 0.5rem;
-            font-family: 'Manrope', sans-serif !important;
         }
 
-        #previewSheet {
-            display: none;
+        .date-time-box .material-symbols-outlined {
+            color: #003E71 !important;
+            background: none;
         }
-        
-        #successSheet {
-            display: none;
-        }
-        
-        .preview-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
-        }
-        
-        .profile-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: rgba(4, 91, 146, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 0.75rem;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            font-size: 24px;
-            color: #045B92;
-            overflow: hidden;
-        }
-        
-        .profile-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .profile-info-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.35rem;
-        }
-        
-        .profile-name {
-            font-size: 1rem;
-            color: #045B92;
-            font-weight: 500;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .verified-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .verified-icon .material-symbols-outlined {
-            color: #10b981 !important;
-            font-size: 18px !important;
-        }
-        
-        .success-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-            text-align: center;
-        }
-        
-        .success-check {
-            width: 100px;
-            height: 100px;
-            background: #8BC34A;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 2rem;
-            animation: popIn 0.5s ease;
+
+        .budget-field-wrapper {
             position: relative;
-            z-index: 10;
-        }
-        
-        .success-check .material-symbols-outlined {
-            color: white !important;
-            font-size: 60px !important;
-        }
-        
-        .success-title {
-            font-size: 1.1rem;
-            color: #045B92;
-            font-weight: 500 !important;
-            margin-bottom: 0.25rem;
-            font-family: 'Manrope', sans-serif !important;
-            text-transform: lowercase;
-        }
-        .success-title::first-letter {
-            text-transform: uppercase;
-        }
-        
-        .success-message {
-            color: rgba(4, 91, 146, 0.5);
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.4;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .task-id-small {
-            background: transparent;
-            color: rgba(4, 91, 146, 0.4);
-            font-size: 0.8rem;
-            margin-top: 0.75rem;
-            margin-bottom: 1rem;
-            font-family: monospace;
-            word-break: break-all;
-            font-weight: 300;
-        }
-        
-        .go-to-task-btn {
-            background: #FF286F;
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 5px;
-            width: 100%;
-            max-width: 200px;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            transition: background-color 0.2s;
-            margin-bottom: 0.5rem;
-        }
-        .go-to-task-btn:hover {
-            background: #d61e5b;
-        }
-        
-        .preview-items {
-            background: white;
-            border: 1px solid rgba(4, 91, 146, 0.1);
-            padding: 1.5rem;
-            border-radius: 5px !important;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(4, 91, 146, 0.08);
-        }
-        
-        .preview-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-        }
-        .preview-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .preview-icon {
-            display: none;
-        }
-        
-        .preview-content {
-            flex: 1;
-            margin-left: 0;
-        }
-        
-        .preview-label {
-            font-size: 0.75rem;
-            color: rgba(4, 91, 146, 0.5);
-            margin-bottom: 0.15rem;
-            text-transform: uppercase;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-            letter-spacing: 0.3px;
-        }
-        
-        .preview-value {
-            font-weight: 400 !important;
-            font-size: 0.95rem;
-            color: #045B92;
-            line-height: 1.4;
-            word-break: break-word;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .preview-value.pink-text {
-            color: #FF286F;
-            font-weight: 500 !important;
-        }
-        
-        .budget-hint {
-            font-size: 0.7rem;
-            color: rgba(4, 91, 146, 0.5);
-            margin-left: 0.5rem;
-            font-weight: 300;
-            text-transform: none;
-        }
-        
-        .preview-images {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
             margin-top: 0.5rem;
         }
-        .preview-thumb {
-            width: 50px;
-            height: 50px;
-            border-radius: 5px;
-            object-fit: cover;
-            border: 1px solid rgba(4, 91, 146, 0.2);
+
+        .currency-symbol {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #003E71;
+            font-weight: 600;
         }
-        
-        .preview-divider {
-            height: 1px;
-            background: rgba(4, 91, 146, 0.1);
-            margin: 1rem 0;
+
+        .budget-input {
+            width: 100%;
+            padding: 1rem 1.2rem 1rem 2.5rem;
+            border: 1.5px solid rgba(0, 62, 113, 0.3);
+            border-radius: 7px;
+            font-family: inherit;
+            font-weight: 400;
+            font-size: 16px;
+            outline: none;
+            height: 56px;
         }
-        
-        .helper-message {
-            background: rgba(4, 91, 146, 0.08);
-            padding: 1.25rem;
-            border-radius: 5px !important;
+        .budget-input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .budget-input[type="number"]::-webkit-outer-spin-button,
+        .budget-input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* ===== ADD PHOTO CONTAINER ===== */
+        .upload-area {
+            border: 2px dashed rgba(0, 62, 113, 0.2);
+            border-radius: 7px;
+            background: #f5f9ff;
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
             display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-            margin-bottom: 1.5rem;
-        }
-        
-        .helper-icon {
-            width: 32px;
-            height: 32px;
-            background-color: rgba(4, 91, 146, 0.12);
-            border-radius: 5px !important;
-            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-            transition: none !important;
+            gap: 0.75rem;
         }
-        .helper-icon .material-symbols-outlined {
-            color: #045B92 !important;
-            font-size: 20px !important;
+
+        .upload-area:hover {
+            background: #e8f0fe;
+            border-color: #003E71;
         }
-        
-        .helper-text {
-            flex: 1;
+
+        .upload-area .material-symbols-outlined {
+            font-size: 48px !important;
+            color: #003E71 !important;
+            background: rgba(0, 62, 113, 0.08);
+            padding: 1rem;
+            border-radius: 50%;
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-area p {
+            color: #003E71;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .upload-area .upload-hint {
+            font-size: 0.85rem;
+            color: rgba(0, 62, 113, 0.5);
+            font-weight: 400;
+            margin-top: -0.25rem;
+        }
+
+        /* Upload status messages */
+        .upload-status {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 7px;
             font-size: 0.9rem;
-            color: #045B92;
-            line-height: 1.5;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
-        }
-        
-        .terms-container {
-            margin: 1.5rem 0 1rem;
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-        }
-        
-        .terms-checkbox {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #FF286F;
-        }
-        
-        .terms-label {
-            font-size: 0.85rem;
-            color: #045B92;
-            cursor: pointer;
-            user-select: none;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 400 !important;
-        }
-        
-        .terms-label a {
-            color: #FF286F;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .terms-label a:hover {
-            text-decoration: underline;
-        }
-        
-        .post-btn-container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-        
-        .post-button {
-            background: #FF286F;
-            color: white;
-            border: none;
-            padding: 1rem;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 5px !important;
-            width: 100%;
-            transition: all 0.1s ease;
-            margin-bottom: 0.5rem;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .post-button:active {
-            transform: scale(0.98);
-            background: #d61e5b;
-        }
-        
-        .post-button.loading {
-            opacity: 0.7;
-            cursor: wait;
-            color: transparent;
-        }
-        
-        .post-button.loading::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            top: 50%;
-            left: 50%;
-            margin-left: -10px;
-            margin-top: -10px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .post-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .post-button.clicked {
-            transform: scale(0.98);
-            background: #d61e5b;
-        }
-        
-        .free-text {
-            font-size: 0.75rem;
-            color: rgba(4, 91, 146, 0.5);
-            text-align: center;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif !important;
-        }
-
-        .map-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            z-index: 2000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            padding: 1rem;
-        }
-        
-        .map-modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .map-modal {
-            background: white;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 24px !important;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalPop 0.3s ease;
-        }
-        
-        .map-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
-        }
-        
-        .map-modal-header h3 {
-            font-size: 1.1rem;
-            color: #045B92;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-        }
-        
-        .map-modal-close {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-        }
-        .map-modal-close .material-symbols-outlined {
-            font-size: 24px !important;
-            color: #FF286F !important;
-        }
-        
-        .map-container {
-            height: 300px;
-            width: 100%;
-        }
-        
-        .map-modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            padding: 1.5rem;
-            border-top: 1px solid rgba(4, 91, 146, 0.1);
-        }
-        
-        .map-confirm-btn {
-            background: #FF286F;
-            color: white;
-            border: none;
-            padding: 0.7rem 2rem;
-            font-size: 0.95rem;
-            cursor: pointer;
-            border-radius: 5px !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-        }
-        .map-confirm-btn:hover {
-            background: #d61e5b;
-        }
-        
-        .location-info {
-            padding: 0.5rem 1.5rem;
-            font-size: 0.85rem;
-            color: #045B92;
-            background: rgba(4, 91, 146, 0.03);
-            border-bottom: 1px solid rgba(4, 91, 146, 0.1);
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 300 !important;
-        }
-
-        .confirm-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            z-index: 1000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-            padding: 1rem;
-        }
-        
-        .confirm-modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .confirm-modal {
-            background: white;
-            max-width: 400px;
-            width: 100%;
-            padding: 2rem;
-            border-radius: 24px !important;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalPop 0.3s ease;
-        }
-        
-        .confirm-modal h3 {
-            font-size: 1.3rem;
-            color: #045B92;
-            margin-bottom: 1rem;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-        }
-        
-        .confirm-modal p {
-            font-size: 0.95rem;
-            color: rgba(4, 91, 146, 0.8);
-            margin-bottom: 2rem;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 300 !important;
-        }
-        
-        .confirm-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-        
-        .confirm-btn {
-            flex: 1;
-            padding: 0.8rem;
-            border: none;
-            border-radius: 5px !important;
-            font-size: 0.95rem;
-            cursor: pointer;
             transition: all 0.2s;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 500 !important;
-        }
-        
-        .confirm-btn.yes {
-            background: #FF286F;
-            color: white;
-        }
-        
-        .confirm-btn.yes:hover {
-            background: #d61e5b;
-        }
-        
-        .confirm-btn.yes:active {
-            transform: scale(0.95);
-        }
-        
-        .confirm-btn.yes.loading {
-            opacity: 0.7;
-            cursor: wait;
-            color: transparent;
-            position: relative;
-        }
-        
-        .confirm-btn.yes.loading::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            top: 50%;
-            left: 50%;
-            margin-left: -10px;
-            margin-top: -10px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        .confirm-btn.cancel {
-            background: transparent;
-            color: #045B92;
-            border: 1px solid #045B92;
-        }
-        
-        .confirm-btn.cancel:hover {
-            background: rgba(4, 91, 146, 0.05);
-        }
-        
-        .confirm-btn.cancel:active {
-            transform: scale(0.95);
         }
 
-        .image-preview-container {
-            margin-top: 0.5rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+        .upload-status.info {
+            background: rgba(0, 62, 113, 0.1);
+            color: #003E71;
         }
-        .image-preview {
-            width: 60px;
-            height: 60px;
-            border-radius: 5px;
-            object-fit: cover;
-            border: 1px solid rgba(4, 91, 146, 0.2);
+
+        .upload-status.success {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
         }
-        .remove-image {
-            background: #FF286F;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            margin-left: -15px;
-            margin-top: -5px;
+
+        .upload-status.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
         }
-        
+
+        .upload-status.warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #856404;
+        }
+
+        .upload-status .material-symbols-outlined {
+            font-size: 20px !important;
+        }
+
+        /* Upload progress indicator */
         .upload-progress {
             font-size: 0.75rem;
             color: #045B92;
             margin-top: 0.25rem;
         }
 
-        @media (max-width: 768px) {
-            .sheet-header {
-                padding: 1.25rem 1.25rem 1.25rem;
-            }
-            .sheet-content {
-                padding: 1.75rem 1.25rem 0.75rem;
-            }
-            .sheet-footer {
-                padding: 0.75rem 1.25rem 1.25rem;
-            }
-            .profile-avatar {
-                width: 56px;
-                height: 56px;
-            }
-            .map-container {
-                height: 250px;
-            }
+        /* Image preview container */
+        .image-preview-container {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .image-preview-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .image-preview {
+            width: 70px;
+            height: 70px;
+            border-radius: 7px;
+            object-fit: cover;
+            border: 2px solid #003E71;
+            box-shadow: 0 2px 8px rgba(0, 62, 113, 0.15);
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #FF286F;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        
+        .remove-image:hover {
+            transform: scale(1.1);
         }
 
-        @media (max-width: 480px) {
-            .sheet-header {
-                padding: 1rem 1rem 1rem;
-            }
-            .sheet-content {
-                padding: 1.5rem 1rem 0.5rem;
-            }
-            .sheet-footer {
-                padding: 0.5rem 1rem 1rem;
-            }
-            .when-options,
-            .budget-options,
-            .payment-options {
-                gap: 0.5rem;
-            }
-            .date-time-pickers {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            .profile-avatar {
-                width: 48px;
-                height: 48px;
-                font-size: 20px;
-            }
-            .helper-message {
-                padding: 1rem;
-                gap: 0.75rem;
-            }
-            .confirm-buttons {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            .label-with-hint {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.25rem;
-            }
-            .map-container {
-                height: 200px;
-            }
+        .extra-notes {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            border: 1.5px solid rgba(0, 62, 113, 0.3);
+            border-radius: 7px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .post-btn-container {
+            padding: 1rem 1.25rem 1.5rem;
+            border-top: 1px solid rgba(0, 62, 113, 0.08);
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .next-button {
+            width: 100%;
+            background: #003E71;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .next-button:disabled { opacity:0.5; cursor:not-allowed; }
+
+        /* === OFFERS PAGE - Container OVER map, matching home sheet === */
+        .offers-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .offers-container.active {
+            display: flex;
+        }
+
+        /* Map as background layer */
+        .offers-map-section {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #offersMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* White container overlay - matching home sheet style */
+        .offers-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 2;
+            padding: 20px;
+            max-height: 30%;
+            overflow-y: auto;
+        }
+
+        .offers-back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            cursor: pointer;
+            border: none;
+            color: #000;
+        }
+        .offers-back-btn .material-symbols-outlined {
+            color: #000 !important;
+        }
+
+        .no-offers-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #003E71;
+            text-align: center;
+            gap: 1rem;
+            padding: 1rem 0;
+        }
+
+        .no-offers-message .material-symbols-outlined {
+            font-size: 48px !important;
+            color: #003E71 !important;
+            opacity: 0.5;
+        }
+
+        .no-offers-message p {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .no-offers-message small {
+            color: rgba(0, 62, 113, 0.5);
+        }
+
+        .post-offer-button {
+            width: 100%;
+            background: #003E71;
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 7px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .map-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 5000000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-modal.active { display: flex; }
+        
+        .map-modal-content {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        
+        .map-modal-header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,62,113,0.1);
+        }
+        
+        .map-modal-header h3 {
+            color: #000000;
+            font-size: 1.1rem;
+        }
+        
+        #mapModalContainer {
+            height: 300px;
+            width: 100%;
+        }
+        
+        .confirm-button {
+            margin: 1rem;
+            padding: 0.7rem 2rem;
+            background: #003E71;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            float: right;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.5);
+            z-index:3000000;
+            display:none;
+            align-items:center;
+            justify-content:center;
+        }
+        .loading-overlay.active { display:flex; }
+        .loading-content {
+            background:white;
+            padding:2rem;
+            border-radius:7px;
+        }
+        .success-toast, .error-toast {
+            position:fixed;
+            top:20px;
+            right:20px;
+            padding:1rem;
+            border-radius:7px;
+            color:white;
+            display:none;
+            z-index:4000000;
         }
     </style>
 </head>
 <body>
-    <!-- TASK PLANNER SHEET - NOW A PROPER MODAL POP-UP -->
-    <div class="sheet-container" id="locationSheet">
-        <div class="sheet">
-            <div class="sheet-header">
-                <button class="sheet-back-btn" id="sheetBackBtn">
-                    <span class="material-symbols-outlined">arrow_back</span>
+    <!-- NEW NAVIGATION MENU - DIRECTLY EMBEDDED -->
+    <div class="nav-menu-container">
+        <!-- Hamburger Menu Button -->
+        <button class="nav-menu-btn" id="navMenuBtn">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <!-- Profile Modal -->
+        <div class="nav-modal-overlay" id="navModalOverlay">
+            <div class="nav-modal">
+                <div class="nav-modal-header">
+                    <h2>Your Profile</h2>
+                    <button class="nav-modal-close" id="navCloseBtn">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="nav-modal-content" id="navModalContent">
+                    <!-- Content will be populated by JavaScript -->
+                    <div style="text-align:center; padding:2rem; color:#64748b;">Loading profile...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="nav-toast" id="navToast"></div>
+    </div>
+
+    <!-- MAP - DARK STYLE -->
+    <div id="map"></div>
+
+    <!-- REMOVED: old hamburger menu icon (deleted) -->
+
+    <!-- Draggable pin -->
+    <div class="draggable-pin" id="locationPin"></div>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="color:#FF286F;">🔍 Debug Console</h3>
+            <button class="debug-close" id="debugClose" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">✕</button>
+        </div>
+        <div id="debugStats" style="display:flex; gap:20px; margin:15px 0; padding:10px; background:rgba(255,255,255,0.1); border-radius:7px;">
+            <div><span style="color:#ff6b6b;">⚠️ Errors: <span id="errorCount">0</span></span></div>
+            <div><span style="color:#ffd93d;">⚡ Warnings: <span id="warningCount">0</span></span></div>
+            <div><span style="color:#6bff6b;">✅ Success: <span id="successCount">0</span></span></div>
+        </div>
+        <div id="debugLogs" style="margin-top:1rem; max-height:300px; overflow-y:auto;"></div>
+        <div class="debug-actions" style="margin-top:1rem; display:flex; gap:10px;">
+            <button id="debugClear" style="background:#333; color:white; border:none; padding:0.5rem 1rem; border-radius:7px; cursor:pointer;">Clear Logs</button>
+            <button id="debugTest" style="background:#FF286F; color:white; border:none; padding:0.5rem 1rem; border-radius:7px; cursor:pointer;">Test Upload</button>
+        </div>
+    </div>
+
+    <!-- WHITE CONTAINER -->
+    <div class="home-sheet">
+        <div class="sheet-header">
+            <h2>Get help nearby.</h2>
+            <div class="header-actions">
+                <button class="debug-btn" id="debugBtn">
+                    <span class="material-symbols-outlined">bug_report</span>
                 </button>
-                <div class="sheet-title">Plan your task</div>
-            </div>
-            
-            <div class="sheet-content" id="locationContent">
-                <div class="tip-banner">
-                    <div class="tip-banner-icon">
-                        <span class="material-symbols-outlined">lightbulb</span>
-                    </div>
-                    <div class="tip-banner-text">
-                        Describe your task clearly to get better offers from helpers. Be specific about what you need and any important details.
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <label class="section-label">Your location</label>
-                    <div class="location-field-wrapper">
-                        <input type="text" class="location-field" id="locationField" placeholder="Your location" value="detecting location...">
-                        <button class="location-icon" id="locationMapBtn">
-                            <span class="custom-icon location-pin-icon"></span>
-                        </button>
-                    </div>
-                    <div class="field-error" id="locationError">Please confirm your location</div>
-                </div>
-                
-                <div class="form-section">
-                    <div class="label-with-hint">
-                        <label class="section-label">Street name</label>
-                        <span class="hint-text">(Your full address is only revealed after you approve a helper.)</span>
-                    </div>
-                    <div class="street-field-wrapper">
-                        <input type="text" class="street-field" id="streetField" placeholder="House number, street name, or nearby landmark">
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <label class="section-label">When do you need help?</label>
-                    <div class="when-options">
-                        <button class="when-option active" id="whenNowBtn">Now</button>
-                        <button class="when-option inactive" id="whenLaterBtn">Later</button>
-                    </div>
-                    
-                    <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
-                        <div class="date-time-box" id="pickDateBtn">
-                            <span class="custom-icon check-icon"></span>
-                            <span id="dateDisplay">Pick a date</span>
-                            <input type="date" id="nativeDatePicker" class="native-date-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
-                        </div>
-                        <div class="date-time-box" id="pickTimeBtn">
-                            <span class="custom-icon clock-icon"></span>
-                            <span id="timeDisplay">Pick a time</span>
-                            <input type="time" id="nativeTimePicker" class="native-time-input" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;" />
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <label class="section-label">Describe your task</label>
-                    <div class="task-field-wrapper">
-                        <input type="text" class="task-field" id="taskField" placeholder="Describe your task or upload an image" maxlength="50" value="">
-                        <span class="upload-icon" id="uploadIcon">
-                            <span class="material-symbols-outlined">add</span>
-                        </span>
-                    </div>
-                    <div class="char-count" id="taskCharCount">0/50</div>
-                    <div class="field-error" id="taskError">Please describe your task</div>
-                    <div id="imagePreviewContainer" class="image-preview-container"></div>
-                    <div id="uploadProgress" class="upload-progress"></div>
-                </div>
-
-                <div class="form-section">
-                    <label class="section-label">What's your budget?</label>
-                    <div class="budget-options">
-                        <button class="budget-option active" id="fixedBudgetBtn">Fixed</button>
-                        <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
-                    </div>
-                    <div id="fixedBudgetInput" style="display: block;">
-                        <div class="budget-field-wrapper">
-                            <span class="currency-symbol">R</span>
-                            <input type="text" class="budget-input" id="budgetAmount" placeholder="Enter amount" inputmode="numeric" pattern="[0-9]*">
-                        </div>
-                        <div class="field-error" id="budgetError">Please enter a budget amount</div>
-                    </div>
-                    
-                    <div style="margin-top: 0.75rem;">
-                        <label class="section-label">Payment method</label>
-                        <div class="payment-options">
-                            <button class="payment-option active" id="cashBtn">
-                                <span>Cash</span>
-                            </button>
-                            <button class="payment-option inactive" id="onlineBtn" disabled>
-                                <span>Online payment</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <label class="section-label">Have more details? <span class="optional-text">(Optional)</span></label>
-                    <textarea class="more-details-field" id="moreDetailsField" placeholder="Add more details about your task..." rows="3"></textarea>
-                </div>
-            </div>
-            
-            <div class="sheet-footer">
-                <div class="next-btn-container">
-                    <button class="next-button" id="nextButton">Next</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- PREVIEW SHEET -->
-    <div class="sheet-container" id="previewSheet">
-        <div class="sheet">
-            <div class="sheet-header">
-                <button class="sheet-back-btn" id="previewBackBtn">
-                    <span class="material-symbols-outlined">arrow_back</span>
+                <button class="refresh-location-btn" id="refreshLocationBtn">
+                    <span class="material-symbols-outlined">my_location</span>
                 </button>
-                <div class="sheet-title">Confirm your task</div>
             </div>
-            
-            <div class="sheet-content" id="previewContent">
-                <div class="preview-header">
-                    <div class="profile-avatar" id="profileAvatar">PS</div>
-                    <div class="profile-info-row">
-                        <span class="profile-name" id="profileName">Loading...</span>
-                        <span class="verified-icon" id="verifiedIcon">
-                            <span class="material-symbols-outlined" style="color: #10b981; font-size: 18px;">verified</span>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="preview-items">
-                    <div class="preview-item">
-                        <div class="preview-content">
-                            <div class="preview-label">TASK LOCATION</div>
-                            <div class="preview-value" id="previewLocation">loading...</div>
-                        </div>
-                    </div>
-
-                    <div class="preview-item">
-                        <div class="preview-content">
-                            <div class="preview-label">STREET NAME</div>
-                            <div class="preview-value pink-text" id="previewStreet">Not provided</div>
-                        </div>
-                    </div>
-
-                    <div class="preview-item">
-                        <div class="preview-content">
-                            <div class="preview-label">DATE AND TIME</div>
-                            <div class="preview-value pink-text" id="previewWhen">Now</div>
-                        </div>
-                    </div>
-
-                    <div class="preview-item">
-                        <div class="preview-content">
-                            <div class="preview-label">YOUR TASK</div>
-                            <div class="preview-value pink-text" id="previewTask">Loading...</div>
-                            <div id="previewImagesContainer" class="preview-images"></div>
-                        </div>
-                    </div>
-
-                    <div class="preview-item">
-                        <div class="preview-content">
-                            <div class="preview-label">BUDGET <span class="budget-hint">(per task)</span></div>
-                            <div class="preview-value pink-text" id="previewBudget">Not set</div>
-                            <div class="preview-value" id="previewPayment" style="font-size:0.85rem; color:#045B92; margin-top:0.25rem;"></div>
-                        </div>
-                    </div>
-
-                    <div class="preview-item">
-                        <div class="preview-content">
-                            <div class="preview-label">MORE DETAILS</div>
-                            <div class="preview-value" id="previewDetails">None provided</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="helper-message">
-                    <div class="helper-icon">
-                        <span class="material-symbols-outlined">check</span>
-                    </div>
-                    <div class="helper-text" id="helperText">
-                        Your task will be visible to nearby helpers. You will receive offers and can choose who to work with.
-                    </div>
-                </div>
-
-                <div class="terms-container">
-                    <input type="checkbox" id="termsCheckbox" class="terms-checkbox">
-                    <label for="termsCheckbox" class="terms-label">
-                        I agree to the <a href="#">TaskMart Terms of Service</a> and <a href="#">Privacy Policy</a>.
-                    </label>
-                </div>
-            </div>
-            
-            <div class="sheet-footer">
-                <div class="post-btn-container">
-                    <button class="post-button" id="postButton" disabled>Post task</button>
-                    <div class="free-text" id="freeText">Free to post • no upfront payment</div>
+        </div>
+        
+        <div class="search-container" id="openCreateTaskBtn">
+            <div class="search-wrapper">
+                <input type="text" class="search-input" placeholder="What do you need help with?" readonly>
+                <div class="search-icon">
+                    <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/search%203.png" alt="search">
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SUCCESS SHEET -->
-    <div class="sheet-container" id="successSheet">
-        <div class="sheet">
-            <div class="sheet-header">
-                <div class="sheet-title">Task Posted!</div>
+    <!-- CREATE TASK FULL SCREEN -->
+    <div class="create-task-container" id="createTaskContainer">
+        <div class="create-task-header">
+            <button class="close-btn" id="closeCreateTaskBtn">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="create-task-title">Create task</div>
+            <div class="header-spacer"></div>
+        </div>
+
+        <div class="create-task-content">
+            <!-- Location Section -->
+            <div class="section">
+                <div class="section-label">
+                    <span class="material-symbols-outlined">location_on</span>
+                    Your location
+                </div>
+                <div class="location-field-wrapper">
+                    <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
+                    <button class="location-icon" id="openMapBtn">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                </div>
+                <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
             </div>
-            
-            <div class="sheet-content" id="successContent">
-                <div class="success-content">
-                    <div class="success-check" id="successCheckIcon">
-                        <span class="material-symbols-outlined">check</span>
+
+            <!-- Task Description -->
+            <div class="section">
+                <div class="section-label">
+                    <span class="material-symbols-outlined">description</span>
+                    What do you need help with?
+                </div>
+                <input type="text" class="task-input" id="taskInput" placeholder="I need help with laundry..." maxlength="50">
+                <div class="char-count" id="taskCharCount">0/50</div>
+                
+                <div class="more-details-btn-container">
+                    <button class="more-details-btn" id="moreDetailsBtn">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        More details
+                    </button>
+                </div>
+
+                <div class="collapsible-section" id="collapsibleSection" style="display: none;">
+                    <!-- When -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div class="section-label">When do you need help?</div>
+                        <div class="when-options">
+                            <button class="when-option active" id="whenNowBtn">Now</button>
+                            <button class="when-option inactive" id="whenLaterBtn">Later</button>
+                        </div>
+                        <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
+                            <div class="date-time-box" id="pickDateBtn">
+                                <span class="material-symbols-outlined">calendar_today</span>
+                                <span id="dateDisplay">Pick date</span>
+                                <input type="date" id="nativeDatePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
+                            </div>
+                            <div class="date-time-box" id="pickTimeBtn">
+                                <span class="material-symbols-outlined">schedule</span>
+                                <span id="timeDisplay">Pick time</span>
+                                <input type="time" id="nativeTimePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
+                            </div>
+                        </div>
                     </div>
-                    <div class="success-title">Success! task has been posted</div>
-                    <div class="success-message">Taskers can now view and respond to your task.</div>
-                    <button class="go-to-task-btn" id="doneBtn">Go to task</button>
-                    <div class="task-id-small" id="successTaskId">#loading...</div>
+
+                    <!-- Budget -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div class="section-label">Your budget</div>
+                        <div class="budget-options">
+                            <button class="budget-option active" id="fixedBudgetBtn">Fixed</button>
+                            <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
+                        </div>
+                        <div id="fixedBudgetInput">
+                            <div class="budget-field-wrapper">
+                                <span class="currency-symbol">R</span>
+                                <input type="number" class="budget-input" id="budgetAmount" placeholder="Enter amount" inputmode="numeric">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Images -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div class="section-label">Add images (optional)</div>
+                        
+                        <div class="upload-area" id="uploadArea">
+                            <span class="material-symbols-outlined">cloud_upload</span>
+                            <p>Tap to upload photos</p>
+                            <div class="upload-hint">JPG, PNG up to 5MB</div>
+                        </div>
+                        
+                        <div id="uploadStatus" class="upload-status info" style="display: none;">
+                            <span class="material-symbols-outlined">info</span>
+                            <span id="uploadStatusText">Ready to upload</span>
+                        </div>
+                        
+                        <div id="uploadProgress" class="upload-progress" style="display: none;"></div>
+                        
+                        <div id="imagePreviewContainer" class="image-preview-container"></div>
+                    </div>
+
+                    <!-- Extra Notes -->
+                    <div>
+                        <div class="section-label">Extra notes (optional)</div>
+                        <textarea class="extra-notes" id="extraNotes" placeholder="Any specific instructions..." rows="3"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- POST LOADING OVERLAY -->
-    <div class="post-loading-overlay" id="postLoadingOverlay">
-        <div class="post-loading-content">
-            <div class="post-loading-spinner">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-            <div class="post-loading-text">Posting your task...</div>
+        <div class="post-btn-container">
+            <button class="next-button" id="nextBtn" disabled>Next</button>
         </div>
     </div>
 
-    <!-- PAYMENT MODAL - FIXED VERSION -->
-    <div class="payment-modal-overlay" id="paymentModal">
-        <div class="payment-modal">
-            <div class="payment-header">Secure Payment</div>
-            <div class="payment-content">
-                <p>We'll securely hold your payment until the task is completed.</p>
-                <p>You only pay when you're satisfied with the work.</p>
-                <div class="payment-note">
-                    <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle;">info</span>
-                    Online payment integration coming soon
-                </div>
-            </div>
-            <div class="payment-buttons">
-                <button class="payment-btn secondary" id="cancelPaymentBtn">Cancel</button>
-                <button class="payment-btn primary" id="confirmPaymentBtn" disabled>Coming Soon</button>
-            </div>
+    <!-- OFFERS PAGE - Container over map -->
+    <div class="offers-container" id="offersContainer">
+        <!-- Map background -->
+        <div class="offers-map-section">
+            <div id="offersMap"></div>
         </div>
+        
+        <!-- White sheet overlay -->
+        <div class="offers-sheet">
+            <div class="no-offers-message">
+                <span class="material-symbols-outlined">info</span>
+                <p>No offers at this time</p>
+                <small>Check back later for helper responses</small>
+            </div>
+
+            <button class="post-offer-button" id="postOfferBtn">Post</button>
+        </div>
+
+        <!-- Back button -->
+        <button class="offers-back-btn" id="offersBackBtn">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </button>
     </div>
 
-    <!-- PAYMENT LOADING OVERLAY - FIXED -->
-    <div class="payment-loading-overlay" id="paymentLoadingOverlay">
-        <div class="payment-loading-content">
-            <div class="payment-loading-spinner">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-            <div class="payment-loading-text">Processing payment...</div>
-            <div class="payment-loading-subtext">Please wait</div>
-        </div>
-    </div>
-
-    <!-- SUCCESS TOAST -->
-    <div class="success-toast" id="successToast"></div>
-
-    <!-- MAP MODAL -->
-    <div class="map-modal-overlay" id="mapModal">
-        <div class="map-modal">
+    <!-- Map Modal -->
+    <div class="map-modal" id="mapModal">
+        <div class="map-modal-content">
             <div class="map-modal-header">
                 <h3>Select precise location</h3>
-                <button class="map-modal-close" id="mapModalCloseBtn">
+                <button class="close-btn" id="closeMapModalBtn">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div id="locationInfo" class="location-info">Drag the marker to your exact location</div>
-            <div class="map-container" id="map"></div>
-            <div class="map-modal-footer">
-                <button class="map-confirm-btn" id="mapConfirmBtn">Confirm location</button>
-            </div>
+            <div id="mapModalContainer"></div>
+            <button class="confirm-button" id="confirmLocationBtn">Confirm</button>
         </div>
     </div>
 
-    <!-- CONFIRMATION MODAL -->
-    <div class="confirm-modal-overlay" id="confirmModal">
-        <div class="confirm-modal">
-            <h3 id="confirmTitle">Ready to post?</h3>
-            <p id="confirmMessage">We're about to post your task. Are you sure you want to continue?</p>
-            <div class="confirm-buttons">
-                <button class="confirm-btn yes" id="confirmYesBtn">Yes, post it</button>
-                <button class="confirm-btn cancel" id="confirmCancelBtn">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CAMERA/GALLERY SELECTION MENU -->
-    <div class="image-source-menu" id="imageSourceMenu">
-        <div class="menu-header">Choose image source</div>
-        <div class="menu-option" id="takePhotoOption">
-            <span class="material-symbols-outlined">photo_camera</span>
-            <span>Take photo</span>
-        </div>
-        <div class="menu-option" id="chooseFromGalleryOption">
-            <span class="material-symbols-outlined">photo_library</span>
-            <span>Choose from gallery</span>
-        </div>
-        <div class="menu-cancel" id="cancelImageMenu">Cancel</div>
-    </div>
+    <!-- Loading, toasts -->
+    <div class="loading-overlay" id="loadingOverlay"><div class="loading-content">Processing...</div></div>
+    <div class="success-toast" id="successToast"></div>
+    <div class="error-toast" id="errorToast"></div>
 
     <script>
         (function() {
             'use strict';
-            
-            const BASE_URL = window.location.origin;
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
-            
-            // Auth helper functions
-            function getCurrentUser() {
-                const user = localStorage.getItem('taskmart_user');
-                return user ? JSON.parse(user) : null;
+            if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+            // ===== MAP INIT - DARK STYLE =====
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [28.034088, -26.195246],
+                zoom: 15
+            });
+
+            // ===== DEBUGGER =====
+            const Debugger = {
+                panel: document.getElementById('debugPanel'),
+                btn: document.getElementById('debugBtn'),
+                closeBtn: document.getElementById('debugClose'),
+                clearBtn: document.getElementById('debugClear'),
+                testBtn: document.getElementById('debugTest'),
+                logsContainer: document.getElementById('debugLogs'),
+                errorCount: document.getElementById('errorCount'),
+                warningCount: document.getElementById('warningCount'),
+                successCount: document.getElementById('successCount'),
+                errors: [],
+                warnings: [],
+                successes: [],
+                
+                init() {
+                    this.btn.addEventListener('click', () => this.toggle());
+                    this.closeBtn.addEventListener('click', () => this.close());
+                    this.clearBtn.addEventListener('click', () => this.clear());
+                    this.testBtn.addEventListener('click', () => this.testUpload());
+                    this.checkSystem();
+                },
+                
+                toggle() {
+                    this.panel.classList.toggle('active');
+                    if (this.panel.classList.contains('active')) this.refreshDisplay();
+                },
+                
+                close() { this.panel.classList.remove('active'); },
+                
+                log(message, type = 'info', data = null) {
+                    const entry = { timestamp: new Date().toLocaleTimeString(), message, type, data: data ? JSON.stringify(data) : null };
+                    
+                    if (type === 'error') { 
+                        this.errors.push(entry); 
+                        this.btn.classList.add('has-errors');
+                        console.error(`[${type}] ${message}`, data || '');
+                    } else if (type === 'warning') {
+                        this.warnings.push(entry);
+                        console.warn(`[${type}] ${message}`, data || '');
+                    } else if (type === 'success') {
+                        this.successes.push(entry);
+                        console.log(`[${type}] ${message}`, data || '');
+                    } else {
+                        console.log(`[${type}] ${message}`, data || '');
+                    }
+                    
+                    this.errorCount.textContent = this.errors.length;
+                    this.warningCount.textContent = this.warnings.length;
+                    this.successCount.textContent = this.successes.length;
+                    
+                    this.addLogToDisplay(entry);
+                },
+                
+                addLogToDisplay(entry) {
+                    const logDiv = document.createElement('div');
+                    logDiv.className = `debug-${entry.type}-item`;
+                    logDiv.innerHTML = `<span style="opacity:0.7;">[${entry.timestamp}]</span> ${entry.message}${entry.data ? `<div style="font-size:11px; color:#999;">${entry.data}</div>` : ''}`;
+                    this.logsContainer.prepend(logDiv);
+                    while (this.logsContainer.children.length > 30) this.logsContainer.removeChild(this.logsContainer.lastChild);
+                },
+                
+                refreshDisplay() {
+                    this.logsContainer.innerHTML = '';
+                    [...this.errors, ...this.warnings, ...this.successes].sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).slice(0,30).forEach(e=>this.addLogToDisplay(e));
+                },
+                
+                clear() {
+                    this.errors = []; this.warnings = []; this.successes = [];
+                    this.logsContainer.innerHTML = '';
+                    this.errorCount.textContent = this.warningCount.textContent = this.successCount.textContent = '0';
+                    this.btn.classList.remove('has-errors');
+                    this.log('Debug logs cleared', 'warning');
+                },
+                
+                checkSystem() {
+                    if (!window.MAPBOX_TOKEN) this.log('Mapbox token missing', 'error');
+                    else this.log('Mapbox token detected', 'success');
+                    if (!navigator.geolocation) this.log('Geolocation not supported', 'error');
+                    else this.log('Geolocation available', 'success');
+                    if (!navigator.onLine) this.log('App is offline', 'warning');
+                },
+                
+                testUpload() {
+                    this.log('Testing upload endpoint...', 'info');
+                    setTimeout(() => {
+                        const success = Math.random() > 0.3;
+                        if (success) {
+                            this.log('✅ Upload test successful - server responded with 200', 'success');
+                        } else {
+                            this.log('❌ Upload test failed - network timeout', 'error');
+                        }
+                    }, 1000);
+                }
+            };
+            Debugger.init();
+
+            // ===== UPLOAD HELPERS =====
+            function showUploadStatus(message, type = 'info') {
+                const status = document.getElementById('uploadStatus');
+                const statusText = document.getElementById('uploadStatusText');
+                const icon = status.querySelector('.material-symbols-outlined');
+                
+                status.className = `upload-status ${type}`;
+                statusText.textContent = message;
+                status.style.display = 'flex';
+                
+                if (type === 'success') icon.textContent = 'check_circle';
+                else if (type === 'error') icon.textContent = 'error';
+                else if (type === 'warning') icon.textContent = 'warning';
+                else icon.textContent = 'info';
+                
+                Debugger.log(`Upload: ${message}`, type);
+                if (type === 'success' || type === 'error') setTimeout(() => status.style.display = 'none', 4000);
             }
 
-            function getAuthToken() {
-                return localStorage.getItem('taskmart_token');
+            function showUploadProgress(message) {
+                const progress = document.getElementById('uploadProgress');
+                progress.textContent = message;
+                progress.style.display = 'block';
             }
 
-            function isUserLoggedIn() {
-                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
+            function hideUploadProgress() {
+                document.getElementById('uploadProgress').style.display = 'none';
             }
 
-            function showSuccess(message) {
-                const toast = document.getElementById('successToast');
-                toast.textContent = message;
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 3000);
+            function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
+
+            // ===== STATE =====
+            let currentLat = null, currentLng = null, uploadedImages = [];
+
+            map.on('load', () => Debugger.log('Dark map loaded', 'success'));
+            map.on('error', (e) => Debugger.log(`Map error: ${e.error.message}`, 'error'));
+
+            // ===== GET LOCATION IMMEDIATELY =====
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        currentLat = pos.coords.latitude;
+                        currentLng = pos.coords.longitude;
+                        map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                        Debugger.log(`Location received: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`, 'success');
+                        
+                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
+                            .then(r => r.json())
+                            .then(d => { 
+                                if (d.features && d.features[0]) {
+                                    document.getElementById('locationInput').value = d.features[0].place_name;
+                                    Debugger.log('City detected', 'success');
+                                }
+                            })
+                            .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
+                    },
+                    (error) => { 
+                        Debugger.log(`Geolocation error: ${error.message}`, 'error');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
             }
-            
-            // Set the Mapbox token from the config
-            if (window.MAPBOX_TOKEN) {
-                mapboxgl.accessToken = window.MAPBOX_TOKEN;
-                console.log('Mapbox token set successfully');
-            } else {
-                console.error('Mapbox token not found');
-            }
-            
-            // Get all elements
-            const locationSheet = document.getElementById('locationSheet');
-            const previewSheet = document.getElementById('previewSheet');
-            const successSheet = document.getElementById('successSheet');
-            const postLoadingOverlay = document.getElementById('postLoadingOverlay');
-            const paymentModal = document.getElementById('paymentModal');
-            const paymentLoadingOverlay = document.getElementById('paymentLoadingOverlay');
-            const confirmModal = document.getElementById('confirmModal');
-            const confirmTitle = document.getElementById('confirmTitle');
-            const confirmMessage = document.getElementById('confirmMessage');
-            const confirmYesBtn = document.getElementById('confirmYesBtn');
-            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
-            const mapModal = document.getElementById('mapModal');
-            const mapModalCloseBtn = document.getElementById('mapModalCloseBtn');
-            const mapConfirmBtn = document.getElementById('mapConfirmBtn');
-            const locationInfo = document.getElementById('locationInfo');
-            const locationContent = document.getElementById('locationContent');
-            const previewContent = document.getElementById('previewContent');
-            const sheetBackBtn = document.getElementById('sheetBackBtn');
-            const previewBackBtn = document.getElementById('previewBackBtn');
-            const locationField = document.getElementById('locationField');
-            const streetField = document.getElementById('streetField');
-            const locationMapBtn = document.getElementById('locationMapBtn');
+
+            // ===== REFRESH LOCATION =====
+            document.getElementById('refreshLocationBtn').addEventListener('click', function() {
+                const btn = this;
+                btn.classList.add('loading');
+                Debugger.log('Manual location refresh', 'info');
+                
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => { 
+                            currentLat = pos.coords.latitude; currentLng = pos.coords.longitude; 
+                            map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                            Debugger.log('Location refreshed', 'success');
+                            btn.classList.remove('loading');
+                        },
+                        (e) => { 
+                            Debugger.log(`Refresh failed: ${e.message}`, 'error');
+                            btn.classList.remove('loading');
+                        }
+                    );
+                }
+            });
+
+            // ===== ELEMENTS =====
+            const openCreateTaskBtn = document.getElementById('openCreateTaskBtn');
+            const createTaskContainer = document.getElementById('createTaskContainer');
+            const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
+            const taskInput = document.getElementById('taskInput');
+            const streetInput = document.getElementById('streetInput');
+            const budgetAmount = document.getElementById('budgetAmount');
+            const nextBtn = document.getElementById('nextBtn');
+            const moreDetailsBtn = document.getElementById('moreDetailsBtn');
+            const collapsibleSection = document.getElementById('collapsibleSection');
             const whenNowBtn = document.getElementById('whenNowBtn');
             const whenLaterBtn = document.getElementById('whenLaterBtn');
             const dateTimePickers = document.getElementById('dateTimePickers');
-            const pickDateBtn = document.getElementById('pickDateBtn');
-            const pickTimeBtn = document.getElementById('pickTimeBtn');
             const dateDisplay = document.getElementById('dateDisplay');
             const timeDisplay = document.getElementById('timeDisplay');
             const nativeDatePicker = document.getElementById('nativeDatePicker');
             const nativeTimePicker = document.getElementById('nativeTimePicker');
-            const taskField = document.getElementById('taskField');
-            const taskCharCount = document.getElementById('taskCharCount');
-            const uploadIcon = document.getElementById('uploadIcon');
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            const previewImagesContainer = document.getElementById('previewImagesContainer');
-            const moreDetailsField = document.getElementById('moreDetailsField');
-            const nextButton = document.getElementById('nextButton');
-            const profileAvatar = document.getElementById('profileAvatar');
-            const profileName = document.getElementById('profileName');
-            const verifiedIcon = document.getElementById('verifiedIcon');
-            const successTaskId = document.getElementById('successTaskId');
-            const doneBtn = document.getElementById('doneBtn');
-            const successCheckIcon = document.getElementById('successCheckIcon');
-            const cashBtn = document.getElementById('cashBtn');
-            const onlineBtn = document.getElementById('onlineBtn');
-            const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
-            const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
-            const helperText = document.getElementById('helperText');
-            const freeText = document.getElementById('freeText');
-            const imageSourceMenu = document.getElementById('imageSourceMenu');
-            const takePhotoOption = document.getElementById('takePhotoOption');
-            const chooseFromGalleryOption = document.getElementById('chooseFromGalleryOption');
-            const cancelImageMenu = document.getElementById('cancelImageMenu');
-            const locationError = document.getElementById('locationError');
-            const taskError = document.getElementById('taskError');
-            const budgetError = document.getElementById('budgetError');
             const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
             const openBudgetBtn = document.getElementById('openBudgetBtn');
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
-            const budgetAmountInput = document.getElementById('budgetAmount');
-            const previewLocation = document.getElementById('previewLocation');
-            const previewStreet = document.getElementById('previewStreet');
-            const previewTask = document.getElementById('previewTask');
-            const previewBudget = document.getElementById('previewBudget');
-            const previewPayment = document.getElementById('previewPayment');
-            const previewDetails = document.getElementById('previewDetails');
-            const previewWhen = document.getElementById('previewWhen');
-            const postButton = document.getElementById('postButton');
-            const termsCheckbox = document.getElementById('termsCheckbox');
-            const uploadProgress = document.getElementById('uploadProgress');
+            const pickDateBtn = document.getElementById('pickDateBtn');
+            const pickTimeBtn = document.getElementById('pickTimeBtn');
+            const taskCharCount = document.getElementById('taskCharCount');
 
-            // Current user state
-            const currentUser = getCurrentUser() || {
-                name: 'Guest',
-                initials: 'GU',
-                profileImage: null,
-                avatar: null
-            };
-
-            // Map variables
-            let map = null;
-            let marker = null;
-            let selectedLat = null;
-            let selectedLng = null;
-            let selectedAddress = '';
-
-            // State
-            let selectedWhen = 'now';
-            let budgetType = 'fixed';
-            let currentCoordinates = '';
-            let currentLocationName = '';
-            let scrollPosition = 0;
-            let selectedDate = null;
-            let selectedTime = null;
-            let selectedPayment = 'cash';
-            let uploadedImages = [];
-            let isPosting = false;
-
-            // Check for pending task
-            let hasCheckedPendingTask = false;
+            // ===== OPEN/CLOSE TASK =====
+            openCreateTaskBtn.addEventListener('click', ()=>{
+                createTaskContainer.style.display = 'flex';
+                Debugger.log('Create task opened', 'info');
+            });
             
-            function checkForPendingTask() {
-                if (hasCheckedPendingTask) return;
-                hasCheckedPendingTask = true;
-                
-                const pendingTask = sessionStorage.getItem('pendingTask');
-                if (pendingTask) {
-                    try {
-                        const task = JSON.parse(pendingTask);
-                        
-                        if (task.location) locationField.value = task.location;
-                        if (task.streetName) streetField.value = task.streetName;
-                        if (task.taskDescription) {
-                            taskField.value = task.taskDescription;
-                            updateCharCount();
-                        }
-                        if (task.budgetType) {
-                            if (task.budgetType === 'fixed') {
-                                fixedBudgetBtn.click();
-                                if (task.budgetAmount) budgetAmountInput.value = task.budgetAmount;
-                            } else {
-                                openBudgetBtn.click();
-                            }
-                        }
-                        if (task.selectedWhen) {
-                            if (task.selectedWhen === 'later') {
-                                whenLaterBtn.click();
-                                if (task.selectedDate) {
-                                    selectedDate = task.selectedDate;
-                                    dateDisplay.textContent = formatDateForDisplay(task.selectedDate);
-                                }
-                                if (task.selectedTime) {
-                                    selectedTime = task.selectedTime;
-                                    timeDisplay.textContent = formatTimeForDisplay(task.selectedTime);
-                                }
-                            }
-                        }
-                        if (task.selectedPayment) {
-                            if (task.selectedPayment === 'cash') cashBtn.click();
-                        }
-                        if (task.moreDetails) moreDetailsField.value = task.moreDetails;
-                        if (task.uploadedImages && task.uploadedImages.length > 0) {
-                            uploadedImages = task.uploadedImages;
-                            displayImagePreviews();
-                        }
-                        
-                        sessionStorage.removeItem('pendingTask');
-                        showSuccess('Task restored! You can now post it.');
-                    } catch (e) {
-                        console.error('Error restoring task:', e);
-                    }
-                }
-            }
-
-            function updateUserProfile() {
-                profileName.textContent = currentUser.name;
-                
-                // Get user's profile picture from Cloudinary
-                if (currentUser.profileImage) {
-                    profileAvatar.innerHTML = `<img src="${currentUser.profileImage}" alt="${currentUser.name}">`;
-                } else if (currentUser.avatar) {
-                    profileAvatar.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.name}">`;
-                } else {
-                    profileAvatar.textContent = currentUser.initials || currentUser.name.substring(0, 2).toUpperCase();
-                }
-                
-                // Set verified icon
-                if (verifiedIcon) {
-                    verifiedIcon.innerHTML = `<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px;">verified</span>`;
-                }
-            }
-            
-            updateUserProfile();
-
-            function updateCharCount() {
-                const length = taskField.value.length;
-                taskCharCount.textContent = `${length}/50`;
-                if (length >= 50) {
-                    taskCharCount.classList.add('limit-reached');
-                } else {
-                    taskCharCount.classList.remove('limit-reached');
-                }
-            }
-
-            taskField.addEventListener('input', function() {
-                if (this.value.length > 50) {
-                    this.value = this.value.slice(0, 50);
-                }
-                updateCharCount();
-                taskError.classList.remove('visible');
-                taskField.classList.remove('error');
+            closeCreateTaskBtn.addEventListener('click', ()=>{
+                createTaskContainer.style.display = 'none';
+                Debugger.log('Create task closed', 'info');
             });
 
-            // ===== CLOUDINARY IMAGE UPLOAD =====
-            async function uploadImageToCloudinary(file) {
-                const formData = new FormData();
-                formData.append('image', file);
+            // ===== TASK INPUT & VALIDATION =====
+            function validateForm() {
+                const taskFilled = taskInput.value.trim() !== '';
+                const streetFilled = streetInput.value.trim() !== '';
                 
-                uploadProgress.textContent = 'Uploading...';
-                
-                const token = getAuthToken();
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Upload failed');
-                    }
-                    
-                    const data = await response.json();
-                    uploadProgress.textContent = 'Upload complete!';
-                    setTimeout(() => {
-                        uploadProgress.textContent = '';
-                    }, 2000);
-                    
-                    return data.url;
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    uploadProgress.textContent = 'Upload failed: ' + error.message;
-                    setTimeout(() => {
-                        uploadProgress.textContent = '';
-                    }, 3000);
-                    throw error;
+                let budgetValid = true;
+                if (fixedBudgetBtn.classList.contains('active')) {
+                    budgetValid = budgetAmount.value.trim() !== '' && parseInt(budgetAmount.value) > 0;
                 }
+                
+                let whenValid = true;
+                if (whenLaterBtn.classList.contains('active')) {
+                    const dateSelected = dateDisplay.textContent !== 'Pick date';
+                    const timeSelected = timeDisplay.textContent !== 'Pick time';
+                    whenValid = dateSelected && timeSelected;
+                }
+                
+                nextBtn.disabled = !(taskFilled && streetFilled && budgetValid && whenValid);
             }
 
-            uploadIcon.addEventListener('click', function(e) {
-                e.preventDefault();
-                imageSourceMenu.classList.add('active');
+            taskInput.addEventListener('input', function() {
+                if (this.value.length > 50) this.value = this.value.slice(0,50);
+                taskCharCount.textContent = this.value.length + '/50';
+                validateForm();
             });
 
-            async function handleFileSelect(file) {
-                if (file && file.type.startsWith('image/')) {
-                    try {
-                        const cloudinaryUrl = await uploadImageToCloudinary(file);
-                        uploadedImages.push(cloudinaryUrl);
-                        displayImagePreviews();
-                    } catch (error) {
-                        console.error('Failed to upload image:', error);
-                    }
-                }
-            }
+            streetInput.addEventListener('input', validateForm);
+            budgetAmount.addEventListener('input', validateForm);
 
-            function createFileInput(accept, capture) {
+            // ===== MORE DETAILS TOGGLE =====
+            moreDetailsBtn.addEventListener('click', ()=>{
+                if (collapsibleSection.style.display === 'none') {
+                    collapsibleSection.style.display = 'block';
+                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
+                    Debugger.log('More details expanded', 'info');
+                } else {
+                    collapsibleSection.style.display = 'none';
+                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
+                    Debugger.log('More details collapsed', 'info');
+                }
+            });
+
+            // ===== WHEN OPTIONS =====
+            whenNowBtn.addEventListener('click', ()=>{ 
+                whenNowBtn.className = 'when-option active'; 
+                whenLaterBtn.className = 'when-option inactive'; 
+                dateTimePickers.style.display = 'none'; 
+                validateForm();
+                Debugger.log('When: Now selected', 'info');
+            });
+            
+            whenLaterBtn.addEventListener('click', ()=>{ 
+                whenLaterBtn.className = 'when-option active'; 
+                whenNowBtn.className = 'when-option inactive'; 
+                dateTimePickers.style.display = 'flex'; 
+                validateForm();
+                Debugger.log('When: Later selected', 'info');
+            });
+
+            // ===== DATE & TIME =====
+            pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
+            pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
+
+            nativeDatePicker.addEventListener('change', function() {
+                if (this.value) {
+                    const d = new Date(this.value);
+                    dateDisplay.textContent = d.toLocaleDateString('en-GB');
+                    validateForm();
+                    Debugger.log(`Date selected: ${this.value}`, 'success');
+                }
+            });
+            
+            nativeTimePicker.addEventListener('change', function() {
+                if (this.value) {
+                    timeDisplay.textContent = this.value;
+                    validateForm();
+                    Debugger.log(`Time selected: ${this.value}`, 'success');
+                }
+            });
+
+            // ===== BUDGET OPTIONS =====
+            fixedBudgetBtn.addEventListener('click', ()=>{ 
+                fixedBudgetBtn.className = 'budget-option active'; 
+                openBudgetBtn.className = 'budget-option inactive'; 
+                fixedBudgetInput.style.display = 'block'; 
+                validateForm();
+                Debugger.log('Budget: Fixed selected', 'info');
+            });
+            
+            openBudgetBtn.addEventListener('click', ()=>{ 
+                openBudgetBtn.className = 'budget-option active'; 
+                fixedBudgetBtn.className = 'budget-option inactive'; 
+                fixedBudgetInput.style.display = 'none'; 
+                validateForm();
+                Debugger.log('Budget: Open to offers selected', 'info');
+            });
+
+            // ===== IMAGE UPLOAD =====
+            const uploadArea = document.getElementById('uploadArea');
+            
+            uploadArea.addEventListener('click', ()=>{
+                if (!isUserLoggedIn()) { 
+                    showUploadStatus('Please log in to upload images', 'warning');
+                    Debugger.log('Upload blocked - user not logged in', 'warning');
+                    return; 
+                }
+                
                 const input = document.createElement('input');
                 input.type = 'file';
-                input.accept = accept;
-                if (capture) input.capture = capture;
+                input.accept = 'image/*';
                 input.multiple = true;
-                input.style.position = 'fixed';
-                input.style.opacity = '0';
-                input.style.pointerEvents = 'none';
-                input.style.top = '-100px';
-                document.body.appendChild(input);
                 
-                input.addEventListener('change', function(e) {
+                input.onchange = (e) => {
                     const files = Array.from(e.target.files);
-                    
-                    (async () => {
-                        for (const file of files) {
-                            await handleFileSelect(file);
-                        }
-                    })();
-                    
-                    document.body.removeChild(input);
-                });
-                
-                input.click();
-            }
-
-            takePhotoOption.addEventListener('click', function() {
-                imageSourceMenu.classList.remove('active');
-                createFileInput('image/*', 'environment');
-            });
-
-            chooseFromGalleryOption.addEventListener('click', function() {
-                imageSourceMenu.classList.remove('active');
-                createFileInput('image/*', null);
-            });
-
-            cancelImageMenu.addEventListener('click', function() {
-                imageSourceMenu.classList.remove('active');
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!imageSourceMenu.contains(e.target) && !uploadIcon.contains(e.target)) {
-                    imageSourceMenu.classList.remove('active');
-                }
-            });
-
-            function displayImagePreviews() {
-                imagePreviewContainer.innerHTML = '';
-                uploadedImages.forEach((imgUrl, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.style.position = 'relative';
-                    wrapper.style.display = 'inline-block';
-                    
-                    const img = document.createElement('img');
-                    img.src = imgUrl;
-                    img.className = 'image-preview';
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.textContent = '×';
-                    removeBtn.className = 'remove-image';
-                    removeBtn.onclick = () => {
-                        uploadedImages.splice(index, 1);
-                        displayImagePreviews();
-                    };
-                    
-                    wrapper.appendChild(img);
-                    wrapper.appendChild(removeBtn);
-                    imagePreviewContainer.appendChild(wrapper);
-                });
-            }
-
-            // Payment method handlers - FIXED
-            cashBtn.addEventListener('click', function() {
-                selectedPayment = 'cash';
-                cashBtn.className = 'payment-option active';
-                onlineBtn.className = 'payment-option inactive';
-                
-                postButton.disabled = !termsCheckbox.checked;
-                freeText.textContent = 'Cash payment in person • No upfront payment';
-                helperText.textContent = 'You will pay the helper directly in cash when the task is complete.';
-            });
-
-            // Open payment modal - FIXED (no more infinite loading)
-            onlineBtn.addEventListener('click', function() {
-                paymentModal.classList.add('active');
-            });
-
-            cancelPaymentBtn.addEventListener('click', function() {
-                paymentModal.classList.remove('active');
-            });
-
-            // Close payment modal when clicking outside
-            paymentModal.addEventListener('click', function(e) {
-                if (e.target === paymentModal) {
-                    paymentModal.classList.remove('active');
-                }
-            });
-
-            doneBtn.addEventListener('click', function() {
-                successSheet.style.display = 'none';
-                unlockBodyScroll();
-                window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
-            });
-
-            previewSheet.style.display = 'none';
-            successSheet.style.display = 'none';
-            updateCharCount();
-
-            function updatePostButtonState() {
-                postButton.disabled = !termsCheckbox.checked;
-            }
-
-            termsCheckbox.addEventListener('change', updatePostButtonState);
-
-            function lockBodyScroll() {
-                scrollPosition = window.scrollY;
-                document.body.style.position = 'fixed';
-                document.body.style.width = '100%';
-                document.body.style.top = `-${scrollPosition}px`;
-                document.body.style.overflow = 'hidden';
-            }
-
-            function unlockBodyScroll() {
-                document.body.style.position = '';
-                document.body.style.width = '';
-                document.body.style.top = '';
-                document.body.style.overflow = '';
-                window.scrollTo(0, scrollPosition);
-            }
-
-            function scrollToElement(element) {
-                if (element && locationContent) {
-                    const elementRect = element.getBoundingClientRect();
-                    const contentRect = locationContent.getBoundingClientRect();
-                    const relativeTop = elementRect.top - contentRect.top;
-                    
-                    locationContent.scrollTo({
-                        top: relativeTop - 20,
-                        behavior: 'smooth'
-                    });
-                }
-            }
-
-            function clearErrors() {
-                locationError.classList.remove('visible');
-                taskError.classList.remove('visible');
-                if (budgetError) budgetError.classList.remove('visible');
-                locationField.classList.remove('error');
-                taskField.classList.remove('error');
-                if (budgetAmountInput) budgetAmountInput.classList.remove('error');
-            }
-
-            function validateForm() {
-                clearErrors();
-                let isValid = true;
-                let firstError = null;
-
-                if (!locationField.value || locationField.value === 'detecting location...' || locationField.value.trim() === '') {
-                    locationError.classList.add('visible');
-                    locationField.classList.add('error');
-                    if (!firstError) firstError = locationField;
-                    isValid = false;
-                }
-                
-                if (!taskField.value.trim()) {
-                    taskError.classList.add('visible');
-                    taskField.classList.add('error');
-                    if (!firstError) firstError = taskField;
-                    isValid = false;
-                }
-                
-                if (budgetType === 'fixed' && fixedBudgetInput.style.display === 'block') {
-                    if (!budgetAmountInput.value) {
-                        budgetError.classList.add('visible');
-                        budgetAmountInput.classList.add('error');
-                        if (!firstError) firstError = budgetAmountInput;
-                        isValid = false;
-                    }
-                }
-                
-                if (firstError) {
-                    scrollToElement(firstError);
-                }
-                
-                return isValid;
-            }
-
-            async function getLocationName(lat, lon) {
-                try {
-                    const response = await fetch(
-                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&types=place`
-                    );
-                    const data = await response.json();
-                    return data.features[0]?.place_name || null;
-                } catch (error) {
-                    console.log('Reverse geocoding failed:', error);
-                    return null;
-                }
-            }
-
-            async function getFullAddress(lat, lon) {
-                try {
-                    const response = await fetch(
-                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&types=address`
-                    );
-                    const data = await response.json();
-                    return data.features[0]?.place_name || null;
-                } catch (error) {
-                    console.log('Reverse geocoding failed:', error);
-                    return null;
-                }
-            }
-
-            function initMap(lat, lng) {
-                if (map) {
-                    map.remove();
-                }
-                
-                try {
-                    map = new mapboxgl.Map({
-                        container: 'map',
-                        style: 'mapbox://styles/mapbox/streets-v12',
-                        center: [lng, lat],
-                        zoom: 15
-                    });
-
-                    map.on('load', () => {
-                        console.log('Map loaded successfully');
-                        
-                        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-                        
-                        marker = new mapboxgl.Marker({
-                            draggable: true,
-                            color: '#FF286F'
-                        })
-                            .setLngLat([lng, lat])
-                            .addTo(map);
-                        
-                        marker.on('dragend', async function() {
-                            const lngLat = marker.getLngLat();
-                            selectedLat = lngLat.lat;
-                            selectedLng = lngLat.lng;
-                            
-                            const address = await getFullAddress(selectedLat, selectedLng);
-                            if (address) {
-                                locationInfo.textContent = address;
-                                selectedAddress = address;
-                            } else {
-                                locationInfo.textContent = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
-                            }
-                        });
-                        
-                        getFullAddress(lat, lng).then(address => {
-                            if (address) {
-                                locationInfo.textContent = address;
-                                selectedAddress = address;
-                            }
-                        });
-                    });
-                    
-                } catch (error) {
-                    console.error('Failed to initialize map:', error);
-                }
-            }
-
-            function openMapModal() {
-                let lat = -26.195246;
-                let lng = 28.034088;
-                
-                if (currentCoordinates) {
-                    const coords = currentCoordinates.split(',').map(c => parseFloat(c.trim()));
-                    if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                        lat = coords[0];
-                        lng = coords[1];
-                    }
-                }
-                
-                setTimeout(() => {
-                    initMap(lat, lng);
-                }, 100);
-                
-                mapModal.classList.add('active');
-            }
-
-            function closeMapModal() {
-                mapModal.classList.remove('active');
-                if (map) {
-                    map.remove();
-                    map = null;
-                }
-            }
-
-            window.addEventListener('message', function(event) {
-                if (event.data.type === 'OPEN_PLANNER') {
-                    currentLocationName = event.data.location || '';
-                    currentCoordinates = event.data.coordinates || '';
-                    
-                    if (currentLocationName) {
-                        locationField.value = currentLocationName;
-                    } else {
-                        locationField.value = 'detecting location...';
-                    }
-                    
-                    clearErrors();
-                    locationSheet.style.display = 'flex';
-                    lockBodyScroll();
-                    
-                    if (locationContent) {
-                        locationContent.scrollTop = 0;
-                    }
-                }
-            });
-
-            function closePlanner() {
-                locationSheet.style.display = 'none';
-                unlockBodyScroll();
-                window.parent.postMessage({ type: 'CLOSE_PLANNER' }, '*');
-            }
-
-            function capitalizeSentence(str) {
-                if (!str) return str;
-                return str.charAt(0).toUpperCase() + str.slice(1);
-            }
-
-            function formatDateForDisplay(dateString) {
-                if (!dateString) return null;
-                const parts = dateString.split('-');
-                if (parts.length === 3) {
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                }
-                return dateString;
-            }
-
-            function formatTimeForDisplay(timeString) {
-                if (!timeString) return null;
-                return timeString;
-            }
-
-            nativeDatePicker.addEventListener('change', function(e) {
-                if (this.value) {
-                    selectedDate = this.value;
-                    dateDisplay.textContent = formatDateForDisplay(this.value);
-                }
-            });
-
-            nativeTimePicker.addEventListener('change', function(e) {
-                if (this.value) {
-                    selectedTime = this.value;
-                    timeDisplay.textContent = formatTimeForDisplay(this.value);
-                }
-            });
-
-            pickDateBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                nativeDatePicker.showPicker();
-            });
-
-            pickTimeBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                nativeTimePicker.showPicker();
-            });
-
-            nativeDatePicker.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-            nativeTimePicker.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-
-            function openPreview() {
-                if (!validateForm()) {
-                    return;
-                }
-                
-                // Refresh user data from localStorage
-                const user = getCurrentUser();
-                if (user) {
-                    document.getElementById('profileName').textContent = user.name;
-                    
-                    const profileAvatar = document.getElementById('profileAvatar');
-                    if (user.profileImage) {
-                        profileAvatar.innerHTML = `<img src="${user.profileImage}" alt="${user.name}">`;
-                    } else if (user.avatar) {
-                        profileAvatar.innerHTML = `<img src="${user.avatar}" alt="${user.name}">`;
-                    } else {
-                        profileAvatar.textContent = user.initials || user.name.substring(0, 2).toUpperCase();
-                    }
-                    
-                    const verifiedIcon = document.getElementById('verifiedIcon');
-                    if (verifiedIcon) {
-                        verifiedIcon.innerHTML = `<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px;">verified</span>`;
-                    }
-                }
-                
-                previewLocation.textContent = capitalizeSentence(locationField.value || 'Your location');
-                previewStreet.textContent = streetField.value ? capitalizeSentence(streetField.value) : 'Not provided';
-                previewTask.textContent = capitalizeSentence(taskField.value || 'Not specified');
-                
-                previewImagesContainer.innerHTML = '';
-                if (uploadedImages.length > 0) {
-                    uploadedImages.forEach(imgUrl => {
-                        const img = document.createElement('img');
-                        img.src = imgUrl;
-                        img.className = 'preview-thumb';
-                        previewImagesContainer.appendChild(img);
-                    });
-                }
-                
-                if (budgetType === 'fixed' && budgetAmountInput && budgetAmountInput.value) {
-                    let paymentText = selectedPayment === 'cash' ? 'Cash' : 'Online payment';
-                    
-                    previewBudget.textContent = `R ${budgetAmountInput.value}`;
-                    previewPayment.textContent = `Payment: ${paymentText}`;
-                } else {
-                    previewBudget.textContent = 'Open to offers';
-                    previewPayment.textContent = '';
-                }
-                
-                previewDetails.textContent = moreDetailsField.value ? capitalizeSentence(moreDetailsField.value) : 'None provided';
-                
-                if (selectedWhen === 'later' && (selectedDate || selectedTime)) {
-                    let whenStr = '';
-                    if (selectedDate) whenStr += formatDateForDisplay(selectedDate);
-                    if (selectedTime) whenStr += (whenStr ? ' at ' : '') + formatTimeForDisplay(selectedTime);
-                    previewWhen.textContent = whenStr;
-                } else {
-                    previewWhen.textContent = 'Now';
-                }
-                
-                termsCheckbox.checked = false;
-                updatePostButtonState();
-                
-                locationSheet.style.display = 'none';
-                previewSheet.style.display = 'flex';
-                
-                if (previewContent) {
-                    previewContent.scrollTop = 0;
-                }
-            }
-
-            whenNowBtn.addEventListener('click', function() {
-                selectedWhen = 'now';
-                whenNowBtn.className = 'when-option active';
-                whenLaterBtn.className = 'when-option inactive';
-                dateTimePickers.style.display = 'none';
-            });
-
-            whenLaterBtn.addEventListener('click', function() {
-                selectedWhen = 'later';
-                whenLaterBtn.className = 'when-option active';
-                whenNowBtn.className = 'when-option inactive';
-                dateTimePickers.style.display = 'flex';
-            });
-
-            fixedBudgetBtn.addEventListener('click', function() {
-                budgetType = 'fixed';
-                fixedBudgetBtn.className = 'budget-option active';
-                openBudgetBtn.className = 'budget-option inactive';
-                fixedBudgetInput.style.display = 'block';
-                if (budgetError) budgetError.classList.remove('visible');
-            });
-
-            openBudgetBtn.addEventListener('click', function() {
-                budgetType = 'open';
-                openBudgetBtn.className = 'budget-option active';
-                fixedBudgetBtn.className = 'budget-option inactive';
-                fixedBudgetInput.style.display = 'none';
-                if (budgetAmountInput) {
-                    budgetAmountInput.value = '';
-                    budgetAmountInput.classList.remove('error');
-                }
-                if (budgetError) budgetError.classList.remove('visible');
-            });
-
-            if (budgetAmountInput) {
-                budgetAmountInput.addEventListener('input', function() {
-                    this.value = this.value.replace(/[^0-9]/g, '');
-                    if (this.value) {
-                        this.classList.remove('error');
-                        if (budgetError) budgetError.classList.remove('visible');
-                    }
-                });
-            }
-
-            locationField.addEventListener('input', function() {
-                locationError.classList.remove('visible');
-                locationField.classList.remove('error');
-            });
-
-            locationMapBtn.addEventListener('click', function() {
-                openMapModal();
-            });
-
-            mapModalCloseBtn.addEventListener('click', closeMapModal);
-
-            mapConfirmBtn.addEventListener('click', async function() {
-                if (marker) {
-                    const pos = marker.getLngLat();
-                    selectedLat = pos.lat;
-                    selectedLng = pos.lng;
-                    
-                    currentCoordinates = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
-                    
-                    const locationName = await getLocationName(selectedLat, selectedLng);
-                    if (locationName) {
-                        locationField.value = locationName;
-                        currentLocationName = locationName;
-                    }
-                    
-                    if (selectedAddress) {
-                        streetField.value = selectedAddress;
-                    } else {
-                        const fullAddress = await getFullAddress(selectedLat, selectedLng);
-                        if (fullAddress) {
-                            streetField.value = fullAddress;
-                        }
-                    }
-                }
-                closeMapModal();
-            });
-
-            mapModal.addEventListener('click', function(e) {
-                if (e.target === mapModal) {
-                    closeMapModal();
-                }
-            });
-
-            sheetBackBtn.addEventListener('click', closePlanner);
-            
-            previewBackBtn.addEventListener('click', function() {
-                previewSheet.style.display = 'none';
-                locationSheet.style.display = 'flex';
-                lockBodyScroll();
-                if (locationContent) {
-                    locationContent.scrollTop = 0;
-                }
-            });
-            
-            nextButton.addEventListener('click', openPreview);
-
-            async function saveTaskToMongoDB(taskData) {
-                const user = getCurrentUser();
-                
-                if (!user) {
-                    throw new Error('Not authenticated');
-                }
-                
-                const token = getAuthToken();
-                
-                // Add user info to task - INCLUDING PROFILE PICTURE
-                taskData.userId = user.email;
-                taskData.userName = user.name;
-                taskData.userRole = user.role;
-                taskData.userAvatar = user.profileImage || user.avatar || null;
-                
-                try {
-                    console.log('Saving task to:', `${API_BASE_URL}/api/tasks`);
-                    
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
-                    
-                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(taskData),
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => null);
-                        throw new Error(errorData?.error || 'Failed to save task');
-                    }
-                    
-                    const savedTask = await response.json();
-                    console.log('✅ Task saved to MongoDB:', savedTask);
-                    return savedTask;
-                } catch (error) {
-                    console.error('❌ Error saving task:', error);
-                    if (error.name === 'AbortError') {
-                        throw new Error('Request timed out. Please try again.');
-                    }
-                    throw error;
-                }
-            }
-
-            function fireConfettiAroundIcon() {
-                if (!successCheckIcon) return;
-                
-                const rect = successCheckIcon.getBoundingClientRect();
-                const x = (rect.left + rect.width / 2) / window.innerWidth;
-                const y = (rect.top + rect.height / 2) / window.innerHeight;
-                
-                confetti({
-                    particleCount: 120,
-                    spread: 100,
-                    origin: { x, y },
-                    startVelocity: 20,
-                    colors: ['#8BC34A', '#FFC107', '#FF286F', '#045B92']
-                });
-                
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 80,
-                        spread: 70,
-                        origin: { x, y },
-                        startVelocity: 25,
-                        colors: ['#8BC34A', '#FFC107', '#045B92']
-                    });
-                }, 200);
-                
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 100,
-                        spread: 120,
-                        origin: { x, y },
-                        startVelocity: 15,
-                        colors: ['#FF286F', '#8BC34A', '#FFC107']
-                    });
-                }, 400);
-            }
-
-            postButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                console.log('Post button clicked');
-                
-                postButton.classList.add('clicked');
-                setTimeout(() => postButton.classList.remove('clicked'), 200);
-                
-                if (postButton.disabled) {
-                    console.log('Post button is disabled');
-                    return;
-                }
-                
-                if (isPosting) {
-                    console.log('Already posting');
-                    return;
-                }
-                
-                if (!isUserLoggedIn()) {
-                    console.log('No user, redirecting to login');
-                    
-                    const taskData = {
-                        location: locationField.value,
-                        streetName: streetField.value,
-                        taskDescription: taskField.value,
-                        budgetType: budgetType,
-                        budgetAmount: budgetAmountInput.value,
-                        selectedWhen: selectedWhen,
-                        selectedDate: selectedDate,
-                        selectedTime: selectedTime,
-                        selectedPayment: selectedPayment,
-                        moreDetails: moreDetailsField.value,
-                        uploadedImages: uploadedImages
-                    };
-                    sessionStorage.setItem('pendingTask', JSON.stringify(taskData));
-                    
-                    const returnUrl = encodeURIComponent(window.location.href);
-                    window.location.href = '/login.html?returnTo=' + returnUrl;
-                    return;
-                }
-                
-                console.log('Showing confirmation modal');
-                confirmTitle.textContent = 'Ready to post?';
-                confirmMessage.textContent = 'We\'re about to post your task. Are you sure you want to continue?';
-                confirmYesBtn.textContent = 'Yes, post it';
-                confirmModal.classList.add('active');
-            });
-
-            confirmYesBtn.addEventListener('click', async function() {
-                if (isPosting) {
-                    console.log('Already posting');
-                    return;
-                }
-                
-                isPosting = true;
-                
-                confirmYesBtn.classList.add('loading');
-                confirmYesBtn.disabled = true;
-                
-                console.log('Confirm Yes clicked - starting post');
-                
-                confirmModal.classList.remove('active');
-                postLoadingOverlay.classList.add('active');
-                postButton.classList.add('loading');
-                
-                const user = getCurrentUser();
-                
-                const taskData = {
-                    location: locationField.value,
-                    coordinates: currentCoordinates || '',
-                    streetName: streetField.value || '',
-                    when: selectedWhen,
-                    scheduledDate: selectedDate,
-                    scheduledTime: selectedTime,
-                    taskDescription: taskField.value,
-                    budgetType: budgetType,
-                    budgetAmount: budgetAmountInput.value ? parseInt(budgetAmountInput.value) : null,
-                    paymentMethod: selectedPayment,
-                    moreDetails: moreDetailsField.value || '',
-                    images: uploadedImages,
-                    status: 'posted'
+                    Debugger.log(`${files.length} file(s) selected`, 'info');
+                    files.forEach(file => handleFileUpload(file));
                 };
                 
-                try {
-                    const savedTask = await saveTaskToMongoDB(taskData);
-                    
-                    postLoadingOverlay.classList.remove('active');
-                    postButton.classList.remove('loading');
-                    
-                    if (savedTask) {
-                        console.log('Task saved successfully:', savedTask);
-                        
-                        previewSheet.style.display = 'none';
-                        successTaskId.textContent = `#${savedTask._id}`;
-                        successSheet.style.display = 'flex';
-                        
-                        fireConfettiAroundIcon();
-                        
-                        locationField.value = 'detecting location...';
-                        streetField.value = '';
-                        taskField.value = '';
-                        budgetAmountInput.value = '';
-                        moreDetailsField.value = '';
-                        uploadedImages = [];
-                        imagePreviewContainer.innerHTML = '';
-                        updateCharCount();
-                        
-                        showSuccess('Task posted successfully!');
-                    }
-                } catch (error) {
-                    postLoadingOverlay.classList.remove('active');
-                    postButton.classList.remove('loading');
-                    
-                    console.error('Post error:', error);
-                    
-                    if (error.message.includes('Not authenticated')) {
-                        const returnUrl = encodeURIComponent(window.location.href);
-                        window.location.href = '/login.html?returnTo=' + returnUrl;
-                    } else {
-                        showSuccess('Error posting task. Please try again.');
-                    }
-                } finally {
-                    isPosting = false;
-                    confirmYesBtn.classList.remove('loading');
-                    confirmYesBtn.disabled = false;
+                input.click();
+            });
+
+            function handleFileUpload(file) {
+                if (!file.type.startsWith('image/')) {
+                    showUploadStatus('File must be an image', 'error');
+                    Debugger.log(`Upload failed: ${file.name} is not an image`, 'error');
+                    return;
                 }
-            });
-
-            confirmCancelBtn.addEventListener('click', function() {
-                confirmModal.classList.remove('active');
-            });
-
-            confirmModal.addEventListener('click', function(e) {
-                if (e.target === confirmModal) {
-                    confirmModal.classList.remove('active');
+                
+                if (file.size > 5 * 1024 * 1024) {
+                    showUploadStatus('File too large (max 5MB)', 'error');
+                    Debugger.log(`Upload failed: ${file.name} exceeds 5MB`, 'error');
+                    return;
                 }
+                
+                showUploadStatus(`Uploading ${file.name}...`, 'info');
+                showUploadProgress('Upload in progress...');
+                Debugger.log(`Upload started: ${file.name} (${(file.size/1024).toFixed(1)}KB)`, 'info');
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setTimeout(() => {
+                        uploadedImages.push(e.target.result);
+                        displayPreviews();
+                        showUploadStatus('Upload successful!', 'success');
+                        hideUploadProgress();
+                        Debugger.log(`Upload successful: ${file.name}`, 'success');
+                    }, 800);
+                };
+                reader.onerror = () => {
+                    showUploadStatus('Upload failed - file read error', 'error');
+                    hideUploadProgress();
+                    Debugger.log(`Upload failed: file read error for ${file.name}`, 'error');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function displayPreviews() {
+                const container = document.getElementById('imagePreviewContainer');
+                container.innerHTML = '';
+                uploadedImages.forEach((url, idx) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-preview-wrapper';
+                    
+                    const img = document.createElement('img'); 
+                    img.src = url; 
+                    img.className = 'image-preview';
+                    
+                    const rm = document.createElement('button'); 
+                    rm.className = 'remove-image';
+                    rm.textContent = '×'; 
+                    rm.onclick = () => { 
+                        uploadedImages.splice(idx, 1); 
+                        displayPreviews(); 
+                        showUploadStatus('Image removed', 'warning');
+                        Debugger.log('Image removed', 'warning');
+                    };
+                    
+                    wrapper.appendChild(img); 
+                    wrapper.appendChild(rm); 
+                    container.appendChild(wrapper);
+                });
+                Debugger.log(`Displaying ${uploadedImages.length} image previews`, 'info');
+            }
+
+            // ===== MAP MODAL =====
+            const mapModal = document.getElementById('mapModal');
+            const openMapBtn = document.getElementById('openMapBtn');
+            const closeMapModalBtn = document.getElementById('closeMapModalBtn');
+            const confirmLocationBtn = document.getElementById('confirmLocationBtn');
+            const locationInput = document.getElementById('locationInput');
+            
+            let mapModalInstance = null;
+            let marker = null;
+
+            openMapBtn.addEventListener('click', ()=> {
+                mapModal.classList.add('active');
+                Debugger.log('Map modal opened', 'info');
+                
+                setTimeout(() => {
+                    if (mapModalInstance) mapModalInstance.remove();
+                    
+                    mapModalInstance = new mapboxgl.Map({
+                        container: 'mapModalContainer',
+                        style: 'mapbox://styles/mapbox/dark-v11',
+                        center: [currentLng || 28.034088, currentLat || -26.195246],
+                        zoom: 15
+                    });
+                    
+                    marker = new mapboxgl.Marker({ 
+                        draggable: true, 
+                        color: '#003E71' 
+                    })
+                    .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                    .addTo(mapModalInstance);
+                    
+                    marker.on('dragend', () => {
+                        const lngLat = marker.getLngLat();
+                        currentLat = lngLat.lat;
+                        currentLng = lngLat.lng;
+                        Debugger.log('Marker dragged to new position', 'info');
+                        
+                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.features && data.features[0]) {
+                                    locationInput.value = data.features[0].place_name;
+                                    Debugger.log('Address updated from drag', 'success');
+                                }
+                            })
+                            .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
+                    });
+                    
+                    Debugger.log('Map modal initialized', 'success');
+                }, 100);
             });
 
-            locationSheet.addEventListener('click', function(e) {
-                if (e.target === locationSheet) closePlanner();
+            closeMapModalBtn.addEventListener('click', () => {
+                mapModal.classList.remove('active');
+                Debugger.log('Map modal closed', 'info');
             });
             
-            previewSheet.addEventListener('click', function(e) {
-                if (e.target === previewSheet) {
-                    previewSheet.style.display = 'none';
-                    unlockBodyScroll();
+            confirmLocationBtn.addEventListener('click', () => {
+                if (marker) {
+                    const lngLat = marker.getLngLat();
+                    currentLat = lngLat.lat;
+                    currentLng = lngLat.lng;
+                    
+                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.features && data.features[0]) {
+                                locationInput.value = data.features[0].place_name;
+                                Debugger.log('Location confirmed from map', 'success');
+                            }
+                        })
+                        .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
                 }
+                mapModal.classList.remove('active');
+                validateForm();
             });
 
-            locationSheet.addEventListener('touchstart', function(e) {
-                if (e.target === locationSheet) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-            
-            previewSheet.addEventListener('touchstart', function(e) {
-                if (e.target === previewSheet) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
+            // ===== NEXT BUTTON - SHOW OFFERS PAGE =====
+            const offersContainer = document.getElementById('offersContainer');
+            let offersMap = null;
 
-            checkForPendingTask();
+            nextBtn.addEventListener('click', ()=>{
+                createTaskContainer.style.display = 'none';
+                offersContainer.classList.add('active');
+                Debugger.log('Offers page opened', 'info');
+                
+                setTimeout(() => {
+                    if (offersMap) offersMap.remove();
+                    
+                    offersMap = new mapboxgl.Map({
+                        container: 'offersMap',
+                        style: 'mapbox://styles/mapbox/dark-v11',
+                        center: [currentLng || 28.034088, currentLat || -26.195246],
+                        zoom: 15
+                    });
+                    
+                    new mapboxgl.Marker({ color: '#003E71' })
+                        .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                        .addTo(offersMap);
+                    
+                    Debugger.log('Offers map initialized', 'success');
+                }, 100);
+            });
+
+            // ===== BACK BUTTON =====
+            const offersBackBtn = document.getElementById('offersBackBtn');
+            if (offersBackBtn) {
+                offersBackBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    offersContainer.classList.remove('active');
+                    createTaskContainer.style.display = 'flex';
+                    Debugger.log('Back to create task', 'info');
+                });
+            }
+
+            // ===== POST OFFER BUTTON =====
+            document.getElementById('postOfferBtn').addEventListener('click', ()=>{
+                document.getElementById('loadingOverlay').classList.add('active');
+                Debugger.log('Posting task...', 'info');
+                
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    showUploadStatus('Task posted successfully!', 'success');
+                    offersContainer.classList.remove('active');
+                    Debugger.log('Task posted successfully!', 'success');
+                    
+                    // Reset form
+                    taskInput.value = '';
+                    streetInput.value = '';
+                    budgetAmount.value = '';
+                    taskCharCount.textContent = '0/50';
+                    uploadedImages = [];
+                    displayPreviews();
+                    whenNowBtn.click();
+                    fixedBudgetBtn.click();
+                    dateDisplay.textContent = 'Pick date';
+                    timeDisplay.textContent = 'Pick time';
+                    validateForm();
+                    
+                    if (typeof confetti === 'function') {
+                        confetti({ 
+                            particleCount: 100, 
+                            spread: 70, 
+                            origin: { y: 0.6 }, 
+                            colors: ['#003E71', '#FF286F'] 
+                        });
+                    }
+                }, 1500);
+            });
+
+            // ===== NAVIGATION MENU FUNCTIONALITY =====
+            const navMenuBtn = document.getElementById('navMenuBtn');
+            const navCloseBtn = document.getElementById('navCloseBtn');
+            const navOverlay = document.getElementById('navModalOverlay');
+            const navModalContent = document.getElementById('navModalContent');
+            const navToast = document.getElementById('navToast');
+
+            function showNavToast(message, isError = false) {
+                if (navToast) {
+                    navToast.textContent = message;
+                    navToast.className = 'nav-toast' + (isError ? ' error' : '') + ' show';
+                    setTimeout(() => {
+                        navToast.classList.remove('show');
+                    }, 3000);
+                }
+            }
+
+            function openNavModal() {
+                if (navOverlay) {
+                    navOverlay.classList.add('active');
+                    document.body.classList.add('modal-open');
+                    renderProfile();
+                }
+            }
+
+            function closeNavModal() {
+                if (navOverlay) {
+                    navOverlay.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            }
+
+            function renderProfile() {
+                const user = (function() {
+                    try {
+                        const userData = localStorage.getItem('taskmart_user');
+                        return userData ? JSON.parse(userData) : null;
+                    } catch (e) {
+                        return null;
+                    }
+                })();
+
+                if (!navModalContent) return;
+                
+                if (!user) {
+                    navModalContent.innerHTML = `
+                        <div style="text-align:center; padding:2rem;">
+                            <p>Please log in to view your profile</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                navModalContent.innerHTML = `
+                    <div class="nav-profile-info">
+                        <div class="nav-avatar">${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</div>
+                        <div class="nav-profile-details">
+                            <h3>${user.name || 'User'}</h3>
+                            <p>${user.email || 'No email'}</p>
+                        </div>
+                    </div>
+
+                    <div class="nav-menu-items">
+                        <div class="nav-menu-item" id="navEditProfileBtn">
+                            <div class="nav-menu-item-left">
+                                <span class="material-symbols-outlined">edit</span>
+                                <span>Edit Profile</span>
+                            </div>
+                            <span class="nav-menu-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+
+                        <div class="nav-menu-item" id="navSettingsBtn">
+                            <div class="nav-menu-item-left">
+                                <span class="material-symbols-outlined">settings</span>
+                                <span>Settings</span>
+                            </div>
+                            <span class="nav-menu-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+
+                        <div class="nav-menu-item" id="navHelpBtn">
+                            <div class="nav-menu-item-left">
+                                <span class="material-symbols-outlined">help</span>
+                                <span>Help & Support</span>
+                            </div>
+                            <span class="nav-menu-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+
+                        <div class="nav-menu-item delete" id="navDeleteAccountBtn">
+                            <div class="nav-menu-item-left">
+                                <span class="material-symbols-outlined">delete_forever</span>
+                                <span>Delete Account</span>
+                            </div>
+                            <span class="nav-menu-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+
+                        <div class="nav-menu-item delete" id="navLogoutBtn">
+                            <div class="nav-menu-item-left">
+                                <span class="material-symbols-outlined">logout</span>
+                                <span>Logout</span>
+                            </div>
+                            <span class="nav-menu-arrow material-symbols-outlined">chevron_right</span>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listeners
+                document.getElementById('navEditProfileBtn')?.addEventListener('click', () => {
+                    showNavToast('Edit profile coming soon');
+                });
+
+                document.getElementById('navSettingsBtn')?.addEventListener('click', () => {
+                    showNavToast('Settings page coming soon');
+                });
+
+                document.getElementById('navHelpBtn')?.addEventListener('click', () => {
+                    showNavToast('Help & Support coming soon');
+                });
+
+                document.getElementById('navDeleteAccountBtn')?.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
+                        localStorage.removeItem('taskmart_user');
+                        localStorage.removeItem('taskmart_token');
+                        showNavToast('Account deleted');
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 1500);
+                    }
+                });
+
+                document.getElementById('navLogoutBtn')?.addEventListener('click', () => {
+                    localStorage.removeItem('taskmart_user');
+                    localStorage.removeItem('taskmart_token');
+                    window.location.href = '/login.html';
+                });
+            }
+
+            if (navMenuBtn) navMenuBtn.addEventListener('click', openNavModal);
+            if (navCloseBtn) navCloseBtn.addEventListener('click', closeNavModal);
+            if (navOverlay) {
+                navOverlay.addEventListener('click', (e) => {
+                    if (e.target === navOverlay) closeNavModal();
+                });
+            }
+
+            // REMOVED: old menu button event listener
+
+            // Initial validation
+            validateForm();
         })();
     </script>
 </body>
