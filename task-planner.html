@@ -914,98 +914,6 @@
             color: rgba(0, 62, 113, 0.5);
         }
 
-        .payment-section {
-            margin-top: 1rem;
-            border-top: 1px solid rgba(0, 62, 113, 0.1);
-            padding-top: 1rem;
-        }
-
-        .payment-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            padding: 0.5rem 0;
-        }
-
-        .payment-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .payment-left .material-symbols-outlined {
-            color: #003E71 !important;
-        }
-
-        .payment-right .material-symbols-outlined {
-            color: #003E71 !important;
-        }
-
-        /* Payment full screen - FIXED */
-        .payment-fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 4000000;
-            transform: translateY(100%);
-            transition: transform 0.3s ease-in-out;
-            border-top-left-radius: 7px;
-            border-top-right-radius: 7px;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-            visibility: visible;
-        }
-
-        .payment-fullscreen.active {
-            transform: translateY(0);
-        }
-
-        .payment-fullscreen-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.5rem 1.25rem 1rem;
-            border-bottom: 1px solid rgba(0, 62, 113, 0.08);
-            background: white;
-        }
-
-        .payment-fullscreen-header h3 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #000;
-        }
-
-        .close-payment-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        .close-payment-btn:hover {
-            background: rgba(0, 62, 113, 0.05);
-        }
-
-        .close-payment-btn .material-symbols-outlined {
-            color: #000 !important;
-            font-size: 28px !important;
-        }
-
-        .payment-fullscreen-content {
-            padding: 1.5rem 1.25rem;
-            height: calc(100% - 80px);
-            overflow-y: auto;
-            background: white;
-        }
-
         .post-offer-button {
             width: 100%;
             background: #003E71;
@@ -1279,38 +1187,13 @@
                 <small>Check back later for helper responses</small>
             </div>
 
-            <div class="payment-section">
-                <div class="payment-header" id="paymentHeader">
-                    <div class="payment-left">
-                        <span class="material-symbols-outlined">payments</span>
-                        <span>Payment</span>
-                    </div>
-                    <div class="payment-right">
-                        <span class="material-symbols-outlined" id="paymentChevron">chevron_right</span>
-                    </div>
-                </div>
-            </div>
-
             <button class="post-offer-button" id="postOfferBtn">Post</button>
         </div>
 
-        <!-- Back button (stays on top) -->
+        <!-- Back button -->
         <button class="offers-back-btn" id="offersBackBtn">
             <span class="material-symbols-outlined">arrow_back</span>
         </button>
-    </div>
-
-    <!-- Full Screen Payment Bottom Sheet -->
-    <div class="payment-fullscreen" id="paymentFullscreen">
-        <div class="payment-fullscreen-header">
-            <h3>Payment</h3>
-            <button class="close-payment-btn" id="closePaymentBtn">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-        <div class="payment-fullscreen-content">
-            <!-- Empty for now -->
-        </div>
     </div>
 
     <!-- Map Modal -->
@@ -1379,16 +1262,25 @@
                 log(message, type = 'info', data = null) {
                     const entry = { timestamp: new Date().toLocaleTimeString(), message, type, data: data ? JSON.stringify(data) : null };
                     
-                    if (type === 'error') { this.errors.push(entry); this.btn.classList.add('has-errors'); }
-                    else if (type === 'warning') this.warnings.push(entry);
-                    else if (type === 'success') this.successes.push(entry);
+                    if (type === 'error') { 
+                        this.errors.push(entry); 
+                        this.btn.classList.add('has-errors');
+                        console.error(`[${type}] ${message}`, data || '');
+                    } else if (type === 'warning') {
+                        this.warnings.push(entry);
+                        console.warn(`[${type}] ${message}`, data || '');
+                    } else if (type === 'success') {
+                        this.successes.push(entry);
+                        console.log(`[${type}] ${message}`, data || '');
+                    } else {
+                        console.log(`[${type}] ${message}`, data || '');
+                    }
                     
                     this.errorCount.textContent = this.errors.length;
                     this.warningCount.textContent = this.warnings.length;
                     this.successCount.textContent = this.successes.length;
                     
                     this.addLogToDisplay(entry);
-                    console.log(`[${type}] ${message}`, data || '');
                 },
                 
                 addLogToDisplay(entry) {
@@ -1422,7 +1314,14 @@
                 
                 testUpload() {
                     this.log('Testing upload endpoint...', 'info');
-                    setTimeout(() => this.log(Math.random() > 0.3 ? '✅ Upload test successful' : '❌ Upload test failed', Math.random() > 0.3 ? 'success' : 'error'), 1000);
+                    setTimeout(() => {
+                        const success = Math.random() > 0.3;
+                        if (success) {
+                            this.log('✅ Upload test successful - server responded with 200', 'success');
+                        } else {
+                            this.log('❌ Upload test failed - network timeout', 'error');
+                        }
+                    }, 1000);
                 }
             };
             Debugger.init();
@@ -1471,14 +1370,21 @@
                         currentLat = pos.coords.latitude;
                         currentLng = pos.coords.longitude;
                         map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                        Debugger.log(`Location received`, 'success');
+                        Debugger.log(`Location received: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`, 'success');
                         
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
                             .then(r => r.json())
-                            .then(d => { if (d.features?.[0]) document.getElementById('locationInput').value = d.features[0].place_name; })
-                            .catch(() => {});
+                            .then(d => { 
+                                if (d.features && d.features[0]) {
+                                    document.getElementById('locationInput').value = d.features[0].place_name;
+                                    Debugger.log('City detected', 'success');
+                                }
+                            })
+                            .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
                     },
-                    (error) => Debugger.log(`Geolocation error: ${error.message}`, 'error'),
+                    (error) => { 
+                        Debugger.log(`Geolocation error: ${error.message}`, 'error');
+                    },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             }
@@ -1497,7 +1403,10 @@
                             Debugger.log('Location refreshed', 'success');
                             btn.classList.remove('loading');
                         },
-                        (e) => { Debugger.log(`Refresh failed: ${e.message}`, 'error'); btn.classList.remove('loading'); }
+                        (e) => { 
+                            Debugger.log(`Refresh failed: ${e.message}`, 'error');
+                            btn.classList.remove('loading');
+                        }
                     );
                 }
             });
@@ -1529,10 +1438,12 @@
             // ===== OPEN/CLOSE TASK =====
             openCreateTaskBtn.addEventListener('click', ()=>{
                 createTaskContainer.style.display = 'flex';
+                Debugger.log('Create task opened', 'info');
             });
             
             closeCreateTaskBtn.addEventListener('click', ()=>{
                 createTaskContainer.style.display = 'none';
+                Debugger.log('Create task closed', 'info');
             });
 
             // ===== TASK INPUT & VALIDATION =====
@@ -1569,9 +1480,11 @@
                 if (collapsibleSection.style.display === 'none') {
                     collapsibleSection.style.display = 'block';
                     moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
+                    Debugger.log('More details expanded', 'info');
                 } else {
                     collapsibleSection.style.display = 'none';
                     moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
+                    Debugger.log('More details collapsed', 'info');
                 }
             });
 
@@ -1581,6 +1494,7 @@
                 whenLaterBtn.className = 'when-option inactive'; 
                 dateTimePickers.style.display = 'none'; 
                 validateForm();
+                Debugger.log('When: Now selected', 'info');
             });
             
             whenLaterBtn.addEventListener('click', ()=>{ 
@@ -1588,6 +1502,7 @@
                 whenNowBtn.className = 'when-option inactive'; 
                 dateTimePickers.style.display = 'flex'; 
                 validateForm();
+                Debugger.log('When: Later selected', 'info');
             });
 
             // ===== DATE & TIME =====
@@ -1599,6 +1514,7 @@
                     const d = new Date(this.value);
                     dateDisplay.textContent = d.toLocaleDateString('en-GB');
                     validateForm();
+                    Debugger.log(`Date selected: ${this.value}`, 'success');
                 }
             });
             
@@ -1606,6 +1522,7 @@
                 if (this.value) {
                     timeDisplay.textContent = this.value;
                     validateForm();
+                    Debugger.log(`Time selected: ${this.value}`, 'success');
                 }
             });
 
@@ -1615,6 +1532,7 @@
                 openBudgetBtn.className = 'budget-option inactive'; 
                 fixedBudgetInput.style.display = 'block'; 
                 validateForm();
+                Debugger.log('Budget: Fixed selected', 'info');
             });
             
             openBudgetBtn.addEventListener('click', ()=>{ 
@@ -1622,6 +1540,7 @@
                 fixedBudgetBtn.className = 'budget-option inactive'; 
                 fixedBudgetInput.style.display = 'none'; 
                 validateForm();
+                Debugger.log('Budget: Open to offers selected', 'info');
             });
 
             // ===== IMAGE UPLOAD =====
@@ -1630,6 +1549,7 @@
             uploadArea.addEventListener('click', ()=>{
                 if (!isUserLoggedIn()) { 
                     showUploadStatus('Please log in to upload images', 'warning');
+                    Debugger.log('Upload blocked - user not logged in', 'warning');
                     return; 
                 }
                 
@@ -1640,6 +1560,7 @@
                 
                 input.onchange = (e) => {
                     const files = Array.from(e.target.files);
+                    Debugger.log(`${files.length} file(s) selected`, 'info');
                     files.forEach(file => handleFileUpload(file));
                 };
                 
@@ -1649,16 +1570,19 @@
             function handleFileUpload(file) {
                 if (!file.type.startsWith('image/')) {
                     showUploadStatus('File must be an image', 'error');
+                    Debugger.log(`Upload failed: ${file.name} is not an image`, 'error');
                     return;
                 }
                 
                 if (file.size > 5 * 1024 * 1024) {
                     showUploadStatus('File too large (max 5MB)', 'error');
+                    Debugger.log(`Upload failed: ${file.name} exceeds 5MB`, 'error');
                     return;
                 }
                 
                 showUploadStatus(`Uploading ${file.name}...`, 'info');
                 showUploadProgress('Upload in progress...');
+                Debugger.log(`Upload started: ${file.name} (${(file.size/1024).toFixed(1)}KB)`, 'info');
                 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -1667,11 +1591,13 @@
                         displayPreviews();
                         showUploadStatus('Upload successful!', 'success');
                         hideUploadProgress();
+                        Debugger.log(`Upload successful: ${file.name}`, 'success');
                     }, 800);
                 };
                 reader.onerror = () => {
-                    showUploadStatus('Upload failed', 'error');
+                    showUploadStatus('Upload failed - file read error', 'error');
                     hideUploadProgress();
+                    Debugger.log(`Upload failed: file read error for ${file.name}`, 'error');
                 };
                 reader.readAsDataURL(file);
             }
@@ -1694,12 +1620,14 @@
                         uploadedImages.splice(idx, 1); 
                         displayPreviews(); 
                         showUploadStatus('Image removed', 'warning');
+                        Debugger.log('Image removed', 'warning');
                     };
                     
                     wrapper.appendChild(img); 
                     wrapper.appendChild(rm); 
                     container.appendChild(wrapper);
                 });
+                Debugger.log(`Displaying ${uploadedImages.length} image previews`, 'info');
             }
 
             // ===== MAP MODAL =====
@@ -1714,6 +1642,7 @@
 
             openMapBtn.addEventListener('click', ()=> {
                 mapModal.classList.add('active');
+                Debugger.log('Map modal opened', 'info');
                 
                 setTimeout(() => {
                     if (mapModalInstance) mapModalInstance.remove();
@@ -1736,22 +1665,26 @@
                         const lngLat = marker.getLngLat();
                         currentLat = lngLat.lat;
                         currentLng = lngLat.lng;
+                        Debugger.log('Marker dragged to new position', 'info');
                         
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
                             .then(res => res.json())
                             .then(data => {
                                 if (data.features && data.features[0]) {
                                     locationInput.value = data.features[0].place_name;
+                                    Debugger.log('Address updated from drag', 'success');
                                 }
                             })
-                            .catch(() => {});
+                            .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
                     });
                     
+                    Debugger.log('Map modal initialized', 'success');
                 }, 100);
             });
 
             closeMapModalBtn.addEventListener('click', () => {
                 mapModal.classList.remove('active');
+                Debugger.log('Map modal closed', 'info');
             });
             
             confirmLocationBtn.addEventListener('click', () => {
@@ -1765,10 +1698,10 @@
                         .then(data => {
                             if (data.features && data.features[0]) {
                                 locationInput.value = data.features[0].place_name;
-                                Debugger.log('Location updated from map', 'success');
+                                Debugger.log('Location confirmed from map', 'success');
                             }
                         })
-                        .catch(() => {});
+                        .catch(err => Debugger.log(`Geocoding error: ${err.message}`, 'warning'));
                 }
                 mapModal.classList.remove('active');
                 validateForm();
@@ -1781,6 +1714,7 @@
             nextBtn.addEventListener('click', ()=>{
                 createTaskContainer.style.display = 'none';
                 offersContainer.classList.add('active');
+                Debugger.log('Offers page opened', 'info');
                 
                 setTimeout(() => {
                     if (offersMap) offersMap.remove();
@@ -1795,69 +1729,33 @@
                     new mapboxgl.Marker({ color: '#003E71' })
                         .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
                         .addTo(offersMap);
+                    
+                    Debugger.log('Offers map initialized', 'success');
                 }, 100);
             });
 
-            // ===== BACK BUTTON - COMPLETELY ISOLATED =====
+            // ===== BACK BUTTON =====
             const offersBackBtn = document.getElementById('offersBackBtn');
             if (offersBackBtn) {
-                offersBackBtn.addEventListener('click', function(e) {
+                offersBackBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     offersContainer.classList.remove('active');
                     createTaskContainer.style.display = 'flex';
-                    return false;
-                });
-            }
-
-            // ===== PAYMENT FULL SCREEN - COMPLETELY ISOLATED =====
-            const paymentHeader = document.getElementById('paymentHeader');
-            const paymentFullscreen = document.getElementById('paymentFullscreen');
-            const closePaymentBtn = document.getElementById('closePaymentBtn');
-            const paymentChevron = document.getElementById('paymentChevron');
-
-            // Open payment sheet - with maximum isolation
-            if (paymentHeader) {
-                paymentHeader.onclick = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    paymentFullscreen.classList.add('active');
-                    if (paymentChevron) paymentChevron.textContent = 'expand_less';
-                    return false;
-                };
-            }
-
-            // Close payment sheet
-            if (closePaymentBtn) {
-                closePaymentBtn.onclick = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    paymentFullscreen.classList.remove('active');
-                    if (paymentChevron) paymentChevron.textContent = 'chevron_right';
-                    return false;
-                };
-            }
-
-            // Close by clicking outside
-            if (paymentFullscreen) {
-                paymentFullscreen.addEventListener('click', function(e) {
-                    if (e.target === paymentFullscreen) {
-                        paymentFullscreen.classList.remove('active');
-                        if (paymentChevron) paymentChevron.textContent = 'chevron_right';
-                    }
+                    Debugger.log('Back to create task', 'info');
                 });
             }
 
             // ===== POST OFFER BUTTON =====
             document.getElementById('postOfferBtn').addEventListener('click', ()=>{
                 document.getElementById('loadingOverlay').classList.add('active');
+                Debugger.log('Posting task...', 'info');
+                
                 setTimeout(() => {
                     document.getElementById('loadingOverlay').classList.remove('active');
                     showUploadStatus('Task posted successfully!', 'success');
                     offersContainer.classList.remove('active');
+                    Debugger.log('Task posted successfully!', 'success');
                     
                     // Reset form
                     taskInput.value = '';
@@ -1873,13 +1771,21 @@
                     validateForm();
                     
                     if (typeof confetti === 'function') {
-                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#003E71', '#FF286F'] });
+                        confetti({ 
+                            particleCount: 100, 
+                            spread: 70, 
+                            origin: { y: 0.6 }, 
+                            colors: ['#003E71', '#FF286F'] 
+                        });
                     }
                 }, 1500);
             });
 
             // ===== MENU BUTTON =====
-            document.getElementById('menuBtn').addEventListener('click', ()=> alert('Navigation menu'));
+            document.getElementById('menuBtn').addEventListener('click', ()=> {
+                alert('Navigation menu');
+                Debugger.log('Menu button clicked', 'info');
+            });
 
             // Initial validation
             validateForm();
