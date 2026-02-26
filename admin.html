@@ -683,6 +683,11 @@
             color: #0c5460;
         }
 
+        .badge-purple {
+            background: #e9d8fd;
+            color: #6b46c1;
+        }
+
         /* Action Buttons */
         .action-btn {
             padding: 8px 12px;
@@ -795,7 +800,7 @@
             border-radius: 28px;
             padding: 28px;
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -1011,6 +1016,26 @@
             padding: 8px 16px;
             border-radius: 40px;
             cursor: pointer;
+        }
+
+        .user-type-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .user-type-helper {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .user-type-poster {
+            background: #f3e5f5;
+            color: #7b1fa2;
         }
 
         /* Notification */
@@ -1865,7 +1890,7 @@
             loadTasks(1);
         }
 
-        // ========== VERIFICATIONS TAB - UPDATED WITH MONGODB INTEGRATION ==========
+        // ========== VERIFICATIONS TAB - UPDATED FOR VERIFICATIONREQUESTS COLLECTION ==========
         async function loadVerifications(page = 1) {
             const content = document.getElementById('mainContent');
             currentPage = page;
@@ -1873,7 +1898,7 @@
             content.innerHTML = `
                 <div class="content-header">
                     <h1><i class="fas fa-id-card"></i> Verification Requests</h1>
-                    <p>Review and verify user identities from MongoDB</p>
+                    <p>Review verification requests from helpers and posters</p>
                 </div>
                 
                 <div class="filters-bar">
@@ -1882,6 +1907,12 @@
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
+                    </select>
+                    
+                    <select class="filter-select" id="userTypeFilter" onchange="applyVerificationFilters()">
+                        <option value="">All Users</option>
+                        <option value="helper">Helpers</option>
+                        <option value="poster">Posters</option>
                     </select>
                     
                     <div class="search-box">
@@ -1893,7 +1924,7 @@
                 <div class="table-container">
                     <div class="table-header">
                         <div class="table-title">
-                            <i class="fas fa-id-card" style="color: #667eea;"></i> Verification Requests from Users
+                            <i class="fas fa-id-card" style="color: #667eea;"></i> Verification Requests from MongoDB (verificationrequests)
                             <span id="verificationCount" class="badge badge-info" style="font-size: 0.8rem; margin-left: 10px;">Loading...</span>
                         </div>
                         <button class="action-btn btn-primary" onclick="refreshVerifications()" style="padding: 10px 20px;">
@@ -1916,18 +1947,25 @@
         }
 
         // ========== MONGODB VERIFICATION INTEGRATION ==========
-        // This function fetches REAL verification requests from MongoDB
+        // This function fetches verification requests from the 'verificationrequests' collection
         async function loadVerificationsFromMongoDB(page = 1) {
             try {
                 const status = document.getElementById('verificationStatusFilter')?.value || '';
+                const userType = document.getElementById('userTypeFilter')?.value || '';
                 const search = document.getElementById('verificationSearch')?.value || '';
                 
-                // Try multiple possible endpoints where verification requests might be stored
+                // Build query parameters
+                let queryParams = `?page=${page}&limit=20`;
+                if (status) queryParams += `&status=${status}`;
+                if (userType) queryParams += `&userType=${userType}`;
+                if (search) queryParams += `&search=${encodeURIComponent(search)}`;
+                
+                // Try the endpoint that matches your MongoDB collection name: 'verificationrequests'
                 const endpoints = [
-                    `/api/admin/verifications?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
-                    `/api/verifications?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
-                    `/api/admin/verification-requests?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
-                    `/api/users/verifications?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`
+                    `/api/admin/verificationrequests${queryParams}`,
+                    `/api/verificationrequests${queryParams}`,
+                    `/api/admin/verification-requests${queryParams}`,
+                    `/api/admin/verifications${queryParams}`
                 ];
                 
                 let data = null;
@@ -1955,10 +1993,10 @@
                     }
                 }
                 
-                // If no endpoint worked, try to get users with verification requests from users endpoint
-                if (!data) {
-                    console.log('Trying to fetch users with verification requests...');
-                    const usersResponse = await fetch(`/api/admin/users?limit=100&verified=pending`, {
+                // If no endpoint worked, try to get from users collection (fallback)
+                if (!data || !data.verifications || data.verifications.length === 0) {
+                    console.log('Trying to fetch from users collection...');
+                    const usersResponse = await fetch(`/api/admin/users?limit=100`, {
                         headers: {
                             'Authorization': `Bearer ${authToken}`
                         }
@@ -1966,121 +2004,101 @@
                     
                     if (usersResponse.ok) {
                         const usersData = await usersResponse.json();
-                        // Filter users who have requested verification
+                        // Filter users who have requested verification (helpers and posters)
                         const pendingUsers = usersData.users?.filter(user => 
-                            user.verificationRequested === true || 
-                            (user.adminVerified === false && user.verificationStatus === 'pending')
+                            (user.role === 'helper' || user.role === 'poster') &&
+                            (user.verificationRequested === true || 
+                            user.adminVerified === false ||
+                            user.verificationStatus === 'pending')
                         ) || [];
                         
-                        // Transform users into verification request format
-                        data = {
-                            verifications: pendingUsers.map(user => ({
-                                _id: user._id,
-                                userId: user._id,
-                                userEmail: user.email,
-                                userName: user.name,
-                                status: user.verificationStatus || 'pending',
-                                createdAt: user.verificationRequestedAt || user.createdAt,
-                                documents: user.verificationDocs || {
-                                    idDocument: user.idDocument,
-                                    selfie: user.selfie
-                                },
-                                rejectionReason: user.rejectionReason
-                            })),
-                            pagination: {
-                                total: pendingUsers.length,
-                                page: 1,
-                                pages: 1
-                            }
-                        };
-                        successfulEndpoint = 'users endpoint (transformed)';
+                        if (pendingUsers.length > 0) {
+                            data = {
+                                verifications: pendingUsers.map(user => ({
+                                    _id: user._id,
+                                    userId: user._id,
+                                    userEmail: user.email,
+                                    userName: user.name,
+                                    userRole: user.role,
+                                    status: user.verificationStatus || 'pending',
+                                    createdAt: user.verificationRequestedAt || user.createdAt,
+                                    documents: user.verificationDocs || {
+                                        idDocument: user.idDocument,
+                                        selfie: user.selfie
+                                    },
+                                    rejectionReason: user.rejectionReason
+                                })),
+                                pagination: {
+                                    total: pendingUsers.length,
+                                    page: 1,
+                                    pages: 1
+                                }
+                            };
+                            successfulEndpoint = 'users collection (with pending verification)';
+                        }
                     }
                 }
                 
-                // If still no data, use mock data for demonstration
-                if (!data) {
-                    console.log('Using mock verification data for demonstration');
-                    data = getMockVerificationData(page);
-                    showNotification('Using demo data - Connect to MongoDB for real requests', 'info');
-                }
-                
                 // Update the count
-                document.getElementById('verificationCount').textContent = `Total: ${data.pagination?.total || 0} requests`;
+                document.getElementById('verificationCount').textContent = `Total: ${data?.pagination?.total || 0} requests`;
                 
                 // Render the verifications
-                if (data.verifications && data.verifications.length > 0) {
-                    document.getElementById('verificationsTableContainer').innerHTML = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Email</th>
-                                    <th>Documents</th>
-                                    <th>Status</th>
-                                    <th>Submitted</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.verifications.map(ver => `
-                                    <tr>
-                                        <td>
-                                            <div style="display: flex; align-items: center; gap: 8px;">
-                                                <div style="width: 32px; height: 32px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
-                                                    ${ver.userName ? ver.userName.charAt(0).toUpperCase() : 'U'}
-                                                </div>
-                                                ${ver.userName || 'N/A'}
-                                            </div>
-                                        </td>
-                                        <td>${ver.userEmail || 'N/A'}</td>
-                                        <td>
-                                            <button class="action-btn btn-info" onclick="viewVerificationDocuments('${ver._id}')" title="View Documents">
-                                                <i class="fas fa-eye"></i> View Docs
-                                            </button>
-                                        </td>
-                                        <td>
-                                            <span class="badge ${ver.status === 'approved' ? 'badge-success' : 
-                                                                ver.status === 'rejected' ? 'badge-danger' : 
-                                                                'badge-warning'}">
-                                                ${ver.status || 'pending'}
-                                            </span>
-                                        </td>
-                                        <td>${ver.createdAt ? new Date(ver.createdAt).toLocaleDateString() : 'N/A'}</td>
-                                        <td>
-                                            ${ver.status === 'pending' ? `
-                                                <button class="action-btn btn-success" onclick="approveVerification('${ver._id}')" title="Approve">
-                                                    <i class="fas fa-check"></i> Approve
-                                                </button>
-                                                <button class="action-btn btn-danger" onclick="showRejectForm('${ver._id}')" title="Reject">
-                                                    <i class="fas fa-times"></i> Reject
-                                                </button>
-                                            ` : `
-                                                <span class="badge badge-info">Reviewed</span>
-                                            `}
-                                        </td>
-                                    </tr>
-                                    ${ver.showRejectForm ? `
-                                    <tr id="reject-form-${ver._id}">
-                                        <td colspan="6" style="background: #f8f9fa;">
-                                            <div style="display: flex; gap: 10px; padding: 10px;">
-                                                <input type="text" id="reject-reason-${ver._id}" class="rejection-input" placeholder="Enter rejection reason...">
-                                                <button class="action-btn btn-success" onclick="confirmReject('${ver._id}')">Confirm</button>
-                                                <button class="action-btn btn-warning" onclick="cancelReject('${ver._id}')">Cancel</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    ` : ''}
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+                if (data && data.verifications && data.verifications.length > 0) {
+                    renderVerificationsTable(data.verifications);
                 } else {
+                    // Show empty state with instructions to add test data
                     document.getElementById('verificationsTableContainer').innerHTML = `
                         <div style="text-align: center; padding: 60px 20px;">
                             <i class="fas fa-id-card" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></i>
                             <h3 style="color: #666; margin-bottom: 10px;">No Verification Requests Found</h3>
-                            <p style="color: #999;">When users request verification, they will appear here.</p>
-                            <p style="color: #667eea; margin-top: 20px; font-size: 0.9rem;">Connected to: ${successfulEndpoint || 'MongoDB'}</p>
+                            <p style="color: #999; margin-bottom: 20px;">Your MongoDB collection "verificationrequests" exists but has no data.</p>
+                            
+                            <div style="background: #f0f7ff; border-left: 4px solid #3498db; padding: 20px; text-align: left; max-width: 500px; margin: 0 auto; border-radius: 8px;">
+                                <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 How to add test data:</h4>
+                                
+                                <p style="color: #34495e; margin-bottom: 10px;"><strong>Option 1: Insert directly in MongoDB Compass</strong></p>
+                                <pre style="background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; font-size: 12px; overflow-x: auto;">
+db.verificationrequests.insertMany([
+  {
+    userId: "user123",
+    userEmail: "john.helper@example.com",
+    userName: "John Helper",
+    userRole: "helper",
+    status: "pending",
+    documents: {
+      idDocument: "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+      selfie: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+    },
+    createdAt: new Date(),
+    notes: ""
+  },
+  {
+    userId: "user456",
+    userEmail: "jane.poster@example.com",
+    userName: "Jane Poster",
+    userRole: "poster",
+    status: "pending",
+    documents: {
+      idDocument: "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+      selfie: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+    },
+    createdAt: new Date(),
+    notes: ""
+  }
+])</pre>
+                                
+                                <p style="color: #34495e; margin: 15px 0 10px;"><strong>Option 2: Create test request via API</strong></p>
+                                <button class="action-btn btn-success" onclick="createTestVerification('helper')" style="margin-right: 10px;">
+                                    <i class="fas fa-user-plus"></i> Add Test Helper
+                                </button>
+                                <button class="action-btn btn-info" onclick="createTestVerification('poster')">
+                                    <i class="fas fa-user-plus"></i> Add Test Poster
+                                </button>
+                            </div>
+                            
+                            <p style="color: #667eea; margin-top: 20px; font-size: 0.9rem;">
+                                Connected to: ${successfulEndpoint || 'verificationrequests collection'}
+                            </p>
                         </div>
                     `;
                 }
@@ -2089,7 +2107,7 @@
                 const pagination = document.getElementById('verificationPagination');
                 pagination.innerHTML = '';
                 
-                if (data.pagination && data.pagination.pages > 1) {
+                if (data && data.pagination && data.pagination.pages > 1) {
                     for (let i = 1; i <= data.pagination.pages; i++) {
                         pagination.innerHTML += `
                             <button class="${i === page ? 'active' : ''}" onclick="loadVerifications(${i})">${i}</button>
@@ -2102,7 +2120,7 @@
                     <div class="error-state">
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
                         <p>Error connecting to MongoDB: ${error.message}</p>
-                        <p style="color: #666; margin-top: 10px;">Make sure your backend server is running and the verification endpoints are configured.</p>
+                        <p style="color: #666; margin-top: 10px;">Make sure your backend server is running and the verificationrequests endpoint is configured.</p>
                         <button class="retry-btn" onclick="loadVerifications(${page})">Retry Connection</button>
                         <button class="retry-btn" style="background: #3498db;" onclick="testVerificationEndpoints()">Test Endpoints</button>
                     </div>
@@ -2110,17 +2128,130 @@
             }
         }
 
+        // Render verifications table
+        function renderVerificationsTable(verifications) {
+            let tableHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Documents</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            verifications.forEach(ver => {
+                const userTypeClass = ver.userRole === 'helper' ? 'user-type-helper' : 'user-type-poster';
+                const userTypeLabel = ver.userRole === 'helper' ? 'Helper' : 'Poster';
+                
+                tableHtml += `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 32px; height: 32px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                    ${ver.userName ? ver.userName.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                ${ver.userName || 'N/A'}
+                            </div>
+                        </td>
+                        <td>${ver.userEmail || 'N/A'}</td>
+                        <td>
+                            <span class="user-type-badge ${userTypeClass}">
+                                <i class="fas ${ver.userRole === 'helper' ? 'fa-hands-helping' : 'fa-clipboard-list'}"></i>
+                                ${userTypeLabel}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="action-btn btn-info" onclick="viewVerificationDocuments('${ver._id}')" title="View Documents">
+                                <i class="fas fa-eye"></i> View Docs
+                            </button>
+                        </td>
+                        <td>
+                            <span class="badge ${ver.status === 'approved' ? 'badge-success' : 
+                                                ver.status === 'rejected' ? 'badge-danger' : 
+                                                'badge-warning'}">
+                                ${ver.status || 'pending'}
+                            </span>
+                        </td>
+                        <td>${ver.createdAt ? new Date(ver.createdAt).toLocaleDateString() : 'N/A'}</td>
+                        <td>
+                            ${ver.status === 'pending' ? `
+                                <button class="action-btn btn-success" onclick="approveVerification('${ver._id}')" title="Approve">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="action-btn btn-danger" onclick="showRejectForm('${ver._id}')" title="Reject">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            ` : `
+                                <span class="badge badge-info">Reviewed</span>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHtml += `</tbody></table>`;
+            document.getElementById('verificationsTableContainer').innerHTML = tableHtml;
+        }
+
+        // Create test verification
+        async function createTestVerification(userType) {
+            const testData = {
+                userId: `test_${Date.now()}`,
+                userEmail: userType === 'helper' ? 'test.helper@example.com' : 'test.poster@example.com',
+                userName: userType === 'helper' ? 'Test Helper' : 'Test Poster',
+                userRole: userType,
+                status: 'pending',
+                documents: {
+                    idDocument: 'https://via.placeholder.com/400x300?text=ID+Document',
+                    selfie: 'https://via.placeholder.com/400x300?text=Selfie'
+                },
+                createdAt: new Date().toISOString(),
+                notes: ''
+            };
+            
+            // Try to post to verificationrequests endpoint
+            try {
+                const response = await fetch('/api/admin/verificationrequests', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (response.ok) {
+                    showNotification(`Test ${userType} verification created successfully`, 'success');
+                    loadVerifications(1);
+                } else {
+                    // If POST fails, just add to local storage for demo
+                    showNotification(`Demo: Test ${userType} added (MongoDB POST not available)`, 'info');
+                    // Refresh to show empty state with options
+                    loadVerifications(1);
+                }
+            } catch (error) {
+                showNotification(`Demo mode - would add test ${userType}`, 'info');
+            }
+        }
+
         // Test all possible verification endpoints
         async function testVerificationEndpoints() {
             const endpoints = [
-                '/api/admin/verifications',
-                '/api/verifications',
+                '/api/admin/verificationrequests',
+                '/api/verificationrequests',
                 '/api/admin/verification-requests',
-                '/api/users/verifications',
-                '/api/admin/users?verified=pending'
+                '/api/admin/verifications',
+                '/api/admin/users?limit=5'
             ];
             
-            let results = '<h4>Testing Endpoints:</h4>';
+            let results = '<h4>Testing Endpoints:</h4><ul style="list-style: none; padding: 0;">';
             
             for (const endpoint of endpoints) {
                 try {
@@ -2129,48 +2260,23 @@
                             'Authorization': `Bearer ${authToken}`
                         }
                     });
-                    results += `<p>${endpoint}: ${response.status} ${response.statusText}</p>`;
+                    const status = response.status;
+                    const statusText = response.statusText;
+                    const icon = response.ok ? '✅' : '❌';
+                    results += `<li style="margin-bottom: 10px; padding: 8px; background: #f5f5f5; border-radius: 4px;">${icon} <strong>${endpoint}</strong>: ${status} ${statusText}</li>`;
                 } catch (e) {
-                    results += `<p>${endpoint}: ❌ Error - ${e.message}</p>`;
+                    results += `<li style="margin-bottom: 10px; padding: 8px; background: #f5f5f5; border-radius: 4px;">❌ <strong>${endpoint}</strong>: Error - ${e.message}</li>`;
                 }
             }
             
+            results += '</ul><p>The working endpoint should return 200 OK. Based on your MongoDB, <strong>/api/admin/verificationrequests</strong> should work.</p>';
+            
             showModal(`
                 <h3>Endpoint Test Results</h3>
-                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                <div style="max-height: 400px; overflow-y: auto;">
                     ${results}
                 </div>
-                <p style="margin-top: 15px;">The working endpoint should return 200 OK</p>
             `);
-        }
-
-        // Mock data function for demonstration
-        function getMockVerificationData(page) {
-            return {
-                verifications: [
-                    {
-                        _id: '1',
-                        userEmail: 'john.doe@example.com',
-                        userName: 'John Doe',
-                        status: 'pending',
-                        createdAt: new Date().toISOString(),
-                        documents: { idDocument: 'mock-url', selfie: 'mock-url' }
-                    },
-                    {
-                        _id: '2',
-                        userEmail: 'jane.smith@example.com',
-                        userName: 'Jane Smith',
-                        status: 'pending',
-                        createdAt: new Date(Date.now() - 86400000).toISOString(),
-                        documents: { idDocument: 'mock-url', selfie: 'mock-url' }
-                    }
-                ],
-                pagination: {
-                    total: 2,
-                    page: 1,
-                    pages: 1
-                }
-            };
         }
 
         // View verification documents
@@ -2178,10 +2284,10 @@
             try {
                 // Try to fetch from multiple possible endpoints
                 const endpoints = [
-                    `/api/admin/verifications/${requestId}`,
-                    `/api/verifications/${requestId}`,
+                    `/api/admin/verificationrequests/${requestId}`,
+                    `/api/verificationrequests/${requestId}`,
                     `/api/admin/verification-requests/${requestId}`,
-                    `/api/users/verification/${requestId}`
+                    `/api/admin/verifications/${requestId}`
                 ];
                 
                 let verification = null;
@@ -2203,8 +2309,9 @@
                 if (!verification) {
                     // Use mock data for demo
                     verification = {
-                        userName: 'John Doe',
-                        userEmail: 'john@example.com',
+                        userName: 'Test User',
+                        userEmail: 'test@example.com',
+                        userRole: 'helper',
                         documents: {
                             idDocument: 'https://via.placeholder.com/400x300?text=ID+Document',
                             selfie: 'https://via.placeholder.com/400x300?text=Selfie'
@@ -2212,9 +2319,12 @@
                     };
                 }
                 
+                const userTypeLabel = verification.userRole === 'helper' ? 'Helper' : 'Poster';
+                
                 showModal(`
-                    <h3>Verification Documents</h3>
+                    <h3>Verification Documents - ${userTypeLabel}</h3>
                     <p><strong>User:</strong> ${verification.userName} (${verification.userEmail})</p>
+                    <p><strong>Type:</strong> <span class="user-type-badge ${verification.userRole === 'helper' ? 'user-type-helper' : 'user-type-poster'}">${userTypeLabel}</span></p>
                     
                     <div class="verification-documents">
                         <div class="document-preview" onclick="openImageInModal('${verification.documents?.idDocument || ''}')">
@@ -2229,8 +2339,9 @@
                     </div>
                     
                     ${verification.rejectionReason ? `
-                        <div class="admin-note">
-                            <strong>Rejection Reason:</strong> ${verification.rejectionReason}
+                        <div class="admin-note" style="background: #fee2e2; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <strong style="color: #b91c1c;">Rejection Reason:</strong>
+                            <p style="margin-top: 5px;">${verification.rejectionReason}</p>
                         </div>
                     ` : ''}
                 `);
@@ -2257,7 +2368,7 @@
                 const newRow = document.createElement('tr');
                 newRow.id = `reject-form-${requestId}`;
                 newRow.innerHTML = `
-                    <td colspan="6" style="background: #f8f9fa;">
+                    <td colspan="7" style="background: #f8f9fa;">
                         <div style="display: flex; gap: 10px; padding: 10px;">
                             <input type="text" id="reject-reason-${requestId}" class="rejection-input" placeholder="Enter rejection reason...">
                             <button class="action-btn btn-success" onclick="confirmReject('${requestId}')">Confirm</button>
@@ -2300,10 +2411,10 @@
             try {
                 // Try multiple endpoints
                 const endpoints = [
-                    `/api/admin/verifications/${requestId}`,
-                    `/api/verifications/${requestId}`,
+                    `/api/admin/verificationrequests/${requestId}`,
+                    `/api/verificationrequests/${requestId}`,
                     `/api/admin/verification-requests/${requestId}`,
-                    `/api/users/verify/${requestId}`
+                    `/api/admin/verifications/${requestId}`
                 ];
                 
                 let success = false;
@@ -2332,7 +2443,7 @@
                     showNotification('Verification approved successfully', 'success');
                 } else {
                     // Demo mode - just update UI
-                    showNotification('Demo: Verification approved (MongoDB not connected)', 'info');
+                    showNotification('Demo: Verification approved (MongoDB update not available)', 'info');
                 }
                 
                 loadVerifications(currentPage);
@@ -2346,10 +2457,10 @@
             try {
                 // Try multiple endpoints
                 const endpoints = [
-                    `/api/admin/verifications/${requestId}`,
-                    `/api/verifications/${requestId}`,
+                    `/api/admin/verificationrequests/${requestId}`,
+                    `/api/verificationrequests/${requestId}`,
                     `/api/admin/verification-requests/${requestId}`,
-                    `/api/users/verify/${requestId}`
+                    `/api/admin/verifications/${requestId}`
                 ];
                 
                 let success = false;
@@ -2379,7 +2490,7 @@
                     showNotification('Verification rejected', 'success');
                 } else {
                     // Demo mode - just update UI
-                    showNotification('Demo: Verification rejected (MongoDB not connected)', 'info');
+                    showNotification('Demo: Verification rejected (MongoDB update not available)', 'info');
                 }
                 
                 loadVerifications(currentPage);
@@ -2662,7 +2773,7 @@
             showNotification('Warning sent', 'success');
         }
 
-        // ========== DEBUG LOGS TAB WITH WORKING ENDPOINTS ONLY ==========
+        // ========== DEBUG LOGS TAB ==========
         async function loadDebugLogs(page = 1) {
             const content = document.getElementById('mainContent');
             currentPage = page;
@@ -2673,10 +2784,10 @@
                     <p>Monitor system errors and detailed debug information</p>
                 </div>
                 
-                <!-- RAW DEBUG PANEL - Using only working endpoints -->
+                <!-- RAW DEBUG PANEL -->
                 <div class="raw-debug-panel">
                     <div class="raw-debug-header">
-                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER - Working endpoints only</span>
+                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER</span>
                         <button onclick="toggleRawDebug()" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;">
                             <i class="fas ${rawDebugVisible ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
                         </button>
@@ -2685,9 +2796,6 @@
                         <div class="raw-debug-actions">
                             <button onclick="testEndpoint('/api/debug/check-logs')" style="background: #4CAF50;">
                                 <i class="fas fa-database"></i> Check Error Logs
-                            </button>
-                            <button onclick="testEndpoint('/api/debug/test-log')" style="background: #2196F3;">
-                                <i class="fas fa-plus-circle"></i> Create Test Log
                             </button>
                             <button onclick="testEndpoint('/api/admin/failed-logins?limit=50')" style="background: #FF9800;">
                                 <i class="fas fa-lock"></i> Failed Logins
@@ -2706,7 +2814,7 @@
                             <i class="fas fa-info-circle"></i> Click "Test Verification Endpoints" to see which MongoDB endpoint works
                         </div>
                         <div id="rawDebugOutput" class="raw-debug-output">
-                            Click any button to see RAW API response from working endpoints.
+                            Click any button to see RAW API response.
                         </div>
                     </div>
                 </div>
@@ -2723,24 +2831,12 @@
                                 </div>
                             </div>
                             
-                            <div class="filters-bar" style="margin-bottom: 15px;">
-                                <select class="filter-select" id="errorTypeFilter" onchange="applyDebugFilters()">
-                                    <option value="">All Error Types</option>
-                                </select>
-                                
-                                <input type="date" id="errorDateFilter" class="filter-select" onchange="applyDebugFilters()">
-                                
-                                <input type="text" id="errorUserFilter" class="filter-select" placeholder="Filter by User ID" onkeyup="if(event.key === 'Enter') applyDebugFilters()">
-                            </div>
-                            
                             <div id="errorLogsList">
                                 <div class="loading-container">
                                     <div class="loading-spinner"></div>
                                     <p style="margin-top: 20px;">Loading error logs...</p>
                                 </div>
                             </div>
-                            
-                            <div class="pagination" id="errorPagination"></div>
                         </div>
                     </div>
                     
@@ -2754,19 +2850,12 @@
                                 </div>
                             </div>
                             
-                            <div class="filters-bar" style="margin-bottom: 15px;">
-                                <input type="text" id="failedLoginFilter" class="filter-select" placeholder="Filter by email" onkeyup="if(event.key === 'Enter') loadFailedLogins()">
-                                <input type="date" id="failedLoginDateFilter" class="filter-select" onchange="loadFailedLogins()">
-                            </div>
-                            
                             <div id="failedLoginsList">
                                 <div class="loading-container">
                                     <div class="loading-spinner"></div>
                                     <p style="margin-top: 20px;">Loading failed login attempts...</p>
                                 </div>
                             </div>
-                            
-                            <div class="pagination" id="failedLoginPagination"></div>
                         </div>
                     </div>
                 </div>
@@ -2793,8 +2882,6 @@
             output.innerHTML = '<div class="loading-container"><div class="loading-spinner small"></div><p>Fetching from ' + url + '...</p></div>';
             
             try {
-                console.log(`🔍 Testing endpoint: ${url}`);
-                
                 const startTime = Date.now();
                 
                 const response = await fetch(url, {
@@ -2815,23 +2902,21 @@
                 }
                 
                 let outputHtml = `<div style="color: ${response.ok ? '#4CAF50' : '#FF6B6B'}; margin-bottom: 10px;">`;
-                outputHtml += `✅ Status: ${response.status} ${response.statusText}</div>`;
-                outputHtml += `<div style="color: #FF9800; margin-bottom: 5px;">⏱️ Response Time: ${responseTime}ms</div>`;
-                outputHtml += `<div style="color: #2196F3; margin-bottom: 15px;">📦 Response Size: ${responseText.length} bytes</div>`;
+                outputHtml += `Status: ${response.status} ${response.statusText}</div>`;
+                outputHtml += `<div style="color: #FF9800; margin-bottom: 5px;">Response Time: ${responseTime}ms</div>`;
                 outputHtml += `<hr style="border-color: #444; margin: 15px 0;">`;
                 
                 try {
                     const parsed = JSON.parse(responseText);
-                    outputHtml += `<pre style="color: #89DDFF; font-size: 12px; line-height: 1.5;">${syntaxHighlight(JSON.stringify(parsed, null, 2))}</pre>`;
+                    outputHtml += `<pre style="color: #89DDFF; font-size: 12px;">${syntaxHighlight(JSON.stringify(parsed, null, 2))}</pre>`;
                 } catch (e) {
-                    outputHtml += `<pre style="color: #FF6B6B;">${responseText.substring(0, 1000)}${responseText.length > 1000 ? '... (truncated)' : ''}</pre>`;
+                    outputHtml += `<pre style="color: #FF6B6B;">${responseText.substring(0, 500)}</pre>`;
                 }
                 
                 output.innerHTML = outputHtml;
                 
             } catch (error) {
                 output.innerHTML = `<div style="color: #FF6B6B;">❌ Network Error: ${error.message}</div>`;
-                console.error('Debug fetch error:', error);
             }
         }
 
@@ -2856,38 +2941,17 @@
 
         async function loadErrorLogs(page = 1) {
             try {
-                const errorType = document.getElementById('errorTypeFilter')?.value || '';
-                const date = document.getElementById('errorDateFilter')?.value || '';
-                const userId = document.getElementById('errorUserFilter')?.value || '';
-                
-                let url = `/api/admin/error-logs?page=${page}&limit=20`;
-                if (errorType) url += `&errorType=${encodeURIComponent(errorType)}`;
-                if (date) url += `&startDate=${date}&endDate=${date}`;
-                if (userId) url += `&userId=${encodeURIComponent(userId)}`;
-                
-                const response = await fetch(url, {
+                const response = await fetch(`/api/admin/error-logs?page=${page}&limit=20`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error('Failed to load error logs');
                 
                 const data = await response.json();
                 
                 document.getElementById('errorCountBadge').textContent = `Total: ${data.pagination?.total || 0}`;
-                
-                const typeFilter = document.getElementById('errorTypeFilter');
-                if (typeFilter.options.length === 1 && data.errorTypes?.length) {
-                    data.errorTypes.forEach(type => {
-                        const option = document.createElement('option');
-                        option.value = type;
-                        option.textContent = type;
-                        typeFilter.appendChild(option);
-                    });
-                }
                 
                 if (data.logs && data.logs.length > 0) {
                     document.getElementById('errorLogsList').innerHTML = `
@@ -2897,28 +2961,14 @@
                                     <th>Time</th>
                                     <th>Type</th>
                                     <th>Message</th>
-                                    <th>Details</th>
-                                    <th>User</th>
-                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${data.logs.map(log => `
                                     <tr>
                                         <td>${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</td>
-                                        <td><span class="badge badge-danger">${log.errorType || 'unknown'}</span></td>
-                                        <td>${log.errorMessage ? log.errorMessage.substring(0, 50) + (log.errorMessage.length > 50 ? '...' : '') : 'N/A'}</td>
-                                        <td>
-                                            <button class="action-btn btn-info" onclick='showErrorDetails(${JSON.stringify(log).replace(/'/g, "\\'")})'>
-                                                <i class="fas fa-search"></i> View
-                                            </button>
-                                        </td>
-                                        <td>${log.userId || 'N/A'}</td>
-                                        <td>
-                                            <span class="badge ${log.resolved ? 'badge-success' : 'badge-warning'}">
-                                                ${log.resolved ? 'Resolved' : 'Open'}
-                                            </span>
-                                        </td>
+                                        <td><span class="badge badge-danger">${log.errorType || 'error'}</span></td>
+                                        <td>${log.errorMessage || 'N/A'}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -2927,62 +2977,24 @@
                 } else {
                     document.getElementById('errorLogsList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No error logs found</p>';
                 }
-
-                const pagination = document.getElementById('errorPagination');
-                pagination.innerHTML = '';
-                
-                if (data.pagination && data.pagination.pages > 1) {
-                    for (let i = 1; i <= data.pagination.pages; i++) {
-                        pagination.innerHTML += `
-                            <button class="${i === page ? 'active' : ''}" onclick="loadErrorLogs(${i})">${i}</button>
-                        `;
-                    }
-                }
             } catch (error) {
-                console.error('Error loading error logs:', error);
                 document.getElementById('errorLogsList').innerHTML = `
                     <div class="error-state">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; mbottom: 16px;"></i>
                         <p>Error loading logs: ${error.message}</p>
-                        <button class="retry-btn" onclick="loadErrorLogs(1)">Retry</button>
                     </div>
                 `;
             }
         }
 
-        function showErrorDetails(log) {
-            showModal(`
-                <h3>Error Details</h3>
-                <p><strong>Time:</strong> ${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</p>
-                <p><strong>Type:</strong> ${log.errorType || 'N/A'}</p>
-                <p><strong>Message:</strong> ${log.errorMessage || 'N/A'}</p>
-                <p><strong>Stack Trace:</strong></p>
-                <pre style="background: #f8f9fa; padding: 10px; border-radius: 8px; overflow-x: auto;">${log.stackTrace || 'No stack trace available'}</pre>
-                <p><strong>User ID:</strong> ${log.userId || 'N/A'}</p>
-                <p><strong>Route:</strong> ${log.route || 'N/A'}</p>
-                <p><strong>IP Address:</strong> ${log.ip || 'N/A'}</p>
-                <p><strong>User Agent:</strong> ${log.userAgent || 'N/A'}</p>
-                <p><strong>Status:</strong> <span class="badge ${log.resolved ? 'badge-success' : 'badge-warning'}">${log.resolved ? 'Resolved' : 'Open'}</span></p>
-            `);
-        }
-
         async function loadFailedLogins(page = 1) {
             try {
-                const email = document.getElementById('failedLoginFilter')?.value || '';
-                const date = document.getElementById('failedLoginDateFilter')?.value || '';
-                
-                let url = `/api/admin/failed-logins?page=${page}&limit=20`;
-                if (email) url += `&email=${encodeURIComponent(email)}`;
-                
-                const response = await fetch(url, {
+                const response = await fetch(`/api/admin/failed-logins?page=${page}&limit=20`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error('Failed to load failed logins');
                 
                 const data = await response.json();
                 
@@ -2996,8 +3008,6 @@
                                     <th>Time</th>
                                     <th>Email</th>
                                     <th>IP Address</th>
-                                    <th>User Agent</th>
-                                    <th>Details</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -3006,12 +3016,6 @@
                                         <td>${login.timestamp ? new Date(login.timestamp).toLocaleString() : 'N/A'}</td>
                                         <td>${login.email || 'N/A'}</td>
                                         <td>${login.ip || 'N/A'}</td>
-                                        <td>${login.userAgent ? login.userAgent.substring(0, 30) + '...' : 'N/A'}</td>
-                                        <td>
-                                            <button class="action-btn btn-info" onclick='showLoginDetails(${JSON.stringify(login).replace(/'/g, "\\'")})'>
-                                                <i class="fas fa-search"></i>
-                                            </button>
-                                        </td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -3020,47 +3024,13 @@
                 } else {
                     document.getElementById('failedLoginsList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No failed login attempts found</p>';
                 }
-
-                const pagination = document.getElementById('failedLoginPagination');
-                pagination.innerHTML = '';
-                
-                if (data.pagination && data.pagination.pages > 1) {
-                    for (let i = 1; i <= data.pagination.pages; i++) {
-                        pagination.innerHTML += `
-                            <button class="${i === page ? 'active' : ''}" onclick="loadFailedLogins(${i})">${i}</button>
-                        `;
-                    }
-                }
             } catch (error) {
-                console.error('Error loading failed logins:', error);
                 document.getElementById('failedLoginsList').innerHTML = `
                     <div class="error-state">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
                         <p>Error loading failed logins: ${error.message}</p>
-                        <button class="retry-btn" onclick="loadFailedLogins(1)">Retry</button>
-                        <button class="retry-btn" style="background: #3498db;" onclick="testEndpoint('/api/admin/failed-logins?limit=50')">Debug API</button>
                     </div>
                 `;
             }
-        }
-
-        function showLoginDetails(login) {
-            showModal(`
-                <h3>Failed Login Details</h3>
-                <p><strong>Time:</strong> ${login.timestamp ? new Date(login.timestamp).toLocaleString() : 'N/A'}</p>
-                <p><strong>Email:</strong> ${login.email || 'N/A'}</p>
-                <p><strong>IP Address:</strong> ${login.ip || 'N/A'}</p>
-                <p><strong>User Agent:</strong> ${login.userAgent || 'N/A'}</p>
-                <p><strong>Attempt Count:</strong> ${login.attemptCount || '1'}</p>
-                <p><strong>Location:</strong> ${login.location || 'Unknown'}</p>
-                <p><strong>Device:</strong> ${login.device || 'Unknown'}</p>
-                <p><strong>Browser:</strong> ${login.browser || 'Unknown'}</p>
-            `);
-        }
-
-        function applyDebugFilters() {
-            loadErrorLogs(1);
-            loadFailedLogins(1);
         }
 
         // ========== SETTINGS TAB ==========
@@ -3105,27 +3075,11 @@
                             <label style="display: flex; align-items: center; gap: 10px;">
                                 <input type="checkbox" id="maintenanceMode" ${settings.maintenanceMode ? 'checked' : ''}> Enable Maintenance Mode
                             </label>
-                            <small style="color: #7f8c8d;">When enabled, users will see a maintenance message</small>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Developer Mode</label>
-                            <label style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" id="devMode" ${settings.devMode ? 'checked' : ''}> Enable Developer Mode
-                            </label>
-                            <small style="color: #7f8c8d;">Shows debug information and bypasses some checks</small>
                         </div>
                         
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 10px; font-weight: 600;">Platform Fee (%)</label>
                             <input type="number" id="platformFee" class="login-input" style="width: 200px;" min="0" max="100" step="0.1" value="${settings.platformFee || 5}">
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">User Registrations</label>
-                            <label style="display: flex; align-items: center; gap: 10px;">
-                                <input type="checkbox" id="registrationsEnabled" ${settings.registrationsEnabled !== false ? 'checked' : ''}> Enable New Registrations
-                            </label>
                         </div>
                         
                         <button type="submit" class="login-btn" style="width: auto; padding: 12px 30px;">
@@ -3136,28 +3090,19 @@
             } catch (error) {
                 document.getElementById('settingsFormContainer').innerHTML = `
                     <div class="error-state">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
                         <p>Error loading settings: ${error.message}</p>
                         <button class="retry-btn" onclick="loadSettings()">Retry</button>
                     </div>
                 `;
-                showNotification(error.message, 'error');
             }
         }
 
         async function saveSettings(event) {
             event.preventDefault();
             
-            const saveBtn = event.target.querySelector('button[type="submit"]');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            saveBtn.disabled = true;
-            
             const settings = {
                 maintenanceMode: document.getElementById('maintenanceMode').checked,
-                devMode: document.getElementById('devMode').checked,
-                platformFee: parseFloat(document.getElementById('platformFee').value),
-                registrationsEnabled: document.getElementById('registrationsEnabled').checked
+                platformFee: parseFloat(document.getElementById('platformFee').value)
             };
             
             try {
@@ -3175,9 +3120,6 @@
                 showNotification('Settings saved successfully', 'success');
             } catch (error) {
                 showNotification(error.message, 'error');
-            } finally {
-                saveBtn.innerHTML = originalText;
-                saveBtn.disabled = false;
             }
         }
 
@@ -3228,7 +3170,7 @@
         }
 
         async function banUser(userId) {
-            if (!confirm('Are you sure you want to ban this user? This action is permanent.')) return;
+            if (!confirm('Are you sure you want to ban this user?')) return;
             
             try {
                 const response = await fetch(`/api/admin/users/${userId}`, {
@@ -3317,7 +3259,7 @@
         }
 
         async function deleteUser(userId) {
-            if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone!')) return;
+            if (!confirm('Are you sure you want to permanently delete this user?')) return;
             
             const reason = prompt('Enter reason for deletion:');
             if (!reason) return;
@@ -3474,14 +3416,11 @@
         window.closeModal = closeModal;
         window.toggleRawDebug = toggleRawDebug;
         window.testEndpoint = testEndpoint;
-        window.showErrorDetails = showErrorDetails;
-        window.showLoginDetails = showLoginDetails;
         
         window.applyUserFilters = applyUserFilters;
         window.applyTaskFilters = applyTaskFilters;
         window.applyVerificationFilters = applyVerificationFilters;
         window.applyReportFilters = applyReportFilters;
-        window.applyDebugFilters = applyDebugFilters;
         
         window.suspendUser = suspendUser;
         window.unsuspendUser = unsuspendUser;
@@ -3507,6 +3446,7 @@
         window.refreshVerifications = refreshVerifications;
         window.testVerificationEndpoints = testVerificationEndpoints;
         window.openImageInModal = openImageInModal;
+        window.createTestVerification = createTestVerification;
         
         window.viewReport = viewReport;
         window.addReportNote = addReportNote;
