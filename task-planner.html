@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TaskMart · ${userRole === 'helper' ? 'Helper' : 'Poster'}</title>
+    <title>TaskMart · Helper</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,15 +26,9 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Socket.io for real-time communication -->
+    <!-- Socket.io -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
-    <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    
-    <!-- Config -->
-    <script src="/config.js"></script>
-
     <style>
         * {
             margin: 0;
@@ -43,9 +37,7 @@
         }
 
         body {
-            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            font-weight: 400;
-            font-size: 16px;
+            font-family: 'Manrope', sans-serif;
             background: #000;
             height: 100vh;
             height: 100dvh;
@@ -62,63 +54,22 @@
             line-height: 1 !important;
         }
 
-        /* === SPLASH SCREEN === */
-        .splash-screen {
-            position: fixed;
+        /* === FULLSCREEN MAP === */
+        #map {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100vh;
-            background: #000;
-            z-index: 9999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.8s ease;
-            pointer-events: none;
+            height: 100%;
+            z-index: 1;
         }
 
-        .splash-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .splash-logo {
-            font-family: 'Codec Cold News', sans-serif;
-            font-size: 4rem;
-            color: white;
-            letter-spacing: 4px;
-            opacity: 0;
-            transform: scale(0.8);
-            animation: logoAppear 1.5s ease forwards;
-        }
-
-        @keyframes logoAppear {
-            0% {
-                opacity: 0;
-                transform: scale(0.8);
-                letter-spacing: 4px;
-            }
-            50% {
-                opacity: 0.8;
-                transform: scale(1.1);
-                letter-spacing: 8px;
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-                letter-spacing: 4px;
-            }
-        }
-
-        /* === HEADER - Role based === */
+        /* === HEADER === */
         .app-header {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            padding: 0 20px;
+            top: 20px;
+            left: 20px;
+            right: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -130,37 +81,59 @@
             pointer-events: auto;
         }
 
-        .profile-menu-btn {
-            width: 44px;
-            height: 44px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        /* No profile menu - just the role badge */
+        .role-badge {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            color: #003E71;
+            padding: 0.6rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .role-badge .material-symbols-outlined {
+            font-size: 20px !important;
+            color: #FF286F;
+        }
+
+        /* Availability Toggle */
+        .availability-toggle {
+            background: white;
+            border-radius: 40px;
+            padding: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-right: 1rem;
+        }
+
+        .toggle-option {
+            padding: 0.4rem 1.2rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
             cursor: pointer;
-            border: none;
             transition: all 0.2s;
         }
 
-        .profile-menu-btn:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .profile-menu-btn .material-symbols-outlined {
-            color: #000;
-            font-size: 24px;
-        }
-
-        .role-badge {
+        .toggle-option.active {
             background: #003E71;
             color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-left: 1rem;
+        }
+
+        .toggle-option:not(.active) {
+            background: transparent;
+            color: #666;
+        }
+
+        .toggle-option:not(.active):hover {
+            background: #f0f0f0;
         }
 
         .notifications-btn {
@@ -169,7 +142,7 @@
             height: 44px;
             background: white;
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -179,12 +152,7 @@
         }
 
         .notifications-btn:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .notifications-btn .material-symbols-outlined {
-            color: #000;
-            font-size: 24px;
+            transform: scale(1.05);
         }
 
         .notification-badge {
@@ -204,33 +172,6 @@
             border: 2px solid white;
         }
 
-        .online-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(4px);
-            padding: 0.5rem 1rem;
-            border-radius: 30px;
-            color: white;
-            font-size: 0.8rem;
-            margin-left: 1rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
         /* === VERIFICATION BANNER === */
         .verification-banner {
             position: fixed;
@@ -244,8 +185,8 @@
             z-index: 2000;
             display: none;
             backdrop-filter: blur(4px);
-            text-align: center;
             font-size: 0.85rem;
+            white-space: nowrap;
         }
 
         .verification-banner.active {
@@ -259,95 +200,21 @@
             font-size: 18px !important;
         }
 
-        .verification-banner button {
-            background: white;
-            color: black;
-            border: none;
-            padding: 0.3rem 1rem;
-            border-radius: 30px;
-            font-weight: 500;
-            margin-left: 1rem;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        /* === FULLSCREEN MAP === */
-        #map {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* Draggable pin - only visible for posters */
-        .draggable-pin {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -100%);
-            width: 40px;
-            height: 40px;
-            background: #003E71;
-            border: 3px solid white;
-            border-radius: 50% 50% 50% 0;
-            rotate: -45deg;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            z-index: 100;
-            cursor: grab;
-            touch-action: none;
-            pointer-events: auto;
-            display: none; /* Hidden by default, shown for posters */
-        }
-
-        .draggable-pin.poster-visible {
-            display: block;
-        }
-
-        .draggable-pin:active {
-            cursor: grabbing;
-            transform: translate(-50%, -100%) scale(1.05) rotate(-45deg);
-        }
-
-        .draggable-pin::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-        }
-
-        /* === ROLE-BASED CONTAINERS === */
-        .poster-sheet, .helper-sheet {
+        /* === WHITE SHEET - Matching poster aesthetic === */
+        .helper-sheet {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             background: white;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
             z-index: 10;
-            display: none;
-            flex-direction: column;
-            transition: max-height 0.3s ease;
-        }
-
-        .poster-sheet.active, .helper-sheet.active {
             display: flex;
-        }
-
-        .poster-sheet {
-            padding: 24px 20px 28px;
-        }
-
-        .helper-sheet {
+            flex-direction: column;
             max-height: 40%;
+            transition: max-height 0.3s ease;
         }
 
         .helper-sheet.expanded {
@@ -358,114 +225,68 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 0 0 15px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 20px 20px 12px;
+            cursor: pointer;
         }
 
         .sheet-header h2 {
             font-size: 1.3rem;
             font-weight: 500;
-            color: #000000;
-            line-height: 1.2;
-            letter-spacing: -0.02em;
-            margin: 0;
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sheet-header .material-symbols-outlined {
+            color: #FF286F !important;
+            font-size: 24px !important;
         }
 
         .sheet-header .expand-icon {
+            color: #999;
             transition: transform 0.3s ease;
-            cursor: pointer;
         }
 
         .helper-sheet.expanded .expand-icon {
             transform: rotate(180deg);
         }
 
-        .header-actions {
+        .stats-row {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 1rem;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
-        /* === POSTER SPECIFIC STYLES === */
-        .search-container {
-            width: 100%;
-            max-width: 750px;
-            margin-bottom: 0.5rem;
-            position: relative;
-        }
-
-        .search-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .search-input {
-            width: 100%;
-            height: 56px;
-            padding: 1rem 3.5rem 1rem 1.2rem;
-            border: 1px solid rgba(0, 62, 113, 0.3);
-            background: white;
-            outline: none;
-            transition: border-color 0.2s ease;
-            font-family: inherit;
-            font-weight: 400;
-            font-size: 16px;
-            border-radius: 7px;
-        }
-
-        .search-input:focus {
-            border-color: #003e71;
-            background-color: rgba(255, 40, 111, 0.03);
-            animation: shake 0.5s ease;
-        }
-
-        @keyframes shake {
-            0%,100%{ transform:translateX(0); }
-            25%{ transform:translateX(-4px); }
-            75%{ transform:translateX(4px); }
-        }
-
-        .search-icon {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background-color: rgba(0, 62, 113, 0.12);
-            border-radius: 7px;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-        }
-
-        .search-icon img {
-            width: 22px;
-            height: 22px;
-            object-fit: contain;
-            filter: brightness(0) saturate(100%) invert(20%) sepia(100%) saturate(1000%) hue-rotate(180deg);
-        }
-
-        /* === HELPER SPECIFIC STYLES === */
-        .helper-feed {
+        .stat-item {
             flex: 1;
-            overflow-y: auto;
-            padding: 0 1.5rem 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #003E71;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .filter-bar {
             display: flex;
             gap: 0.5rem;
-            margin-bottom: 1.5rem;
+            padding: 15px 20px;
             overflow-x: auto;
-            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
         .filter-chip {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.2rem;
             background: #f5f5f5;
             border-radius: 30px;
             font-size: 0.8rem;
@@ -474,7 +295,6 @@
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s;
-            border: 1px solid transparent;
         }
 
         .filter-chip:hover {
@@ -482,37 +302,37 @@
         }
 
         .filter-chip.active {
-            background: #000;
+            background: #003E71;
             color: white;
         }
 
-        .tasks-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        .tasks-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px;
         }
 
-        .helper-task-card {
-            background: #f5f9ff;
+        /* Task Card - Matching poster aesthetic */
+        .task-card {
+            background: #f8fafc;
+            border: 1px solid rgba(0, 62, 113, 0.1);
             border-radius: 12px;
             padding: 1rem;
-            border-left: 4px solid #003E71;
+            margin-bottom: 1rem;
             cursor: pointer;
             transition: all 0.2s;
-            animation: slideIn 0.3s ease;
         }
 
-        .helper-task-card.new {
-            border-left-color: #FF286F;
-            background: #fff0f5;
+        .task-card:hover {
+            border-color: #003E71;
+            box-shadow: 0 4px 12px rgba(0, 62, 113, 0.1);
         }
 
-        .helper-task-card:hover {
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,62,113,0.1);
+        .task-card.new {
+            border-left: 4px solid #FF286F;
         }
 
-        .task-header-row {
+        .task-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -520,19 +340,20 @@
         }
 
         .task-title {
+            font-size: 1rem;
             font-weight: 600;
             color: #003E71;
         }
 
-        .task-badge {
-            font-size: 0.7rem;
+        .task-distance {
+            font-size: 0.75rem;
             padding: 0.2rem 0.5rem;
-            background: #FF286F;
-            color: white;
-            border-radius: 12px;
+            background: rgba(0, 62, 113, 0.1);
+            color: #003E71;
+            border-radius: 30px;
         }
 
-        .task-location-row {
+        .task-location {
             display: flex;
             align-items: center;
             gap: 0.25rem;
@@ -541,81 +362,114 @@
             margin-bottom: 0.5rem;
         }
 
-        .task-location-row .material-symbols-outlined {
+        .task-location .material-symbols-outlined {
             font-size: 16px !important;
+            color: #999;
         }
 
-        .task-meta-row {
+        .task-meta {
             display: flex;
-            align-items: center;
             gap: 1rem;
             font-size: 0.75rem;
             color: #999;
             margin-bottom: 0.75rem;
         }
 
-        .task-distance {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .task-distance .material-symbols-outlined {
-            font-size: 14px !important;
-        }
-
         .task-budget {
             font-weight: 600;
             color: #003E71;
+            font-size: 1.1rem;
         }
 
         .task-budget.open {
-            color: #f59e0b;
+            color: #FF286F;
+            font-size: 0.9rem;
         }
 
-        .poster-mini {
+        .poster-info {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            margin: 0.75rem 0;
             padding: 0.5rem;
-            background: rgba(0,62,113,0.05);
+            background: white;
             border-radius: 8px;
-            margin-top: 0.5rem;
         }
 
-        .poster-avatar-mini {
-            width: 24px;
-            height: 24px;
+        .poster-avatar {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: #003E71;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
         }
 
-        .poster-name-mini {
-            font-size: 0.8rem;
+        .poster-name {
+            font-weight: 500;
             color: #003E71;
         }
 
-        .accept-task-btn {
+        .poster-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.7rem;
+            color: #f59e0b;
+        }
+
+        .bid-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px dashed #003E71;
+        }
+
+        .bid-input {
             width: 100%;
             padding: 0.75rem;
-            background: #003E71;
-            color: white;
+            border: 1px solid rgba(0, 62, 113, 0.2);
+            border-radius: 8px;
+            font-family: 'Manrope', sans-serif;
+            margin: 0.5rem 0;
+        }
+
+        .bid-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .bid-btn {
+            flex: 1;
+            padding: 0.6rem;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
+            font-weight: 500;
             cursor: pointer;
-            margin-top: 0.75rem;
             transition: all 0.2s;
         }
 
-        .accept-task-btn:hover {
+        .bid-btn.primary {
+            background: #003E71;
+            color: white;
+        }
+
+        .bid-btn.primary:hover {
             background: #002b4f;
+        }
+
+        .bid-btn.secondary {
+            background: transparent;
+            border: 1px solid #003E71;
+            color: #003E71;
+        }
+
+        .bid-btn.secondary:hover {
+            background: rgba(0, 62, 113, 0.05);
         }
 
         .task-details-expanded {
@@ -624,23 +478,95 @@
             transition: max-height 0.3s ease;
         }
 
-        .helper-task-card.expanded .task-details-expanded {
-            max-height: 300px;
+        .task-card.expanded .task-details-expanded {
+            max-height: 500px;
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid rgba(0,62,113,0.1);
+            border-top: 1px solid rgba(0, 62, 113, 0.1);
         }
 
+        /* Notifications Panel */
+        .notifications-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 2000;
+            display: none;
+            overflow: hidden;
+            border: 1px solid rgba(0,62,113,0.1);
+        }
+
+        .notifications-panel.active {
+            display: block;
+        }
+
+        .notifications-header {
+            padding: 1rem;
+            background: #f8fafc;
+            border-bottom: 1px solid rgba(0,62,113,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notifications-header h4 {
+            color: #003E71;
+            font-size: 0.95rem;
+        }
+
+        .notifications-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0,62,113,0.05);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-item:hover {
+            background: #f8fafc;
+        }
+
+        .notification-item.unread {
+            background: #fff0f5;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #003E71;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #999;
+        }
+
+        .empty-notifications {
+            padding: 2rem;
+            text-align: center;
+            color: #999;
+        }
+
+        /* Earnings Widget */
         .earnings-widget {
             position: fixed;
             bottom: 100px;
             left: 20px;
             background: white;
-            border-radius: 30px;
+            border-radius: 40px;
             padding: 0.75rem 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 1000;
-            display: none;
+            display: flex;
             align-items: center;
             gap: 0.5rem;
             font-weight: 600;
@@ -648,39 +574,33 @@
             border: 1px solid rgba(0,62,113,0.1);
         }
 
-        .earnings-widget.helper-visible {
-            display: flex;
-        }
-
         .earnings-widget .material-symbols-outlined {
             color: #FF286F;
             font-size: 20px;
         }
 
+        /* FAB */
         .fab {
             position: fixed;
             bottom: 30px;
             right: 20px;
             width: 56px;
             height: 56px;
-            background: #000;
+            background: #003E71;
             border-radius: 50%;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0, 62, 113, 0.3);
             z-index: 1000;
             transition: all 0.2s;
         }
 
-        .fab.helper-visible {
-            display: flex;
-        }
-
         .fab:hover {
             transform: scale(1.1);
+            background: #002b4f;
         }
 
         .fab .material-symbols-outlined {
@@ -688,380 +608,69 @@
             font-size: 28px;
         }
 
-        /* === CREATE TASK (POSTER ONLY) === */
-        .create-task-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 1000000;
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .create-task-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.25rem 1.25rem 0.75rem;
-            border-bottom: 1px solid rgba(0, 62, 113, 0.08);
-            flex-shrink: 0;
-        }
-
-        .close-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .close-btn .material-symbols-outlined {
-            color: #000000 !important;
-            font-size: 28px !important;
-        }
-
-        .create-task-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #000000;
-            margin: 0;
-        }
-
-        .create-task-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem 1.25rem 2rem;
-        }
-
-        .section {
-            margin-bottom: 2rem;
-        }
-
-        .section-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #000000;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .section-label .material-symbols-outlined {
-            color: #003E71 !important;
-            font-size: 20px !important;
-        }
-
-        .location-field-wrapper {
-            position: relative;
-            margin-bottom: 1rem;
-        }
-
-        .location-input {
-            width: 100%;
-            padding: 1rem 4rem 1rem 1.2rem;
-            border: 1.5px solid rgba(0, 62, 113, 0.3);
-            border-radius: 7px;
-            font-family: inherit;
-            font-weight: 400;
-            font-size: 16px;
-            color: #000000;
-            background: white;
-            outline: none;
-            height: 56px;
-        }
-
-        .location-input:focus {
-            border-color: #003E71;
-        }
-
-        .location-icon {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background-color: rgba(0, 62, 113, 0.12);
-            border-radius: 7px;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .location-icon:hover {
-            background-color: rgba(0, 62, 113, 0.2);
-        }
-
-        .location-icon .material-symbols-outlined {
-            color: #003E71 !important;
-            font-size: 22px !important;
-        }
-
-        .street-input {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            border: 1.5px solid rgba(0, 62, 113, 0.3);
-            border-radius: 7px;
-            font-family: inherit;
-            font-weight: 400;
-            font-size: 16px;
-            color: #000000;
-            background: white;
-            outline: none;
-            margin-top: 0.5rem;
-            height: 56px;
-        }
-
-        .task-input {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            border: 1.5px solid rgba(0, 62, 113, 0.3);
-            border-radius: 7px;
-            font-family: inherit;
-            font-weight: 400;
-            font-size: 16px;
-            height: 56px;
-        }
-
-        .char-count {
-            text-align: right;
-            font-size: 0.75rem;
-            color: rgba(0, 62, 113, 0.4);
-            margin-top: 0.35rem;
-        }
-
-        .more-details-btn-container {
-            display: flex;
-            justify-content: flex-end;
-            margin: 0.75rem 0 0.5rem;
-        }
-
-        .more-details-btn {
-            background: transparent;
-            border: 1px solid #003E71;
-            border-radius: 7px;
-            padding: 0.5rem 1.2rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #003E71;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .when-options, .budget-options {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .when-option, .budget-option {
-            flex: 1;
-            padding: 0.85rem 0;
-            border-radius: 7px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            text-align: center;
-            border: 1.5px solid transparent;
-        }
-
-        .when-option.active, .budget-option.active {
-            background: #003E71;
-            color: white;
-            border-color: #003E71;
-        }
-
-        .when-option.inactive, .budget-option.inactive {
-            background: transparent;
-            color: #000000;
-            border-color: rgba(0, 62, 113, 0.3);
-        }
-
-        .date-time-pickers {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        .date-time-box {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.85rem 0.5rem;
-            border: 1.5px solid rgba(0, 62, 113, 0.3);
-            border-radius: 7px;
-            cursor: pointer;
-            background: white;
-            position: relative;
-        }
-
-        .currency-symbol {
-            position: absolute;
-            left: 1.2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #003E71;
-            font-weight: 600;
-        }
-
-        .budget-input {
-            width: 100%;
-            padding: 1rem 1.2rem 1rem 2.5rem;
-            border: 1.5px solid rgba(0, 62, 113, 0.3);
-            border-radius: 7px;
-            font-family: inherit;
-            font-size: 16px;
-            height: 56px;
-        }
-
-        .upload-area {
-            border: 2px dashed rgba(0, 62, 113, 0.2);
-            border-radius: 7px;
-            background: #f5f9ff;
-            padding: 2rem 1rem;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .extra-notes {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            border: 1.5px solid rgba(0, 62, 113, 0.3);
-            border-radius: 7px;
-            min-height: 80px;
-        }
-
-        .post-btn-container {
-            padding: 1rem 1.25rem 1.5rem;
-            border-top: 1px solid rgba(0, 62, 113, 0.08);
-            background: white;
-        }
-
-        .next-button {
-            width: 100%;
-            background: #003E71;
-            color: white;
-            border: none;
-            padding: 0.9rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 7px;
-            cursor: pointer;
-        }
-
-        .next-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Debug panel */
-        .debug-panel {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 7px;
-            z-index: 10000000;
-            color: #fff;
-            padding: 20px;
-            font-family: monospace;
-            font-size: 13px;
-            max-height: 85vh;
-            overflow-y: auto;
-            display: none;
-            border: 2px solid #FF286F;
-        }
-
-        .debug-panel.active { display: block; }
-        
-        .debug-error-item { 
-            color: #ff6b6b; 
-            border-left: 4px solid #ff286f; 
-            padding: 8px 12px; 
-            margin: 8px 0; 
-            background: rgba(255, 40, 111, 0.1);
-            border-radius: 4px;
-        }
-
-        /* Map Modal */
-        .map-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            z-index: 5000000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .map-modal.active { display: flex; }
-        
-        .map-modal-content {
-            background: white;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 7px;
-            overflow: hidden;
-        }
-        
-        #mapModalContainer {
-            height: 300px;
-            width: 100%;
-        }
-
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: #000;
+            background: #003E71;
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 30px;
+            border-radius: 40px;
             z-index: 3000;
             display: none;
             font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .toast.show {
             display: block;
         }
+
+        /* Loading States */
+        .loading-tasks {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        .no-tasks {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .helper-sheet {
+                width: 450px;
+                left: 20px;
+                bottom: 20px;
+                border-radius: 24px;
+                max-height: 70%;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div class="splash-screen" id="splashScreen">
-        <div class="splash-logo">TASKMART</div>
-    </div>
+    <!-- MAP -->
+    <div id="map"></div>
 
-    <!-- Header -->
+    <!-- Header (no profile menu) -->
     <div class="app-header">
         <div class="header-left">
-            <button class="profile-menu-btn" id="profileMenuBtn">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
-            <span class="role-badge" id="roleBadge">Loading...</span>
+            <div class="role-badge">
+                <span class="material-symbols-outlined">handyman</span>
+                <span>Helper Mode</span>
+            </div>
         </div>
-        <div class="header-right" style="display: flex; align-items: center; gap: 10px;">
-            <div class="online-status" id="onlineStatus" style="display: none;">
-                <span class="status-dot"></span>
-                <span>Available</span>
+        <div class="header-right" style="display: flex; align-items: center;">
+            <div class="availability-toggle" id="availabilityToggle">
+                <span class="toggle-option active" data-status="online">🟢 Online</span>
+                <span class="toggle-option" data-status="away">🟡 Away</span>
+                <span class="toggle-option" data-status="offline">⚫ Offline</span>
             </div>
             <button class="notifications-btn" id="notificationsBtn">
                 <span class="material-symbols-outlined">notifications</span>
@@ -1073,202 +682,71 @@
     <!-- Verification Banner -->
     <div class="verification-banner" id="verificationBanner">
         <span class="material-symbols-outlined">verified</span>
-        <span id="verificationText">Complete your profile</span>
-        <button onclick="window.location.href='/profile-menu.html'">Go to Profile</button>
+        <span id="verificationText">Complete your profile to start helping</span>
     </div>
 
-    <!-- Profile Menu Container -->
-    <div id="profile-menu-container"></div>
-
-    <!-- MAP -->
-    <div id="map"></div>
-
-    <!-- Draggable pin (poster only) -->
-    <div class="draggable-pin" id="locationPin"></div>
-
-    <!-- Poster Sheet -->
-    <div class="poster-sheet" id="posterSheet">
-        <div class="sheet-header">
-            <h2>Find trusted help nearby.</h2>
-            <div class="header-actions">
-                <button class="debug-btn" id="debugBtn" style="background:#6c757d; border:none; width:44px; height:44px; border-radius:50%; color:white; cursor:pointer;">
-                    <span class="material-symbols-outlined">bug_report</span>
-                </button>
-                <button class="refresh-location-btn" id="refreshLocationBtn" style="background:#003E71; border:none; width:44px; height:44px; border-radius:50%; color:white; cursor:pointer;">
-                    <span class="material-symbols-outlined">my_location</span>
-                </button>
-            </div>
-        </div>
-        
-        <div class="search-container" id="openCreateTaskBtn">
-            <div class="search-wrapper">
-                <input type="text" class="search-input" placeholder="What do you need help with?" readonly>
-                <div class="search-icon">
-                    <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/search%203.png" alt="search">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Helper Sheet -->
+    <!-- White Sheet - Helper Dashboard -->
     <div class="helper-sheet" id="helperSheet">
-        <div class="sheet-header">
+        <div class="sheet-header" id="sheetHeader">
             <h2>
                 <span class="material-symbols-outlined">radar</span>
-                Live Tasks Nearby
+                Available Tasks
             </h2>
-            <span class="material-symbols-outlined expand-icon" id="expandSheet">expand_less</span>
+            <span class="material-symbols-outlined expand-icon">expand_less</span>
         </div>
 
-        <div class="helper-feed" id="helperFeed">
-            <div class="filter-bar" id="filterBar">
-                <span class="filter-chip active" data-filter="all">All</span>
-                <span class="filter-chip" data-filter="nearby">Nearby</span>
-                <span class="filter-chip" data-filter="urgent">Urgent</span>
-                <span class="filter-chip" data-filter="highest">Highest Pay</span>
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="tasksCount">0</div>
+                <div class="stat-label">Nearby</div>
             </div>
+            <div class="stat-item">
+                <div class="stat-value" id="earningsToday">R0</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="acceptanceRate">0%</div>
+                <div class="stat-label">Acceptance</div>
+            </div>
+        </div>
 
-            <div class="tasks-list" id="tasksList">
-                <div class="loading-tasks" style="text-align:center; padding:2rem; color:#999;">Scanning for tasks...</div>
-            </div>
+        <!-- Filter Chips -->
+        <div class="filter-bar">
+            <span class="filter-chip active" data-filter="all">All Tasks</span>
+            <span class="filter-chip" data-filter="nearby">Nearby</span>
+            <span class="filter-chip" data-filter="urgent">Urgent</span>
+            <span class="filter-chip" data-filter="highest">Highest Pay</span>
+            <span class="filter-chip" data-filter="open">Open to Offers</span>
+        </div>
+
+        <!-- Tasks Container -->
+        <div class="tasks-container" id="tasksContainer">
+            <div class="loading-tasks">Scanning for tasks...</div>
         </div>
     </div>
 
-    <!-- Earnings Widget (helper only) -->
+    <!-- Earnings Widget -->
     <div class="earnings-widget" id="earningsWidget">
         <span class="material-symbols-outlined">payments</span>
         <span id="earningsTotal">R 0</span>
         <span style="font-size:0.7rem; color:#999;">this month</span>
     </div>
 
-    <!-- FAB (helper only) -->
+    <!-- FAB -->
     <button class="fab" id="fabBtn">
         <span class="material-symbols-outlined">refresh</span>
     </button>
 
-    <!-- CREATE TASK (poster only) -->
-    <div class="create-task-container" id="createTaskContainer">
-        <div class="create-task-header">
-            <button class="close-btn" id="closeCreateTaskBtn">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-            <div class="create-task-title">Create task</div>
-            <div class="header-spacer"></div>
+    <!-- Notifications Panel -->
+    <div class="notifications-panel" id="notificationsPanel">
+        <div class="notifications-header">
+            <h4>Notifications</h4>
+            <button class="close-btn" id="closeNotificationsBtn" style="background:none; border:none; cursor:pointer;">✕</button>
         </div>
-
-        <div class="create-task-content">
-            <!-- Location Section -->
-            <div class="section">
-                <div class="section-label">
-                    <span class="material-symbols-outlined">location_on</span>
-                    Your location
-                </div>
-                <div class="location-field-wrapper">
-                    <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
-                    <button class="location-icon" id="openMapBtn">
-                        <span class="material-symbols-outlined">edit</span>
-                    </button>
-                </div>
-                <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
-            </div>
-
-            <!-- Task Description -->
-            <div class="section">
-                <div class="section-label">
-                    <span class="material-symbols-outlined">description</span>
-                    What do you need help with?
-                </div>
-                <input type="text" class="task-input" id="taskInput" placeholder="I need help with laundry..." maxlength="50">
-                <div class="char-count" id="taskCharCount">0/50</div>
-                
-                <div class="more-details-btn-container">
-                    <button class="more-details-btn" id="moreDetailsBtn">
-                        <span class="material-symbols-outlined">add_circle</span>
-                        More details
-                    </button>
-                </div>
-
-                <div class="collapsible-section" id="collapsibleSection" style="display: none;">
-                    <!-- When -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="section-label">When do you need help?</div>
-                        <div class="when-options">
-                            <button class="when-option active" id="whenNowBtn">Now</button>
-                            <button class="when-option inactive" id="whenLaterBtn">Later</button>
-                        </div>
-                        <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
-                            <div class="date-time-box" id="pickDateBtn">
-                                <span class="material-symbols-outlined">calendar_today</span>
-                                <span id="dateDisplay">Pick date</span>
-                                <input type="date" id="nativeDatePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
-                            </div>
-                            <div class="date-time-box" id="pickTimeBtn">
-                                <span class="material-symbols-outlined">schedule</span>
-                                <span id="timeDisplay">Pick time</span>
-                                <input type="time" id="nativeTimePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Budget -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="section-label">Your budget</div>
-                        <div class="budget-options">
-                            <button class="budget-option active" id="fixedBudgetBtn">Fixed</button>
-                            <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
-                        </div>
-                        <div id="fixedBudgetInput">
-                            <div class="budget-field-wrapper">
-                                <span class="currency-symbol">R</span>
-                                <input type="number" class="budget-input" id="budgetAmount" placeholder="Enter amount">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Images -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="section-label">Add images (optional)</div>
-                        <div class="upload-area" id="uploadArea">
-                            <span class="material-symbols-outlined">cloud_upload</span>
-                            <p>Tap to upload photos</p>
-                        </div>
-                    </div>
-
-                    <!-- Extra Notes -->
-                    <div>
-                        <div class="section-label">Extra notes (optional)</div>
-                        <textarea class="extra-notes" id="extraNotes" placeholder="Any specific instructions..." rows="3"></textarea>
-                    </div>
-                </div>
-            </div>
+        <div class="notifications-list" id="notificationsList">
+            <div class="empty-notifications">No notifications</div>
         </div>
-
-        <div class="post-btn-container">
-            <button class="next-button" id="nextBtn" disabled>Next</button>
-        </div>
-    </div>
-
-    <!-- Map Modal -->
-    <div class="map-modal" id="mapModal">
-        <div class="map-modal-content">
-            <div class="map-modal-header" style="padding:1rem; display:flex; justify-content:space-between;">
-                <h3>Select precise location</h3>
-                <button class="close-btn" id="closeMapModalBtn">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div id="mapModalContainer"></div>
-            <button class="confirm-button" id="confirmLocationBtn" style="margin:1rem; padding:0.7rem 2rem; background:#003E71; color:white; border:none; border-radius:5px; float:right;">Confirm</button>
-        </div>
-    </div>
-
-    <!-- Debug Panel -->
-    <div class="debug-panel" id="debugPanel">
-        <div class="debug-header">
-            <h3 style="color:#FF286F;">🔍 Debug Console</h3>
-            <button class="debug-close" id="debugClose" style="background:none; border:none; color:white; font-size:24px;">✕</button>
-        </div>
-        <div id="debugLogs"></div>
     </div>
 
     <!-- Toast -->
@@ -1277,93 +755,48 @@
     <script>
         (function() {
             'use strict';
+
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
-            // ===== DEBUGGER =====
-            const Debugger = {
-                panel: document.getElementById('debugPanel'),
-                btn: document.getElementById('debugBtn'),
-                closeBtn: document.getElementById('debugClose'),
-                logsContainer: document.getElementById('debugLogs'),
-                errors: 0,
-                
-                init() {
-                    this.btn.addEventListener('click', () => this.toggle());
-                    this.closeBtn.addEventListener('click', () => this.close());
-                    this.log('Debugger initialized');
-                },
-                
-                toggle() {
-                    this.panel.classList.toggle('active');
-                },
-                
-                close() {
-                    this.panel.classList.remove('active');
-                },
-                
-                log(message, type = 'info', data = null) {
-                    const logDiv = document.createElement('div');
-                    logDiv.className = `debug-${type}-item`;
-                    logDiv.innerHTML = `<span style="opacity:0.7;">[${new Date().toLocaleTimeString()}]</span> ${message}`;
-                    this.logsContainer.appendChild(logDiv);
-                    console.log(message, data || '');
-                },
-                
-                error(message, data = null) {
-                    this.log(message, 'error', data);
-                    this.errors++;
-                    this.btn.classList.add('has-errors');
-                }
-            };
-            Debugger.init();
-
-            // ===== SPLASH SCREEN =====
-            const splashScreen = document.getElementById('splashScreen');
-            if (!localStorage.getItem('splashShown')) {
-                setTimeout(() => {
-                    splashScreen.classList.add('hidden');
-                    localStorage.setItem('splashShown', 'true');
-                }, 2000);
-            } else {
-                splashScreen.style.display = 'none';
-            }
+            // ===== MAP INIT =====
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [28.034088, -26.195246],
+                zoom: 13
+            });
 
             // ===== STATE =====
             let currentUser = null;
             let currentLat = null;
             let currentLng = null;
-            let userRole = null;
             let availableTasks = [];
             let markers = [];
             let socket = null;
             let earningsTotal = 0;
-            let uploadedImages = [];
+            let helperStatus = 'online';
+            let notifications = [];
+            let bids = {}; // Store bids by taskId
 
             // ===== DOM ELEMENTS =====
-            const map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/dark-v11',
-                center: [28.034088, -26.195246],
-                zoom: 15
-            });
-
-            const roleBadge = document.getElementById('roleBadge');
-            const posterSheet = document.getElementById('posterSheet');
             const helperSheet = document.getElementById('helperSheet');
-            const locationPin = document.getElementById('locationPin');
-            const earningsWidget = document.getElementById('earningsWidget');
+            const sheetHeader = document.getElementById('sheetHeader');
+            const tasksContainer = document.getElementById('tasksContainer');
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const notificationsPanel = document.getElementById('notificationsPanel');
+            const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+            const notificationsList = document.getElementById('notificationsList');
+            const notificationBadge = document.getElementById('notificationBadge');
             const fabBtn = document.getElementById('fabBtn');
-            const onlineStatus = document.getElementById('onlineStatus');
             const verificationBanner = document.getElementById('verificationBanner');
-            const verificationText = document.getElementById('verificationText');
             const toast = document.getElementById('toast');
-            const tasksList = document.getElementById('tasksList');
-            const helperFeed = document.getElementById('helperFeed');
-            const expandSheet = document.getElementById('expandSheet');
+            const earningsTotalSpan = document.getElementById('earningsTotal');
+            const tasksCountSpan = document.getElementById('tasksCount');
+            const toggleOptions = document.querySelectorAll('.toggle-option');
             const filterChips = document.querySelectorAll('.filter-chip');
 
-            // ===== HELPER FUNCTIONS =====
+            // ===== TOAST =====
             function showToast(message) {
                 toast.textContent = message;
                 toast.classList.add('show');
@@ -1372,6 +805,7 @@
                 }, 3000);
             }
 
+            // ===== GET USER =====
             function getCurrentUser() {
                 try {
                     const user = localStorage.getItem('taskmart_user');
@@ -1385,73 +819,37 @@
                 return localStorage.getItem('taskmart_token');
             }
 
-            // ===== ROLE-BASED UI =====
-            function setupRoleBasedUI() {
-                currentUser = getCurrentUser();
-                
-                if (!currentUser) {
-                    window.location.href = '/login.html';
-                    return;
-                }
-
-                userRole = currentUser.role || 'poster';
-                roleBadge.textContent = userRole === 'helper' ? 'Helper' : 'Poster';
-
-                // Show/hide role-specific elements
-                if (userRole === 'helper') {
-                    posterSheet.classList.remove('active');
-                    helperSheet.classList.add('active');
-                    locationPin.classList.remove('poster-visible');
-                    earningsWidget.classList.add('helper-visible');
-                    fabBtn.classList.add('helper-visible');
-                    onlineStatus.style.display = 'flex';
-                    
-                    // Load earnings
-                    const saved = localStorage.getItem('helper_earnings');
-                    if (saved) {
-                        earningsTotal = parseInt(saved);
-                        document.getElementById('earningsTotal').textContent = `R ${earningsTotal}`;
-                    }
-                    
-                    // Connect to socket for real-time
-                    connectSocket();
-                    getUserLocation();
-                } else {
-                    posterSheet.classList.add('active');
-                    helperSheet.classList.remove('active');
-                    locationPin.classList.add('poster-visible');
-                    earningsWidget.classList.remove('helper-visible');
-                    fabBtn.classList.remove('helper-visible');
-                    onlineStatus.style.display = 'none';
-                    
-                    // Regular location for poster
-                    getUserLocation();
-                }
-
-                // Check verification
-                checkVerificationStatus();
-            }
-
-            // ===== VERIFICATION CHECK =====
-            function checkVerificationStatus() {
+            // ===== CHECK VERIFICATION =====
+            function checkVerification() {
                 if (!currentUser) return;
                 
-                if (userRole === 'helper') {
-                    if (!currentUser.profileImage || !currentUser.verified) {
-                        verificationText.textContent = 'Complete your profile to start helping';
-                        verificationBanner.classList.add('active');
-                    } else {
-                        verificationBanner.classList.remove('active');
-                    }
+                if (!currentUser.profileImage || !currentUser.verified) {
+                    verificationBanner.classList.add('active');
                 } else {
-                    if (!currentUser.profileImage || !currentUser.email) {
-                        verificationText.textContent = 'Complete your profile to post tasks';
-                        verificationBanner.classList.add('active');
-                    } else {
-                        verificationBanner.classList.remove('active');
-                    }
+                    verificationBanner.classList.remove('active');
                 }
             }
+
+            // ===== AVAILABILITY TOGGLE =====
+            toggleOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    toggleOptions.forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    helperStatus = option.dataset.status;
+                    
+                    // Update status on server
+                    if (socket) {
+                        socket.emit('status-change', {
+                            helperId: currentUser.email,
+                            status: helperStatus,
+                            lat: currentLat,
+                            lng: currentLng
+                        });
+                    }
+                    
+                    showToast(`You're now ${helperStatus}`);
+                });
+            });
 
             // ===== GET LOCATION =====
             function getUserLocation() {
@@ -1460,7 +858,9 @@
                         (pos) => {
                             currentLat = pos.coords.latitude;
                             currentLng = pos.coords.longitude;
-                            map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                            
+                            // Center map on user
+                            map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
                             
                             // Add user marker
                             new mapboxgl.Marker({ color: '#003E71' })
@@ -1468,74 +868,148 @@
                                 .setPopup(new mapboxgl.Popup().setHTML('You are here'))
                                 .addTo(map);
                             
-                            if (userRole === 'helper') {
-                                fetchAvailableTasks();
-                            } else {
-                                reverseGeocode();
-                            }
+                            fetchTasks();
+                            connectSocket();
                         },
                         (error) => {
-                            Debugger.error('Location error', error);
-                            if (userRole === 'helper') fetchAvailableTasks();
-                        }
+                            console.error('Location error:', error);
+                            fetchTasks();
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
                     );
+                } else {
+                    fetchTasks();
                 }
             }
 
-            // ===== REVERSE GEOCODE (for poster) =====
-            function reverseGeocode() {
-                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.features?.[0]) {
-                            document.getElementById('locationInput').value = data.features[0].place_name;
-                        }
-                    })
-                    .catch(() => {});
-            }
-
-            // ===== SOCKET CONNECTION (helper only) =====
+            // ===== CONNECT SOCKET =====
             function connectSocket() {
                 try {
-                    socket = io(API_BASE_URL);
-                    
-                    socket.on('connect', () => {
-                        Debugger.log('Socket connected');
-                        socket.emit('helper-ready', { 
-                            helperId: currentUser.email,
+                    socket = io(API_BASE_URL, {
+                        query: { 
+                            userId: currentUser.email,
+                            role: 'helper',
+                            status: helperStatus,
                             lat: currentLat,
                             lng: currentLng
-                        });
+                        }
+                    });
+
+                    socket.on('connect', () => {
+                        console.log('Connected to real-time feed');
                     });
 
                     socket.on('new-task', (task) => {
-                        Debugger.log('New task received', task);
-                        
                         // Add to tasks
                         availableTasks.unshift(task);
-                        renderHelperTasks(availableTasks);
+                        renderTasks(availableTasks);
                         addTaskMarkers([task]);
                         
-                        // Show notification
-                        showToast('New task available!');
+                        // Add notification
+                        addNotification({
+                            title: 'New Task Available!',
+                            message: task.taskDescription,
+                            taskId: task._id
+                        });
                         
-                        // Play sound
-                        new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3').play().catch(() => {});
+                        showToast('New task available!');
                     });
 
-                    socket.on('task-accepted', (data) => {
-                        availableTasks = availableTasks.filter(t => t._id !== data.taskId);
-                        renderHelperTasks(availableTasks);
+                    socket.on('bid-response', (data) => {
+                        const { taskId, accepted, counterOffer } = data;
+                        
+                        if (accepted) {
+                            showToast('Your bid was accepted! 🎉');
+                            // Remove task from available
+                            availableTasks = availableTasks.filter(t => t._id !== taskId);
+                            renderTasks(availableTasks);
+                            
+                            // Add to earnings
+                            if (bids[taskId]) {
+                                earningsTotal += bids[taskId];
+                                localStorage.setItem('helper_earnings', earningsTotal);
+                                earningsTotalSpan.textContent = `R ${earningsTotal}`;
+                            }
+                        } else if (counterOffer) {
+                            // Poster made a counter offer
+                            addNotification({
+                                title: 'Counter Offer Received',
+                                message: `Poster offered R ${counterOffer}`,
+                                taskId
+                            });
+                            
+                            // Update task with counter offer
+                            const task = availableTasks.find(t => t._id === taskId);
+                            if (task) {
+                                task.counterOffer = counterOffer;
+                                renderTasks(availableTasks);
+                            }
+                        }
                     });
 
                 } catch (error) {
-                    Debugger.error('Socket error', error);
+                    console.error('Socket connection failed:', error);
                 }
             }
 
-            // ===== FETCH AVAILABLE TASKS (helper) =====
-            async function fetchAvailableTasks() {
-                tasksList.innerHTML = '<div style="text-align:center; padding:2rem; color:#999;">Loading tasks...</div>';
+            // ===== ADD NOTIFICATION =====
+            function addNotification(notif) {
+                notifications.unshift({
+                    ...notif,
+                    time: 'Just now',
+                    read: false
+                });
+                
+                if (notifications.length > 20) notifications = notifications.slice(0, 20);
+                
+                notificationBadge.textContent = notifications.filter(n => !n.read).length;
+                notificationBadge.style.display = 'flex';
+                
+                renderNotifications();
+            }
+
+            // ===== RENDER NOTIFICATIONS =====
+            function renderNotifications() {
+                if (notifications.length === 0) {
+                    notificationsList.innerHTML = '<div class="empty-notifications">No notifications</div>';
+                    return;
+                }
+
+                notificationsList.innerHTML = notifications.map((notif, index) => `
+                    <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="window.viewTask('${notif.taskId}')">
+                        <div class="notification-title">${notif.title}</div>
+                        <div class="notification-time">${notif.time}</div>
+                    </div>
+                `).join('');
+            }
+
+            // ===== VIEW TASK =====
+            window.viewTask = function(taskId) {
+                // Mark notification as read
+                const notif = notifications.find(n => n.taskId === taskId);
+                if (notif) notif.read = true;
+                
+                notificationBadge.textContent = notifications.filter(n => !n.read).length;
+                if (notifications.filter(n => !n.read).length === 0) {
+                    notificationBadge.style.display = 'none';
+                }
+                
+                // Expand task in list
+                helperSheet.classList.add('expanded');
+                setTimeout(() => {
+                    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) {
+                        taskElement.scrollIntoView({ behavior: 'smooth' });
+                        taskElement.classList.add('expanded');
+                    }
+                }, 300);
+                
+                notificationsPanel.classList.remove('active');
+            };
+
+            // ===== FETCH TASKS =====
+            async function fetchTasks() {
+                tasksContainer.innerHTML = '<div class="loading-tasks">Scanning for tasks...</div>';
                 
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/tasks?status=active`);
@@ -1544,31 +1018,85 @@
                         const data = await response.json();
                         let tasks = Array.isArray(data) ? data : (data.tasks || []);
                         
-                        // Filter out tasks created by this helper
-                        availableTasks = tasks.filter(task => task.userEmail !== currentUser.email);
+                        // Filter out tasks by current user
+                        if (currentUser) {
+                            availableTasks = tasks.filter(task => task.userEmail !== currentUser.email);
+                        } else {
+                            availableTasks = tasks;
+                        }
+                        
+                        // Update task count
+                        tasksCountSpan.textContent = availableTasks.length;
                         
                         if (availableTasks.length === 0) {
-                            tasksList.innerHTML = '<div style="text-align:center; padding:2rem; color:#999;">No tasks available</div>';
+                            tasksContainer.innerHTML = '<div class="no-tasks">No tasks available<br><small>Check back soon!</small></div>';
                         } else {
-                            renderHelperTasks(availableTasks);
+                            renderTasks(availableTasks);
                             addTaskMarkers(availableTasks);
                         }
                     }
                 } catch (error) {
-                    Debugger.error('Fetch tasks error', error);
+                    console.error('Error fetching tasks:', error);
+                    tasksContainer.innerHTML = '<div class="no-tasks">Unable to load tasks</div>';
                 }
             }
 
-            // ===== RENDER HELPER TASKS =====
-            function renderHelperTasks(tasks) {
+            // ===== CALCULATE DISTANCE =====
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+                
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            // ===== SUBMIT BID =====
+            window.submitBid = function(taskId, amount) {
+                if (!amount || amount <= 0) {
+                    showToast('Please enter a valid amount');
+                    return;
+                }
+                
+                // Store bid
+                bids[taskId] = amount;
+                
+                // Send bid via socket
+                if (socket) {
+                    socket.emit('submit-bid', {
+                        taskId,
+                        helperId: currentUser.email,
+                        helperName: currentUser.name,
+                        amount,
+                        lat: currentLat,
+                        lng: currentLng
+                    });
+                }
+                
+                showToast('Bid submitted! Waiting for poster...');
+                
+                // Update UI
+                const task = availableTasks.find(t => t._id === taskId);
+                if (task) {
+                    task.bidSubmitted = true;
+                    task.bidAmount = amount;
+                    renderTasks(availableTasks);
+                }
+            };
+
+            // ===== RENDER TASKS =====
+            function renderTasks(tasks) {
                 let html = '';
 
                 tasks.forEach(task => {
-                    const taskId = task._id || task.id;
-                    const budget = task.budgetAmount || task.budget;
-                    const budgetDisplay = task.budgetType === 'open' ? 
-                        '<span class="task-budget open">Open to offers</span>' : 
-                        `<span class="task-budget">R ${budget}</span>`;
+                    const taskId = task._id;
+                    const budget = task.budgetAmount;
+                    const isOpen = task.budgetType === 'open';
                     
                     // Calculate distance
                     let distanceText = 'Unknown';
@@ -1582,64 +1110,138 @@
                         }
                     }
 
-                    const posterName = task.userName || 'Someone';
+                    const posterName = task.userName || 'Someone nearby';
+                    const hasBid = task.bidSubmitted;
+                    const counterOffer = task.counterOffer;
 
                     html += `
-                        <div class="helper-task-card" data-task-id="${taskId}">
-                            <div class="task-header-row">
+                        <div class="task-card ${task.new ? 'new' : ''}" data-task-id="${taskId}">
+                            <div class="task-header">
                                 <span class="task-title">${task.taskDescription || 'Help needed'}</span>
-                                <span class="task-badge">${distanceText}</span>
+                                <span class="task-distance">${distanceText}</span>
                             </div>
                             
-                            <div class="task-location-row">
+                            <div class="task-location">
                                 <span class="material-symbols-outlined">location_on</span>
-                                <span>${task.location || 'Location TBD'}</span>
+                                <span>${task.location || 'Location not specified'}</span>
                             </div>
                             
-                            <div class="task-meta-row">
-                                <span class="task-distance">
-                                    <span class="material-symbols-outlined">near_me</span>
-                                    ${distanceText} away
-                                </span>
+                            <div class="task-meta">
                                 <span>⏱️ ${task.when || 'Now'}</span>
+                                <span>📅 ${task.scheduledDate || 'Today'}</span>
                             </div>
                             
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                ${budgetDisplay}
-                                
-                                <div class="poster-mini">
-                                    <div class="poster-avatar-mini">${posterName.charAt(0)}</div>
-                                    <span class="poster-name-mini">${posterName.split(' ')[0]}</span>
+                            <div class="poster-info">
+                                <div class="poster-avatar">${posterName.charAt(0)}</div>
+                                <div>
+                                    <div class="poster-name">${posterName}</div>
+                                    <div class="poster-rating">
+                                        <span class="material-symbols-outlined">star</span>
+                                        <span>4.8</span>
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="task-details-expanded">
-                                <div style="padding:0.5rem 0;">
-                                    <strong>Address:</strong> ${task.streetName || 'Not specified'}<br>
-                                    ${task.moreDetails ? `<strong>Notes:</strong> ${task.moreDetails}` : ''}
-                                </div>
-                                <button class="accept-task-btn" onclick="window.acceptTask('${taskId}')">
-                                    Accept & Help
-                                </button>
+                                ${task.streetName ? `
+                                    <div style="margin-bottom:0.5rem;">
+                                        <strong>Address:</strong> ${task.streetName}
+                                    </div>
+                                ` : ''}
+                                
+                                ${task.moreDetails ? `
+                                    <div style="margin-bottom:1rem;">
+                                        <strong>Details:</strong> ${task.moreDetails}
+                                    </div>
+                                ` : ''}
+                                
+                                ${isOpen ? `
+                                    <div class="bid-section">
+                                        <strong>Place your bid:</strong>
+                                        ${hasBid ? `
+                                            <div style="margin:0.5rem 0; padding:0.5rem; background:#f0f0f0; border-radius:4px;">
+                                                Your bid: R ${task.bidAmount}
+                                                ${counterOffer ? `
+                                                    <div style="margin-top:0.5rem; color:#FF286F;">
+                                                        Counter offer: R ${counterOffer}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        ` : `
+                                            <input type="number" class="bid-input" id="bid-${taskId}" placeholder="Enter your price">
+                                            <div class="bid-actions">
+                                                <button class="bid-btn primary" onclick="submitBid('${taskId}', document.getElementById('bid-${taskId}').value)">
+                                                    Submit Bid
+                                                </button>
+                                            </div>
+                                        `}
+                                    </div>
+                                ` : `
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin:1rem 0;">
+                                        <span class="task-budget">R ${budget}</span>
+                                        <button class="bid-btn primary" onclick="acceptTask('${taskId}')">
+                                            Accept Task
+                                        </button>
+                                    </div>
+                                `}
                             </div>
                         </div>
                     `;
                 });
 
-                tasksList.innerHTML = html;
+                tasksContainer.innerHTML = html;
 
-                // Add click handlers
-                document.querySelectorAll('.helper-task-card').forEach(card => {
+                // Add click handlers for expansion
+                document.querySelectorAll('.task-card').forEach(card => {
                     card.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('accept-task-btn')) return;
+                        if (e.target.classList.contains('bid-btn')) return;
+                        if (e.target.classList.contains('bid-input')) return;
                         this.classList.toggle('expanded');
                     });
                 });
             }
 
-            // ===== ADD MARKERS TO MAP =====
+            // ===== ACCEPT TASK (fixed price) =====
+            window.acceptTask = async function(taskId) {
+                const task = availableTasks.find(t => t._id === taskId);
+                if (!task) return;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/accept`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getAuthToken()}`
+                        },
+                        body: JSON.stringify({ 
+                            helperId: currentUser.email,
+                            helperName: currentUser.name,
+                            amount: task.budgetAmount
+                        })
+                    });
+
+                    if (response.ok) {
+                        // Add to earnings
+                        earningsTotal += task.budgetAmount;
+                        localStorage.setItem('helper_earnings', earningsTotal);
+                        earningsTotalSpan.textContent = `R ${earningsTotal}`;
+                        
+                        // Remove task
+                        availableTasks = availableTasks.filter(t => t._id !== taskId);
+                        renderTasks(availableTasks);
+                        addTaskMarkers(availableTasks);
+                        
+                        showToast('Task accepted!');
+                    }
+                } catch (error) {
+                    console.error('Error accepting task:', error);
+                    showToast('Error accepting task');
+                }
+            };
+
+            // ===== ADD MARKERS =====
             function addTaskMarkers(tasks) {
-                markers.forEach(m => m.remove());
+                markers.forEach(marker => marker.remove());
                 markers = [];
 
                 tasks.forEach(task => {
@@ -1651,10 +1253,13 @@
                             .setPopup(new mapboxgl.Popup().setHTML(`
                                 <div style="padding:0.5rem;">
                                     <strong>${task.taskDescription || 'Help needed'}</strong><br>
-                                    Budget: ${task.budgetAmount ? 'R ' + task.budgetAmount : 'Open to offers'}<br>
-                                    <button onclick="window.acceptTask('${task._id}')" 
-                                        style="background:#003E71; color:white; border:none; padding:0.5rem; border-radius:5px; margin-top:0.5rem; width:100%;">
-                                        Accept
+                                    ${task.budgetType === 'open' ? 
+                                        'Open to offers' : 
+                                        `Budget: R ${task.budgetAmount}`
+                                    }<br>
+                                    <button onclick="window.viewTask('${task._id}')" 
+                                        style="background:#003E71; color:white; border:none; padding:0.5rem; border-radius:5px; margin-top:0.5rem; width:100%; cursor:pointer;">
+                                        View Details
                                     </button>
                                 </div>
                             `))
@@ -1664,54 +1269,6 @@
                     }
                 });
             }
-
-            // ===== CALCULATE DISTANCE =====
-            function calculateDistance(lat1, lon1, lat2, lon2) {
-                if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-                const R = 6371;
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                         Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * 
-                         Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c;
-            }
-
-            // ===== ACCEPT TASK =====
-            window.acceptTask = async function(taskId) {
-                if (!currentUser) {
-                    window.location.href = '/login.html';
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/accept`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${getAuthToken()}`
-                        },
-                        body: JSON.stringify({ helperId: currentUser.email })
-                    });
-
-                    if (response.ok) {
-                        const task = availableTasks.find(t => t._id === taskId);
-                        if (task?.budgetAmount) {
-                            earningsTotal += task.budgetAmount;
-                            localStorage.setItem('helper_earnings', earningsTotal);
-                            document.getElementById('earningsTotal').textContent = `R ${earningsTotal}`;
-                        }
-                        
-                        availableTasks = availableTasks.filter(t => t._id !== taskId);
-                        renderHelperTasks(availableTasks);
-                        addTaskMarkers(availableTasks);
-                        showToast('Task accepted!');
-                    }
-                } catch (error) {
-                    Debugger.error('Accept error', error);
-                }
-            };
 
             // ===== FILTER TASKS =====
             function filterTasks(filter) {
@@ -1737,34 +1294,49 @@
                         filtered = filtered.filter(task => task.budgetAmount);
                         filtered.sort((a, b) => (b.budgetAmount || 0) - (a.budgetAmount || 0));
                         break;
+                    case 'open':
+                        filtered = filtered.filter(task => task.budgetType === 'open');
+                        break;
                 }
                 
-                renderHelperTasks(filtered);
+                renderTasks(filtered);
             }
 
             // ===== EVENT LISTENERS =====
             map.on('load', () => {
-                setupRoleBasedUI();
-            });
-
-            document.getElementById('refreshLocationBtn')?.addEventListener('click', () => {
-                getUserLocation();
-            });
-
-            document.getElementById('openCreateTaskBtn')?.addEventListener('click', () => {
-                if (!currentUser?.profileImage) {
-                    verificationBanner.classList.add('active');
+                currentUser = getCurrentUser();
+                
+                if (!currentUser) {
+                    window.location.href = '/login.html';
                     return;
                 }
-                document.getElementById('createTaskContainer').style.display = 'flex';
+
+                checkVerification();
+                getUserLocation();
+
+                // Load earnings
+                const saved = localStorage.getItem('helper_earnings');
+                if (saved) {
+                    earningsTotal = parseInt(saved);
+                    earningsTotalSpan.textContent = `R ${earningsTotal}`;
+                }
             });
 
-            document.getElementById('closeCreateTaskBtn')?.addEventListener('click', () => {
-                document.getElementById('createTaskContainer').style.display = 'none';
-            });
-
-            expandSheet?.addEventListener('click', () => {
+            sheetHeader.addEventListener('click', () => {
                 helperSheet.classList.toggle('expanded');
+            });
+
+            notificationsBtn.addEventListener('click', () => {
+                notificationsPanel.classList.toggle('active');
+            });
+
+            closeNotificationsBtn.addEventListener('click', () => {
+                notificationsPanel.classList.remove('active');
+            });
+
+            fabBtn.addEventListener('click', () => {
+                fetchTasks();
+                showToast('Refreshing tasks...');
             });
 
             filterChips.forEach(chip => {
@@ -1775,111 +1347,12 @@
                 });
             });
 
-            fabBtn?.addEventListener('click', () => {
-                fetchAvailableTasks();
-                showToast('Refreshing tasks...');
-            });
-
-            // ===== POST TASK (poster) =====
-            const nextBtn = document.getElementById('nextBtn');
-            nextBtn?.addEventListener('click', async () => {
-                if (!currentUser) return;
-
-                const taskData = {
-                    taskDescription: document.getElementById('taskInput').value,
-                    streetName: document.getElementById('streetInput').value,
-                    location: document.getElementById('locationInput').value,
-                    when: document.getElementById('whenNowBtn').classList.contains('active') ? 'Now' : 'Later',
-                    scheduledDate: document.getElementById('dateDisplay').textContent !== 'Pick date' ? document.getElementById('dateDisplay').textContent : null,
-                    scheduledTime: document.getElementById('timeDisplay').textContent !== 'Pick time' ? document.getElementById('timeDisplay').textContent : null,
-                    budgetType: document.getElementById('fixedBudgetBtn').classList.contains('active') ? 'fixed' : 'open',
-                    budgetAmount: document.getElementById('budgetAmount').value,
-                    moreDetails: document.getElementById('extraNotes').value,
-                    coordinates: currentLat && currentLng ? `${currentLng},${currentLat}` : null,
-                    userEmail: currentUser.email,
-                    userName: currentUser.name,
-                    images: uploadedImages
-                };
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${getAuthToken()}`
-                        },
-                        body: JSON.stringify(taskData)
-                    });
-
-                    if (response.ok) {
-                        showToast('Task posted!');
-                        document.getElementById('createTaskContainer').style.display = 'none';
-                        
-                        // Reset form
-                        document.getElementById('taskInput').value = '';
-                        document.getElementById('streetInput').value = '';
-                        document.getElementById('extraNotes').value = '';
-                        document.getElementById('budgetAmount').value = '';
-                        
-                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                    }
-                } catch (error) {
-                    Debugger.error('Post error', error);
+            // Close notifications when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!notificationsPanel.contains(e.target) && !notificationsBtn.contains(e.target)) {
+                    notificationsPanel.classList.remove('active');
                 }
             });
-
-            // ===== MAP MODAL =====
-            const mapModal = document.getElementById('mapModal');
-            const openMapBtn = document.getElementById('openMapBtn');
-            const closeMapModalBtn = document.getElementById('closeMapModalBtn');
-            const confirmLocationBtn = document.getElementById('confirmLocationBtn');
-
-            openMapBtn?.addEventListener('click', () => {
-                mapModal.classList.add('active');
-                
-                setTimeout(() => {
-                    const mapModalInstance = new mapboxgl.Map({
-                        container: 'mapModalContainer',
-                        style: 'mapbox://styles/mapbox/dark-v11',
-                        center: [currentLng || 28.034088, currentLat || -26.195246],
-                        zoom: 15
-                    });
-
-                    const marker = new mapboxgl.Marker({ draggable: true, color: '#003E71' })
-                        .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                        .addTo(mapModalInstance);
-
-                    marker.on('dragend', () => {
-                        const lngLat = marker.getLngLat();
-                        currentLat = lngLat.lat;
-                        currentLng = lngLat.lng;
-                    });
-
-                    window.currentMapModal = mapModalInstance;
-                }, 100);
-            });
-
-            closeMapModalBtn?.addEventListener('click', () => {
-                mapModal.classList.remove('active');
-            });
-
-            confirmLocationBtn?.addEventListener('click', () => {
-                mapModal.classList.remove('active');
-                reverseGeocode();
-            });
-
-            // ===== LOAD PROFILE MENU =====
-            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-                .then(r => r.text())
-                .then(html => {
-                    document.getElementById('profile-menu-container').innerHTML = html;
-                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
-                    for (let s of scripts) {
-                        const script = document.createElement('script');
-                        script.textContent = s.textContent;
-                        document.body.appendChild(script);
-                    }
-                });
         })();
     </script>
 </body>
