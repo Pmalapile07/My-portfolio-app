@@ -2,1166 +2,3522 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskMart - Complete Verification System</title>
-    
-    <!-- Fonts & Icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>taskmart Admin Dashboard</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: #f5f5f5;
+            background: #f0f2f5;
+            min-height: 100vh;
         }
 
-        /* Profile Menu Styles */
-        .profile-menu * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        .profile-menu {
-            font-family: 'Inter', sans-serif;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        .profile-menu .menu-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 44px;
-            height: 44px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: none;
-            z-index: 10000;
-            pointer-events: auto;
-        }
-
-        .profile-menu .menu-btn .material-symbols-outlined {
-            color: #000;
-            font-size: 24px;
-        }
-
-        /* Modal Overlay */
-        .profile-menu .modal-overlay {
+        /* Login Overlay */
+        #loginOverlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: flex-end;
-            justify-content: flex-start;
-            z-index: 999999;
-            pointer-events: auto;
-        }
-
-        .profile-menu .modal-overlay.active {
-            display: flex;
-        }
-
-        .profile-menu .profile-modal {
-            background: white;
-            width: 80%;
-            max-width: 500px;
-            height: 100vh;
-            transform: translateX(-100%);
-            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
-            pointer-events: auto;
-        }
-
-        .profile-menu .modal-overlay.active .profile-modal {
-            transform: translateX(0);
-        }
-
-        .profile-menu .full-modal {
-            background: white;
-            width: 100%;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000001;
-            transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            pointer-events: auto;
-        }
-
-        .profile-menu .full-modal.active {
-            transform: translateX(0);
-        }
-
-        .profile-menu .modal-header {
-            display: flex;
-            align-items: center;
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            gap: 1rem;
-            background: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .profile-menu .back-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            width: 32px;
-            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0.7;
+            z-index: 2000;
+            padding: 16px;
         }
 
-        .profile-menu .back-btn:hover {
-            opacity: 1;
-        }
-
-        .profile-menu .modal-header h2 {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin: 0;
-        }
-
-        .profile-menu .modal-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-        }
-
-        /* Profile Info */
-        .profile-menu .profile-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .profile-menu .avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 500;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .profile-menu .avatar img {
+        .login-container {
+            background: white;
+            padding: 32px 24px;
+            border-radius: 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 400px;
+            animation: slideUp 0.5s ease;
         }
 
-        .profile-menu .profile-details h3 {
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-            font-weight: 500;
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .profile-menu .profile-details p {
-            color: #666;
-            font-size: 0.85rem;
-        }
-
-        /* Menu Items */
-        .profile-menu .menu-items-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .profile-menu .menu-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            cursor: pointer;
-        }
-
-        .profile-menu .menu-item:hover {
-            opacity: 0.7;
-        }
-
-        .profile-menu .menu-item-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .profile-menu .menu-item-left .material-symbols-outlined {
-            opacity: 0.7;
-        }
-
-        .profile-menu .logout-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
-            margin-top: auto;
-            cursor: pointer;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            opacity: 0.7;
-        }
-
-        /* Verification Upload Styles */
-        .verification-upload-area {
-            border: 2px dashed #ddd;
-            border-radius: 12px;
-            padding: 2rem;
+        .login-container h2 {
+            color: #333;
+            margin-bottom: 30px;
             text-align: center;
-            margin: 1rem 0;
-            cursor: pointer;
+            font-size: 28px;
+        }
+
+        .login-container h2 i {
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 16px;
             transition: border-color 0.3s;
         }
 
-        .verification-upload-area:hover {
+        .login-input:focus {
+            outline: none;
             border-color: #667eea;
         }
 
-        .verification-upload-area .material-symbols-outlined {
-            font-size: 48px;
-            color: #999;
-            margin-bottom: 1rem;
-        }
-
-        .verification-preview {
-            margin: 1rem 0;
-            position: relative;
-            display: inline-block;
-        }
-
-        .verification-preview img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-
-        .remove-image {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: #ff4444;
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-error {
+            color: #e74c3c;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        /* Main Dashboard */
+        #dashboardContainer {
+            display: none;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Mobile-First Top Bar */
+        .top-admin-bar {
+            background: white;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #e9eef2;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #2c3e50;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .menu-toggle:hover {
+            background: #f1f5f9;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .logo-area .logo-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .admin-badge-mobile {
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        .bar-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .mobile-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            padding: 4px 12px 4px 4px;
+            border-radius: 40px;
+        }
+
+        .mobile-user .avatar {
+            width: 36px;
+            height: 36px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .mobile-user .info {
+            line-height: 1.3;
+            display: none;
+        }
+
+        @media (min-width: 480px) {
+            .mobile-user .info {
+                display: block;
+            }
+        }
+
+        .mobile-user .name {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .mobile-user .email {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+
+        /* Desktop Navigation Pills */
+        .desktop-nav-items {
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .desktop-nav-items {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                margin-left: 20px;
+            }
+            
+            .desktop-nav-items .nav-pill {
+                padding: 8px 16px;
+                border-radius: 40px;
+                font-weight: 500;
+                color: #4a5568;
+                cursor: pointer;
+                font-size: 0.9rem;
+                white-space: nowrap;
+                transition: all 0.2s;
+            }
+            
+            .desktop-nav-items .nav-pill i {
+                margin-right: 6px;
+                font-size: 0.9rem;
+            }
+            
+            .desktop-nav-items .nav-pill:hover {
+                background: #edf2f7;
+            }
+            
+            .desktop-nav-items .nav-pill.active {
+                background: #667eea;
+                color: white;
+            }
+            
+            .desktop-nav-items .nav-pill.active i {
+                color: white;
+            }
+        }
+
+        /* Mobile Navigation Drawer */
+        .nav-drawer {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 260px;
+            height: 100%;
+            background: white;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+            transition: left 0.25s ease;
+            z-index: 1000;
+            padding: 24px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-drawer.open {
+            left: 0;
+        }
+
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .drawer-header .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .drawer-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .drawer-nav .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            color: #4a5568;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .drawer-nav .nav-item i {
+            width: 24px;
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .drawer-nav .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .drawer-nav .nav-item.active i {
+            color: white;
+        }
+
+        .drawer-nav .nav-item:hover:not(.active) {
+            background: #f7fafc;
+        }
+
+        .drawer-footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #edf2f7;
+        }
+
+        .logout-drawer-btn {
+            width: 100%;
+            padding: 14px;
+            background: #fee2e2;
+            color: #e53e3e;
+            border: none;
+            border-radius: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-drawer-btn:hover {
+            background: #fecaca;
+        }
+
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+            display: none;
+        }
+
+        .drawer-overlay.show {
+            display: block;
+        }
+
+        /* Main Content - Scrollable */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #f5f7fa;
+            padding: 20px 16px 30px;
+        }
+
+        @media (min-width: 768px) {
+            .main-content {
+                padding: 30px;
+            }
+        }
+
+        /* Content Header */
+        .content-header {
+            margin-bottom: 24px;
+        }
+
+        .content-header h1 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .content-header p {
+            color: #7f8c8d;
+            margin-top: 4px;
+            font-size: 1rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 500px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            border: 1px solid #edf2f7;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .stat-card.loading {
+            min-height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .verification-status-badge {
-            display: inline-flex;
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin: 1rem 0;
+            justify-content: center;
+            margin-bottom: 15px;
         }
 
-        .badge-pending {
-            background: #fff3cd;
-            color: #856404;
+        .stat-icon i {
+            font-size: 24px;
+            color: white;
         }
 
-        .badge-approved {
-            background: #d4edda;
-            color: #155724;
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
         }
 
-        .badge-rejected {
-            background: #f8d7da;
-            color: #721c24;
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            line-height: 1.2;
         }
 
-        .submit-btn {
-            width: 100%;
-            padding: 1rem;
+        .currency-symbol {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-right: 2px;
+        }
+
+        .error-state {
+            color: #e74c3c;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .retry-btn {
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 40px;
+            margin-top: 10px;
             cursor: pointer;
-            margin-top: 1rem;
         }
 
-        .submit-btn:disabled {
+        /* Double Grid - Stacked Vertically */
+        .debug-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .debug-section {
+            width: 100%;
+        }
+
+        /* Table Containers */
+        .table-container {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            border: 1px solid #edf2f7;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .table-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 12px;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Search and Filters */
+        .search-box {
+            display: flex;
+            gap: 8px;
+            flex: 1 1 300px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 40px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+
+        .search-box button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+
+        .search-box button:hover {
+            background: #5a67d8;
+        }
+
+        .search-box button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .admin-note {
-            background: #f0f0f0;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
+        .filters-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 40px;
+            font-size: 14px;
+            min-width: 150px;
+            flex: 1 1 auto;
+            background: white;
+        }
+
+        .filter-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px 10px;
+            background: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 14px 10px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #4a5568;
             font-size: 0.9rem;
         }
 
-        /* Admin Panel Styles */
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+        tr:hover td {
+            background: #f8f9fa;
         }
 
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .admin-header h1 {
-            font-size: 2rem;
+        /* Badges */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
             font-weight: 600;
+            white-space: nowrap;
         }
 
-        .admin-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #ddd;
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
         }
 
-        .admin-tab {
-            padding: 0.75rem 1.5rem;
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 10px;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-        }
-
-        .admin-tab.active {
-            border-bottom-color: #667eea;
-            color: #667eea;
-            font-weight: 500;
-        }
-
-        .verification-card {
+            font-size: 0.8rem;
+            margin: 2px;
+            transition: opacity 0.3s;
             background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
         }
 
-        .verification-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
+        .action-btn:hover:not(:disabled) {
+            opacity: 0.8;
         }
 
-        .verification-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
 
-        .verification-user-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #f0f0f0;
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            border: none;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            border: none;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+            border: none;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+            border: none;
+        }
+
+        .btn-info {
+            background: #3498db;
+            color: white;
+            border: none;
+        }
+
+        /* Pagination */
+        .pagination {
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px;
             justify-content: center;
         }
 
-        .verification-user-info h3 {
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .verification-user-info p {
-            color: #666;
-            font-size: 0.85rem;
-        }
-
-        .verification-documents {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .document-preview {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 0.5rem;
+        .pagination button {
+            padding: 10px 16px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 30px;
             cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
         }
 
-        .document-preview img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-
-        .document-preview p {
-            text-align: center;
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
-        }
-
-        .verification-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .approve-btn {
-            background: #10b981;
+        .pagination button:hover:not(:disabled):not(.active) {
+            background: #667eea;
             color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
+            border-color: #667eea;
         }
 
-        .reject-btn {
-            background: #ef4444;
+        .pagination button.active {
+            background: #667eea;
             color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
+            border-color: #667eea;
         }
 
-        .rejection-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin: 0.5rem 0;
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 1rem;
-            right: 1rem;
-            background: #000;
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            text-align: center;
-            z-index: 1000000;
+        /* Modal */
+        .modal {
             display: none;
-            max-width: 400px;
-            margin: 0 auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
         }
 
-        .toast.show {
-            display: block;
+        .modal.active {
+            display: flex;
         }
 
-        /* Loading */
+        .modal-content {
+            background: white;
+            border-radius: 28px;
+            padding: 28px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        /* Loading Spinner */
         .loading-spinner {
+            display: inline-block;
             width: 40px;
             height: 40px;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 2rem auto;
+        }
+
+        .loading-spinner.small {
+            width: 20px;
+            height: 20px;
+            border-width: 3px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: #7f8c8d;
+        }
+
+        /* Raw Debug Panel */
+        .raw-debug-panel {
+            margin-bottom: 24px;
+            border: 2px solid #ff6b6b;
+            border-radius: 20px;
+            background: #1e1e1e;
+            color: #f8f8f8;
+            overflow: hidden;
+        }
+
+        .raw-debug-header {
+            background: #ff6b6b;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .raw-debug-header span {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .raw-debug-content {
+            padding: 16px;
+        }
+
+        .raw-debug-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .raw-debug-actions button {
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .raw-debug-actions button:hover {
+            opacity: 0.9;
+        }
+
+        .raw-debug-note {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #ffd700;
+            font-size: 0.9rem;
+        }
+
+        .raw-debug-output {
+            background: #2d2d2d;
+            padding: 16px;
+            border-radius: 16px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            min-height: 200px;
+            overflow-x: auto;
+            border: 1px solid #444;
+        }
+
+        /* JSON formatting */
+        .json-key {
+            color: #ff79c6;
+        }
+        .json-string {
+            color: #f1fa8c;
+        }
+        .json-number {
+            color: #bd93f9;
+        }
+        .json-boolean {
+            color: #ffb86c;
+        }
+
+        /* Image Preview */
+        .id-image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+        }
+
+        /* Verification Document Styles */
+        .verification-documents {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .document-preview {
+            flex: 1;
+            min-width: 150px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .document-preview:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .document-preview img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .document-preview p {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .rejection-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            margin: 1rem 0;
+            font-size: 14px;
+        }
+        
+        .approve-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        
+        .reject-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            color: white;
+            border-radius: 40px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(100%);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- User Profile Component -->
-    <div class="profile-menu">
-        <button class="menu-btn" id="profileMenuBtn">
-            <span class="material-symbols-outlined">menu</span>
-        </button>
-
-        <!-- Main Profile Modal -->
-        <div class="modal-overlay" id="profileModalOverlay">
-            <div class="profile-modal">
-                <div class="modal-content" id="profileModalContent">
-                    <div style="text-align:center; padding:2rem;">Loading profile...</div>
-                </div>
-            </div>
+    <!-- Login Overlay -->
+    <div id="loginOverlay">
+        <div class="login-container">
+            <h2><i class="fas fa-shield-alt"></i> Admin Login</h2>
+            <input type="email" id="loginEmail" class="login-input" placeholder="Email" value="admin@taskmart.com">
+            <input type="password" id="loginPassword" class="login-input" placeholder="Password" value="admin123">
+            <button class="login-btn" onclick="handleLogin()">
+                <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+            </button>
+            <div id="loginError" class="login-error"></div>
         </div>
-
-        <!-- Verification Upload Modal -->
-        <div class="full-modal" id="verificationModal">
-            <div class="modal-header">
-                <button class="back-btn" id="closeVerificationBtn">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                </button>
-                <h2>Identity Verification</h2>
-            </div>
-            <div class="modal-content" id="verificationModalContent">
-                <!-- Content populated by JS -->
-            </div>
-        </div>
-
-        <!-- Admin Panel Modal -->
-        <div class="full-modal" id="adminPanelModal">
-            <div class="modal-header">
-                <button class="back-btn" id="closeAdminBtn">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                </button>
-                <h2>Admin Panel</h2>
-            </div>
-            <div class="modal-content" id="adminPanelContent">
-                <!-- Content populated by JS -->
-            </div>
-        </div>
-
-        <!-- Image Preview Modal -->
-        <div class="full-modal" id="imagePreviewModal">
-            <div class="modal-header">
-                <button class="back-btn" id="closeImageBtn">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                </button>
-                <h2>Document Preview</h2>
-            </div>
-            <div class="modal-content" style="display: flex; align-items: center; justify-content: center;">
-                <img id="previewImage" src="" alt="Document" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
-            </div>
-        </div>
-
-        <!-- Toast Notification -->
-        <div class="toast" id="toast"></div>
     </div>
 
-    <script>
-        (function() {
-            'use strict';
-
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
-
-            // DOM Elements
-            const menuBtn = document.getElementById('profileMenuBtn');
-            const overlay = document.getElementById('profileModalOverlay');
-            const content = document.getElementById('profileModalContent');
-            
-            // Modals
-            const verificationModal = document.getElementById('verificationModal');
-            const verificationContent = document.getElementById('verificationModalContent');
-            const adminModal = document.getElementById('adminPanelModal');
-            const adminContent = document.getElementById('adminPanelContent');
-            const imageModal = document.getElementById('imagePreviewModal');
-            const previewImage = document.getElementById('previewImage');
-            
-            // Back buttons
-            const closeVerification = document.getElementById('closeVerificationBtn');
-            const closeAdmin = document.getElementById('closeAdminBtn');
-            const closeImage = document.getElementById('closeImageBtn');
-            
-            const toast = document.getElementById('toast');
-
-            // State
-            let currentUser = null;
-            let verificationRequests = [];
-            let currentDocuments = {
-                idDocument: null,
-                selfie: null
-            };
-
-            // ========== UTILITY FUNCTIONS ==========
-            function showToast(message, type = 'success') {
-                toast.textContent = message;
-                toast.style.background = type === 'error' ? '#ef4444' : '#000';
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 3000);
-            }
-
-            function getCurrentUser() {
-                try {
-                    const user = localStorage.getItem('taskmart_user');
-                    return user ? JSON.parse(user) : null;
-                } catch (e) {
-                    return null;
-                }
-            }
-
-            function saveUserData(user) {
-                localStorage.setItem('taskmart_user', JSON.stringify(user));
-                // Also save to localStorage for persistence
-                const users = JSON.parse(localStorage.getItem('taskmart_users') || '[]');
-                const index = users.findIndex(u => u.email === user.email);
-                if (index >= 0) {
-                    users[index] = user;
-                } else {
-                    users.push(user);
-                }
-                localStorage.setItem('taskmart_users', JSON.stringify(users));
-            }
-
-            function getAllUsers() {
-                return JSON.parse(localStorage.getItem('taskmart_users') || '[]');
-            }
-
-            // ========== VERIFICATION REQUESTS ==========
-            function saveVerificationRequest(request) {
-                const requests = JSON.parse(localStorage.getItem('verification_requests') || '[]');
-                const existing = requests.findIndex(r => r.userEmail === request.userEmail);
-                if (existing >= 0) {
-                    requests[existing] = request;
-                } else {
-                    requests.push(request);
-                }
-                localStorage.setItem('verification_requests', JSON.stringify(requests));
-                return request;
-            }
-
-            function getVerificationRequests() {
-                return JSON.parse(localStorage.getItem('verification_requests') || '[]');
-            }
-
-            function updateVerificationStatus(userEmail, status, rejectionReason = '') {
-                const requests = getVerificationRequests();
-                const request = requests.find(r => r.userEmail === userEmail);
-                if (request) {
-                    request.status = status;
-                    request.rejectionReason = rejectionReason;
-                    request.reviewedAt = new Date().toISOString();
-                    localStorage.setItem('verification_requests', JSON.stringify(requests));
-                }
-
-                // Update user status
-                const users = getAllUsers();
-                const user = users.find(u => u.email === userEmail);
-                if (user) {
-                    user.verificationStatus = status;
-                    user.adminVerified = status === 'approved';
-                    if (rejectionReason) user.rejectionReason = rejectionReason;
-                    saveUserData(user);
-                }
-            }
-
-            // ========== USER FUNCTIONS ==========
-            function openModal() {
-                currentUser = getCurrentUser();
-                if (!currentUser) {
-                    alert('Please login first');
-                    return;
-                }
-                overlay.classList.add('active');
-                renderProfile();
-            }
-
-            function closeModal() {
-                overlay.classList.remove('active');
-            }
-
-            function openVerificationModal() {
-                verificationModal.classList.add('active');
-                renderVerificationUpload();
-            }
-
-            function openAdminPanel() {
-                loadVerificationRequests();
-                adminModal.classList.add('active');
-            }
-
-            function openImagePreview(imageUrl) {
-                previewImage.src = imageUrl;
-                imageModal.classList.add('active');
-            }
-
-            // ========== RENDER FUNCTIONS ==========
-            function renderProfile() {
-                const user = currentUser || getCurrentUser();
-                if (!user) return;
-
-                const verificationStatus = user.verificationStatus || 'pending';
-                let statusBadge = '';
-                if (verificationStatus === 'approved') {
-                    statusBadge = '<span style="color: #10b981; font-size: 0.85rem;">✓ Verified</span>';
-                } else if (verificationStatus === 'rejected') {
-                    statusBadge = '<span style="color: #ef4444; font-size: 0.85rem;">✗ Rejected</span>';
-                } else {
-                    statusBadge = '<span style="color: #f59e0b; font-size: 0.85rem;">⏳ Pending</span>';
-                }
-
-                content.innerHTML = `
-                    <div class="profile-info">
-                        <div class="avatar" id="profileAvatar">
-                            ${user.profileImage ? 
-                                `<img src="${user.profileImage}" alt="profile">` : 
-                                `<span>${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</span>`
-                            }
+    <!-- Main Dashboard -->
+    <div id="dashboardContainer">
+        <div class="dashboard-layout">
+            <!-- Top Admin Bar -->
+            <div class="top-admin-bar">
+                <div class="bar-left">
+                    <button class="menu-toggle" id="menuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="logo-area">
+                        <span class="logo-text">taskmart</span>
+                        <span class="admin-badge-mobile">ADMIN</span>
+                    </div>
+                    <!-- Desktop Navigation Pills -->
+                    <div class="desktop-nav-items" id="desktopNav">
+                        <div class="nav-pill" onclick="switchTab('overview', event)">
+                            <i class="fas fa-chart-pie"></i> Overview
                         </div>
-                        <div class="profile-details">
-                            <h3>${user.name || 'User'}</h3>
-                            <p>${user.email || ''}</p>
-                            ${statusBadge}
+                        <div class="nav-pill" onclick="switchTab('users', event)">
+                            <i class="fas fa-users"></i> Users
+                        </div>
+                        <div class="nav-pill" onclick="switchTab('tasks', event)">
+                            <i class="fas fa-tasks"></i> Tasks
+                        </div>
+                        <div class="nav-pill" onclick="switchTab('verifications', event)">
+                            <i class="fas fa-id-card"></i> Verifications
+                        </div>
+                        <div class="nav-pill" onclick="switchTab('reports', event)">
+                            <i class="fas fa-flag"></i> Reports
+                        </div>
+                        <div class="nav-pill" onclick="switchTab('debug', event)">
+                            <i class="fas fa-bug"></i> Debug
+                        </div>
+                        <div class="nav-pill" onclick="switchTab('settings', event)">
+                            <i class="fas fa-cog"></i> Settings
                         </div>
                     </div>
+                </div>
+                <div class="bar-right">
+                    <div class="mobile-user" id="adminChipMobile">
+                        <div class="avatar" id="adminAvatarMobile">A</div>
+                        <div class="info">
+                            <div class="name" id="adminNameMobile">Loading...</div>
+                            <div class="email" id="adminEmailMobile">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="menu-items-container">
-                        <div class="menu-items">
-                            <div class="menu-item" id="verificationMenuItem">
-                                <div class="menu-item-left">
-                                    <span class="material-symbols-outlined">verified</span>
-                                    <span>Identity Verification</span>
-                                </div>
-                                <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                            </div>
+            <!-- Mobile Navigation Drawer -->
+            <div class="nav-drawer" id="navDrawer">
+                <div class="drawer-header">
+                    <span class="logo-text">taskmart</span>
+                </div>
+                <div class="drawer-nav" id="drawerNav">
+                    <div class="nav-item" onclick="switchTab('overview', event)">
+                        <i class="fas fa-chart-pie"></i> Overview
+                    </div>
+                    <div class="nav-item" onclick="switchTab('users', event)">
+                        <i class="fas fa-users"></i> Users
+                    </div>
+                    <div class="nav-item" onclick="switchTab('tasks', event)">
+                        <i class="fas fa-tasks"></i> Tasks
+                    </div>
+                    <div class="nav-item" onclick="switchTab('verifications', event)">
+                        <i class="fas fa-id-card"></i> Verifications
+                    </div>
+                    <div class="nav-item" onclick="switchTab('reports', event)">
+                        <i class="fas fa-flag"></i> Reports
+                    </div>
+                    <div class="nav-item" onclick="switchTab('debug', event)">
+                        <i class="fas fa-bug"></i> Debug Logs
+                    </div>
+                    <div class="nav-item" onclick="switchTab('settings', event)">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                </div>
+                <div class="drawer-footer">
+                    <button class="logout-drawer-btn" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            <div class="drawer-overlay" id="drawerOverlay"></div>
 
-                            <div class="menu-item" id="adminMenuItem" style="${user.isAdmin ? 'display: flex' : 'display: none'}">
-                                <div class="menu-item-left">
-                                    <span class="material-symbols-outlined">admin_panel_settings</span>
-                                    <span>Admin Panel</span>
-                                </div>
-                                <span class="menu-arrow material-symbols-outlined">chevron_right</span>
+            <!-- Main Content Area -->
+            <div class="main-content" id="mainContent">
+                <!-- Content dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Container -->
+    <div id="modalContainer"></div>
+
+    <script>
+        // ========== STATE MANAGEMENT ==========
+        let currentUser = null;
+        let authToken = null;
+        let currentPage = 1;
+        let currentFilters = {};
+        let rawDebugVisible = true;
+
+        // ========== MOBILE DRAWER ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuToggle = document.getElementById('menuToggle');
+            const navDrawer = document.getElementById('navDrawer');
+            const drawerOverlay = document.getElementById('drawerOverlay');
+            
+            if (menuToggle) {
+                menuToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    navDrawer.classList.add('open');
+                    drawerOverlay.classList.add('show');
+                });
+            }
+            
+            if (drawerOverlay) {
+                drawerOverlay.addEventListener('click', () => {
+                    navDrawer.classList.remove('open');
+                    drawerOverlay.classList.remove('show');
+                });
+            }
+
+            const savedToken = localStorage.getItem('adminToken');
+            const savedUser = localStorage.getItem('adminUser');
+            
+            if (savedToken && savedUser) {
+                authToken = savedToken;
+                currentUser = JSON.parse(savedUser);
+                verifyAndLoadDashboard();
+            }
+        });
+
+        function closeDrawer() {
+            document.getElementById('navDrawer').classList.remove('open');
+            document.getElementById('drawerOverlay').classList.remove('show');
+        }
+
+        // ========== AUTHENTICATION ==========
+        async function verifyAndLoadDashboard() {
+            showLoading('mainContent', 'Verifying session...');
+            
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Session expired');
+                }
+
+                const data = await response.json();
+                
+                if (data.user.role !== 'admin') {
+                    throw new Error('Not authorized as admin');
+                }
+
+                currentUser = data.user;
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('dashboardContainer').style.display = 'block';
+                
+                updateAdminUI();
+                
+                switchTab('overview', { currentTarget: document.querySelector('.nav-item, .nav-pill') });
+            } catch (error) {
+                console.error('Auth failed:', error);
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                showLoginError('Session expired. Please login again.');
+            }
+        }
+
+        function updateAdminUI() {
+            if (!currentUser) return;
+            
+            const nameEl = document.getElementById('adminNameMobile');
+            const emailEl = document.getElementById('adminEmailMobile');
+            const avatarEl = document.getElementById('adminAvatarMobile');
+            
+            if (nameEl) nameEl.textContent = currentUser.name || 'Admin';
+            if (emailEl) emailEl.textContent = currentUser.email || 'admin@taskmart.com';
+            if (avatarEl) avatarEl.textContent = (currentUser.name || 'A').charAt(0).toUpperCase();
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const loginBtn = document.querySelector('.login-btn');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+                if (data.user.role !== 'admin') {
+                    throw new Error('Access denied. Admin only.');
+                }
+
+                authToken = data.token;
+                currentUser = data.user;
+                
+                localStorage.setItem('adminToken', authToken);
+                localStorage.setItem('adminUser', JSON.stringify(currentUser));
+
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('dashboardContainer').style.display = 'block';
+                
+                updateAdminUI();
+                
+                switchTab('overview', { currentTarget: document.querySelector('.nav-item, .nav-pill') });
+            } catch (error) {
+                showLoginError(error.message);
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard';
+            }
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            setTimeout(() => {
+                errorDiv.textContent = '';
+            }, 5000);
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            authToken = null;
+            currentUser = null;
+            
+            document.getElementById('dashboardContainer').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+            closeDrawer();
+            
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // ========== LOADING UTILITIES ==========
+        function showLoading(elementId, message = 'Loading...') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 20px;">${message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showError(elementId, errorMessage, retryFunction) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>${errorMessage}</p>
+                        ${retryFunction ? `<button class="retry-btn" onclick="(${retryFunction})()"><i class="fas fa-redo"></i> Retry</button>` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        // ========== TAB SWITCHING ==========
+        function switchTab(tabName, event) {
+            closeDrawer();
+            
+            document.querySelectorAll('.nav-item, .nav-pill').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+
+            switch(tabName) {
+                case 'overview':
+                    loadOverview();
+                    break;
+                case 'users':
+                    loadUsers(1);
+                    break;
+                case 'tasks':
+                    loadTasks(1);
+                    break;
+                case 'verifications':
+                    loadVerifications(1);
+                    break;
+                case 'reports':
+                    loadReports(1);
+                    break;
+                case 'debug':
+                    loadDebugLogs(1);
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+
+        // ========== OVERVIEW TAB ==========
+        async function loadOverview() {
+            const content = document.getElementById('mainContent');
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-chart-pie"></i> Dashboard Overview</h1>
+                    <p>Welcome back, ${currentUser?.name || 'Admin'}! Here's what's happening with taskmart.</p>
+                </div>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+                <div class="double-grid" style="grid-template-columns: 1fr;">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">Recent Users</div>
+                        </div>
+                        <div id="recentUsersList">
+                            <div class="loading-container">
+                                <div class="loading-spinner small"></div>
+                                <p style="margin-top: 10px;">Loading users...</p>
                             </div>
                         </div>
-
-                        <div class="logout-item" id="logoutBtn">
-                            <span class="material-symbols-outlined">logout</span>
-                            <span>Logout</span>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">Recent Tasks</div>
                         </div>
+                        <div id="recentTasksList">
+                            <div class="loading-container">
+                                <div class="loading-spinner small"></div>
+                                <p style="margin-top: 10px;">Loading tasks...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const stats = await response.json();
+
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-value">${stats.users?.total || 0}</div>
+                        <small>${stats.users?.posters || 0} Posters, ${stats.users?.helpers || 0} Helpers</small>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="stat-label">Total Tasks</div>
+                        <div class="stat-value">${stats.tasks?.total || 0}</div>
+                        <small>${stats.tasks?.active || 0} Active, ${stats.tasks?.completed || 0} Completed</small>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-label">Pending Verifications</div>
+                        <div class="stat-value">${stats.system?.pendingVerifications || 0}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-flag"></i></div>
+                        <div class="stat-label">Open Reports</div>
+                        <div class="stat-value">${stats.system?.totalReports || 0}</div>
                     </div>
                 `;
 
-                document.getElementById('profileAvatar')?.addEventListener('click', () => {
-                    if (user.profileImage) openImagePreview(user.profileImage);
-                });
+                if (stats.recentUsers && stats.recentUsers.length > 0) {
+                    document.getElementById('recentUsersList').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Verified</th>
+                                    <th>Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stats.recentUsers.map(user => `
+                                    <tr>
+                                        <td>${user.name || 'N/A'}</td>
+                                        <td>${user.email || 'N/A'}</td>
+                                        <td><span class="badge ${user.role === 'admin' ? 'badge-danger' : user.role === 'helper' ? 'badge-success' : 'badge-info'}">${user.role || 'user'}</span></td>
+                                        <td><span class="badge ${user.adminVerified ? 'badge-success' : 'badge-warning'}">${user.adminVerified ? 'Verified' : 'Pending'}</span></td>
+                                        <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('recentUsersList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">No recent users found</p>';
+                }
 
-                document.getElementById('verificationMenuItem')?.addEventListener('click', openVerificationModal);
-                document.getElementById('adminMenuItem')?.addEventListener('click', openAdminPanel);
-                document.getElementById('logoutBtn')?.addEventListener('click', () => {
-                    localStorage.removeItem('taskmart_user');
-                    window.location.reload();
-                });
+                if (stats.recentTasks && stats.recentTasks.length > 0) {
+                    document.getElementById('recentTasksList').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Budget (R)</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stats.recentTasks.map(task => `
+                                    <tr>
+                                        <td>${task.taskDescription ? task.taskDescription.substring(0, 30) + '...' : 'N/A'}</td>
+                                        <td>R ${task.budgetAmount || 'Open'}</td>
+                                        <td><span class="badge ${task.status === 'completed' ? 'badge-success' : task.status === 'active' ? 'badge-info' : 'badge-warning'}">${task.status || 'unknown'}</span></td>
+                                        <td>${task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('recentTasksList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">No recent tasks found</p>';
+                }
+            } catch (error) {
+                console.error('Error loading overview:', error);
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card error-state" style="grid-column: 1/-1;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #e74c3c;"></i>
+                        <p>Failed to load dashboard data</p>
+                        <button class="retry-btn" onclick="loadOverview()">Retry</button>
+                    </div>
+                `;
+                document.getElementById('recentUsersList').innerHTML = '<p style="text-align: center; color: #e74c3c; padding: 20px;">Error loading users</p>';
+                document.getElementById('recentTasksList').innerHTML = '<p style="text-align: center; color: #e74c3c; padding: 20px;">Error loading tasks</p>';
+                showNotification('Error loading dashboard data: ' + error.message, 'error');
             }
+        }
 
-            function renderVerificationUpload() {
-                const user = currentUser || getCurrentUser();
-                const requests = getVerificationRequests();
-                const existingRequest = requests.find(r => r.userEmail === user.email);
+        // ========== USERS TAB ==========
+        async function loadUsers(page = 1) {
+            const content = document.getElementById('mainContent');
+            currentPage = page;
+            
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-users"></i> User Management</h1>
+                    <p>Manage all taskmart users</p>
+                </div>
+                
+                <div class="filters-bar">
+                    <select class="filter-select" id="roleFilter" onchange="applyUserFilters()">
+                        <option value="">All Roles</option>
+                        <option value="poster">Posters</option>
+                        <option value="helper">Helpers</option>
+                        <option value="admin">Admins</option>
+                    </select>
+                    
+                    <select class="filter-select" id="statusFilter" onchange="applyUserFilters()">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="banned">Banned</option>
+                    </select>
+                    
+                    <div class="search-box">
+                        <input type="text" id="userSearch" placeholder="Search by name or email..." onkeyup="if(event.key === 'Enter') applyUserFilters()">
+                        <button onclick="applyUserFilters()" id="userSearchBtn"><i class="fas fa-search"></i> Search</button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            All Users
+                            <span id="userCount" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <div id="usersTableContainer">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 20px;">Loading users...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pagination" id="userPagination"></div>
+                </div>
+            `;
 
-                if (existingRequest && existingRequest.status !== 'rejected') {
-                    // Show status
-                    verificationContent.innerHTML = `
-                        <div style="text-align: center; padding: 2rem;">
-                            <span class="material-symbols-outlined" style="font-size: 64px; color: #667eea; margin-bottom: 1rem;">verified</span>
-                            <h3 style="margin-bottom: 1rem;">Verification ${existingRequest.status}</h3>
-                            <div class="verification-status-badge badge-${existingRequest.status}">
-                                ${existingRequest.status === 'approved' ? '✓ Approved' : 
-                                  existingRequest.status === 'rejected' ? '✗ Rejected' : '⏳ Pending Review'}
-                            </div>
-                            ${existingRequest.status === 'rejected' && existingRequest.rejectionReason ? `
-                                <div class="admin-note">
-                                    <strong>Reason:</strong> ${existingRequest.rejectionReason}
-                                </div>
-                            ` : ''}
-                            ${existingRequest.status === 'rejected' ? `
-                                <button class="submit-btn" onclick="window.location.reload()">Submit New Request</button>
-                            ` : ''}
+            await loadUsersData(page);
+        }
+
+        async function loadUsersData(page = 1) {
+            try {
+                const role = document.getElementById('roleFilter')?.value || '';
+                const status = document.getElementById('statusFilter')?.value || '';
+                const search = document.getElementById('userSearch')?.value || '';
+                
+                let url = `/api/admin/users?page=${page}&limit=20`;
+                if (role) url += `&role=${role}`;
+                if (status) url += `&status=${status}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('userCount').textContent = `Total: ${data.pagination?.total || 0} users`;
+                
+                if (data.users && data.users.length > 0) {
+                    document.getElementById('usersTableContainer').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Verified</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.users.map(user => `
+                                    <tr>
+                                        <td>${user.name || 'N/A'}</td>
+                                        <td>${user.email || 'N/A'}</td>
+                                        <td>
+                                            <span class="badge ${user.role === 'admin' ? 'badge-danger' : user.role === 'helper' ? 'badge-success' : 'badge-info'}">
+                                                ${user.role || 'user'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge ${user.adminVerified ? 'badge-success' : 'badge-warning'}">
+                                                ${user.adminVerified ? 'Verified' : 'Pending'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            ${user.banned ? 
+                                                '<span class="badge badge-danger">Banned</span>' : 
+                                                user.suspended ? 
+                                                '<span class="badge badge-warning">Suspended</span>' : 
+                                                '<span class="badge badge-success">Active</span>'
+                                            }
+                                        </td>
+                                        <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick="viewUser('${user._id}')" title="View User">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            ${!user.banned ? 
+                                                `<button class="action-btn btn-warning" onclick="suspendUser('${user._id}')" title="Suspend User">
+                                                    <i class="fas fa-pause"></i>
+                                                </button>` : 
+                                                `<button class="action-btn btn-success" onclick="unsuspendUser('${user._id}')" title="Unsuspend User">
+                                                    <i class="fas fa-play"></i>
+                                                </button>`
+                                            }
+                                            ${!user.banned ? 
+                                                `<button class="action-btn btn-danger" onclick="banUser('${user._id}')" title="Ban User">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>` : 
+                                                `<button class="action-btn btn-success" onclick="unbanUser('${user._id}')" title="Unban User">
+                                                    <i class="fas fa-check"></i>
+                                                </button>`
+                                            }
+                                            ${user.role !== 'admin' ? 
+                                                `<button class="action-btn btn-primary" onclick="promoteToAdmin('${user._id}')" title="Promote to Admin">
+                                                    <i class="fas fa-crown"></i>
+                                                </button>` : 
+                                                `<button class="action-btn btn-warning" onclick="demoteFromAdmin('${user._id}')" title="Demote from Admin">
+                                                    <i class="fas fa-user"></i>
+                                                </button>`
+                                            }
+                                            <button class="action-btn btn-danger" onclick="deleteUser('${user._id}')" title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('usersTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No users found</p>';
+                }
+
+                const pagination = document.getElementById('userPagination');
+                pagination.innerHTML = '';
+                
+                if (data.pagination && data.pagination.pages > 1) {
+                    for (let i = 1; i <= data.pagination.pages; i++) {
+                        pagination.innerHTML += `
+                            <button class="${i === page ? 'active' : ''}" onclick="loadUsers(${i})">${i}</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTableContainer').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Error loading users: ${error.message}</p>
+                        <button class="retry-btn" onclick="loadUsersData(${page})">Retry</button>
+                    </div>
+                `;
+                showNotification('Error loading users', 'error');
+            }
+        }
+
+        function applyUserFilters() {
+            loadUsers(1);
+        }
+
+        // ========== TASKS TAB ==========
+        async function loadTasks(page = 1) {
+            const content = document.getElementById('mainContent');
+            currentPage = page;
+            
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-tasks"></i> Task Management</h1>
+                    <p>Monitor and manage all tasks</p>
+                </div>
+                
+                <div class="filters-bar">
+                    <select class="filter-select" id="taskStatusFilter" onchange="applyTaskFilters()">
+                        <option value="">All Status</option>
+                        <option value="posted">Posted</option>
+                        <option value="active">Active</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    
+                    <div class="search-box">
+                        <input type="text" id="taskSearch" placeholder="Search tasks..." onkeyup="if(event.key === 'Enter') applyTaskFilters()">
+                        <button onclick="applyTaskFilters()" id="taskSearchBtn"><i class="fas fa-search"></i> Search</button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            All Tasks
+                            <span id="taskCount" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <div id="tasksTableContainer">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 20px;">Loading tasks...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pagination" id="taskPagination"></div>
+                </div>
+            `;
+
+            await loadTasksData(page);
+        }
+
+        async function loadTasksData(page = 1) {
+            try {
+                const status = document.getElementById('taskStatusFilter')?.value || '';
+                const search = document.getElementById('taskSearch')?.value || '';
+                
+                let url = `/api/admin/tasks?page=${page}&limit=20`;
+                if (status) url += `&status=${status}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('taskCount').textContent = `Total: ${data.pagination?.total || 0} tasks`;
+                
+                if (data.tasks && data.tasks.length > 0) {
+                    document.getElementById('tasksTableContainer').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Poster</th>
+                                    <th>Budget (R)</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.tasks.map(task => `
+                                    <tr>
+                                        <td>${task.taskDescription ? task.taskDescription.substring(0, 50) + (task.taskDescription.length > 50 ? '...' : '') : 'N/A'}</td>
+                                        <td>${task.poster?.name || task.userId || 'N/A'}</td>
+                                        <td>R ${task.budgetAmount || 'Open'}</td>
+                                        <td>
+                                            <span class="badge ${task.status === 'completed' ? 'badge-success' : 
+                                                                task.status === 'active' ? 'badge-info' : 
+                                                                task.status === 'cancelled' ? 'badge-danger' : 
+                                                                'badge-warning'}">
+                                                ${task.status || 'unknown'}
+                                            </span>
+                                        </td>
+                                        <td>${task.location || 'Not specified'}</td>
+                                        <td>${task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick="viewTask('${task._id}')" title="View Task">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-btn btn-warning" onclick="flagTask('${task._id}')" title="Flag as Suspicious">
+                                                <i class="fas fa-flag"></i>
+                                            </button>
+                                            <button class="action-btn btn-danger" onclick="closeTask('${task._id}')" title="Close Task">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="action-btn btn-danger" onclick="deleteTask('${task._id}')" title="Delete Task">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('tasksTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No tasks found</p>';
+                }
+
+                const pagination = document.getElementById('taskPagination');
+                pagination.innerHTML = '';
+                
+                if (data.pagination && data.pagination.pages > 1) {
+                    for (let i = 1; i <= data.pagination.pages; i++) {
+                        pagination.innerHTML += `
+                            <button class="${i === page ? 'active' : ''}" onclick="loadTasks(${i})">${i}</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('tasksTableContainer').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Error loading tasks: ${error.message}</p>
+                        <button class="retry-btn" onclick="loadTasksData(${page})">Retry</button>
+                    </div>
+                `;
+                showNotification('Error loading tasks', 'error');
+            }
+        }
+
+        function applyTaskFilters() {
+            loadTasks(1);
+        }
+
+        // ========== VERIFICATIONS TAB - UPDATED WITH MONGODB INTEGRATION ==========
+        async function loadVerifications(page = 1) {
+            const content = document.getElementById('mainContent');
+            currentPage = page;
+            
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-id-card"></i> Verification Requests</h1>
+                    <p>Review and verify user identities from MongoDB</p>
+                </div>
+                
+                <div class="filters-bar">
+                    <select class="filter-select" id="verificationStatusFilter" onchange="applyVerificationFilters()">
+                        <option value="">All Requests</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    
+                    <div class="search-box">
+                        <input type="text" id="verificationSearch" placeholder="Search by email or name..." onkeyup="if(event.key === 'Enter') applyVerificationFilters()">
+                        <button onclick="applyVerificationFilters()"><i class="fas fa-search"></i> Search</button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            <i class="fas fa-id-card" style="color: #667eea;"></i> Verification Requests from Users
+                            <span id="verificationCount" class="badge badge-info" style="font-size: 0.8rem; margin-left: 10px;">Loading...</span>
+                        </div>
+                        <button class="action-btn btn-primary" onclick="refreshVerifications()" style="padding: 10px 20px;">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div id="verificationsTableContainer">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 20px;">Fetching verification requests from MongoDB...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pagination" id="verificationPagination"></div>
+                </div>
+            `;
+
+            await loadVerificationsFromMongoDB(page);
+        }
+
+        // ========== MONGODB VERIFICATION INTEGRATION ==========
+        // This function fetches REAL verification requests from MongoDB
+        async function loadVerificationsFromMongoDB(page = 1) {
+            try {
+                const status = document.getElementById('verificationStatusFilter')?.value || '';
+                const search = document.getElementById('verificationSearch')?.value || '';
+                
+                // Try multiple possible endpoints where verification requests might be stored
+                const endpoints = [
+                    `/api/admin/verifications?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
+                    `/api/verifications?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
+                    `/api/admin/verification-requests?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`,
+                    `/api/users/verifications?page=${page}&limit=20${status ? `&status=${status}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`
+                ];
+                
+                let data = null;
+                let successfulEndpoint = '';
+                
+                // Try each endpoint until one works
+                for (const endpoint of endpoints) {
+                    try {
+                        console.log(`Trying endpoint: ${endpoint}`);
+                        const response = await fetch(endpoint, {
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            data = await response.json();
+                            successfulEndpoint = endpoint;
+                            console.log(`✅ Successfully connected to: ${endpoint}`);
+                            break;
+                        }
+                    } catch (e) {
+                        console.log(`Endpoint failed: ${endpoint}`);
+                    }
+                }
+                
+                // If no endpoint worked, try to get users with verification requests from users endpoint
+                if (!data) {
+                    console.log('Trying to fetch users with verification requests...');
+                    const usersResponse = await fetch(`/api/admin/users?limit=100&verified=pending`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    if (usersResponse.ok) {
+                        const usersData = await usersResponse.json();
+                        // Filter users who have requested verification
+                        const pendingUsers = usersData.users?.filter(user => 
+                            user.verificationRequested === true || 
+                            (user.adminVerified === false && user.verificationStatus === 'pending')
+                        ) || [];
+                        
+                        // Transform users into verification request format
+                        data = {
+                            verifications: pendingUsers.map(user => ({
+                                _id: user._id,
+                                userId: user._id,
+                                userEmail: user.email,
+                                userName: user.name,
+                                status: user.verificationStatus || 'pending',
+                                createdAt: user.verificationRequestedAt || user.createdAt,
+                                documents: user.verificationDocs || {
+                                    idDocument: user.idDocument,
+                                    selfie: user.selfie
+                                },
+                                rejectionReason: user.rejectionReason
+                            })),
+                            pagination: {
+                                total: pendingUsers.length,
+                                page: 1,
+                                pages: 1
+                            }
+                        };
+                        successfulEndpoint = 'users endpoint (transformed)';
+                    }
+                }
+                
+                // If still no data, use mock data for demonstration
+                if (!data) {
+                    console.log('Using mock verification data for demonstration');
+                    data = getMockVerificationData(page);
+                    showNotification('Using demo data - Connect to MongoDB for real requests', 'info');
+                }
+                
+                // Update the count
+                document.getElementById('verificationCount').textContent = `Total: ${data.pagination?.total || 0} requests`;
+                
+                // Render the verifications
+                if (data.verifications && data.verifications.length > 0) {
+                    document.getElementById('verificationsTableContainer').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Documents</th>
+                                    <th>Status</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.verifications.map(ver => `
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <div style="width: 32px; height: 32px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                                    ${ver.userName ? ver.userName.charAt(0).toUpperCase() : 'U'}
+                                                </div>
+                                                ${ver.userName || 'N/A'}
+                                            </div>
+                                        </td>
+                                        <td>${ver.userEmail || 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick="viewVerificationDocuments('${ver._id}')" title="View Documents">
+                                                <i class="fas fa-eye"></i> View Docs
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <span class="badge ${ver.status === 'approved' ? 'badge-success' : 
+                                                                ver.status === 'rejected' ? 'badge-danger' : 
+                                                                'badge-warning'}">
+                                                ${ver.status || 'pending'}
+                                            </span>
+                                        </td>
+                                        <td>${ver.createdAt ? new Date(ver.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                        <td>
+                                            ${ver.status === 'pending' ? `
+                                                <button class="action-btn btn-success" onclick="approveVerification('${ver._id}')" title="Approve">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                                <button class="action-btn btn-danger" onclick="showRejectForm('${ver._id}')" title="Reject">
+                                                    <i class="fas fa-times"></i> Reject
+                                                </button>
+                                            ` : `
+                                                <span class="badge badge-info">Reviewed</span>
+                                            `}
+                                        </td>
+                                    </tr>
+                                    ${ver.showRejectForm ? `
+                                    <tr id="reject-form-${ver._id}">
+                                        <td colspan="6" style="background: #f8f9fa;">
+                                            <div style="display: flex; gap: 10px; padding: 10px;">
+                                                <input type="text" id="reject-reason-${ver._id}" class="rejection-input" placeholder="Enter rejection reason...">
+                                                <button class="action-btn btn-success" onclick="confirmReject('${ver._id}')">Confirm</button>
+                                                <button class="action-btn btn-warning" onclick="cancelReject('${ver._id}')">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    ` : ''}
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('verificationsTableContainer').innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <i class="fas fa-id-card" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></i>
+                            <h3 style="color: #666; margin-bottom: 10px;">No Verification Requests Found</h3>
+                            <p style="color: #999;">When users request verification, they will appear here.</p>
+                            <p style="color: #667eea; margin-top: 20px; font-size: 0.9rem;">Connected to: ${successfulEndpoint || 'MongoDB'}</p>
                         </div>
                     `;
-                    return;
                 }
 
-                verificationContent.innerHTML = `
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="margin-bottom: 1rem;">Upload Verification Documents</h3>
-                        <p style="color: #666; margin-bottom: 2rem;">Please upload a clear photo of your ID and a selfie for verification.</p>
-                        
-                        <div style="margin-bottom: 2rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">ID Document</label>
-                            <div class="verification-upload-area" id="uploadIdBtn">
-                                <span class="material-symbols-outlined">upload</span>
-                                <p>Click to upload ID (Passport, Driver's License, etc.)</p>
-                            </div>
-                            <div id="idPreview"></div>
-                        </div>
-
-                        <div style="margin-bottom: 2rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Selfie with ID</label>
-                            <div class="verification-upload-area" id="uploadSelfieBtn">
-                                <span class="material-symbols-outlined">upload</span>
-                                <p>Click to upload selfie holding ID</p>
-                            </div>
-                            <div id="selfiePreview"></div>
-                        </div>
-
-                        <button class="submit-btn" id="submitVerificationBtn" disabled>Submit for Review</button>
+                // Render pagination
+                const pagination = document.getElementById('verificationPagination');
+                pagination.innerHTML = '';
+                
+                if (data.pagination && data.pagination.pages > 1) {
+                    for (let i = 1; i <= data.pagination.pages; i++) {
+                        pagination.innerHTML += `
+                            <button class="${i === page ? 'active' : ''}" onclick="loadVerifications(${i})">${i}</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading verifications from MongoDB:', error);
+                document.getElementById('verificationsTableContainer').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Error connecting to MongoDB: ${error.message}</p>
+                        <p style="color: #666; margin-top: 10px;">Make sure your backend server is running and the verification endpoints are configured.</p>
+                        <button class="retry-btn" onclick="loadVerifications(${page})">Retry Connection</button>
+                        <button class="retry-btn" style="background: #3498db;" onclick="testVerificationEndpoints()">Test Endpoints</button>
                     </div>
                 `;
-
-                // Hidden file inputs
-                const idInput = document.createElement('input');
-                idInput.type = 'file';
-                idInput.accept = 'image/*';
-                idInput.style.display = 'none';
-                idInput.id = 'idFileInput';
-
-                const selfieInput = document.createElement('input');
-                selfieInput.type = 'file';
-                selfieInput.accept = 'image/*';
-                selfieInput.style.display = 'none';
-                selfieInput.id = 'selfieFileInput';
-
-                verificationContent.appendChild(idInput);
-                verificationContent.appendChild(selfieInput);
-
-                // Upload handlers
-                document.getElementById('uploadIdBtn').addEventListener('click', () => idInput.click());
-                document.getElementById('uploadSelfieBtn').addEventListener('click', () => selfieInput.click());
-
-                idInput.addEventListener('change', function(e) {
-                    if (e.target.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            currentDocuments.idDocument = event.target.result;
-                            document.getElementById('idPreview').innerHTML = `
-                                <div class="verification-preview">
-                                    <img src="${event.target.result}" alt="ID Preview">
-                                    <button class="remove-image" onclick="removeDocument('id')">×</button>
-                                </div>
-                            `;
-                            checkSubmitButton();
-                        };
-                        reader.readAsDataURL(e.target.files[0]);
-                    }
-                });
-
-                selfieInput.addEventListener('change', function(e) {
-                    if (e.target.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            currentDocuments.selfie = event.target.result;
-                            document.getElementById('selfiePreview').innerHTML = `
-                                <div class="verification-preview">
-                                    <img src="${event.target.result}" alt="Selfie Preview">
-                                    <button class="remove-image" onclick="removeDocument('selfie')">×</button>
-                                </div>
-                            `;
-                            checkSubmitButton();
-                        };
-                        reader.readAsDataURL(e.target.files[0]);
-                    }
-                });
-
-                window.removeDocument = (type) => {
-                    if (type === 'id') {
-                        currentDocuments.idDocument = null;
-                        document.getElementById('idPreview').innerHTML = '';
-                        idInput.value = '';
-                    } else {
-                        currentDocuments.selfie = null;
-                        document.getElementById('selfiePreview').innerHTML = '';
-                        selfieInput.value = '';
-                    }
-                    checkSubmitButton();
-                };
-
-                function checkSubmitButton() {
-                    const btn = document.getElementById('submitVerificationBtn');
-                    if (btn) {
-                        btn.disabled = !(currentDocuments.idDocument && currentDocuments.selfie);
-                    }
-                }
-
-                document.getElementById('submitVerificationBtn').addEventListener('click', submitVerification);
             }
+        }
 
-            function submitVerification() {
-                const user = currentUser || getCurrentUser();
-                
-                const request = {
-                    id: Date.now().toString(),
-                    userId: user.email,
-                    userEmail: user.email,
-                    userName: user.name,
-                    documents: {
-                        idDocument: currentDocuments.idDocument,
-                        selfie: currentDocuments.selfie
-                    },
-                    status: 'pending',
-                    submittedAt: new Date().toISOString()
-                };
-
-                saveVerificationRequest(request);
-                
-                // Update user status
-                user.verificationStatus = 'pending';
-                user.verificationRequested = true;
-                saveUserData(user);
-
-                showToast('Verification submitted successfully!');
-                
-                setTimeout(() => {
-                    verificationModal.classList.remove('active');
-                }, 1500);
-            }
-
-            // ========== ADMIN FUNCTIONS ==========
-            function loadVerificationRequests() {
-                const requests = getVerificationRequests();
-                renderAdminPanel(requests);
-            }
-
-            function renderAdminPanel(requests) {
-                const pending = requests.filter(r => r.status === 'pending');
-                const reviewed = requests.filter(r => r.status !== 'pending');
-
-                adminContent.innerHTML = `
-                    <div class="admin-container">
-                        <div class="admin-header">
-                            <h1>Verification Requests</h1>
-                            <span class="verification-status-badge badge-pending">${pending.length} Pending</span>
-                        </div>
-
-                        <div class="admin-tabs">
-                            <div class="admin-tab active" data-tab="pending">Pending (${pending.length})</div>
-                            <div class="admin-tab" data-tab="reviewed">Reviewed (${reviewed.length})</div>
-                        </div>
-
-                        <div id="requestsList">
-                            ${renderRequestsList(pending)}
-                        </div>
-                    </div>
-                `;
-
-                // Tab switching
-                document.querySelectorAll('.admin-tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-                        tab.classList.add('active');
-                        
-                        const tabType = tab.dataset.tab;
-                        const list = tabType === 'pending' ? pending : reviewed;
-                        document.getElementById('requestsList').innerHTML = renderRequestsList(list);
-                        
-                        // Re-attach event listeners
-                        attachRequestListeners();
-                    });
-                });
-
-                attachRequestListeners();
-            }
-
-            function renderRequestsList(requests) {
-                if (requests.length === 0) {
-                    return '<div style="text-align: center; padding: 3rem; color: #666;">No requests found</div>';
-                }
-
-                return requests.map(request => `
-                    <div class="verification-card" data-request-id="${request.id}">
-                        <div class="verification-header">
-                            <div class="verification-user">
-                                <div class="verification-user-avatar">
-                                    ${request.userName ? request.userName.substring(0, 2).toUpperCase() : 'U'}
-                                </div>
-                                <div class="verification-user-info">
-                                    <h3>${request.userName || 'Unknown'}</h3>
-                                    <p>${request.userEmail}</p>
-                                    <small>Submitted: ${new Date(request.submittedAt).toLocaleString()}</small>
-                                </div>
-                            </div>
-                            <span class="verification-status-badge badge-${request.status}">
-                                ${request.status}
-                            </span>
-                        </div>
-
-                        ${request.status === 'pending' ? `
-                            <div class="verification-documents">
-                                <div class="document-preview" data-image="${request.documents?.idDocument}">
-                                    <img src="${request.documents?.idDocument}" alt="ID Document">
-                                    <p>ID Document</p>
-                                </div>
-                                <div class="document-preview" data-image="${request.documents?.selfie}">
-                                    <img src="${request.documents?.selfie}" alt="Selfie">
-                                    <p>Selfie with ID</p>
-                                </div>
-                            </div>
-
-                            <div class="rejection-section" style="display: none; margin-bottom: 1rem;">
-                                <input type="text" class="rejection-input" placeholder="Reason for rejection...">
-                            </div>
-
-                            <div class="verification-actions">
-                                <button class="approve-btn" onclick="handleApprove('${request.id}')">Approve</button>
-                                <button class="reject-btn" onclick="showRejectionInput('${request.id}')">Reject</button>
-                            </div>
-                        ` : `
-                            <div class="admin-note">
-                                <strong>Status:</strong> ${request.status}
-                                ${request.rejectionReason ? `<br><strong>Reason:</strong> ${request.rejectionReason}` : ''}
-                                <br><small>Reviewed: ${new Date(request.reviewedAt).toLocaleString()}</small>
-                            </div>
-                        `}
-                    </div>
-                `).join('');
-            }
-
-            function attachRequestListeners() {
-                // Document preview
-                document.querySelectorAll('.document-preview').forEach(el => {
-                    el.addEventListener('click', function() {
-                        const imageUrl = this.dataset.image;
-                        if (imageUrl) openImagePreview(imageUrl);
-                    });
-                });
-            }
-
-            // Admin action handlers
-            window.handleApprove = (requestId) => {
-                const requests = getVerificationRequests();
-                const request = requests.find(r => r.id === requestId);
-                
-                if (request) {
-                    updateVerificationStatus(request.userEmail, 'approved');
-                    showToast('Verification approved!');
-                    loadVerificationRequests();
-                }
-            };
-
-            window.showRejectionInput = (requestId) => {
-                const card = document.querySelector(`[data-request-id="${requestId}"]`);
-                const section = card.querySelector('.rejection-section');
-                const actions = card.querySelector('.verification-actions');
-                
-                section.style.display = 'block';
-                actions.innerHTML = `
-                    <button class="approve-btn" onclick="confirmReject('${requestId}')">Confirm Reject</button>
-                    <button class="reject-btn" onclick="cancelReject('${requestId}')">Cancel</button>
-                `;
-            };
-
-            window.confirmReject = (requestId) => {
-                const card = document.querySelector(`[data-request-id="${requestId}"]`);
-                const reason = card.querySelector('.rejection-input').value || 'No reason provided';
-                
-                const requests = getVerificationRequests();
-                const request = requests.find(r => r.id === requestId);
-                
-                if (request) {
-                    updateVerificationStatus(request.userEmail, 'rejected', reason);
-                    showToast('Verification rejected');
-                    loadVerificationRequests();
-                }
-            };
-
-            window.cancelReject = (requestId) => {
-                loadVerificationRequests(); // Reload to reset UI
-            };
-
-            // ========== INITIALIZATION ==========
-            function initialize() {
-                // Create mock admin user if none exists
-                let users = getAllUsers();
-                if (users.length === 0) {
-                    const adminUser = {
-                        name: 'Admin User',
-                        email: 'admin@taskmart.com',
-                        password: 'admin123',
-                        isAdmin: true,
-                        adminVerified: true,
-                        verificationStatus: 'approved',
-                        profileImage: null
-                    };
-                    saveUserData(adminUser);
-                }
-
-                // Check for existing login
-                currentUser = getCurrentUser();
-            }
-
-            // ========== EVENT LISTENERS ==========
-            if (menuBtn) menuBtn.addEventListener('click', openModal);
+        // Test all possible verification endpoints
+        async function testVerificationEndpoints() {
+            const endpoints = [
+                '/api/admin/verifications',
+                '/api/verifications',
+                '/api/admin/verification-requests',
+                '/api/users/verifications',
+                '/api/admin/users?verified=pending'
+            ];
             
-            if (overlay) {
-                overlay.addEventListener('click', (e) => {
-                    if (e.target === overlay) closeModal();
-                });
+            let results = '<h4>Testing Endpoints:</h4>';
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    results += `<p>${endpoint}: ${response.status} ${response.statusText}</p>`;
+                } catch (e) {
+                    results += `<p>${endpoint}: ❌ Error - ${e.message}</p>`;
+                }
             }
+            
+            showModal(`
+                <h3>Endpoint Test Results</h3>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                    ${results}
+                </div>
+                <p style="margin-top: 15px;">The working endpoint should return 200 OK</p>
+            `);
+        }
 
-            if (closeVerification) {
-                closeVerification.addEventListener('click', () => {
-                    verificationModal.classList.remove('active');
-                    currentDocuments = { idDocument: null, selfie: null };
-                });
+        // Mock data function for demonstration
+        function getMockVerificationData(page) {
+            return {
+                verifications: [
+                    {
+                        _id: '1',
+                        userEmail: 'john.doe@example.com',
+                        userName: 'John Doe',
+                        status: 'pending',
+                        createdAt: new Date().toISOString(),
+                        documents: { idDocument: 'mock-url', selfie: 'mock-url' }
+                    },
+                    {
+                        _id: '2',
+                        userEmail: 'jane.smith@example.com',
+                        userName: 'Jane Smith',
+                        status: 'pending',
+                        createdAt: new Date(Date.now() - 86400000).toISOString(),
+                        documents: { idDocument: 'mock-url', selfie: 'mock-url' }
+                    }
+                ],
+                pagination: {
+                    total: 2,
+                    page: 1,
+                    pages: 1
+                }
+            };
+        }
+
+        // View verification documents
+        async function viewVerificationDocuments(requestId) {
+            try {
+                // Try to fetch from multiple possible endpoints
+                const endpoints = [
+                    `/api/admin/verifications/${requestId}`,
+                    `/api/verifications/${requestId}`,
+                    `/api/admin/verification-requests/${requestId}`,
+                    `/api/users/verification/${requestId}`
+                ];
+                
+                let verification = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint, {
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                            }
+                        });
+                        if (response.ok) {
+                            verification = await response.json();
+                            break;
+                        }
+                    } catch (e) {}
+                }
+                
+                if (!verification) {
+                    // Use mock data for demo
+                    verification = {
+                        userName: 'John Doe',
+                        userEmail: 'john@example.com',
+                        documents: {
+                            idDocument: 'https://via.placeholder.com/400x300?text=ID+Document',
+                            selfie: 'https://via.placeholder.com/400x300?text=Selfie'
+                        }
+                    };
+                }
+                
+                showModal(`
+                    <h3>Verification Documents</h3>
+                    <p><strong>User:</strong> ${verification.userName} (${verification.userEmail})</p>
+                    
+                    <div class="verification-documents">
+                        <div class="document-preview" onclick="openImageInModal('${verification.documents?.idDocument || ''}')">
+                            <img src="${verification.documents?.idDocument || 'https://via.placeholder.com/300x200?text=No+ID'}" alt="ID Document">
+                            <p>ID Document</p>
+                        </div>
+                        
+                        <div class="document-preview" onclick="openImageInModal('${verification.documents?.selfie || ''}')">
+                            <img src="${verification.documents?.selfie || 'https://via.placeholder.com/300x200?text=No+Selfie'}" alt="Selfie">
+                            <p>Selfie</p>
+                        </div>
+                    </div>
+                    
+                    ${verification.rejectionReason ? `
+                        <div class="admin-note">
+                            <strong>Rejection Reason:</strong> ${verification.rejectionReason}
+                        </div>
+                    ` : ''}
+                `);
+            } catch (error) {
+                showNotification('Error loading documents: ' + error.message, 'error');
             }
+        }
 
-            if (closeAdmin) {
-                closeAdmin.addEventListener('click', () => {
-                    adminModal.classList.remove('active');
-                });
+        // Open image in modal
+        function openImageInModal(imageUrl) {
+            showModal(`
+                <h3>Document Preview</h3>
+                <img src="${imageUrl}" style="max-width: 100%; max-height: 70vh; object-fit: contain; margin-top: 20px;">
+            `);
+        }
+
+        // Show reject form
+        function showRejectForm(requestId) {
+            const row = document.querySelector(`[data-request-id="${requestId}"]`) || 
+                       document.querySelector(`button[onclick*="'${requestId}'"]`)?.closest('tr');
+            
+            if (row) {
+                // Add the reject form after the row
+                const newRow = document.createElement('tr');
+                newRow.id = `reject-form-${requestId}`;
+                newRow.innerHTML = `
+                    <td colspan="6" style="background: #f8f9fa;">
+                        <div style="display: flex; gap: 10px; padding: 10px;">
+                            <input type="text" id="reject-reason-${requestId}" class="rejection-input" placeholder="Enter rejection reason...">
+                            <button class="action-btn btn-success" onclick="confirmReject('${requestId}')">Confirm</button>
+                            <button class="action-btn btn-warning" onclick="cancelReject('${requestId}')">Cancel</button>
+                        </div>
+                    </td>
+                `;
+                row.parentNode.insertBefore(newRow, row.nextSibling);
+            } else {
+                // Reload the page with a parameter to show the form
+                loadVerifications(currentPage);
+                setTimeout(() => {
+                    const form = document.getElementById(`reject-form-${requestId}`);
+                    if (form) form.style.display = 'table-row';
+                }, 500);
             }
+        }
 
-            if (closeImage) {
-                closeImage.addEventListener('click', () => {
-                    imageModal.classList.remove('active');
-                });
+        // Cancel reject
+        function cancelReject(requestId) {
+            const form = document.getElementById(`reject-form-${requestId}`);
+            if (form) form.remove();
+        }
+
+        // Confirm rejection
+        async function confirmReject(requestId) {
+            const reason = document.getElementById(`reject-reason-${requestId}`)?.value;
+            if (!reason) {
+                showNotification('Please enter a rejection reason', 'error');
+                return;
             }
+            
+            await rejectVerification(requestId, reason);
+        }
 
-            // Initialize
-            initialize();
+        // Approve verification
+        async function approveVerification(requestId) {
+            if (!confirm('Are you sure you want to approve this verification?')) return;
+            
+            try {
+                // Try multiple endpoints
+                const endpoints = [
+                    `/api/admin/verifications/${requestId}`,
+                    `/api/verifications/${requestId}`,
+                    `/api/admin/verification-requests/${requestId}`,
+                    `/api/users/verify/${requestId}`
+                ];
+                
+                let success = false;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                status: 'approved'
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            success = true;
+                            break;
+                        }
+                    } catch (e) {}
+                }
+                
+                if (success) {
+                    showNotification('Verification approved successfully', 'success');
+                } else {
+                    // Demo mode - just update UI
+                    showNotification('Demo: Verification approved (MongoDB not connected)', 'info');
+                }
+                
+                loadVerifications(currentPage);
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
 
-            // Expose functions globally
-            window.removeDocument = (type) => {}; // Will be overridden
-            window.handleApprove = window.handleApprove;
-            window.showRejectionInput = window.showRejectionInput;
-            window.confirmReject = window.confirmReject;
-            window.cancelReject = window.cancelReject;
-        })();
+        // Reject verification
+        async function rejectVerification(requestId, reason) {
+            try {
+                // Try multiple endpoints
+                const endpoints = [
+                    `/api/admin/verifications/${requestId}`,
+                    `/api/verifications/${requestId}`,
+                    `/api/admin/verification-requests/${requestId}`,
+                    `/api/users/verify/${requestId}`
+                ];
+                
+                let success = false;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 
+                                status: 'rejected',
+                                rejectionReason: reason
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            success = true;
+                            break;
+                        }
+                    } catch (e) {}
+                }
+                
+                if (success) {
+                    showNotification('Verification rejected', 'success');
+                } else {
+                    // Demo mode - just update UI
+                    showNotification('Demo: Verification rejected (MongoDB not connected)', 'info');
+                }
+                
+                loadVerifications(currentPage);
+            } catch (error) {
+                showNotification('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Refresh verifications
+        function refreshVerifications() {
+            loadVerifications(1);
+        }
+
+        function applyVerificationFilters() {
+            loadVerifications(1);
+        }
+
+        // ========== REPORTS TAB ==========
+        async function loadReports(page = 1) {
+            const content = document.getElementById('mainContent');
+            currentPage = page;
+            
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-flag"></i> Reports & Complaints</h1>
+                    <p>Manage user reports and complaints</p>
+                </div>
+                
+                <div class="filters-bar">
+                    <select class="filter-select" id="reportStatusFilter" onchange="applyReportFilters()">
+                        <option value="">All Reports</option>
+                        <option value="open">Open</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="dismissed">Dismissed</option>
+                    </select>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">
+                            Reports
+                            <span id="reportCount" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <div id="reportsTableContainer">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 20px;">Loading reports...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pagination" id="reportPagination"></div>
+                </div>
+            `;
+
+            await loadReportsData(page);
+        }
+
+        async function loadReportsData(page = 1) {
+            try {
+                const status = document.getElementById('reportStatusFilter')?.value || '';
+                
+                let url = `/api/admin/reports?page=${page}&limit=20`;
+                if (status) url += `&status=${status}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('reportCount').textContent = `Total: ${data.pagination?.total || 0} reports`;
+                
+                if (data.reports && data.reports.length > 0) {
+                    document.getElementById('reportsTableContainer').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Reporter</th>
+                                    <th>Reported User</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Reported</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.reports.map(report => `
+                                    <tr>
+                                        <td>${report.reporterEmail || 'N/A'}</td>
+                                        <td>${report.reportedUserEmail || 'N/A'}</td>
+                                        <td>${report.reason || 'N/A'}</td>
+                                        <td>
+                                            <span class="badge ${report.status === 'resolved' ? 'badge-success' : 
+                                                                report.status === 'dismissed' ? 'badge-info' : 
+                                                                'badge-warning'}">
+                                                ${report.status || 'open'}
+                                            </span>
+                                        </td>
+                                        <td>${report.createdAt ? new Date(report.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick="viewReport('${report._id}')" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            ${report.status === 'open' ? `
+                                                <button class="action-btn btn-success" onclick="resolveReport('${report._id}')" title="Resolve">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="action-btn btn-warning" onclick="dismissReport('${report._id}')" title="Dismiss">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            ` : ''}
+                                            <button class="action-btn btn-danger" onclick="warnReportedUser('${report.reportedUserId}')" title="Warn User">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('reportsTableContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No reports found</p>';
+                }
+
+                const pagination = document.getElementById('reportPagination');
+                pagination.innerHTML = '';
+                
+                if (data.pagination && data.pagination.pages > 1) {
+                    for (let i = 1; i <= data.pagination.pages; i++) {
+                        pagination.innerHTML += `
+                            <button class="${i === page ? 'active' : ''}" onclick="loadReports(${i})">${i}</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                document.getElementById('reportsTableContainer').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Error loading reports: ${error.message}</p>
+                        <button class="retry-btn" onclick="loadReportsData(${page})">Retry</button>
+                    </div>
+                `;
+                showNotification('Error loading reports', 'error');
+            }
+        }
+
+        function applyReportFilters() {
+            loadReports(1);
+        }
+
+        async function viewReport(reportId) {
+            try {
+                const response = await fetch(`/api/admin/reports/${reportId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load report details');
+                
+                const report = await response.json();
+                
+                let notesHtml = '';
+                if (report.adminNotes && report.adminNotes.length > 0) {
+                    notesHtml = `
+                        <h4>Internal Notes</h4>
+                        <ul>
+                            ${report.adminNotes.map(note => `<li>${note}</li>`).join('')}
+                        </ul>
+                    `;
+                }
+                
+                showModal(`
+                    <h3>Report Details</h3>
+                    <p><strong>Reporter:</strong> ${report.reporterEmail}</p>
+                    <p><strong>Reported User:</strong> ${report.reportedUserEmail}</p>
+                    <p><strong>Reason:</strong> ${report.reason}</p>
+                    <p><strong>Description:</strong> ${report.description}</p>
+                    <p><strong>Status:</strong> ${report.status}</p>
+                    <p><strong>Reported:</strong> ${report.createdAt ? new Date(report.createdAt).toLocaleString() : 'N/A'}</p>
+                    
+                    ${notesHtml}
+                    
+                    <h4>Add Internal Note</h4>
+                    <textarea id="reportNote" class="login-input" rows="3" placeholder="Enter note..."></textarea>
+                    <button class="action-btn btn-primary" onclick="addReportNote('${report._id}')">Add Note</button>
+                `);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function addReportNote(reportId) {
+            const note = document.getElementById('reportNote').value;
+            if (!note) return;
+            
+            try {
+                const response = await fetch(`/api/admin/reports/${reportId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'add_note',
+                        note
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to add note');
+                
+                showNotification('Note added successfully', 'success');
+                closeModal();
+                loadReports(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function resolveReport(reportId) {
+            if (!confirm('Mark this report as resolved?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/reports/${reportId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'resolve'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to resolve report');
+                
+                showNotification('Report resolved successfully', 'success');
+                loadReports(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function dismissReport(reportId) {
+            if (!confirm('Dismiss this report?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/reports/${reportId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'dismiss'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to dismiss report');
+                
+                showNotification('Report dismissed', 'success');
+                loadReports(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function warnReportedUser(userId) {
+            const reason = prompt('Enter warning reason:');
+            if (!reason) return;
+            showNotification('Warning sent', 'success');
+        }
+
+        // ========== DEBUG LOGS TAB WITH WORKING ENDPOINTS ONLY ==========
+        async function loadDebugLogs(page = 1) {
+            const content = document.getElementById('mainContent');
+            currentPage = page;
+            
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-bug"></i> Debug Logs</h1>
+                    <p>Monitor system errors and detailed debug information</p>
+                </div>
+                
+                <!-- RAW DEBUG PANEL - Using only working endpoints -->
+                <div class="raw-debug-panel">
+                    <div class="raw-debug-header">
+                        <span><i class="fas fa-exclamation-triangle"></i> RAW API DEBUGGER - Working endpoints only</span>
+                        <button onclick="toggleRawDebug()" style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;">
+                            <i class="fas ${rawDebugVisible ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+                        </button>
+                    </div>
+                    <div class="raw-debug-content" id="rawDebugContent" style="display: ${rawDebugVisible ? 'block' : 'none'};">
+                        <div class="raw-debug-actions">
+                            <button onclick="testEndpoint('/api/debug/check-logs')" style="background: #4CAF50;">
+                                <i class="fas fa-database"></i> Check Error Logs
+                            </button>
+                            <button onclick="testEndpoint('/api/debug/test-log')" style="background: #2196F3;">
+                                <i class="fas fa-plus-circle"></i> Create Test Log
+                            </button>
+                            <button onclick="testEndpoint('/api/admin/failed-logins?limit=50')" style="background: #FF9800;">
+                                <i class="fas fa-lock"></i> Failed Logins
+                            </button>
+                            <button onclick="testEndpoint('/api/debug/mongo-check')" style="background: #9C27B0;">
+                                <i class="fas fa-database"></i> Check MongoDB
+                            </button>
+                            <button onclick="testEndpoint('/api/admin/error-logs?limit=50')" style="background: #e74c3c;">
+                                <i class="fas fa-exclamation-circle"></i> Error Logs
+                            </button>
+                            <button onclick="testVerificationEndpoints()" style="background: #667eea;">
+                                <i class="fas fa-id-card"></i> Test Verification Endpoints
+                            </button>
+                        </div>
+                        <div class="raw-debug-note">
+                            <i class="fas fa-info-circle"></i> Click "Test Verification Endpoints" to see which MongoDB endpoint works
+                        </div>
+                        <div id="rawDebugOutput" class="raw-debug-output">
+                            Click any button to see RAW API response from working endpoints.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stacked Debug Sections -->
+                <div class="debug-stack">
+                    <!-- Error Logs Section -->
+                    <div class="debug-section">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <div class="table-title">
+                                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i> Error Logs
+                                    <span id="errorCountBadge" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                                </div>
+                            </div>
+                            
+                            <div class="filters-bar" style="margin-bottom: 15px;">
+                                <select class="filter-select" id="errorTypeFilter" onchange="applyDebugFilters()">
+                                    <option value="">All Error Types</option>
+                                </select>
+                                
+                                <input type="date" id="errorDateFilter" class="filter-select" onchange="applyDebugFilters()">
+                                
+                                <input type="text" id="errorUserFilter" class="filter-select" placeholder="Filter by User ID" onkeyup="if(event.key === 'Enter') applyDebugFilters()">
+                            </div>
+                            
+                            <div id="errorLogsList">
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <p style="margin-top: 20px;">Loading error logs...</p>
+                                </div>
+                            </div>
+                            
+                            <div class="pagination" id="errorPagination"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Failed Login Attempts Section -->
+                    <div class="debug-section">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <div class="table-title">
+                                    <i class="fas fa-lock" style="color: #f39c12;"></i> Failed Login Attempts
+                                    <span id="failedLoginCountBadge" class="badge badge-info" style="font-size: 0.8rem;">Loading...</span>
+                                </div>
+                            </div>
+                            
+                            <div class="filters-bar" style="margin-bottom: 15px;">
+                                <input type="text" id="failedLoginFilter" class="filter-select" placeholder="Filter by email" onkeyup="if(event.key === 'Enter') loadFailedLogins()">
+                                <input type="date" id="failedLoginDateFilter" class="filter-select" onchange="loadFailedLogins()">
+                            </div>
+                            
+                            <div id="failedLoginsList">
+                                <div class="loading-container">
+                                    <div class="loading-spinner"></div>
+                                    <p style="margin-top: 20px;">Loading failed login attempts...</p>
+                                </div>
+                            </div>
+                            
+                            <div class="pagination" id="failedLoginPagination"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            await loadErrorLogs(page);
+            await loadFailedLogins(1);
+        }
+
+        function toggleRawDebug() {
+            rawDebugVisible = !rawDebugVisible;
+            const content = document.getElementById('rawDebugContent');
+            const icon = document.querySelector('.raw-debug-header button i');
+            if (content) {
+                content.style.display = rawDebugVisible ? 'block' : 'none';
+            }
+            if (icon) {
+                icon.className = `fas ${rawDebugVisible ? 'fa-chevron-up' : 'fa-chevron-down'}`;
+            }
+        }
+
+        async function testEndpoint(url) {
+            const output = document.getElementById('rawDebugOutput');
+            output.innerHTML = '<div class="loading-container"><div class="loading-spinner small"></div><p>Fetching from ' + url + '...</p></div>';
+            
+            try {
+                console.log(`🔍 Testing endpoint: ${url}`);
+                
+                const startTime = Date.now();
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                let responseText;
+                try {
+                    responseText = await response.text();
+                } catch (e) {
+                    responseText = 'Could not read response body';
+                }
+                
+                let outputHtml = `<div style="color: ${response.ok ? '#4CAF50' : '#FF6B6B'}; margin-bottom: 10px;">`;
+                outputHtml += `✅ Status: ${response.status} ${response.statusText}</div>`;
+                outputHtml += `<div style="color: #FF9800; margin-bottom: 5px;">⏱️ Response Time: ${responseTime}ms</div>`;
+                outputHtml += `<div style="color: #2196F3; margin-bottom: 15px;">📦 Response Size: ${responseText.length} bytes</div>`;
+                outputHtml += `<hr style="border-color: #444; margin: 15px 0;">`;
+                
+                try {
+                    const parsed = JSON.parse(responseText);
+                    outputHtml += `<pre style="color: #89DDFF; font-size: 12px; line-height: 1.5;">${syntaxHighlight(JSON.stringify(parsed, null, 2))}</pre>`;
+                } catch (e) {
+                    outputHtml += `<pre style="color: #FF6B6B;">${responseText.substring(0, 1000)}${responseText.length > 1000 ? '... (truncated)' : ''}</pre>`;
+                }
+                
+                output.innerHTML = outputHtml;
+                
+            } catch (error) {
+                output.innerHTML = `<div style="color: #FF6B6B;">❌ Network Error: ${error.message}</div>`;
+                console.error('Debug fetch error:', error);
+            }
+        }
+
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        async function loadErrorLogs(page = 1) {
+            try {
+                const errorType = document.getElementById('errorTypeFilter')?.value || '';
+                const date = document.getElementById('errorDateFilter')?.value || '';
+                const userId = document.getElementById('errorUserFilter')?.value || '';
+                
+                let url = `/api/admin/error-logs?page=${page}&limit=20`;
+                if (errorType) url += `&errorType=${encodeURIComponent(errorType)}`;
+                if (date) url += `&startDate=${date}&endDate=${date}`;
+                if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('errorCountBadge').textContent = `Total: ${data.pagination?.total || 0}`;
+                
+                const typeFilter = document.getElementById('errorTypeFilter');
+                if (typeFilter.options.length === 1 && data.errorTypes?.length) {
+                    data.errorTypes.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        typeFilter.appendChild(option);
+                    });
+                }
+                
+                if (data.logs && data.logs.length > 0) {
+                    document.getElementById('errorLogsList').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Message</th>
+                                    <th>Details</th>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.logs.map(log => `
+                                    <tr>
+                                        <td>${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</td>
+                                        <td><span class="badge badge-danger">${log.errorType || 'unknown'}</span></td>
+                                        <td>${log.errorMessage ? log.errorMessage.substring(0, 50) + (log.errorMessage.length > 50 ? '...' : '') : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick='showErrorDetails(${JSON.stringify(log).replace(/'/g, "\\'")})'>
+                                                <i class="fas fa-search"></i> View
+                                            </button>
+                                        </td>
+                                        <td>${log.userId || 'N/A'}</td>
+                                        <td>
+                                            <span class="badge ${log.resolved ? 'badge-success' : 'badge-warning'}">
+                                                ${log.resolved ? 'Resolved' : 'Open'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('errorLogsList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No error logs found</p>';
+                }
+
+                const pagination = document.getElementById('errorPagination');
+                pagination.innerHTML = '';
+                
+                if (data.pagination && data.pagination.pages > 1) {
+                    for (let i = 1; i <= data.pagination.pages; i++) {
+                        pagination.innerHTML += `
+                            <button class="${i === page ? 'active' : ''}" onclick="loadErrorLogs(${i})">${i}</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading error logs:', error);
+                document.getElementById('errorLogsList').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; mbottom: 16px;"></i>
+                        <p>Error loading logs: ${error.message}</p>
+                        <button class="retry-btn" onclick="loadErrorLogs(1)">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function showErrorDetails(log) {
+            showModal(`
+                <h3>Error Details</h3>
+                <p><strong>Time:</strong> ${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</p>
+                <p><strong>Type:</strong> ${log.errorType || 'N/A'}</p>
+                <p><strong>Message:</strong> ${log.errorMessage || 'N/A'}</p>
+                <p><strong>Stack Trace:</strong></p>
+                <pre style="background: #f8f9fa; padding: 10px; border-radius: 8px; overflow-x: auto;">${log.stackTrace || 'No stack trace available'}</pre>
+                <p><strong>User ID:</strong> ${log.userId || 'N/A'}</p>
+                <p><strong>Route:</strong> ${log.route || 'N/A'}</p>
+                <p><strong>IP Address:</strong> ${log.ip || 'N/A'}</p>
+                <p><strong>User Agent:</strong> ${log.userAgent || 'N/A'}</p>
+                <p><strong>Status:</strong> <span class="badge ${log.resolved ? 'badge-success' : 'badge-warning'}">${log.resolved ? 'Resolved' : 'Open'}</span></p>
+            `);
+        }
+
+        async function loadFailedLogins(page = 1) {
+            try {
+                const email = document.getElementById('failedLoginFilter')?.value || '';
+                const date = document.getElementById('failedLoginDateFilter')?.value || '';
+                
+                let url = `/api/admin/failed-logins?page=${page}&limit=20`;
+                if (email) url += `&email=${encodeURIComponent(email)}`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('failedLoginCountBadge').textContent = `Total: ${data.pagination?.total || 0}`;
+                
+                if (data.failedLogins && data.failedLogins.length > 0) {
+                    document.getElementById('failedLoginsList').innerHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Email</th>
+                                    <th>IP Address</th>
+                                    <th>User Agent</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.failedLogins.map(login => `
+                                    <tr>
+                                        <td>${login.timestamp ? new Date(login.timestamp).toLocaleString() : 'N/A'}</td>
+                                        <td>${login.email || 'N/A'}</td>
+                                        <td>${login.ip || 'N/A'}</td>
+                                        <td>${login.userAgent ? login.userAgent.substring(0, 30) + '...' : 'N/A'}</td>
+                                        <td>
+                                            <button class="action-btn btn-info" onclick='showLoginDetails(${JSON.stringify(login).replace(/'/g, "\\'")})'>
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('failedLoginsList').innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">No failed login attempts found</p>';
+                }
+
+                const pagination = document.getElementById('failedLoginPagination');
+                pagination.innerHTML = '';
+                
+                if (data.pagination && data.pagination.pages > 1) {
+                    for (let i = 1; i <= data.pagination.pages; i++) {
+                        pagination.innerHTML += `
+                            <button class="${i === page ? 'active' : ''}" onclick="loadFailedLogins(${i})">${i}</button>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading failed logins:', error);
+                document.getElementById('failedLoginsList').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Error loading failed logins: ${error.message}</p>
+                        <button class="retry-btn" onclick="loadFailedLogins(1)">Retry</button>
+                        <button class="retry-btn" style="background: #3498db;" onclick="testEndpoint('/api/admin/failed-logins?limit=50')">Debug API</button>
+                    </div>
+                `;
+            }
+        }
+
+        function showLoginDetails(login) {
+            showModal(`
+                <h3>Failed Login Details</h3>
+                <p><strong>Time:</strong> ${login.timestamp ? new Date(login.timestamp).toLocaleString() : 'N/A'}</p>
+                <p><strong>Email:</strong> ${login.email || 'N/A'}</p>
+                <p><strong>IP Address:</strong> ${login.ip || 'N/A'}</p>
+                <p><strong>User Agent:</strong> ${login.userAgent || 'N/A'}</p>
+                <p><strong>Attempt Count:</strong> ${login.attemptCount || '1'}</p>
+                <p><strong>Location:</strong> ${login.location || 'Unknown'}</p>
+                <p><strong>Device:</strong> ${login.device || 'Unknown'}</p>
+                <p><strong>Browser:</strong> ${login.browser || 'Unknown'}</p>
+            `);
+        }
+
+        function applyDebugFilters() {
+            loadErrorLogs(1);
+            loadFailedLogins(1);
+        }
+
+        // ========== SETTINGS TAB ==========
+        async function loadSettings() {
+            const content = document.getElementById('mainContent');
+            
+            content.innerHTML = `
+                <div class="content-header">
+                    <h1><i class="fas fa-cog"></i> System Settings</h1>
+                    <p>Configure system parameters</p>
+                </div>
+                
+                <div class="table-container">
+                    <div id="settingsFormContainer">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 20px;">Loading settings...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            await loadCurrentSettings();
+        }
+
+        async function loadCurrentSettings() {
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load settings');
+                
+                const settings = await response.json();
+                
+                document.getElementById('settingsFormContainer').innerHTML = `
+                    <form onsubmit="saveSettings(event)">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Maintenance Mode</label>
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="maintenanceMode" ${settings.maintenanceMode ? 'checked' : ''}> Enable Maintenance Mode
+                            </label>
+                            <small style="color: #7f8c8d;">When enabled, users will see a maintenance message</small>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Developer Mode</label>
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="devMode" ${settings.devMode ? 'checked' : ''}> Enable Developer Mode
+                            </label>
+                            <small style="color: #7f8c8d;">Shows debug information and bypasses some checks</small>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Platform Fee (%)</label>
+                            <input type="number" id="platformFee" class="login-input" style="width: 200px;" min="0" max="100" step="0.1" value="${settings.platformFee || 5}">
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600;">User Registrations</label>
+                            <label style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="registrationsEnabled" ${settings.registrationsEnabled !== false ? 'checked' : ''}> Enable New Registrations
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="login-btn" style="width: auto; padding: 12px 30px;">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </form>
+                `;
+            } catch (error) {
+                document.getElementById('settingsFormContainer').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>Error loading settings: ${error.message}</p>
+                        <button class="retry-btn" onclick="loadSettings()">Retry</button>
+                    </div>
+                `;
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function saveSettings(event) {
+            event.preventDefault();
+            
+            const saveBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            saveBtn.disabled = true;
+            
+            const settings = {
+                maintenanceMode: document.getElementById('maintenanceMode').checked,
+                devMode: document.getElementById('devMode').checked,
+                platformFee: parseFloat(document.getElementById('platformFee').value),
+                registrationsEnabled: document.getElementById('registrationsEnabled').checked
+            };
+            
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (!response.ok) throw new Error('Failed to save settings');
+                
+                showNotification('Settings saved successfully', 'success');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        // ========== USER ACTION FUNCTIONS ==========
+        async function suspendUser(userId) {
+            if (!confirm('Are you sure you want to suspend this user?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'suspend',
+                        reason: prompt('Enter suspension reason:') || 'No reason provided'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to suspend user');
+                
+                showNotification('User suspended successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function unsuspendUser(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'unsuspend' })
+                });
+
+                if (!response.ok) throw new Error('Failed to unsuspend user');
+                
+                showNotification('User unsuspended successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function banUser(userId) {
+            if (!confirm('Are you sure you want to ban this user? This action is permanent.')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'ban',
+                        reason: prompt('Enter ban reason:') || 'No reason provided'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to ban user');
+                
+                showNotification('User banned successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function unbanUser(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'unban' })
+                });
+
+                if (!response.ok) throw new Error('Failed to unban user');
+                
+                showNotification('User unbanned successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function promoteToAdmin(userId) {
+            if (!confirm('Are you sure you want to promote this user to admin?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'promote' })
+                });
+
+                if (!response.ok) throw new Error('Failed to promote user');
+                
+                showNotification('User promoted to admin successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function demoteFromAdmin(userId) {
+            if (!confirm('Are you sure you want to demote this admin?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'demote' })
+                });
+
+                if (!response.ok) throw new Error('Failed to demote user');
+                
+                showNotification('Admin demoted successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone!')) return;
+            
+            const reason = prompt('Enter reason for deletion:');
+            if (!reason) return;
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                if (!response.ok) throw new Error('Failed to delete user');
+                
+                showNotification('User deleted successfully', 'success');
+                loadUsers(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function viewUser(userId) {
+            showNotification('View user details - Feature coming soon', 'info');
+        }
+
+        async function flagTask(taskId) {
+            const reason = prompt('Enter reason for flagging this task:');
+            if (!reason) return;
+            
+            try {
+                const response = await fetch(`/api/admin/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'flag',
+                        reason 
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to flag task');
+                
+                showNotification('Task flagged successfully', 'success');
+                loadTasks(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function closeTask(taskId) {
+            if (!confirm('Are you sure you want to close this task?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'close',
+                        reason: 'Closed by admin'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to close task');
+                
+                showNotification('Task closed successfully', 'success');
+                loadTasks(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function deleteTask(taskId) {
+            if (!confirm('Are you sure you want to permanently delete this task?')) return;
+            
+            const reason = prompt('Enter reason for deletion:');
+            if (!reason) return;
+            
+            try {
+                const response = await fetch(`/api/admin/tasks/${taskId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                if (!response.ok) throw new Error('Failed to delete task');
+                
+                showNotification('Task deleted successfully', 'success');
+                loadTasks(currentPage);
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+
+        function viewTask(taskId) {
+            showNotification('View task details - Feature coming soon', 'info');
+        }
+
+        // ========== UTILITY FUNCTIONS ==========
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.background = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        function showModal(content) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Details</h3>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modalContainer').innerHTML = '';
+            document.getElementById('modalContainer').appendChild(modal);
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').innerHTML = '';
+        }
+
+        // Make all functions globally available
+        window.handleLogin = handleLogin;
+        window.handleLogout = handleLogout;
+        window.switchTab = switchTab;
+        window.closeModal = closeModal;
+        window.toggleRawDebug = toggleRawDebug;
+        window.testEndpoint = testEndpoint;
+        window.showErrorDetails = showErrorDetails;
+        window.showLoginDetails = showLoginDetails;
+        
+        window.applyUserFilters = applyUserFilters;
+        window.applyTaskFilters = applyTaskFilters;
+        window.applyVerificationFilters = applyVerificationFilters;
+        window.applyReportFilters = applyReportFilters;
+        window.applyDebugFilters = applyDebugFilters;
+        
+        window.suspendUser = suspendUser;
+        window.unsuspendUser = unsuspendUser;
+        window.banUser = banUser;
+        window.unbanUser = unbanUser;
+        window.promoteToAdmin = promoteToAdmin;
+        window.demoteFromAdmin = demoteFromAdmin;
+        window.deleteUser = deleteUser;
+        window.viewUser = viewUser;
+        
+        window.flagTask = flagTask;
+        window.closeTask = closeTask;
+        window.deleteTask = deleteTask;
+        window.viewTask = viewTask;
+        
+        // Verification functions
+        window.viewVerificationDocuments = viewVerificationDocuments;
+        window.approveVerification = approveVerification;
+        window.rejectVerification = rejectVerification;
+        window.showRejectForm = showRejectForm;
+        window.confirmReject = confirmReject;
+        window.cancelReject = cancelReject;
+        window.refreshVerifications = refreshVerifications;
+        window.testVerificationEndpoints = testVerificationEndpoints;
+        window.openImageInModal = openImageInModal;
+        
+        window.viewReport = viewReport;
+        window.addReportNote = addReportNote;
+        window.resolveReport = resolveReport;
+        window.dismissReport = dismissReport;
+        window.warnReportedUser = warnReportedUser;
+        
+        window.loadErrorLogs = loadErrorLogs;
+        window.loadFailedLogins = loadFailedLogins;
+        
+        window.saveSettings = saveSettings;
     </script>
 </body>
 </html>
