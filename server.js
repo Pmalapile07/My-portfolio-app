@@ -10,7 +10,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // ========== CLOUDINARY CONFIGURATION ==========
-// These come from Render environment variables
 console.log('☁️ Configuring Cloudinary with:');
 console.log('Cloud name:', process.env.CLOUDINARY_CLOUD_NAME);
 console.log('API key length:', process.env.CLOUDINARY_API_KEY?.length);
@@ -79,7 +78,7 @@ const userSchema = new mongoose.Schema({
   initials: String,
   emailVerified: { type: Boolean, default: true },
   photoUploaded: { type: Boolean, default: false },
-  adminVerified: { type: Boolean, default: true },
+  adminVerified: { type: Boolean, default: false }, // Changed default to false
   profileImage: String, // Cloudinary URL
   profileImagePublicId: String, // For deleting/updating images
   suspended: { type: Boolean, default: false },
@@ -91,6 +90,10 @@ const userSchema = new mongoose.Schema({
   bannedBy: String,
   banReason: String,
   lastLogin: Date,
+  verificationStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'not_requested'], default: 'not_requested' },
+  verificationRequested: { type: Boolean, default: false },
+  verificationRequestedAt: Date,
+  rejectionReason: String,
   createdAt: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
@@ -153,17 +156,19 @@ const reportSchema = new mongoose.Schema({
 const Report = mongoose.model('Report', reportSchema);
 
 const verificationRequestSchema = new mongoose.Schema({
-  userId: String,
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   userEmail: String,
   userName: String,
+  userRole: String,
   idType: { type: String, enum: ['passport', 'drivers_license', 'national_id'] },
   idImage: String, // Cloudinary URL
   selfieImage: String, // Cloudinary URL
-  status: { type: String, enum: ['pending', 'approved', 'rejected'] },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   rejectionReason: String,
   reviewedBy: String,
   reviewedAt: Date,
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  notes: String
 });
 const VerificationRequest = mongoose.model('VerificationRequest', verificationRequestSchema);
 
@@ -263,14 +268,13 @@ const authMiddleware = async (req, res, next) => {
 };
 
 // ========== CLOUDINARY UPLOAD ENDPOINTS ==========
-// Upload profile picture - FIXED VERSION
+// Upload profile picture
 app.post('/api/upload/profile', upload.single('image'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
     
-    // User is now available from auth middleware
     const user = req.user;
     console.log('📧 Uploading profile for user:', user.email);
     
@@ -438,15 +442,11 @@ app.get('/api/debug/mongo-check', async (req, res) => {
     const collections = await mongoose.connection.db.listCollections().toArray();
     const errorLogCollection = collections.find(c => c.name === 'errorlogs');
     const failedLoginCollection = collections.find(c => c.name === 'failedlogins');
-    let errorCount = 0, failedLoginCount = 0;
+    const verificationCollection = collections.find(c => c.name === 'verificationrequests');
+    let errorCount = 0, failedLoginCount = 0, verificationCount = 0;
     if (errorLogCollection) errorCount = await ErrorLog.estimatedDocumentCount();
-    let failedLoginExists = false;
-    try {
-      if (mongoose.models.FailedLogin) {
-        failedLoginExists = true;
-        if (failedLoginCollection) failedLoginCount = await FailedLogin.estimatedDocumentCount();
-      }
-    } catch (e) {}
+    if (failedLoginCollection) failedLoginCount = await FailedLogin.estimatedDocumentCount();
+    if (verificationCollection) verificationCount = await VerificationRequest.estimatedDocumentCount();
     
     res.json({
       connected: mongoose.connection.readyState === 1,
@@ -454,8 +454,10 @@ app.get('/api/debug/mongo-check', async (req, res) => {
       collections: collections.map(c => c.name),
       errorLogExists: !!errorLogCollection,
       errorLogCount: errorCount,
-      failedLoginExists: failedLoginExists,
+      failedLoginExists: !!failedLoginCollection,
       failedLoginCount: failedLoginCount,
+      verificationExists: !!verificationCollection,
+      verificationCount: verificationCount,
       allModels: Object.keys(mongoose.models)
     });
   } catch (error) {
@@ -546,7 +548,9 @@ app.post('/api/auth/register', async (req, res) => {
       role: role || 'poster', 
       initials, 
       emailVerified: true, 
-      adminVerified: true 
+      adminVerified: false, // Default to false for new users
+      verificationStatus: 'not_requested',
+      verificationRequested: false
     });
     await user.save();
     const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
@@ -677,7 +681,9 @@ app.post('/api/users', async (req, res) => {
       role: role || 'poster', 
       initials: userInitials, 
       emailVerified: true, 
-      adminVerified: true 
+      adminVerified: false,
+      verificationStatus: 'not_requested',
+      verificationRequested: false
     });
     await user.save();
     const userResponse = user.toObject();
@@ -712,6 +718,119 @@ app.delete('/api/users/:email', async (req, res) => {
     res.json({ message: 'User and associated tasks deleted successfully' });
   } catch (error) {
     await logError(error, '/api/users/:email', null, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== VERIFICATION REQUEST ROUTES ==========
+// User requests verification
+app.post('/api/users/:email/verify', authMiddleware, async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Verify the authenticated user matches the email
+    if (req.user.email !== email) {
+      return res.status(403).json({ error: 'You can only request verification for your own account' });
+    }
+
+    const user = req.user;
+
+    // Check if user has profile image
+    if (!user.profileImage) {
+      return res.status(400).json({ error: 'Profile image is required for verification' });
+    }
+
+    // Check if already verified
+    if (user.adminVerified) {
+      return res.status(400).json({ error: 'User already verified' });
+    }
+
+    // Check if there's already a pending request
+    const existingRequest = await VerificationRequest.findOne({ 
+      userEmail: email, 
+      status: 'pending' 
+    });
+    
+    if (existingRequest) {
+      return res.status(400).json({ error: 'Verification request already pending' });
+    }
+
+    // Check if rejected recently (you can adjust the time window)
+    const rejectedRequest = await VerificationRequest.findOne({ 
+      userEmail: email, 
+      status: 'rejected' 
+    }).sort({ createdAt: -1 });
+
+    if (rejectedRequest) {
+      const daysSinceRejection = (new Date() - rejectedRequest.createdAt) / (1000 * 60 * 60 * 24);
+      if (daysSinceRejection < 7) {
+        return res.status(400).json({ 
+          error: 'Your previous verification was rejected. Please wait 7 days before reapplying.',
+          rejectionReason: rejectedRequest.rejectionReason
+        });
+      }
+    }
+
+    // Create verification request using profile image as ID document
+    const verificationRequest = new VerificationRequest({
+      userId: user._id,
+      userEmail: user.email,
+      userName: user.name,
+      userRole: user.role,
+      idType: 'national_id',
+      idImage: user.profileImage, // Use profile image as ID document
+      status: 'pending',
+      createdAt: new Date()
+    });
+
+    await verificationRequest.save();
+
+    // Update user status
+    user.verificationStatus = 'pending';
+    user.verificationRequested = true;
+    user.verificationRequestedAt = new Date();
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Verification request submitted successfully',
+      requestId: verificationRequest._id
+    });
+
+  } catch (error) {
+    await logError(error, '/api/users/:email/verify', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user's verification status
+app.get('/api/users/:email/verification-status', authMiddleware, async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (req.user.email !== email && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const user = req.user;
+    const verificationRequest = await VerificationRequest.findOne({ 
+      userEmail: email 
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      adminVerified: user.adminVerified,
+      verificationStatus: user.verificationStatus || 'not_requested',
+      verificationRequested: user.verificationRequested || false,
+      hasProfileImage: !!user.profileImage,
+      currentRequest: verificationRequest ? {
+        status: verificationRequest.status,
+        submittedAt: verificationRequest.createdAt,
+        rejectionReason: verificationRequest.rejectionReason
+      } : null
+    });
+
+  } catch (error) {
+    await logError(error, '/api/users/:email/verification-status', req.user?._id, req);
     res.status(500).json({ error: error.message });
   }
 });
@@ -752,10 +871,27 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     const pendingVerifications = await VerificationRequest.countDocuments({ status: 'pending' });
     const totalReports = await Report.countDocuments({ status: 'open' });
     const totalErrors = await ErrorLog.countDocuments({ resolved: false });
+    const unverifiedUsers = await User.countDocuments({ 
+      adminVerified: false, 
+      role: { $ne: 'admin' } 
+    });
+    const usersWithPhotos = await User.countDocuments({ 
+      profileImage: { $ne: null },
+      role: { $ne: 'admin' }
+    });
+    
     const recentUsers = await User.find().sort({ createdAt: -1 }).limit(5).select('-password');
     const recentTasks = await Task.find().sort({ createdAt: -1 }).limit(5);
+    
     res.json({
-      users: { total: totalUsers, posters: totalPosters, helpers: totalHelpers, admins: totalAdmins },
+      users: { 
+        total: totalUsers, 
+        posters: totalPosters, 
+        helpers: totalHelpers, 
+        admins: totalAdmins,
+        unverified: unverifiedUsers,
+        withPhotos: usersWithPhotos
+      },
       tasks: { total: totalTasks, active: activeTasks, completed: completedTasks, cancelled: cancelledTasks },
       system: { pendingVerifications, totalReports, totalErrors },
       recentUsers,
@@ -769,20 +905,26 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
 
 app.get('/api/admin/users', adminAuth, async (req, res) => {
   try {
-    const { role, status, search, page = 1, limit = 20 } = req.query;
+    const { role, status, search, verified, page = 1, limit = 20 } = req.query;
     const query = {};
+    
     if (role) query.role = role;
     if (status === 'suspended') query.suspended = true;
     if (status === 'banned') query.banned = true;
+    if (verified === 'true') query.adminVerified = true;
+    if (verified === 'false') query.adminVerified = false;
+    
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } }
       ];
     }
+    
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const users = await User.find(query).select('-password').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit));
     const total = await User.countDocuments(query);
+    
     res.json({ 
       users, 
       pagination: { 
@@ -797,53 +939,115 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
   }
 });
 
+app.get('/api/admin/users/:userId', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('-password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // Get verification requests for this user
+    const verificationRequests = await VerificationRequest.find({ 
+      userEmail: user.email 
+    }).sort({ createdAt: -1 });
+    
+    res.json({
+      ...user.toObject(),
+      verificationRequests
+    });
+  } catch (error) {
+    await logError(error, '/api/admin/users/:userId', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.put('/api/admin/users/:userId', adminAuth, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { action, reason } = req.body;
+    const { action, reason, adminVerified, verificationStatus, rejectionReason } = req.body;
+    
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
+    
     let update = {};
     let activityDetails = { reason, action };
-    switch (action) {
-      case 'suspend':
-        update.suspended = true;
-        update.suspendedAt = new Date();
-        update.suspendedBy = req.user.email;
-        update.suspensionReason = reason;
-        break;
-      case 'unsuspend':
-        update.suspended = false;
-        update.suspendedAt = null;
-        update.suspendedBy = null;
-        update.suspensionReason = null;
-        break;
-      case 'ban':
-        update.banned = true;
-        update.bannedAt = new Date();
-        update.bannedBy = req.user.email;
-        update.banReason = reason;
-        break;
-      case 'unban':
-        update.banned = false;
-        update.bannedAt = null;
-        update.bannedBy = null;
-        update.banReason = null;
-        break;
-      case 'promote':
-        update.role = 'admin';
-        break;
-      case 'demote':
-        update.role = 'poster';
-        break;
-      default:
-        return res.status(400).json({ error: 'Invalid action' });
+    
+    if (action) {
+      switch (action) {
+        case 'suspend':
+          update.suspended = true;
+          update.suspendedAt = new Date();
+          update.suspendedBy = req.user.email;
+          update.suspensionReason = reason;
+          break;
+        case 'unsuspend':
+          update.suspended = false;
+          update.suspendedAt = null;
+          update.suspendedBy = null;
+          update.suspensionReason = null;
+          break;
+        case 'ban':
+          update.banned = true;
+          update.bannedAt = new Date();
+          update.bannedBy = req.user.email;
+          update.banReason = reason;
+          break;
+        case 'unban':
+          update.banned = false;
+          update.bannedAt = null;
+          update.bannedBy = null;
+          update.banReason = null;
+          break;
+        case 'promote':
+          update.role = 'admin';
+          break;
+        case 'demote':
+          update.role = 'poster';
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid action' });
+      }
     }
+    
+    // Handle verification status update
+    if (adminVerified !== undefined || verificationStatus) {
+      update.adminVerified = adminVerified !== undefined ? adminVerified : verificationStatus === 'approved';
+      update.verificationStatus = verificationStatus || (adminVerified ? 'approved' : user.verificationStatus);
+      
+      // If approving, update any pending verification request
+      if (update.adminVerified) {
+        await VerificationRequest.updateMany(
+          { userEmail: user.email, status: 'pending' },
+          { 
+            status: 'approved', 
+            reviewedBy: req.user.email,
+            reviewedAt: new Date()
+          }
+        );
+      }
+      
+      // If rejecting, update the latest pending request
+      if (verificationStatus === 'rejected' && rejectionReason) {
+        update.rejectionReason = rejectionReason;
+        const pendingRequest = await VerificationRequest.findOne({ 
+          userEmail: user.email, 
+          status: 'pending' 
+        }).sort({ createdAt: -1 });
+        
+        if (pendingRequest) {
+          pendingRequest.status = 'rejected';
+          pendingRequest.rejectionReason = rejectionReason;
+          pendingRequest.reviewedBy = req.user.email;
+          pendingRequest.reviewedAt = new Date();
+          await pendingRequest.save();
+        }
+      }
+    }
+    
     const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true }).select('-password');
+    
     const adminActivity = new AdminActivityLog({
       adminId: req.user._id,
       adminEmail: req.user.email,
-      action,
+      action: action || 'update_verification',
       targetType: 'user',
       targetId: userId,
       details: activityDetails,
@@ -851,6 +1055,7 @@ app.put('/api/admin/users/:userId', adminAuth, async (req, res) => {
       userAgent: req.headers['user-agent']
     });
     await adminActivity.save();
+    
     res.json(updatedUser);
   } catch (error) {
     await logError(error, '/api/admin/users/:userId', req.user?._id, req);
@@ -864,6 +1069,7 @@ app.delete('/api/admin/users/:userId', adminAuth, async (req, res) => {
     const { reason } = req.body;
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
+    
     const adminActivity = new AdminActivityLog({
       adminId: req.user._id,
       adminEmail: req.user.email,
@@ -875,8 +1081,11 @@ app.delete('/api/admin/users/:userId', adminAuth, async (req, res) => {
       userAgent: req.headers['user-agent']
     });
     await adminActivity.save();
+    
     await Task.deleteMany({ userId: user.email });
+    await VerificationRequest.deleteMany({ userEmail: user.email });
     await User.findByIdAndDelete(userId);
+    
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     await logError(error, '/api/admin/users/:userId', req.user?._id, req);
@@ -898,7 +1107,7 @@ app.get('/api/admin/tasks', adminAuth, async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const tasks = await Task.find(query).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit));
     const tasksWithUser = await Promise.all(tasks.map(async (task) => {
-      const user = await User.findOne({ email: task.userId }).select('name email profileImage');
+      const user = await User.findOne({ email: task.userId }).select('name email profileImage role');
       return {
         ...task.toObject(),
         poster: user || { name: 'Unknown', email: task.userId }
@@ -990,6 +1199,110 @@ app.delete('/api/admin/tasks/:taskId', adminAuth, async (req, res) => {
   }
 });
 
+// ========== VERIFICATION REQUESTS ADMIN ROUTES ==========
+app.get('/api/admin/verificationrequests', adminAuth, async (req, res) => {
+  try {
+    const { status, userRole, search, page = 1, limit = 20 } = req.query;
+    const query = {};
+    
+    if (status) query.status = status;
+    if (userRole) query.userRole = userRole;
+    if (search) {
+      query.$or = [
+        { userName: { $regex: search, $options: 'i' } },
+        { userEmail: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const verifications = await VerificationRequest.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await VerificationRequest.countDocuments(query);
+    
+    res.json({ 
+      verifications, 
+      pagination: { 
+        total, 
+        page: parseInt(page), 
+        pages: Math.ceil(total / parseInt(limit)) 
+      } 
+    });
+  } catch (error) {
+    await logError(error, '/api/admin/verificationrequests', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/admin/verificationrequests/:requestId', adminAuth, async (req, res) => {
+  try {
+    const verification = await VerificationRequest.findById(req.params.requestId);
+    if (!verification) return res.status(404).json({ error: 'Verification request not found' });
+    
+    // Get user details
+    const user = await User.findOne({ email: verification.userEmail }).select('-password');
+    
+    res.json({
+      ...verification.toObject(),
+      user
+    });
+  } catch (error) {
+    await logError(error, '/api/admin/verificationrequests/:requestId', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/admin/verificationrequests/:requestId', adminAuth, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { status, rejectionReason } = req.body;
+    
+    const verification = await VerificationRequest.findById(requestId);
+    if (!verification) return res.status(404).json({ error: 'Verification request not found' });
+    
+    verification.status = status;
+    verification.reviewedBy = req.user.email;
+    verification.reviewedAt = new Date();
+    if (status === 'rejected' && rejectionReason) {
+      verification.rejectionReason = rejectionReason;
+    }
+    await verification.save();
+    
+    // Update user verification status
+    const user = await User.findOne({ email: verification.userEmail });
+    if (user) {
+      if (status === 'approved') {
+        user.adminVerified = true;
+        user.verificationStatus = 'approved';
+      } else if (status === 'rejected') {
+        user.verificationStatus = 'rejected';
+        user.rejectionReason = rejectionReason;
+      }
+      await user.save();
+    }
+    
+    const adminActivity = new AdminActivityLog({
+      adminId: req.user._id,
+      adminEmail: req.user.email,
+      action: `verification_${status}`,
+      targetType: 'verification',
+      targetId: requestId,
+      details: { rejectionReason },
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    await adminActivity.save();
+    
+    res.json(verification);
+  } catch (error) {
+    await logError(error, '/api/admin/verificationrequests/:requestId', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Also keep the old endpoint for backward compatibility
 app.get('/api/admin/verifications', adminAuth, async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
@@ -1043,6 +1356,7 @@ app.put('/api/admin/verifications/:requestId', adminAuth, async (req, res) => {
   }
 });
 
+// ========== REPORTS ROUTES ==========
 app.get('/api/admin/reports', adminAuth, async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
