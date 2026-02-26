@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TaskMart · Helper Dashboard</title>
+    <title>TaskMart · Helper</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,20 +11,12 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
-    <!-- Custom Font -->
-    <style>
-        @font-face {
-            font-family: 'Codec Cold News';
-            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-    </style>
-    
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <!-- Socket.io for real-time notifications -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
     <style>
         * {
@@ -51,7 +43,7 @@
             line-height: 1 !important;
         }
 
-        /* === FULLSCREEN MAP - DARK STYLE === */
+        /* === FULLSCREEN MAP === */
         #map {
             position: absolute;
             top: 0;
@@ -61,11 +53,27 @@
             z-index: 1;
         }
 
-        /* === PROFILE MENU BUTTON === */
-        .profile-menu-btn {
+        /* === HEADER - Helper specific === */
+        .helper-header {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .header-left, .header-right {
+            pointer-events: auto;
+        }
+
+        /* Profile Menu Button */
+        .profile-menu-btn {
             width: 44px;
             height: 44px;
             background: white;
@@ -76,7 +84,6 @@
             justify-content: center;
             cursor: pointer;
             border: none;
-            z-index: 1000;
             transition: all 0.2s;
         }
 
@@ -89,15 +96,113 @@
             font-size: 24px;
         }
 
-        /* === BOTTOM SHEET - TASKS LIST === */
-        .tasks-sheet {
+        /* Notifications Bell */
+        .notifications-btn {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .notifications-btn:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .notifications-btn .material-symbols-outlined {
+            color: #000;
+            font-size: 24px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #FF286F;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 600;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+
+        /* Online Status */
+        .online-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            color: white;
+            font-size: 0.8rem;
+            margin-left: 1rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* === FLOATING ACTION BUTTON === */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: all 0.2s;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+        }
+
+        .fab .material-symbols-outlined {
+            color: white;
+            font-size: 28px;
+        }
+
+        /* === BOTTOM SHEET - TASKS FEED === */
+        .tasks-feed {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             background: white;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
             z-index: 10;
             max-height: 40%;
@@ -106,8 +211,948 @@
             transition: max-height 0.3s ease;
         }
 
-        .tasks-sheet.expanded {
+        .tasks-feed.expanded {
             max-height: 80%;
         }
 
-        .
+        .feed-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .feed-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feed-header .material-symbols-outlined {
+            font-size: 20px !important;
+            color: #666;
+        }
+
+        .feed-header .expand-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .tasks-feed.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .feed-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.5rem;
+        }
+
+        /* Task Card - Helper specific */
+        .helper-task-card {
+            background: #f5f9ff;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #003E71;
+            cursor: pointer;
+            transition: all 0.2s;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .helper-task-card.new {
+            border-left-color: #FF286F;
+            background: #fff0f5;
+        }
+
+        .helper-task-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,62,113,0.1);
+        }
+
+        .task-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #003E71;
+        }
+
+        .task-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            background: #FF286F;
+            color: white;
+            border-radius: 12px;
+        }
+
+        .task-location-row {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #666;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-location-row .material-symbols-outlined {
+            font-size: 16px !important;
+        }
+
+        .task-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: #999;
+            margin-bottom: 0.75rem;
+        }
+
+        .task-distance {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .task-distance .material-symbols-outlined {
+            font-size: 14px !important;
+        }
+
+        .task-budget {
+            font-weight: 600;
+            color: #003E71;
+        }
+
+        .task-budget.open {
+            color: #f59e0b;
+        }
+
+        .poster-mini {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0,62,113,0.05);
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .poster-avatar-mini {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #003E71;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .poster-name-mini {
+            font-size: 0.8rem;
+            color: #003E71;
+        }
+
+        .accept-task-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: #003E71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .accept-task-btn:hover {
+            background: #002b4f;
+        }
+
+        .accept-task-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Expanded task details */
+        .task-details-expanded {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            margin-top: 0;
+        }
+
+        .helper-task-card.expanded .task-details-expanded {
+            max-height: 300px;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,62,113,0.1);
+        }
+
+        .detail-item {
+            display: flex;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .detail-label {
+            width: 80px;
+            color: #666;
+        }
+
+        .detail-value {
+            flex: 1;
+            color: #000;
+        }
+
+        /* Notifications Panel */
+        .notifications-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            max-height: 70vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            display: none;
+            overflow: hidden;
+        }
+
+        .notifications-panel.active {
+            display: block;
+        }
+
+        .notifications-header {
+            padding: 1rem;
+            background: #f5f5f5;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notifications-header h4 {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .notifications-list {
+            max-height: calc(70vh - 60px);
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-item:hover {
+            background: #f5f5f5;
+        }
+
+        .notification-item.unread {
+            background: #fff0f5;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: #003E71;
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #999;
+        }
+
+        .empty-notifications {
+            padding: 2rem;
+            text-align: center;
+            color: #999;
+        }
+
+        /* Earnings Widget */
+        .earnings-widget {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            background: white;
+            border-radius: 30px;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: #003E71;
+            border: 1px solid rgba(0,62,113,0.1);
+        }
+
+        .earnings-widget .material-symbols-outlined {
+            color: #FF286F;
+            font-size: 20px;
+        }
+
+        /* Loading States */
+        .loading-tasks {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        .no-tasks {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            z-index: 3000;
+            display: none;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        /* Verification Banner */
+        .verification-banner {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            z-index: 2000;
+            display: none;
+            backdrop-filter: blur(4px);
+            font-size: 0.8rem;
+        }
+
+        .verification-banner.active {
+            display: block;
+        }
+
+        .verification-banner .material-symbols-outlined {
+            color: #f59e0b;
+            font-size: 16px !important;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+
+        /* Tablet/Desktop adjustments */
+        @media (min-width: 768px) {
+            .tasks-feed {
+                width: 400px;
+                left: 20px;
+                bottom: 20px;
+                border-radius: 16px;
+                max-height: 60%;
+            }
+
+            .fab {
+                bottom: 30px;
+                right: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- MAP -->
+    <div id="map"></div>
+
+    <!-- Helper Header -->
+    <div class="helper-header">
+        <div class="header-left">
+            <button class="profile-menu-btn" id="profileMenuBtn">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+        </div>
+        <div class="header-right" style="display: flex; align-items: center; gap: 10px;">
+            <div class="online-status">
+                <span class="status-dot"></span>
+                <span>Available</span>
+            </div>
+            <button class="notifications-btn" id="notificationsBtn">
+                <span class="material-symbols-outlined">notifications</span>
+                <span class="notification-badge" id="notificationBadge">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div class="notifications-panel" id="notificationsPanel">
+        <div class="notifications-header">
+            <h4>Notifications</h4>
+            <button class="close-btn" id="closeNotificationsBtn" style="background:none; border:none; cursor:pointer;">✕</button>
+        </div>
+        <div class="notifications-list" id="notificationsList">
+            <div class="empty-notifications">No notifications yet</div>
+        </div>
+    </div>
+
+    <!-- Earnings Widget -->
+    <div class="earnings-widget">
+        <span class="material-symbols-outlined">payments</span>
+        <span id="earningsTotal">R 0</span>
+        <span style="font-size:0.7rem; color:#999; margin-left:0.5rem;">this month</span>
+    </div>
+
+    <!-- Tasks Feed -->
+    <div class="tasks-feed" id="tasksFeed">
+        <div class="feed-header" id="feedHeader">
+            <h3>
+                <span class="material-symbols-outlined">雷达</span>
+                Live Tasks Nearby
+            </h3>
+            <span class="material-symbols-outlined expand-icon">expand_less</span>
+        </div>
+
+        <div class="feed-content" id="feedContent">
+            <div class="loading-tasks">Scanning for tasks...</div>
+        </div>
+    </div>
+
+    <!-- FAB - Quick Actions -->
+    <button class="fab" id="fabBtn">
+        <span class="material-symbols-outlined">support_agent</span>
+    </button>
+
+    <!-- Verification Banner -->
+    <div class="verification-banner" id="verificationBanner">
+        <span class="material-symbols-outlined">verified</span>
+        <span>Complete profile to start earning</span>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Profile Menu Container -->
+    <div id="profile-menu-container"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+            // ===== MAP INIT =====
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [28.034088, -26.195246],
+                zoom: 13
+            });
+
+            // ===== STATE =====
+            let currentUser = null;
+            let currentLat = null;
+            let currentLng = null;
+            let availableTasks = [];
+            let markers = [];
+            let notifications = [];
+            let socket = null;
+            let earningsTotal = 0;
+
+            // ===== DOM ELEMENTS =====
+            const feedHeader = document.getElementById('feedHeader');
+            const tasksFeed = document.getElementById('tasksFeed');
+            const feedContent = document.getElementById('feedContent');
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const notificationsPanel = document.getElementById('notificationsPanel');
+            const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+            const notificationsList = document.getElementById('notificationsList');
+            const notificationBadge = document.getElementById('notificationBadge');
+            const fabBtn = document.getElementById('fabBtn');
+            const verificationBanner = document.getElementById('verificationBanner');
+            const toast = document.getElementById('toast');
+            const earningsTotalSpan = document.getElementById('earningsTotal');
+
+            // ===== TOAST =====
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // ===== GET USER =====
+            function getCurrentUser() {
+                try {
+                    const user = localStorage.getItem('taskmart_user');
+                    return user ? JSON.parse(user) : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            // ===== CHECK VERIFICATION =====
+            function checkVerification() {
+                const user = getCurrentUser();
+                if (user && (!user.profileImage || !user.verified)) {
+                    verificationBanner.classList.add('active');
+                } else {
+                    verificationBanner.classList.remove('active');
+                }
+            }
+
+            // ===== GET LOCATION =====
+            function getUserLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
+                            
+                            // Add user location marker
+                            new mapboxgl.Marker({ color: '#003E71' })
+                                .setLngLat([currentLng, currentLat])
+                                .setPopup(new mapboxgl.Popup().setHTML('You are here'))
+                                .addTo(map);
+                            
+                            fetchTasks();
+                            connectSocket();
+                        },
+                        (error) => {
+                            console.error('Location error:', error);
+                            fetchTasks();
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                } else {
+                    fetchTasks();
+                }
+            }
+
+            // ===== CONNECT TO SOCKET.IO FOR REAL-TIME =====
+            function connectSocket() {
+                try {
+                    socket = io(API_BASE_URL, {
+                        query: { userId: currentUser?.email }
+                    });
+
+                    socket.on('connect', () => {
+                        console.log('Connected to real-time feed');
+                    });
+
+                    socket.on('new-task', (task) => {
+                        console.log('New task received:', task);
+                        
+                        // Add to notifications
+                        addNotification({
+                            title: 'New Task Available!',
+                            message: `${task.taskDescription || 'Someone needs help'}`,
+                            time: 'Just now',
+                            taskId: task._id || task.id
+                        });
+
+                        // Add to tasks list
+                        availableTasks.unshift(task);
+                        renderTasks(availableTasks);
+                        addTaskMarkers([task]);
+
+                        // Play sound
+                        new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3').play().catch(() => {});
+                        
+                        showToast('New task available nearby!');
+                    });
+
+                    socket.on('task-accepted', (data) => {
+                        console.log('Task accepted by someone else:', data);
+                        // Remove task if accepted by another helper
+                        availableTasks = availableTasks.filter(t => (t._id || t.id) !== data.taskId);
+                        renderTasks(availableTasks);
+                    });
+
+                } catch (error) {
+                    console.error('Socket connection failed:', error);
+                }
+            }
+
+            // ===== ADD NOTIFICATION =====
+            function addNotification(notif) {
+                notifications.unshift(notif);
+                if (notifications.length > 20) notifications = notifications.slice(0, 20);
+                
+                notificationBadge.textContent = notifications.filter(n => !n.read).length;
+                notificationBadge.style.display = 'flex';
+                
+                renderNotifications();
+            }
+
+            // ===== MARK NOTIFICATION AS READ =====
+            function markNotificationAsRead(index) {
+                notifications[index].read = true;
+                notificationBadge.textContent = notifications.filter(n => !n.read).length;
+                if (notifications.filter(n => !n.read).length === 0) {
+                    notificationBadge.style.display = 'none';
+                }
+                renderNotifications();
+            }
+
+            // ===== RENDER NOTIFICATIONS =====
+            function renderNotifications() {
+                if (notifications.length === 0) {
+                    notificationsList.innerHTML = '<div class="empty-notifications">No notifications yet</div>';
+                    return;
+                }
+
+                notificationsList.innerHTML = notifications.map((notif, index) => `
+                    <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="window.viewTask('${notif.taskId}')">
+                        <div class="notification-title">${notif.title}</div>
+                        <div class="notification-time">${notif.time}</div>
+                    </div>
+                `).join('');
+            }
+
+            // ===== VIEW TASK FROM NOTIFICATION =====
+            window.viewTask = function(taskId) {
+                // Find and expand the task in feed
+                const task = availableTasks.find(t => (t._id || t.id) === taskId);
+                if (task) {
+                    tasksFeed.classList.add('expanded');
+                    // Scroll to task
+                    setTimeout(() => {
+                        const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                        if (taskElement) {
+                            taskElement.scrollIntoView({ behavior: 'smooth' });
+                            taskElement.classList.add('highlight');
+                        }
+                    }, 300);
+                }
+                notificationsPanel.classList.remove('active');
+            };
+
+            // ===== FETCH TASKS =====
+            async function fetchTasks() {
+                feedContent.innerHTML = '<div class="loading-tasks">Scanning for tasks...</div>';
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks?status=active`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        let tasks = Array.isArray(data) ? data : (data.tasks || data.data || []);
+                        
+                        // Filter out tasks created by current user
+                        if (currentUser) {
+                            availableTasks = tasks.filter(task => {
+                                const taskUserEmail = task.userEmail || task.email || (task.user && task.user.email);
+                                return taskUserEmail !== currentUser.email;
+                            });
+                        } else {
+                            availableTasks = tasks;
+                        }
+                        
+                        if (availableTasks.length === 0) {
+                            feedContent.innerHTML = '<div class="no-tasks">No tasks available in your area<br><small>Check back soon!</small></div>';
+                        } else {
+                            renderTasks(availableTasks);
+                            addTaskMarkers(availableTasks);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching tasks:', error);
+                    feedContent.innerHTML = '<div class="no-tasks">Unable to load tasks</div>';
+                }
+            }
+
+            // ===== CALCULATE DISTANCE =====
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+                
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+
+            // ===== RENDER TASKS =====
+            function renderTasks(tasks) {
+                if (!tasks || tasks.length === 0) {
+                    feedContent.innerHTML = '<div class="no-tasks">No tasks available<br><small>Check back soon!</small></div>';
+                    return;
+                }
+
+                let tasksHtml = '';
+
+                tasks.forEach(task => {
+                    const taskId = task._id || task.id;
+                    const budget = task.budgetAmount || task.budget;
+                    const budgetDisplay = task.budgetType === 'open' ? 
+                        '<span class="task-budget open">Open to offers</span>' : 
+                        `<span class="task-budget">R ${budget}</span>`;
+                    
+                    // Calculate distance
+                    let distanceText = '';
+                    if (currentLat && currentLng && task.coordinates) {
+                        const [lng, lat] = task.coordinates.split(',').map(Number);
+                        const distance = calculateDistance(currentLat, currentLng, lat, lng);
+                        if (distance !== null) {
+                            distanceText = distance < 1 ? 
+                                `${Math.round(distance * 1000)}m` : 
+                                `${distance.toFixed(1)}km`;
+                        }
+                    }
+
+                    const posterName = task.userName || 'Someone nearby';
+
+                    tasksHtml += `
+                        <div class="helper-task-card" data-task-id="${taskId}">
+                            <div class="task-header-row">
+                                <span class="task-title">${task.taskDescription || 'Help needed'}</span>
+                                <span class="task-badge">${distanceText || 'Nearby'}</span>
+                            </div>
+                            
+                            <div class="task-location-row">
+                                <span class="material-symbols-outlined">location_on</span>
+                                <span>${task.location || 'Location not specified'}</span>
+                            </div>
+                            
+                            <div class="task-meta-row">
+                                <span class="task-distance">
+                                    <span class="material-symbols-outlined">near_me</span>
+                                    ${distanceText || '?'} away
+                                </span>
+                                <span>⏱️ ${task.when || 'Now'}</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                ${budgetDisplay}
+                                
+                                <div class="poster-mini">
+                                    <div class="poster-avatar-mini">${posterName.charAt(0)}</div>
+                                    <span class="poster-name-mini">${posterName.split(' ')[0]}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="task-details-expanded">
+                                <div class="detail-item">
+                                    <span class="detail-label">Address:</span>
+                                    <span class="detail-value">${task.streetName || 'Not specified'}</span>
+                                </div>
+                                
+                                ${task.scheduledDate ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Date:</span>
+                                    <span class="detail-value">${task.scheduledDate}</span>
+                                </div>
+                                ` : ''}
+                                
+                                ${task.moreDetails ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Notes:</span>
+                                    <span class="detail-value">${task.moreDetails}</span>
+                                </div>
+                                ` : ''}
+
+                                <button class="accept-task-btn" onclick="window.acceptTask('${taskId}')">
+                                    Accept & Help
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                feedContent.innerHTML = tasksHtml;
+
+                // Add click handlers
+                document.querySelectorAll('.helper-task-card').forEach(card => {
+                    card.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('accept-task-btn')) return;
+                        this.classList.toggle('expanded');
+                    });
+                });
+            }
+
+            // ===== ADD MARKERS TO MAP =====
+            function addTaskMarkers(tasks) {
+                markers.forEach(marker => marker.remove());
+                markers = [];
+
+                tasks.forEach(task => {
+                    if (task.coordinates) {
+                        const [lng, lat] = task.coordinates.split(',').map(Number);
+                        
+                        const marker = new mapboxgl.Marker({ color: '#FF286F' })
+                            .setLngLat([lng, lat])
+                            .setPopup(new mapboxgl.Popup().setHTML(`
+                                <div style="font-family: 'Manrope', sans-serif; padding: 0.5rem;">
+                                    <strong>${task.taskDescription || 'Help needed'}</strong><br>
+                                    Budget: ${task.budgetAmount ? 'R ' + task.budgetAmount : 'Open to offers'}<br>
+                                    <button onclick="window.acceptTask('${task._id || task.id}')" 
+                                        style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:5px; margin-top:0.5rem; cursor:pointer; width:100%;">
+                                        Accept
+                                    </button>
+                                </div>
+                            `))
+                            .addTo(map);
+                        
+                        markers.push(marker);
+                    }
+                });
+            }
+
+            // ===== ACCEPT TASK =====
+            window.acceptTask = async function(taskId) {
+                const user = getCurrentUser();
+                
+                if (!user) {
+                    showToast('Please log in to help');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (!user.profileImage) {
+                    showToast('Complete your profile first');
+                    verificationBanner.classList.add('active');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/accept`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('taskmart_token')}`
+                        },
+                        body: JSON.stringify({ helperId: user.email, helperName: user.name })
+                    });
+
+                    if (response.ok) {
+                        showToast('Task accepted! You can now chat with the poster.');
+                        
+                        // Add to earnings (mock)
+                        const task = availableTasks.find(t => (t._id || t.id) === taskId);
+                        if (task && task.budgetAmount) {
+                            earningsTotal += task.budgetAmount;
+                            earningsTotalSpan.textContent = `R ${earningsTotal}`;
+                        }
+                        
+                        // Remove task from list
+                        availableTasks = availableTasks.filter(t => (t._id || t.id) !== taskId);
+                        renderTasks(availableTasks);
+                        addTaskMarkers(availableTasks);
+                    } else {
+                        showToast('Task already taken');
+                    }
+                } catch (error) {
+                    console.error('Error accepting task:', error);
+                    showToast('Error accepting task');
+                }
+            };
+
+            // ===== EVENT LISTENERS =====
+            feedHeader.addEventListener('click', () => {
+                tasksFeed.classList.toggle('expanded');
+            });
+
+            notificationsBtn.addEventListener('click', () => {
+                notificationsPanel.classList.toggle('active');
+            });
+
+            closeNotificationsBtn.addEventListener('click', () => {
+                notificationsPanel.classList.remove('active');
+            });
+
+            fabBtn.addEventListener('click', () => {
+                showToast('Looking for tasks nearby...');
+                fetchTasks();
+            });
+
+            // Close notifications when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!notificationsPanel.contains(e.target) && !notificationsBtn.contains(e.target)) {
+                    notificationsPanel.classList.remove('active');
+                }
+            });
+
+            // ===== INIT =====
+            map.on('load', () => {
+                currentUser = getCurrentUser();
+                
+                if (!currentUser) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                checkVerification();
+                getUserLocation();
+
+                // Load earnings from localStorage
+                const savedEarnings = localStorage.getItem('helper_earnings');
+                if (savedEarnings) {
+                    earningsTotal = parseInt(savedEarnings);
+                    earningsTotalSpan.textContent = `R ${earningsTotal}`;
+                }
+            });
+
+            // Load profile menu
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('profile-menu-container').innerHTML = html;
+                    
+                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = document.createElement('script');
+                        script.textContent = scripts[i].textContent;
+                        document.body.appendChild(script);
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load profile menu:', error);
+                });
+        })();
+    </script>
+</body>
+</html>
