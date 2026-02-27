@@ -8,17 +8,14 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.19.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.19.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Turf.js for distance calculations -->
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    
-    <!-- Socket.io for real-time notifications -->
+    <!-- Socket.io -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
     <style>
@@ -29,21 +26,100 @@
         }
 
         body {
-            font-family: 'Manrope', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: #000;
             height: 100vh;
             height: 100dvh;
             overflow: hidden;
             position: fixed;
             width: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .material-symbols-outlined {
             font-family: 'Material Symbols Outlined' !important;
-            font-weight: normal !important;
+            font-weight: 400 !important;
             font-style: normal !important;
-            font-size: 24px !important;
+            font-size: 22px !important;
             line-height: 1 !important;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 22;
+        }
+
+        /* === DEBUG CONSOLE === */
+        .debug-console {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            padding: 12px;
+            color: #00ff9d;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            z-index: 10000;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .debug-console.active {
+            display: block;
+        }
+
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .debug-header button {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .debug-log {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 0;
+            word-break: break-word;
+        }
+
+        .debug-log.error {
+            color: #ff6b6b;
+        }
+
+        .debug-log.success {
+            color: #00ff9d;
+        }
+
+        .debug-log.warning {
+            color: #ffb86c;
+        }
+
+        .debug-log .time {
+            color: #666;
+            margin-right: 8px;
         }
 
         /* === DISTANCE CONTAINER === */
@@ -54,14 +130,15 @@
             z-index: 1001;
             background: white;
             padding: 8px 16px;
-            border-radius: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #003E71;
+            border-radius: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1a1a1a;
             display: none;
             align-items: center;
             gap: 8px;
+            letter-spacing: -0.2px;
         }
 
         .distance-container.active {
@@ -89,15 +166,17 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
             color: white;
             padding: 1rem 2rem;
-            border-radius: 30px;
+            border-radius: 40px;
             z-index: 2;
             text-align: center;
+            font-size: 0.9rem;
             display: none;
         }
 
-        /* === HEADER - Helper specific === */
+        /* === HEADER === */
         .helper-header {
             position: fixed;
             top: 0;
@@ -116,55 +195,43 @@
             pointer-events: auto;
         }
 
-        /* Profile Menu Button */
         .profile-menu-btn {
             width: 44px;
             height: 44px;
             background: white;
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
         .profile-menu-btn:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
         }
 
-        .profile-menu-btn .material-symbols-outlined {
-            color: #000;
-            font-size: 24px;
-        }
-
-        /* Notifications Bell */
         .notifications-btn {
             position: relative;
             width: 44px;
             height: 44px;
             background: white;
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             border: none;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
         .notifications-btn:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             transform: scale(1.05);
-        }
-
-        .notifications-btn .material-symbols-outlined {
-            color: #000;
-            font-size: 24px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
         }
 
         .notification-badge {
@@ -184,33 +251,25 @@
             border: 2px solid white;
         }
 
-        /* Online Status Toggle */
         .online-toggle {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
             padding: 0.4rem 1rem 0.4rem 0.8rem;
-            border-radius: 30px;
+            border-radius: 40px;
             color: white;
             font-size: 0.8rem;
             margin-left: 1rem;
-        }
-
-        .online-toggle span {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .switch {
-            --button-width: 2.8em;
-            --button-height: 1.6em;
-            --toggle-diameter: 1.2em;
+            --button-width: 2.6em;
+            --button-height: 1.5em;
+            --toggle-diameter: 1.1em;
             --button-toggle-offset: calc((var(--button-height) - var(--toggle-diameter)) / 2);
-            --toggle-shadow-offset: 8px;
-            --toggle-wider: 2.4em;
             --color-grey: #666;
             --color-green: #10b981;
         }
@@ -222,7 +281,7 @@
             background-color: var(--color-grey);
             border-radius: calc(var(--button-height) / 2);
             position: relative;
-            transition: 0.3s all ease-in-out;
+            transition: 0.2s all ease;
             cursor: pointer;
         }
 
@@ -237,8 +296,7 @@
             top: var(--button-toggle-offset);
             left: var(--button-toggle-offset);
             transform: translateX(0);
-            box-shadow: var(--toggle-shadow-offset) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
-            transition: 0.3s all ease-in-out;
+            transition: 0.2s all ease;
         }
 
         .switch input[type="checkbox"] {
@@ -251,19 +309,21 @@
 
         .switch input[type="checkbox"]:checked + .slider::after {
             transform: translateX(calc(var(--button-width) - var(--toggle-diameter) - var(--button-toggle-offset) * 2));
-            box-shadow: calc(var(--toggle-shadow-offset) * -1) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
         }
 
-        /* === BOTTOM SHEET - TASKS FEED === */
+        /* === TASKS FEED - MINIMALIST === */
         .tasks-feed {
             position: absolute;
             bottom: 0;
             left: 0;
-            width: 100%;
-            background: white;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            right: 0;
+            max-width: 480px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
             z-index: 10;
             max-height: 40%;
             display: flex;
@@ -285,16 +345,17 @@
         }
 
         .feed-header h3 {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            color: #000;
+            color: #1a1a1a;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            letter-spacing: -0.2px;
         }
 
         .feed-header .material-symbols-outlined {
-            font-size: 20px !important;
+            font-size: 18px !important;
             color: #666;
         }
 
@@ -313,22 +374,22 @@
             scroll-behavior: smooth;
         }
 
-        /* Task Card */
+        /* Task Card - Minimalist */
         .helper-task-card {
-            background: #f5f9ff;
-            border-radius: 12px;
+            background: #ffffff;
+            border-radius: 16px;
             padding: 1rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid #003E71;
+            margin-bottom: 0.75rem;
+            border: 1px solid rgba(0,0,0,0.03);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             animation: slideIn 0.3s ease;
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
             to {
                 opacity: 1;
@@ -337,14 +398,14 @@
         }
 
         .helper-task-card:hover {
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,62,113,0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,62,113,0.08);
+            border-color: rgba(0,62,113,0.1);
         }
 
         .helper-task-card.selected {
-            border-left-width: 6px;
-            border-left-color: #FF286F;
-            background: #fff0f5;
+            border-left: 4px solid #FF286F;
+            background: #fff9fa;
         }
 
         .task-header-row {
@@ -356,16 +417,23 @@
 
         .task-title {
             font-weight: 600;
-            color: #003E71;
+            color: #1a1a1a;
             font-size: 0.95rem;
+            letter-spacing: -0.2px;
         }
 
         .task-badge {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
+            font-size: 0.65rem;
+            padding: 0.2rem 0.6rem;
+            background: #f0f0f0;
+            color: #666;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+
+        .task-badge.valid {
             background: #FF286F;
             color: white;
-            border-radius: 12px;
         }
 
         .task-location-row {
@@ -373,36 +441,31 @@
             align-items: center;
             gap: 0.25rem;
             color: #666;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             margin-bottom: 0.5rem;
         }
 
         .task-location-row .material-symbols-outlined {
-            font-size: 16px !important;
+            font-size: 14px !important;
         }
 
         .task-meta-row {
             display: flex;
             align-items: center;
             gap: 1rem;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #999;
             margin-bottom: 0.75rem;
         }
 
-        .task-distance {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .task-distance .material-symbols-outlined {
-            font-size: 14px !important;
+        .task-meta-row .material-symbols-outlined {
+            font-size: 12px !important;
         }
 
         .task-budget {
             font-weight: 600;
-            color: #003E71;
+            color: #1a1a1a;
+            font-size: 0.9rem;
         }
 
         .task-budget.open {
@@ -413,22 +476,22 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem;
-            background: rgba(0,62,113,0.05);
-            border-radius: 8px;
-            margin-top: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            background: rgba(0,0,0,0.02);
+            border-radius: 40px;
         }
 
         .poster-avatar-mini {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             background: #003E71;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
+            font-weight: 600;
             overflow: hidden;
         }
 
@@ -438,16 +501,22 @@
             object-fit: cover;
         }
 
+        .poster-name-mini {
+            font-size: 0.75rem;
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+
         .action-btn {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.7rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 40px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             margin-top: 0.75rem;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -455,7 +524,7 @@
         }
 
         .action-btn .material-symbols-outlined {
-            font-size: 18px !important;
+            font-size: 16px !important;
         }
 
         .accept-task-btn {
@@ -471,11 +540,10 @@
             background: white;
             color: #003E71;
             border: 1px solid #003E71;
-            margin-top: 0.5rem;
         }
 
         .show-route-btn:hover {
-            background: #f0f5ff;
+            background: #f5f9ff;
         }
 
         .offer-input-group {
@@ -486,19 +554,33 @@
 
         .offer-input {
             flex: 1;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-family: 'Manrope', sans-serif;
+            padding: 0.7rem 1rem;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 40px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+        }
+
+        .offer-input:focus {
+            outline: none;
+            border-color: #003E71;
         }
 
         .submit-offer-btn {
-            padding: 0.75rem 1rem;
+            padding: 0.7rem 1.2rem;
             background: #003E71;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 40px;
             cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .submit-offer-btn .material-symbols-outlined {
+            font-size: 16px !important;
         }
 
         .task-details-expanded {
@@ -509,35 +591,43 @@
         }
 
         .helper-task-card.expanded .task-details-expanded {
-            max-height: 500px;
+            max-height: 400px;
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid rgba(0,62,113,0.1);
+            border-top: 1px solid rgba(0,0,0,0.05);
         }
 
         .detail-item {
             display: flex;
             margin-bottom: 0.5rem;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .detail-label {
-            width: 80px;
-            color: #666;
+            width: 70px;
+            color: #999;
         }
 
         .detail-value {
             flex: 1;
-            color: #000;
+            color: #1a1a1a;
         }
 
         .address-hidden {
-            background: #f0f0f0;
+            background: #f5f5f5;
             padding: 0.5rem;
-            border-radius: 8px;
+            border-radius: 40px;
             text-align: center;
             color: #999;
-            font-style: italic;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .address-hidden .material-symbols-outlined {
+            font-size: 14px !important;
         }
 
         /* Notifications Panel */
@@ -548,8 +638,8 @@
             width: 320px;
             max-height: 70vh;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             z-index: 2000;
             display: none;
             overflow: hidden;
@@ -557,12 +647,11 @@
 
         .notifications-panel.active {
             display: block;
-            animation: slideDown 0.3s ease;
         }
 
         .notifications-header {
-            padding: 1rem;
-            background: #f5f5f5;
+            padding: 1rem 1.2rem;
+            background: #f8f8f8;
             border-bottom: 1px solid #eee;
             display: flex;
             justify-content: space-between;
@@ -570,8 +659,9 @@
         }
 
         .notifications-header h4 {
-            font-size: 0.9rem;
-            color: #333;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1a1a1a;
         }
 
         .close-btn {
@@ -579,12 +669,7 @@
             border: none;
             cursor: pointer;
             font-size: 1.2rem;
-            color: #666;
-            padding: 0 0.5rem;
-        }
-
-        .close-btn:hover {
-            color: #000;
+            color: #999;
         }
 
         .notifications-list {
@@ -593,35 +678,35 @@
         }
 
         .notification-item {
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
             transition: background 0.2s;
         }
 
         .notification-item:hover {
-            background: #f5f5f5;
+            background: #f8f8f8;
         }
 
         .notification-item.unread {
-            background: #fff0f5;
-            border-left: 3px solid #FF286F;
+            background: #fff2f5;
         }
 
         .notification-title {
             font-weight: 600;
-            color: #003E71;
+            color: #1a1a1a;
             margin-bottom: 0.25rem;
+            font-size: 0.85rem;
         }
 
         .notification-message {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #666;
             margin-bottom: 0.25rem;
         }
 
         .notification-time {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #999;
         }
 
@@ -629,6 +714,7 @@
             padding: 2rem;
             text-align: center;
             color: #999;
+            font-size: 0.8rem;
         }
 
         /* Loading States */
@@ -649,8 +735,8 @@
         }
 
         .loading-pulse span {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: #003E71;
             border-radius: 50%;
             animation: pulse 1.5s ease-in-out infinite;
@@ -664,42 +750,50 @@
             animation-delay: 0.4s;
         }
 
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
         .no-tasks {
             text-align: center;
-            padding: 3rem 1rem;
+            padding: 2rem 1rem;
             color: #999;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         /* Toast */
         .toast {
             position: fixed;
             bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #000;
+            left: 20px;
+            right: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #1a1a1a;
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 30px;
+            border-radius: 40px;
             z-index: 3000;
             display: none;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
         }
 
         .toast.show {
             display: block;
+            animation: slideUp 0.3s ease;
         }
 
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translate(-50%, 20px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translate(-50%, 0);
+                transform: translateY(0);
             }
         }
 
@@ -714,71 +808,26 @@
         /* Tablet/Desktop adjustments */
         @media (min-width: 768px) {
             .tasks-feed {
-                width: 400px;
                 left: 20px;
+                right: auto;
+                margin: 0;
+                width: 400px;
                 bottom: 20px;
-                border-radius: 16px;
+                border-radius: 24px;
                 max-height: 60%;
+            }
+
+            .debug-console {
+                left: auto;
+                right: 20px;
+                bottom: 100px;
+                max-width: 400px;
             }
         }
 
-        /* Smooth Scroll Toggle */
-        .smooth-scroll-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            background: white;
-        }
-
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .toggle-label .material-symbols-outlined {
-            font-size: 20px !important;
-            color: #666;
-        }
-
-        .toggle-switch {
-            width: 44px;
-            height: 24px;
-            background: #e0e0e0;
-            border-radius: 12px;
-            position: relative;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .toggle-switch.active {
-            background: #003E71;
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(20px);
-        }
-
-        /* Profile Menu Styles */
+        /* Profile Menu Styles (minimal) */
         .profile-menu {
-            font-family: 'Manrope', sans-serif;
+            font-family: 'Inter', sans-serif;
             position: fixed;
             top: 0;
             left: 0;
@@ -794,13 +843,12 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
             display: none;
             align-items: flex-end;
             justify-content: flex-start;
             z-index: 999999;
-            padding: 0;
             pointer-events: auto;
         }
 
@@ -810,16 +858,14 @@
 
         .profile-menu .profile-modal {
             background: white;
-            border-radius: 0;
             width: 80%;
-            max-width: 500px;
+            max-width: 400px;
             height: 100vh;
             transform: translateX(-100%);
             transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
             display: flex;
             flex-direction: column;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
-            pointer-events: auto;
+            box-shadow: 2px 0 30px rgba(0,0,0,0.2);
         }
 
         .profile-menu .modal-overlay.active .profile-modal {
@@ -839,7 +885,6 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
-            pointer-events: auto;
         }
 
         .profile-menu .full-modal.active {
@@ -849,13 +894,10 @@
         .profile-menu .modal-header {
             display: flex;
             align-items: center;
-            padding: 1.5rem;
+            padding: 1.2rem 1.5rem;
             border-bottom: 1px solid rgba(0,0,0,0.05);
             gap: 1rem;
             background: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
 
         .profile-menu .back-btn {
@@ -863,21 +905,6 @@
             border: none;
             cursor: pointer;
             padding: 4px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.7;
-        }
-
-        .profile-menu .back-btn:hover {
-            opacity: 1;
-        }
-
-        .profile-menu .modal-header h2 {
-            font-size: 1.1rem;
-            font-weight: 500;
         }
 
         .profile-menu .modal-content {
@@ -885,155 +912,20 @@
             overflow-y: auto;
             padding: 1.5rem;
         }
-
-        .profile-menu .profile-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .profile-menu .avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 500;
-            font-size: 1.2rem;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .profile-menu .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profile-menu .profile-details h3 {
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-            font-weight: 500;
-        }
-
-        .profile-menu .profile-details p {
-            color: #666;
-            font-size: 0.85rem;
-        }
-
-        .profile-menu .menu-items-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .profile-menu .menu-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            cursor: pointer;
-        }
-
-        .profile-menu .menu-item:hover {
-            opacity: 0.7;
-        }
-
-        .profile-menu .menu-item-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .profile-menu .logout-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
-            margin-top: auto;
-            cursor: pointer;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            opacity: 0.7;
-        }
-
-        .profile-menu .edit-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem auto;
-            overflow: hidden;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .profile-menu .edit-avatar .avatar-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-        }
-
-        .profile-menu .edit-avatar:hover .avatar-overlay {
-            opacity: 1;
-        }
-
-        .profile-menu .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .profile-menu .form-group label {
-            display: block;
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 0.25rem;
-        }
-
-        .profile-menu .form-group input,
-        .profile-menu .form-group select {
-            width: 100%;
-            padding: 0.75rem 0;
-            border: none;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            font-family: 'Manrope', sans-serif;
-            font-size: 0.95rem;
-            outline: none;
-            background: transparent;
-        }
-
-        .profile-menu .verification-badge {
-            font-size: 0.8rem;
-            color: #10b981;
-            font-weight: 500;
-        }
-
-        .profile-menu .verification-badge.pending {
-            color: #f59e0b;
-        }
-
-        .profile-menu .verification-badge.missing {
-            color: #ef4444;
-        }
     </style>
 </head>
 <body>
     <!-- MAP -->
     <div id="map"></div>
+    
+    <!-- Debug Console -->
+    <div class="debug-console" id="debugConsole">
+        <div class="debug-header">
+            <span>🐞 DEBUG LOGS</span>
+            <button onclick="clearDebugLogs()">clear</button>
+        </div>
+        <div id="debugLogs"></div>
+    </div>
     
     <!-- Distance Container -->
     <div class="distance-container" id="distanceContainer">
@@ -1054,10 +946,10 @@
                 <span class="material-symbols-outlined">menu</span>
             </button>
         </div>
-        <div class="header-right" style="display: flex; align-items: center; gap: 10px;">
+        <div class="header-right">
             <div class="online-toggle">
                 <span class="material-symbols-outlined">wifi</span>
-                <span>Available</span>
+                <span id="statusText">Available</span>
                 <label class="switch">
                     <input type="checkbox" id="onlineToggle" checked>
                     <span class="slider"></span>
@@ -1086,7 +978,7 @@
         <div class="feed-header" id="feedHeader">
             <h3>
                 <span class="material-symbols-outlined">radar</span>
-                Live Tasks Nearby
+                Tasks nearby
             </h3>
             <span class="material-symbols-outlined expand-icon">expand_less</span>
         </div>
@@ -1098,7 +990,7 @@
                     <span></span>
                     <span></span>
                 </div>
-                <div>Scanning for tasks...</div>
+                <div>Finding tasks...</div>
             </div>
         </div>
     </div>
@@ -1108,7 +1000,6 @@
 
     <!-- Profile Menu -->
     <div class="profile-menu" id="profileMenu">
-        <!-- Main Profile Modal -->
         <div class="modal-overlay" id="profileModalOverlay">
             <div class="profile-modal">
                 <div class="modal-content" id="profileModalContent">
@@ -1117,7 +1008,6 @@
             </div>
         </div>
 
-        <!-- Account Edit Modal -->
         <div class="full-modal" id="accountEditModal">
             <div class="modal-header">
                 <button class="back-btn" id="backFromAccountBtn">
@@ -1128,13 +1018,12 @@
             <div class="modal-content" id="accountEditContent"></div>
         </div>
 
-        <!-- Image View Modal -->
         <div class="full-modal" id="imageViewModal">
             <div class="modal-header">
                 <button class="back-btn" id="backFromImageBtn">
                     <span class="material-symbols-outlined">arrow_back</span>
                 </button>
-                <h2>Profile Picture</h2>
+                <h2>Profile</h2>
             </div>
             <div class="modal-content" style="display: flex; align-items: center; justify-content: center;">
                 <img id="fullSizeImage" src="" alt="Profile" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
@@ -1147,6 +1036,40 @@
             'use strict';
 
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            
+            // ===== DEBUG LOGGING =====
+            const debugConsole = document.getElementById('debugConsole');
+            const debugLogs = document.getElementById('debugLogs');
+            
+            function addDebugLog(message, type = 'info') {
+                const log = document.createElement('div');
+                log.className = `debug-log ${type}`;
+                const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                log.innerHTML = `<span class="time">[${time}]</span> ${message}`;
+                debugLogs.appendChild(log);
+                debugLogs.scrollTop = debugLogs.scrollHeight;
+                
+                // Also log to console
+                console.log(`[${type}] ${message}`);
+                
+                // Show debug console if there's an error
+                if (type === 'error') {
+                    debugConsole.classList.add('active');
+                }
+            }
+            
+            window.clearDebugLogs = function() {
+                debugLogs.innerHTML = '';
+                addDebugLog('Debug logs cleared', 'info');
+            };
+
+            // Show debug console toggle (double tap on header)
+            let debugTapCount = 0;
+            let debugTapTimer;
+            document.querySelector('.helper-header').addEventListener('dblclick', () => {
+                debugConsole.classList.toggle('active');
+                addDebugLog('Debug console toggled', 'info');
+            });
 
             // ===== DOM ELEMENTS =====
             const mapError = document.getElementById('mapError');
@@ -1169,6 +1092,7 @@
             const backFromAccount = document.getElementById('backFromAccountBtn');
             const backFromImage = document.getElementById('backFromImageBtn');
             const onlineToggle = document.getElementById('onlineToggle');
+            const statusText = document.getElementById('statusText');
             const distanceContainer = document.getElementById('distanceContainer');
             const distanceText = document.getElementById('distanceText');
 
@@ -1187,11 +1111,13 @@
             let map = null;
             let isOnline = true;
             let selectedTaskId = null;
+            let authToken = null;
 
             // ===== TOAST =====
             function showToast(message, type = 'success') {
                 toast.textContent = message;
                 toast.className = 'toast ' + type + ' show';
+                addDebugLog(`Toast: ${message} (${type})`, type);
                 setTimeout(() => {
                     toast.classList.remove('show');
                 }, 3000);
@@ -1201,277 +1127,66 @@
             function getCurrentUser() {
                 try {
                     const user = localStorage.getItem('taskmart_user');
-                    return user ? JSON.parse(user) : null;
+                    if (user) {
+                        addDebugLog('User found in localStorage', 'success');
+                        return JSON.parse(user);
+                    }
+                    addDebugLog('No user in localStorage', 'warning');
+                    return null;
                 } catch (e) {
+                    addDebugLog(`Error parsing user: ${e.message}`, 'error');
                     return null;
                 }
-            }
-
-            // ===== SAVE USER =====
-            function saveUserData(updatedUser) {
-                localStorage.setItem('taskmart_user', JSON.stringify(updatedUser));
             }
 
             // ===== GET AUTH TOKEN =====
             function getAuthToken() {
-                return localStorage.getItem('taskmart_token');
+                const token = localStorage.getItem('taskmart_token');
+                if (!token) {
+                    addDebugLog('No auth token found', 'error');
+                }
+                return token;
             }
 
-            // ===== FETCH USER PROFILE =====
-            async function fetchUserProfile(email) {
+            // ===== CHECK AUTH STATUS =====
+            async function checkAuth() {
+                addDebugLog('Checking authentication...', 'info');
+                
+                currentUser = getCurrentUser();
+                authToken = getAuthToken();
+                
+                if (!currentUser || !authToken) {
+                    addDebugLog('Not authenticated, redirecting to login', 'error');
+                    showToast('Please log in first', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1500);
+                    return false;
+                }
+                
+                // Verify token with backend
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/users/${email}`, {
+                    const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
                         headers: {
-                            'Authorization': `Bearer ${getAuthToken()}`
+                            'Authorization': `Bearer ${authToken}`
                         }
                     });
+                    
                     if (response.ok) {
-                        return await response.json();
-                    }
-                    return null;
-                } catch (error) {
-                    console.error('Error fetching user profile:', error);
-                    return null;
-                }
-            }
-
-            // ===== CHECK VERIFICATION STATUS =====
-            async function checkVerificationStatus() {
-                const user = getCurrentUser();
-                if (!user) return;
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/users/${user.email}/verification-status`, {
-                        headers: {
-                            'Authorization': `Bearer ${getAuthToken()}`
-                        }
-                    });
-
-                    if (response.ok) {
-                        const status = await response.json();
-                        
-                        user.adminVerified = status.adminVerified;
-                        user.verificationStatus = status.verificationStatus;
-                        user.verificationRequested = status.verificationRequested;
-                        localStorage.setItem('taskmart_user', JSON.stringify(user));
-                    }
-                } catch (error) {
-                    console.error('Error checking verification status:', error);
-                }
-            }
-
-            // ===== REQUEST VERIFICATION =====
-            async function requestVerification() {
-                const user = getCurrentUser();
-                if (!user) return;
-
-                if (!user.profileImage) {
-                    showToast('Please upload a profile picture first', 'error');
-                    return;
-                }
-
-                if (user.adminVerified) {
-                    showToast('You are already verified', 'error');
-                    return;
-                }
-
-                if (user.verificationStatus === 'pending') {
-                    showToast('Verification already pending', 'error');
-                    return;
-                }
-
-                try {
-                    showToast('Sending verification request...', 'success');
-
-                    const response = await fetch(`${API_BASE_URL}/api/users/${user.email}/verify`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${getAuthToken()}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        user.verificationStatus = 'pending';
-                        user.verificationRequested = true;
-                        localStorage.setItem('taskmart_user', JSON.stringify(user));
-                        
-                        showToast('Verification requested! Admin will review.', 'success');
-                        checkVerificationStatus();
-                        renderProfile();
-                    } else {
                         const data = await response.json();
-                        showToast(data.error || 'Failed to request verification', 'error');
+                        addDebugLog(`Authenticated as: ${data.user.email}`, 'success');
+                        return true;
+                    } else {
+                        addDebugLog('Token invalid, redirecting to login', 'error');
+                        localStorage.removeItem('taskmart_user');
+                        localStorage.removeItem('taskmart_token');
+                        window.location.href = '/login.html';
+                        return false;
                     }
                 } catch (error) {
-                    console.error('Error requesting verification:', error);
-                    showToast('Error requesting verification', 'error');
+                    addDebugLog(`Auth check failed: ${error.message}`, 'error');
+                    return false;
                 }
-            }
-
-            // ===== PROFILE MENU FUNCTIONS =====
-            function openProfileModal() {
-                profileModalOverlay.classList.add('active');
-                renderProfile();
-            }
-
-            function closeProfileModal() {
-                profileModalOverlay.classList.remove('active');
-            }
-
-            function openAccountModal() {
-                accountModal.classList.add('active');
-                renderAccountEdit();
-            }
-
-            function openImageView(imageUrl) {
-                fullSizeImage.src = imageUrl;
-                imageModal.classList.add('active');
-            }
-
-            function renderProfile() {
-                const user = getCurrentUser();
-                if (!user) return;
-
-                let avatarContent = user.profileImage 
-                    ? `<img src="${user.profileImage}" alt="profile" onerror="this.src='https://ui-avatars.com/api/?name=${user.name}&background=003E71&color=fff'">`
-                    : `<span>${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</span>`;
-
-                profileModalContent.innerHTML = `
-                    <div class="profile-info">
-                        <div class="avatar" id="profileAvatar">
-                            ${avatarContent}
-                        </div>
-                        <div class="profile-details">
-                            <h3>${user.name || 'User'}</h3>
-                            <p>${user.email || 'No email'}</p>
-                            <span class="verification-badge ${user.adminVerified ? '' : (user.verificationStatus === 'pending' ? 'pending' : 'missing')}">
-                                ${user.adminVerified ? '✓ Verified' : (user.verificationStatus === 'pending' ? '⏳ Pending' : 'Not Verified')}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="menu-items-container">
-                        <div class="menu-items">
-                            <div class="menu-item" id="accountMenuItem">
-                                <div class="menu-item-left">
-                                    <span class="material-symbols-outlined">account_circle</span>
-                                    <span>Account</span>
-                                </div>
-                                <span class="menu-arrow material-symbols-outlined">chevron_right</span>
-                            </div>
-                        </div>
-
-                        <div class="logout-item" id="logoutFromMenu">
-                            <span class="material-symbols-outlined">logout</span>
-                            <span>Logout</span>
-                        </div>
-                    </div>
-                `;
-
-                document.getElementById('profileAvatar')?.addEventListener('click', () => {
-                    if (user.profileImage) openImageView(user.profileImage);
-                });
-
-                document.getElementById('accountMenuItem')?.addEventListener('click', () => {
-                    closeProfileModal();
-                    openAccountModal();
-                });
-
-                document.getElementById('logoutFromMenu')?.addEventListener('click', () => {
-                    localStorage.removeItem('taskmart_user');
-                    localStorage.removeItem('taskmart_token');
-                    showToast('Logged out', 'success');
-                    setTimeout(() => window.location.href = '/login.html', 1000);
-                });
-            }
-
-            function renderAccountEdit() {
-                const user = getCurrentUser();
-                if (!user) return;
-
-                let avatarContent = user.profileImage
-                    ? `<img src="${user.profileImage}" alt="profile" onerror="this.src='https://ui-avatars.com/api/?name=${user.name}&background=003E71&color=fff'">`
-                    : `<span>${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</span>`;
-
-                accountContent.innerHTML = `
-                    <div class="edit-profile-content">
-                        <div class="edit-avatar" id="editAvatar">
-                            ${avatarContent}
-                            <div class="avatar-overlay">
-                                <span class="material-symbols-outlined">photo_camera</span>
-                            </div>
-                        </div>
-                        <input type="file" id="profilePicInput" style="display:none;" accept="image/*">
-
-                        <div class="edit-section">
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input type="text" id="editName" value="${user.name || ''}" placeholder="Your name">
-                            </div>
-
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" id="editEmail" value="${user.email || ''}" readonly>
-                            </div>
-                        </div>
-
-                        <div class="verification-status">
-                            <div class="verification-item" id="requestVerificationBtn">
-                                <div class="verification-left">
-                                    <span class="material-symbols-outlined">verified</span>
-                                    <span>Identity Verification</span>
-                                </div>
-                                <span class="verification-badge ${user.adminVerified ? '' : (user.verificationStatus === 'pending' ? 'pending' : 'missing')}">
-                                    ${user.adminVerified ? 'Verified' : (user.verificationStatus === 'pending' ? 'Pending' : 'Not Requested')}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="smooth-scroll-toggle">
-                            <div class="toggle-label">
-                                <span class="material-symbols-outlined">smooth_scroll</span>
-                                <span>Smooth Scrolling</span>
-                            </div>
-                            <div class="toggle-switch ${smoothScrollEnabled ? 'active' : ''}" id="smoothScrollToggle"></div>
-                        </div>
-                    </div>
-                `;
-
-                document.getElementById('editAvatar').addEventListener('click', () => {
-                    document.getElementById('profilePicInput').click();
-                });
-
-                document.getElementById('profilePicInput').addEventListener('change', function(e) {
-                    if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            user.profileImage = event.target.result;
-                            saveUserData(user);
-                            showToast('Profile picture updated', 'success');
-                            renderAccountEdit();
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-
-                document.getElementById('editName').addEventListener('change', (e) => {
-                    user.name = e.target.value;
-                    saveUserData(user);
-                    showToast('Name updated', 'success');
-                });
-
-                document.getElementById('requestVerificationBtn').addEventListener('click', requestVerification);
-
-                document.getElementById('smoothScrollToggle').addEventListener('click', () => {
-                    smoothScrollEnabled = !smoothScrollEnabled;
-                    document.getElementById('smoothScrollToggle').classList.toggle('active', smoothScrollEnabled);
-                    document.querySelectorAll('.feed-content, .modal-content').forEach(el => {
-                        el.style.scrollBehavior = smoothScrollEnabled ? 'smooth' : 'auto';
-                    });
-                    showToast(`Smooth scrolling ${smoothScrollEnabled ? 'enabled' : 'disabled'}`, 'success');
-                });
             }
 
             // ===== MAP INITIALIZATION =====
@@ -1479,13 +1194,13 @@
                 try {
                     map = new mapboxgl.Map({
                         container: 'map',
-                        style: 'mapbox://styles/mapbox/dark-v11',
+                        style: 'mapbox://styles/mapbox/light-v11',
                         center: [28.034088, -26.195246],
-                        zoom: 13
+                        zoom: 12
                     });
 
                     map.on('load', () => {
-                        console.log('✅ Map loaded successfully');
+                        addDebugLog('Map loaded successfully', 'success');
                         mapError.style.display = 'none';
                         
                         // Add route source
@@ -1515,76 +1230,65 @@
                             }
                         });
 
-                        currentUser = getCurrentUser();
-                        if (currentUser) {
-                            getUserLocation();
-                        }
+                        getUserLocation();
                     });
 
                     map.on('error', (e) => {
-                        console.error('❌ Map error:', e);
+                        addDebugLog(`Map error: ${e.error?.message || 'Unknown'}`, 'error');
                         mapError.style.display = 'block';
-                        mapError.innerHTML = `
-                            <span class="material-symbols-outlined">error</span>
-                            <p>Map error. Please refresh.</p>
-                        `;
                     });
 
                 } catch (e) {
-                    console.error('❌ Failed to initialize map:', e);
+                    addDebugLog(`Failed to init map: ${e.message}`, 'error');
                     mapError.style.display = 'block';
-                    mapError.innerHTML = `
-                        <span class="material-symbols-outlined">error</span>
-                        <p>Failed to load map</p>
-                    `;
                 }
             }
 
             // ===== LOAD MAPBOX TOKEN =====
-            mapError.innerHTML = `
-                <span class="material-symbols-outlined">sync</span>
-                <p>Loading map...</p>
-            `;
-            mapError.style.display = 'block';
+            async function loadMapboxToken() {
+                mapError.innerHTML = `
+                    <span class="material-symbols-outlined">sync</span>
+                    <p>Loading map...</p>
+                `;
+                mapError.style.display = 'block';
 
-            fetch('/config.js')
-                .then(response => response.text())
-                .then(script => {
-                    eval(script);
+                try {
+                    addDebugLog('Loading Mapbox token...', 'info');
+                    const response = await fetch('/config.js');
+                    const script = await response.text();
                     
-                    if (window.MAPBOX_TOKEN) {
-                        mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                    // Extract token using regex (safer than eval)
+                    const tokenMatch = script.match(/MAPBOX_TOKEN='([^']+)'/);
+                    if (tokenMatch && tokenMatch[1]) {
+                        mapboxgl.accessToken = tokenMatch[1];
+                        addDebugLog('Mapbox token loaded', 'success');
                         initMap();
                     } else {
-                        throw new Error('No Mapbox token found');
+                        throw new Error('No token in config.js');
                     }
-                })
-                .catch(error => {
-                    console.error('❌ Failed to load map token:', error);
-                    mapError.style.display = 'block';
+                } catch (error) {
+                    addDebugLog(`Failed to load map token: ${error.message}`, 'error');
                     mapError.innerHTML = `
                         <span class="material-symbols-outlined">error</span>
-                        <p>Unable to load map. Please try again later.</p>
+                        <p>Map unavailable</p>
                     `;
-                    
-                    currentUser = getCurrentUser();
-                    if (currentUser) {
-                        getUserLocation();
-                    }
-                });
+                }
+            }
 
             // ===== GET LOCATION =====
             function getUserLocation() {
+                addDebugLog('Getting user location...', 'info');
+                
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
                             currentLat = pos.coords.latitude;
                             currentLng = pos.coords.longitude;
+                            addDebugLog(`Location: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`, 'success');
                             
                             if (map) {
                                 map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
                                 
-                                // Add user location marker
                                 if (startMarker) startMarker.remove();
                                 startMarker = new mapboxgl.Marker({ color: '#003E71' })
                                     .setLngLat([currentLng, currentLat])
@@ -1596,223 +1300,122 @@
                             connectSocket();
                         },
                         (error) => {
-                            console.error('Location error:', error);
+                            addDebugLog(`Location error: ${error.message}`, 'error');
                             fetchTasks();
                         },
                         { enableHighAccuracy: true, timeout: 10000 }
                     );
                 } else {
+                    addDebugLog('Geolocation not supported', 'error');
                     fetchTasks();
                 }
             }
 
             // ===== SHOW ROUTE ON MAP =====
             async function showRoute(taskId) {
+                addDebugLog(`Showing route for task: ${taskId}`, 'info');
+                
                 const task = availableTasks.find(t => (t._id || t.id) === taskId);
-                if (!task || !task.coordinates || !currentLat || !currentLng) {
-                    showToast('Cannot calculate route', 'error');
+                if (!task) {
+                    addDebugLog('Task not found', 'error');
+                    return;
+                }
+                
+                if (!task.coordinates) {
+                    addDebugLog('Task has no coordinates', 'error');
+                    showToast('Task location not available', 'error');
+                    return;
+                }
+                
+                if (!currentLat || !currentLng) {
+                    addDebugLog('Current location not available', 'error');
+                    showToast('Your location not available', 'error');
                     return;
                 }
 
-                // Validate coordinates (check if they're in South Africa roughly)
                 const [taskLng, taskLat] = task.coordinates.split(',').map(Number);
                 
-                // South Africa bounds roughly: lat -35 to -22, lng 16 to 33
+                // Validate coordinates (South Africa bounds)
                 if (taskLat < -35 || taskLat > -22 || taskLng < 16 || taskLng > 33) {
-                    showToast('Invalid task location coordinates', 'error');
-                    console.error('Invalid coordinates:', taskLat, taskLng);
+                    addDebugLog(`Invalid coordinates: ${taskLat}, ${taskLng}`, 'error');
+                    showToast('Invalid task location', 'error');
                     return;
                 }
 
                 selectedTaskId = taskId;
                 
-                // Remove previous end marker
                 if (endMarker) endMarker.remove();
 
-                // Add task marker
                 endMarker = new mapboxgl.Marker({ color: '#FF286F' })
                     .setLngLat([taskLng, taskLat])
-                    .setPopup(new mapboxgl.Popup().setHTML(task.taskDescription || 'Task location'))
+                    .setPopup(new mapboxgl.Popup().setHTML(task.taskDescription || 'Task'))
                     .addTo(map);
 
-                // Fit bounds to show both markers
                 const bounds = new mapboxgl.LngLatBounds();
                 bounds.extend([currentLng, currentLat]);
                 bounds.extend([taskLng, taskLat]);
                 map.fitBounds(bounds, { padding: 50 });
 
                 try {
-                    // Get route from Mapbox Directions API
+                    addDebugLog('Fetching route from Mapbox...', 'info');
+                    
                     const response = await fetch(
                         `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${taskLng},${taskLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                     );
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        if (!data.routes || data.routes.length === 0) {
-                            throw new Error('No route found');
-                        }
-                        
-                        const route = data.routes[0];
-                        const distance = route.distance; // in meters
-                        
-                        // Format distance
-                        let distanceStr;
-                        if (distance < 1000) {
-                            distanceStr = Math.round(distance) + 'm';
-                        } else {
-                            distanceStr = (distance / 1000).toFixed(1) + 'km';
-                        }
-                        
-                        // Update distance display
-                        distanceText.textContent = distanceStr;
-                        distanceContainer.classList.add('active');
-
-                        // Draw route on map
-                        const geojson = {
-                            'type': 'Feature',
-                            'geometry': route.geometry
-                        };
-
-                        map.getSource('route').setData(geojson);
-
-                        // Update task card to show selected
-                        document.querySelectorAll('.helper-task-card').forEach(card => {
-                            card.classList.remove('selected');
-                        });
-                        document.querySelector(`[data-task-id="${taskId}"]`)?.classList.add('selected');
-
-                        // Update the task card's distance badge
-                        const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
-                        if (taskCard) {
-                            const badge = taskCard.querySelector('.task-badge');
-                            if (badge) badge.textContent = distanceStr;
-                            
-                            const distanceSpan = taskCard.querySelector('.task-distance span:last-child');
-                            if (distanceSpan) distanceSpan.textContent = distanceStr;
-                        }
-
-                    } else {
-                        throw new Error('Failed to get route');
+                    if (!response.ok) {
+                        throw new Error(`Mapbox API returned ${response.status}`);
                     }
-                } catch (error) {
-                    console.error('Error getting route:', error);
-                    showToast('Could not calculate route - location might be unreachable', 'error');
-                }
-            }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.routes || data.routes.length === 0) {
+                        throw new Error('No route found');
+                    }
+                    
+                    const route = data.routes[0];
+                    const distance = route.distance;
+                    
+                    let distanceStr = distance < 1000 
+                        ? Math.round(distance) + 'm' 
+                        : (distance / 1000).toFixed(1) + 'km';
+                    
+                    addDebugLog(`Route found: ${distanceStr}`, 'success');
+                    
+                    distanceText.textContent = distanceStr;
+                    distanceContainer.classList.add('active');
 
-            // ===== CONNECT TO SOCKET.IO =====
-            function connectSocket() {
-                try {
-                    socket = io(API_BASE_URL, {
-                        query: { userId: currentUser?.email }
+                    map.getSource('route').setData({
+                        'type': 'Feature',
+                        'geometry': route.geometry
                     });
 
-                    socket.on('connect', () => {
-                        console.log('Connected to real-time feed');
+                    // Update task card
+                    document.querySelectorAll('.helper-task-card').forEach(card => {
+                        card.classList.remove('selected');
                     });
+                    document.querySelector(`[data-task-id="${taskId}"]`)?.classList.add('selected');
 
-                    socket.on('new-task', (task) => {
-                        console.log('New task received:', task);
-                        
-                        addNotification({
-                            title: 'New Task Available!',
-                            message: task.taskDescription || 'Someone needs help',
-                            time: 'Just now',
-                            taskId: task._id || task.id
-                        });
-
-                        availableTasks.unshift(task);
-                        renderTasks(availableTasks);
-                        addTaskMarkers([task]);
-
-                        try {
-                            new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3').play();
-                        } catch (e) {}
-                        
-                        showToast('New task available nearby!', 'success');
-                    });
-
-                    socket.on('task-accepted', (data) => {
-                        console.log('Task accepted by someone else:', data);
-                        availableTasks = availableTasks.filter(t => (t._id || t.id) !== data.taskId);
-                        renderTasks(availableTasks);
-                    });
-
-                    socket.on('offer-response', (data) => {
-                        console.log('Offer response:', data);
-                        addNotification({
-                            title: `Offer ${data.status}`,
-                            message: `Your offer was ${data.status}`,
-                            time: 'Just now',
-                            taskId: data.taskId
-                        });
-                        showToast(`Offer ${data.status}`, data.status === 'accepted' ? 'success' : 'error');
-                    });
-
-                } catch (error) {
-                    console.error('Socket connection failed:', error);
-                }
-            }
-
-            // ===== NOTIFICATIONS =====
-            function addNotification(notif) {
-                notifications.unshift(notif);
-                if (notifications.length > 20) notifications = notifications.slice(0, 20);
-                
-                const unreadCount = notifications.filter(n => !n.read).length;
-                notificationBadge.textContent = unreadCount;
-                notificationBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
-                
-                renderNotifications();
-            }
-
-            function markNotificationAsRead(index) {
-                notifications[index].read = true;
-                const unreadCount = notifications.filter(n => !n.read).length;
-                notificationBadge.textContent = unreadCount;
-                notificationBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
-                renderNotifications();
-            }
-
-            function renderNotifications() {
-                if (notifications.length === 0) {
-                    notificationsList.innerHTML = '<div class="empty-notifications">No notifications yet</div>';
-                    return;
-                }
-
-                notificationsList.innerHTML = notifications.map((notif, index) => `
-                    <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="window.viewTask('${notif.taskId}', ${index})">
-                        <div class="notification-title">${notif.title}</div>
-                        <div class="notification-message">${notif.message}</div>
-                        <div class="notification-time">${notif.time}</div>
-                    </div>
-                `).join('');
-            }
-
-            window.viewTask = function(taskId, index) {
-                if (index !== undefined) {
-                    markNotificationAsRead(index);
-                }
-                
-                const task = availableTasks.find(t => (t._id || t.id) === taskId);
-                if (task) {
-                    tasksFeed.classList.add('expanded');
-                    setTimeout(() => {
-                        const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-                        if (taskElement) {
-                            taskElement.scrollIntoView({ behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
-                            taskElement.classList.add('new');
-                            setTimeout(() => taskElement.classList.remove('new'), 2000);
+                    // Update badge
+                    const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskCard) {
+                        const badge = taskCard.querySelector('.task-badge');
+                        if (badge) {
+                            badge.textContent = distanceStr;
+                            badge.classList.add('valid');
                         }
-                    }, 300);
+                    }
+
+                } catch (error) {
+                    addDebugLog(`Route error: ${error.message}`, 'error');
+                    showToast('Could not calculate route', 'error');
                 }
-                notificationsPanel.classList.remove('active');
-            };
+            }
 
             // ===== FETCH TASKS =====
             async function fetchTasks() {
+                addDebugLog('Fetching tasks...', 'info');
+                
                 feedContent.innerHTML = `
                     <div class="loading-tasks">
                         <div class="loading-pulse">
@@ -1820,74 +1423,90 @@
                             <span></span>
                             <span></span>
                         </div>
-                        <div>Scanning for tasks...</div>
+                        <div>Finding tasks...</div>
                     </div>
                 `;
                 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/tasks?status=active`);
+                    const response = await fetch(`${API_BASE_URL}/api/tasks?status=active`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
                     
+                    addDebugLog(`Tasks API response: ${response.status}`, response.ok ? 'success' : 'error');
+
                     if (response.ok) {
                         const data = await response.json();
                         let tasks = Array.isArray(data) ? data : (data.tasks || data.data || []);
                         
+                        addDebugLog(`Received ${tasks.length} tasks`, 'info');
+                        
+                        // Filter out user's own tasks
                         if (currentUser) {
-                            availableTasks = tasks.filter(task => {
+                            const beforeCount = tasks.length;
+                            tasks = tasks.filter(task => {
                                 const taskUserEmail = task.userEmail || task.email || (task.user && task.user.email);
                                 return taskUserEmail !== currentUser.email;
                             });
-                        } else {
-                            availableTasks = tasks;
+                            addDebugLog(`Filtered to ${tasks.length} tasks (removed ${beforeCount - tasks.length} own)`, 'info');
                         }
                         
-                        if (availableTasks.length === 0) {
-                            feedContent.innerHTML = '<div class="no-tasks">No tasks available in your area<br><small>Check back soon!</small></div>';
+                        availableTasks = tasks;
+                        
+                        if (tasks.length === 0) {
+                            feedContent.innerHTML = '<div class="no-tasks">No tasks available</div>';
                         } else {
-                            // Fetch poster profiles for each task
-                            for (let task of availableTasks) {
-                                if (task.userEmail) {
-                                    const poster = await fetchUserProfile(task.userEmail);
-                                    if (poster) {
-                                        task.posterAvatar = poster.profileImage;
-                                        task.posterName = poster.name;
-                                    }
-                                }
-                            }
-                            renderTasks(availableTasks);
-                            addTaskMarkers(availableTasks);
+                            renderTasks(tasks);
+                            addTaskMarkers(tasks);
                         }
+                    } else {
+                        throw new Error(`API returned ${response.status}`);
                     }
                 } catch (error) {
-                    console.error('Error fetching tasks:', error);
+                    addDebugLog(`Fetch tasks error: ${error.message}`, 'error');
                     feedContent.innerHTML = '<div class="no-tasks">Unable to load tasks</div>';
                 }
             }
 
             // ===== MAKE OFFER =====
             async function makeOffer(taskId, amount) {
-                const user = getCurrentUser();
+                addDebugLog(`Making offer for task ${taskId}: R${amount}`, 'info');
+                
+                const user = currentUser;
                 
                 if (!user) {
+                    addDebugLog('No user found', 'error');
                     showToast('Please log in', 'error');
                     return;
                 }
 
-                if (!user.profileImage || !user.adminVerified) {
+                if (!user.profileImage) {
+                    addDebugLog('User has no profile image', 'error');
+                    showToast('Add a profile picture first', 'error');
+                    return;
+                }
+
+                if (!user.adminVerified && user.verificationStatus !== 'approved') {
+                    addDebugLog('User not verified', 'error');
                     showToast('Complete verification first', 'error');
                     return;
                 }
 
                 if (!isOnline) {
-                    showToast('Set your status to available first', 'error');
+                    addDebugLog('User is offline', 'error');
+                    showToast('Set status to available', 'error');
                     return;
                 }
 
                 try {
+                    addDebugLog(`Sending offer to: ${API_BASE_URL}/api/tasks/${taskId}/offer`, 'info');
+                    
                     const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/offer`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${getAuthToken()}`
+                            'Authorization': `Bearer ${authToken}`
                         },
                         body: JSON.stringify({ 
                             helperId: user.email,
@@ -1896,8 +1515,13 @@
                         })
                     });
 
+                    addDebugLog(`Offer response: ${response.status}`, response.ok ? 'success' : 'error');
+                    
+                    const data = await response.json().catch(() => ({}));
+
                     if (response.ok) {
-                        showToast('Offer sent! Waiting for poster response.', 'success');
+                        addDebugLog(`Offer sent successfully`, 'success');
+                        showToast('Offer sent!', 'success');
                         addNotification({
                             title: 'Offer Sent',
                             message: `Your offer of R${amount} has been sent`,
@@ -1905,18 +1529,102 @@
                             taskId: taskId
                         });
                     } else {
-                        showToast('Failed to send offer', 'error');
+                        addDebugLog(`Offer failed: ${data.error || response.statusText}`, 'error');
+                        showToast(data.error || 'Failed to send offer', 'error');
                     }
                 } catch (error) {
-                    console.error('Error making offer:', error);
-                    showToast('Error making offer', 'error');
+                    addDebugLog(`Offer error: ${error.message}`, 'error');
+                    showToast('Error sending offer', 'error');
                 }
             }
+
+            // ===== ACCEPT TASK =====
+            window.acceptTask = async function(taskId) {
+                addDebugLog(`Accepting task: ${taskId}`, 'info');
+                
+                const user = currentUser;
+                
+                if (!user) {
+                    addDebugLog('No user found', 'error');
+                    showToast('Please log in', 'error');
+                    return;
+                }
+
+                if (!user.profileImage) {
+                    addDebugLog('User has no profile image', 'error');
+                    showToast('Add a profile picture first', 'error');
+                    return;
+                }
+
+                if (!user.adminVerified && user.verificationStatus !== 'approved') {
+                    addDebugLog('User not verified', 'error');
+                    showToast('Complete verification first', 'error');
+                    return;
+                }
+
+                if (!isOnline) {
+                    addDebugLog('User is offline', 'error');
+                    showToast('Set status to available', 'error');
+                    return;
+                }
+
+                try {
+                    addDebugLog(`Sending accept to: ${API_BASE_URL}/api/tasks/${taskId}/accept`, 'info');
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/accept`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ 
+                            helperId: user.email, 
+                            helperName: user.name,
+                            helperAvatar: user.profileImage 
+                        })
+                    });
+
+                    addDebugLog(`Accept response: ${response.status}`, response.ok ? 'success' : 'error');
+
+                    if (response.ok) {
+                        addDebugLog('Task accepted successfully', 'success');
+                        showToast('Task accepted!', 'success');
+                        
+                        availableTasks = availableTasks.filter(t => (t._id || t.id) !== taskId);
+                        renderTasks(availableTasks);
+                        addTaskMarkers(availableTasks);
+                        
+                        addNotification({
+                            title: 'Task Accepted!',
+                            message: `You've accepted a task`,
+                            time: 'Just now',
+                            taskId: taskId
+                        });
+
+                        if (selectedTaskId === taskId) {
+                            selectedTaskId = null;
+                            distanceContainer.classList.remove('active');
+                            if (endMarker) endMarker.remove();
+                            map.getSource('route').setData({
+                                'type': 'Feature',
+                                'geometry': { 'type': 'LineString', 'coordinates': [] }
+                            });
+                        }
+                    } else {
+                        const data = await response.json().catch(() => ({}));
+                        addDebugLog(`Accept failed: ${data.error || response.statusText}`, 'error');
+                        showToast(data.error || 'Task already taken', 'error');
+                    }
+                } catch (error) {
+                    addDebugLog(`Accept error: ${error.message}`, 'error');
+                    showToast('Error accepting task', 'error');
+                }
+            };
 
             // ===== RENDER TASKS =====
             function renderTasks(tasks) {
                 if (!tasks || tasks.length === 0) {
-                    feedContent.innerHTML = '<div class="no-tasks">No tasks available<br><small>Check back soon!</small></div>';
+                    feedContent.innerHTML = '<div class="no-tasks">No tasks available</div>';
                     return;
                 }
 
@@ -1927,7 +1635,7 @@
                     const budget = task.budgetAmount || task.budget;
                     const isOpenOffer = task.budgetType === 'open';
                     
-                    // Check if coordinates are valid (rough South Africa bounds)
+                    // Check coordinates
                     let hasValidCoords = false;
                     if (task.coordinates) {
                         const [lng, lat] = task.coordinates.split(',').map(Number);
@@ -1941,20 +1649,20 @@
                         <div class="helper-task-card ${selectedTaskId === taskId ? 'selected' : ''}" data-task-id="${taskId}">
                             <div class="task-header-row">
                                 <span class="task-title">${task.taskDescription || 'Help needed'}</span>
-                                ${hasValidCoords ? '<span class="task-badge">?</span>' : '<span class="task-badge" style="background:#999;">Invalid</span>'}
+                                <span class="task-badge ${hasValidCoords ? 'valid' : ''}">${hasValidCoords ? '?' : 'no location'}</span>
                             </div>
                             
                             <div class="task-location-row">
                                 <span class="material-symbols-outlined">location_on</span>
-                                <span>${task.area || task.location || 'Nearby'}</span>
+                                <span>${task.area || task.location || 'Location not specified'}</span>
                             </div>
                             
                             <div class="task-meta-row">
                                 <span class="task-distance">
                                     <span class="material-symbols-outlined">near_me</span>
-                                    ${hasValidCoords ? 'Click "Show Route"' : 'Invalid location'}
+                                    ${hasValidCoords ? 'tap Show Route' : 'invalid'}
                                 </span>
-                                <span class="task-time">
+                                <span>
                                     <span class="material-symbols-outlined">schedule</span>
                                     ${task.when === 'now' ? 'Now' : (task.scheduledTime || 'Flexible')}
                                 </span>
@@ -1994,14 +1702,14 @@
                                 ` : ''}
 
                                 <div class="address-hidden">
-                                    <span class="material-symbols-outlined" style="font-size: 16px;">lock</span>
-                                    Full address visible after acceptance
+                                    <span class="material-symbols-outlined">lock</span>
+                                    Full address after acceptance
                                 </div>
 
                                 ${hasValidCoords ? `
                                     <button class="action-btn show-route-btn" onclick="window.showRouteOnMap('${taskId}')">
                                         <span class="material-symbols-outlined">map</span>
-                                        Show Route on Map
+                                        Show Route
                                     </button>
                                 ` : ''}
 
@@ -2010,12 +1718,13 @@
                                         <input type="number" class="offer-input" id="offer-${taskId}" placeholder="Your offer (R)" min="1">
                                         <button class="submit-offer-btn" onclick="window.submitOffer('${taskId}')">
                                             <span class="material-symbols-outlined">send</span>
+                                            Offer
                                         </button>
                                     </div>
                                 ` : `
                                     <button class="action-btn accept-task-btn" onclick="window.acceptTask('${taskId}')">
                                         <span class="material-symbols-outlined">check_circle</span>
-                                        Accept & Help
+                                        Accept
                                     </button>
                                 `}
                             </div>
@@ -2041,41 +1750,36 @@
                 const input = document.getElementById(`offer-${taskId}`);
                 const amount = parseFloat(input.value);
                 if (!amount || amount < 1) {
-                    showToast('Please enter a valid amount', 'error');
+                    showToast('Enter a valid amount', 'error');
                     return;
                 }
                 makeOffer(taskId, amount);
                 input.value = '';
             };
 
-            // ===== ADD MARKERS TO MAP =====
+            // ===== ADD MARKERS =====
             function addTaskMarkers(tasks) {
                 if (!map) return;
                 
-                // Remove old task markers
-                if (markers.length > 0) {
-                    markers.forEach(marker => marker.remove());
-                    markers = [];
-                }
+                markers.forEach(marker => marker.remove());
+                markers = [];
 
                 tasks.forEach(task => {
                     if (task.coordinates) {
                         const [lng, lat] = task.coordinates.split(',').map(Number);
                         
-                        // Validate coordinates (South Africa bounds)
                         if (lat < -35 || lat > -22 || lng < 16 || lng > 33) {
-                            console.warn('Invalid coordinates for task:', task._id, lat, lng);
-                            return; // Skip invalid coordinates
+                            addDebugLog(`Skipping invalid coords: ${lat}, ${lng}`, 'warning');
+                            return;
                         }
                         
                         const marker = new mapboxgl.Marker({ color: '#FF286F' })
                             .setLngLat([lng, lat])
                             .setPopup(new mapboxgl.Popup().setHTML(`
-                                <div style="font-family: 'Manrope', sans-serif; padding: 0.5rem;">
+                                <div style="font-family: 'Inter', sans-serif; padding: 0.5rem;">
                                     <strong>${task.taskDescription || 'Help needed'}</strong><br>
-                                    ${task.budgetType === 'open' ? 'Open to offers' : 'R ' + task.budgetAmount}<br>
                                     <button onclick="window.showRouteOnMap('${task._id || task.id}')" 
-                                        style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:5px; margin-top:0.5rem; cursor:pointer; width:100%;">
+                                        style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:40px; margin-top:0.5rem; cursor:pointer; width:100%;">
                                         Show Route
                                     </button>
                                 </div>
@@ -2085,155 +1789,93 @@
                         markers.push(marker);
                     }
                 });
+                
+                addDebugLog(`Added ${markers.length} markers to map`, 'info');
             }
 
-            // ===== ACCEPT TASK =====
-            window.acceptTask = async function(taskId) {
-                const user = getCurrentUser();
+            // ===== NOTIFICATIONS =====
+            function addNotification(notif) {
+                notifications.unshift(notif);
+                if (notifications.length > 20) notifications = notifications.slice(0, 20);
                 
-                if (!user) {
-                    showToast('Please log in to help', 'error');
-                    window.location.href = '/login.html';
+                const unreadCount = notifications.filter(n => !n.read).length;
+                notificationBadge.textContent = unreadCount;
+                notificationBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                
+                renderNotifications();
+                addDebugLog(`Notification added: ${notif.title}`, 'info');
+            }
+
+            function renderNotifications() {
+                if (notifications.length === 0) {
+                    notificationsList.innerHTML = '<div class="empty-notifications">No notifications</div>';
                     return;
                 }
 
-                if (!user.profileImage) {
-                    showToast('Add a profile picture first', 'error');
-                    return;
+                notificationsList.innerHTML = notifications.map((notif, index) => `
+                    <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="window.viewTask('${notif.taskId}', ${index})">
+                        <div class="notification-title">${notif.title}</div>
+                        <div class="notification-message">${notif.message}</div>
+                        <div class="notification-time">${notif.time}</div>
+                    </div>
+                `).join('');
+            }
+
+            window.viewTask = function(taskId, index) {
+                if (index !== undefined) {
+                    notifications[index].read = true;
+                    const unreadCount = notifications.filter(n => !n.read).length;
+                    notificationBadge.textContent = unreadCount;
+                    notificationBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+                    renderNotifications();
                 }
-
-                if (!user.adminVerified && user.verificationStatus !== 'approved') {
-                    showToast('Please complete verification first', 'error');
-                    return;
-                }
-
-                if (!isOnline) {
-                    showToast('Set your status to available first', 'error');
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/accept`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${getAuthToken()}`
-                        },
-                        body: JSON.stringify({ 
-                            helperId: user.email, 
-                            helperName: user.name,
-                            helperAvatar: user.profileImage 
-                        })
-                    });
-
-                    if (response.ok) {
-                        showToast('Task accepted! You can now help.', 'success');
-                        
-                        availableTasks = availableTasks.filter(t => (t._id || t.id) !== taskId);
-                        renderTasks(availableTasks);
-                        addTaskMarkers(availableTasks);
-                        
-                        addNotification({
-                            title: 'Task Accepted!',
-                            message: `You've accepted a task. Good luck!`,
-                            time: 'Just now',
-                            taskId: taskId
-                        });
-
-                        // Clear route if task was selected
-                        if (selectedTaskId === taskId) {
-                            selectedTaskId = null;
-                            distanceContainer.classList.remove('active');
-                            if (endMarker) endMarker.remove();
-                            map.getSource('route').setData({
-                                'type': 'Feature',
-                                'geometry': {
-                                    'type': 'LineString',
-                                    'coordinates': []
-                                }
-                            });
-                        }
-                    } else {
-                        showToast('Task already taken', 'error');
+                
+                tasksFeed.classList.add('expanded');
+                setTimeout(() => {
+                    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) {
+                        taskElement.scrollIntoView({ behavior: 'smooth' });
+                        taskElement.classList.add('selected');
                     }
-                } catch (error) {
-                    console.error('Error accepting task:', error);
-                    showToast('Error accepting task', 'error');
-                }
+                }, 300);
+                notificationsPanel.classList.remove('active');
             };
 
-            // ===== ONLINE TOGGLE =====
-            onlineToggle.addEventListener('change', (e) => {
-                isOnline = e.target.checked;
-                const statusText = document.querySelector('.online-toggle span:nth-child(2)');
-                statusText.textContent = isOnline ? 'Available' : 'Offline';
-                
-                if (!isOnline && socket) {
-                    socket.disconnect();
-                } else if (isOnline && socket) {
-                    socket.connect();
+            // ===== CONNECT SOCKET =====
+            function connectSocket() {
+                try {
+                    addDebugLog('Connecting to socket...', 'info');
+                    socket = io(API_BASE_URL, {
+                        query: { userId: currentUser?.email },
+                        auth: { token: authToken }
+                    });
+
+                    socket.on('connect', () => {
+                        addDebugLog('Socket connected', 'success');
+                    });
+
+                    socket.on('connect_error', (error) => {
+                        addDebugLog(`Socket error: ${error.message}`, 'error');
+                    });
+
+                    socket.on('new-task', (task) => {
+                        addDebugLog('New task received', 'success');
+                        addNotification({
+                            title: 'New Task!',
+                            message: task.taskDescription || 'Someone needs help',
+                            time: 'Just now',
+                            taskId: task._id || task.id
+                        });
+                        availableTasks.unshift(task);
+                        renderTasks(availableTasks);
+                        addTaskMarkers([task]);
+                        showToast('New task available!', 'success');
+                    });
+
+                } catch (error) {
+                    addDebugLog(`Socket failed: ${error.message}`, 'error');
                 }
-                
-                showToast(`You are now ${isOnline ? 'available' : 'offline'}`, 'success');
-            });
-
-            // ===== PULL TO REFRESH =====
-            let touchStartY = 0;
-            let touchMoveY = 0;
-            const refreshThreshold = 100;
-            let refreshIndicator = null;
-
-            function createRefreshIndicator() {
-                const indicator = document.createElement('div');
-                indicator.className = 'refresh-indicator';
-                indicator.innerHTML = '<span class="material-symbols-outlined">refresh</span><span>Release to refresh</span>';
-                feedContent.parentNode.insertBefore(indicator, feedContent);
-                return indicator;
             }
-
-            feedContent.addEventListener('touchstart', (e) => {
-                if (feedContent.scrollTop === 0) {
-                    touchStartY = e.touches[0].clientY;
-                    if (!refreshIndicator) {
-                        refreshIndicator = createRefreshIndicator();
-                    }
-                }
-            });
-
-            feedContent.addEventListener('touchmove', (e) => {
-                if (touchStartY > 0 && feedContent.scrollTop === 0) {
-                    touchMoveY = e.touches[0].clientY;
-                    const pullDistance = touchMoveY - touchStartY;
-                    
-                    if (pullDistance > 0 && pullDistance < refreshThreshold) {
-                        refreshIndicator.style.transform = `translateY(${pullDistance}px)`;
-                        refreshIndicator.classList.add('show');
-                    } else if (pullDistance >= refreshThreshold) {
-                        refreshIndicator.innerHTML = '<span class="material-symbols-outlined">refresh</span><span>Release to refresh</span>';
-                    }
-                }
-            });
-
-            feedContent.addEventListener('touchend', (e) => {
-                if (touchStartY > 0 && feedContent.scrollTop === 0) {
-                    const pullDistance = touchMoveY - touchStartY;
-                    
-                    if (pullDistance >= refreshThreshold) {
-                        refreshIndicator.innerHTML = '<span class="material-symbols-outlined">sync</span><span>Refreshing...</span>';
-                        fetchTasks();
-                        setTimeout(() => {
-                            refreshIndicator.classList.remove('show');
-                            refreshIndicator.style.transform = '';
-                        }, 1000);
-                    } else {
-                        refreshIndicator.classList.remove('show');
-                        refreshIndicator.style.transform = '';
-                    }
-                }
-                
-                touchStartY = 0;
-                touchMoveY = 0;
-            });
 
             // ===== EVENT LISTENERS =====
             feedHeader.addEventListener('click', () => {
@@ -2249,10 +1891,23 @@
                 notificationsPanel.classList.remove('active');
             });
 
-            profileMenuBtn.addEventListener('click', openProfileModal);
+            onlineToggle.addEventListener('change', (e) => {
+                isOnline = e.target.checked;
+                statusText.textContent = isOnline ? 'Available' : 'Offline';
+                showToast(`You are ${isOnline ? 'available' : 'offline'}`, 'success');
+                addDebugLog(`Status changed to: ${isOnline ? 'online' : 'offline'}`, 'info');
+            });
+
+            profileMenuBtn.addEventListener('click', () => {
+                addDebugLog('Opening profile menu', 'info');
+                profileModalOverlay.classList.add('active');
+                renderProfile();
+            });
 
             profileModalOverlay.addEventListener('click', (e) => {
-                if (e.target === profileModalOverlay) closeProfileModal();
+                if (e.target === profileModalOverlay) {
+                    profileModalOverlay.classList.remove('active');
+                }
             });
 
             if (backFromAccount) {
@@ -2273,26 +1928,226 @@
                 }
             });
 
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    accountModal.classList.remove('active');
-                    imageModal.classList.remove('active');
-                    closeProfileModal();
-                    notificationsPanel.classList.remove('active');
-                }
-            });
+            // ===== PROFILE FUNCTIONS =====
+            function renderProfile() {
+                const user = currentUser;
+                if (!user) return;
 
-            // ===== INIT =====
-            currentUser = getCurrentUser();
-            
-            if (!currentUser) {
-                window.location.href = '/login.html';
-            } else {
-                checkVerificationStatus();
+                let avatarContent = user.profileImage 
+                    ? `<img src="${user.profileImage}" alt="profile" onerror="this.src='https://ui-avatars.com/api/?name=${user.name}&background=003E71&color=fff'">`
+                    : `<span>${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</span>`;
+
+                profileModalContent.innerHTML = `
+                    <div class="profile-info" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                        <div class="avatar" style="width: 56px; height: 56px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" id="profileAvatar">
+                            ${avatarContent}
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1rem; font-weight: 600;">${user.name || 'User'}</h3>
+                            <p style="color: #666; font-size: 0.85rem;">${user.email || ''}</p>
+                            <span style="font-size: 0.75rem; color: ${user.adminVerified ? '#10b981' : (user.verificationStatus === 'pending' ? '#f59e0b' : '#ef4444')};">
+                                ${user.adminVerified ? 'Verified' : (user.verificationStatus === 'pending' ? 'Pending' : 'Not Verified')}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div class="menu-item" id="accountMenuItem" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span class="material-symbols-outlined">account_circle</span>
+                                <span>Account</span>
+                            </div>
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </div>
+
+                        <div class="logout-item" id="logoutFromMenu" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin-top: auto; cursor: pointer; opacity: 0.7;">
+                            <span class="material-symbols-outlined">logout</span>
+                            <span>Logout</span>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('profileAvatar')?.addEventListener('click', () => {
+                    if (user.profileImage) {
+                        fullSizeImage.src = user.profileImage;
+                        imageModal.classList.add('active');
+                    }
+                });
+
+                document.getElementById('accountMenuItem')?.addEventListener('click', () => {
+                    profileModalOverlay.classList.remove('active');
+                    accountModal.classList.add('active');
+                    renderAccountEdit();
+                });
+
+                document.getElementById('logoutFromMenu')?.addEventListener('click', () => {
+                    addDebugLog('Logging out', 'info');
+                    localStorage.removeItem('taskmart_user');
+                    localStorage.removeItem('taskmart_token');
+                    showToast('Logged out', 'success');
+                    setTimeout(() => window.location.href = '/login.html', 1000);
+                });
             }
 
-            // Periodically check verification status
-            setInterval(checkVerificationStatus, 60000);
+            function renderAccountEdit() {
+                const user = currentUser;
+                if (!user) return;
+
+                let avatarContent = user.profileImage
+                    ? `<img src="${user.profileImage}" alt="profile" style="width:100%; height:100%; object-fit:cover;">`
+                    : `<span>${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</span>`;
+
+                accountContent.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; background: #f5f5f5; margin: 0 auto 1.5rem; overflow: hidden; cursor: pointer; position: relative;" id="editAvatar">
+                            ${avatarContent}
+                            <div style="position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; opacity:0; transition:opacity 0.2s;" class="avatar-overlay">
+                                <span class="material-symbols-outlined" style="color:white;">photo_camera</span>
+                            </div>
+                        </div>
+                        <input type="file" id="profilePicInput" style="display:none;" accept="image/*">
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size:0.75rem; color:#666; margin-bottom:0.25rem;">Full Name</label>
+                                <input type="text" id="editName" value="${user.name || ''}" style="width:100%; padding:0.75rem 0; border:none; border-bottom:1px solid #eee; font-family:'Inter', sans-serif;">
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-size:0.75rem; color:#666; margin-bottom:0.25rem;">Email</label>
+                                <input type="email" id="editEmail" value="${user.email || ''}" readonly style="width:100%; padding:0.75rem 0; border:none; border-bottom:1px solid #eee; font-family:'Inter', sans-serif; color:#999;">
+                            </div>
+                        </div>
+
+                        <div style="background: #f9f9f9; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" id="requestVerificationBtn">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <span class="material-symbols-outlined">verified</span>
+                                    <span>Identity Verification</span>
+                                </div>
+                                <span style="font-size:0.8rem; color: ${user.adminVerified ? '#10b981' : (user.verificationStatus === 'pending' ? '#f59e0b' : '#ef4444')};">
+                                    ${user.adminVerified ? 'Verified' : (user.verificationStatus === 'pending' ? 'Pending' : 'Not Requested')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <span class="material-symbols-outlined">smooth_scroll</span>
+                                <span>Smooth Scrolling</span>
+                            </div>
+                            <div class="toggle-switch ${smoothScrollEnabled ? 'active' : ''}" id="smoothScrollToggle" style="width:44px; height:24px; background:${smoothScrollEnabled ? '#003E71' : '#e0e0e0'}; border-radius:12px; position:relative; cursor:pointer; transition:background 0.2s;">
+                                <div style="width:20px; height:20px; background:white; border-radius:50%; position:absolute; top:2px; left:${smoothScrollEnabled ? '22px' : '2px'}; transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.1);"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('editAvatar').addEventListener('mouseenter', () => {
+                    document.querySelector('.avatar-overlay').style.opacity = '1';
+                });
+                document.getElementById('editAvatar').addEventListener('mouseleave', () => {
+                    document.querySelector('.avatar-overlay').style.opacity = '0';
+                });
+                document.getElementById('editAvatar').addEventListener('click', () => {
+                    document.getElementById('profilePicInput').click();
+                });
+
+                document.getElementById('profilePicInput').addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            user.profileImage = event.target.result;
+                            localStorage.setItem('taskmart_user', JSON.stringify(user));
+                            showToast('Profile picture updated', 'success');
+                            renderAccountEdit();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                document.getElementById('editName').addEventListener('change', (e) => {
+                    user.name = e.target.value;
+                    localStorage.setItem('taskmart_user', JSON.stringify(user));
+                    showToast('Name updated', 'success');
+                });
+
+                document.getElementById('requestVerificationBtn').addEventListener('click', requestVerification);
+
+                document.getElementById('smoothScrollToggle').addEventListener('click', () => {
+                    smoothScrollEnabled = !smoothScrollEnabled;
+                    document.getElementById('smoothScrollToggle').style.background = smoothScrollEnabled ? '#003E71' : '#e0e0e0';
+                    document.getElementById('smoothScrollToggle').querySelector('div').style.left = smoothScrollEnabled ? '22px' : '2px';
+                    document.querySelectorAll('.feed-content, .modal-content').forEach(el => {
+                        el.style.scrollBehavior = smoothScrollEnabled ? 'smooth' : 'auto';
+                    });
+                    showToast(`Smooth scrolling ${smoothScrollEnabled ? 'enabled' : 'disabled'}`, 'success');
+                });
+            }
+
+            async function requestVerification() {
+                const user = currentUser;
+                if (!user) return;
+
+                if (!user.profileImage) {
+                    showToast('Upload a profile picture first', 'error');
+                    return;
+                }
+
+                if (user.adminVerified) {
+                    showToast('Already verified', 'error');
+                    return;
+                }
+
+                if (user.verificationStatus === 'pending') {
+                    showToast('Verification pending', 'error');
+                    return;
+                }
+
+                try {
+                    addDebugLog('Requesting verification...', 'info');
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/users/${user.email}/verify`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    addDebugLog(`Verification response: ${response.status}`, response.ok ? 'success' : 'error');
+                    
+                    const data = await response.json().catch(() => ({}));
+
+                    if (response.ok) {
+                        user.verificationStatus = 'pending';
+                        user.verificationRequested = true;
+                        localStorage.setItem('taskmart_user', JSON.stringify(user));
+                        showToast('Verification requested!', 'success');
+                    } else {
+                        showToast(data.error || 'Request failed', 'error');
+                    }
+                } catch (error) {
+                    addDebugLog(`Verification error: ${error.message}`, 'error');
+                    showToast('Error requesting verification', 'error');
+                }
+            }
+
+            // ===== INIT =====
+            (async function init() {
+                addDebugLog('🚀 Helper dashboard starting...', 'info');
+                
+                const authenticated = await checkAuth();
+                if (!authenticated) return;
+                
+                await loadMapboxToken();
+                
+                // Show debug console initially for troubleshooting
+                debugConsole.classList.add('active');
+                addDebugLog(`User: ${currentUser?.email}`, 'success');
+                addDebugLog(`API: ${API_BASE_URL}`, 'info');
+            })();
         })();
     </script>
 </body>
