@@ -5,8 +5,18 @@ const path = require('path');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
 const port = process.env.PORT || 3000;
 
 // ========== CLOUDINARY CONFIGURATION ==========
@@ -26,11 +36,11 @@ cloudinary.api.ping()
   .then(result => console.log('✅ Cloudinary connected successfully'))
   .catch(error => console.error('❌ Cloudinary connection failed:', error));
 
-// ========== MULTER CONFIGURATION (memory storage) ==========
+// ========== MULTER CONFIGURATION ==========
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -48,6 +58,24 @@ app.use(express.static(__dirname));
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/taskmart';
 mongoose.connect(MONGODB_URI).then(() => console.log('✅ Connected to MongoDB')).catch(err => console.error('❌ MongoDB connection error:', err));
 
+// ========== SOCKET.IO ==========
+io.on('connection', (socket) => {
+  console.log('🔌 New client connected:', socket.id);
+  
+  const userId = socket.handshake.query.userId;
+  if (userId) {
+    socket.join(`user:${userId}`);
+    console.log(`User ${userId} joined their room`);
+  }
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
+// Make io accessible in routes
+app.set('io', io);
+
 // ========== SCHEMAS ==========
 const taskSchema = new mongoose.Schema({
   location: String,
@@ -61,10 +89,10 @@ const taskSchema = new mongoose.Schema({
   budgetAmount: Number,
   paymentMethod: { type: String, enum: ['cash', 'online'] },
   moreDetails: String,
-  images: [String], // Cloudinary URLs
+  images: [String],
   userId: String,
   userName: String,
-  userAvatar: String, // Cloudinary URL of user's profile picture
+  userAvatar: String,
   status: { type: String, enum: ['draft', 'posted', 'in-progress', 'completed', 'active', 'cancelled'], default: 'posted' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -78,9 +106,9 @@ const userSchema = new mongoose.Schema({
   initials: String,
   emailVerified: { type: Boolean, default: true },
   photoUploaded: { type: Boolean, default: false },
-  adminVerified: { type: Boolean, default: false }, // Changed default to false
-  profileImage: String, // Cloudinary URL
-  profileImagePublicId: String, // For deleting/updating images
+  adminVerified: { type: Boolean, default: false },
+  profileImage: String,
+  profileImagePublicId: String,
   suspended: { type: Boolean, default: false },
   suspendedAt: Date,
   suspendedBy: String,
@@ -161,8 +189,8 @@ const verificationRequestSchema = new mongoose.Schema({
   userName: String,
   userRole: String,
   idType: { type: String, enum: ['passport', 'drivers_license', 'national_id'] },
-  idImage: String, // Cloudinary URL
-  selfieImage: String, // Cloudinary URL
+  idImage: String,
+  selfieImage: String,
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   rejectionReason: String,
   reviewedBy: String,
@@ -171,6 +199,21 @@ const verificationRequestSchema = new mongoose.Schema({
   notes: String
 });
 const VerificationRequest = mongoose.model('VerificationRequest', verificationRequestSchema);
+
+// ===== NEW: OFFER SCHEMA =====
+const offerSchema = new mongoose.Schema({
+  taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: true },
+  helperId: { type: String, required: true },
+  helperName: String,
+  helperEmail: String,
+  amount: { type: Number, required: true },
+  status: { type: String, enum: ['pending', 'accepted', 'rejected', 'countered'], default: 'pending' },
+  counterAmount: Number,
+  message: String,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+const Offer = mongoose.model('Offer', offerSchema);
 
 const systemSettingsSchema = new mongoose.Schema({
   maintenanceMode: { type: Boolean, default: false },
@@ -189,8 +232,8 @@ async function uploadToCloudinary(fileBuffer, folder, publicId = null) {
       folder: `taskmart/${folder}`,
       resource_type: 'auto',
       transformation: [
-        { width: 1000, height: 1000, crop: 'limit' }, // Limit size
-        { quality: 'auto:good' } // Optimize quality
+        { width: 1000, height: 1000, crop: 'limit' },
+        { quality: 'auto:good' }
       ]
     };
     
@@ -220,6 +263,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
+app.get('/helper', (req, res) => {
+  res.sendFile(path.join(__dirname, 'helper.html'));
+});
+
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -246,7 +293,6 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid token format' });
     }
     
-    // Decode token to get email
     const decoded = Buffer.from(token, 'base64').toString('ascii');
     const [email] = decoded.split(':');
     
@@ -268,7 +314,6 @@ const authMiddleware = async (req, res, next) => {
 };
 
 // ========== CLOUDINARY UPLOAD ENDPOINTS ==========
-// Upload profile picture
 app.post('/api/upload/profile', upload.single('image'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
@@ -278,7 +323,6 @@ app.post('/api/upload/profile', upload.single('image'), authMiddleware, async (r
     const user = req.user;
     console.log('📧 Uploading profile for user:', user.email);
     
-    // Delete old profile image if exists
     if (user.profileImagePublicId) {
       try {
         await cloudinary.uploader.destroy(user.profileImagePublicId);
@@ -288,12 +332,10 @@ app.post('/api/upload/profile', upload.single('image'), authMiddleware, async (r
       }
     }
     
-    // Upload new image
     console.log('☁️ Uploading to Cloudinary...');
     const result = await uploadToCloudinary(req.file.buffer, 'profiles');
     console.log('✅ Uploaded to Cloudinary:', result.secure_url);
     
-    // Update user
     user.profileImage = result.secure_url;
     user.profileImagePublicId = result.public_id;
     user.photoUploaded = true;
@@ -312,7 +354,6 @@ app.post('/api/upload/profile', upload.single('image'), authMiddleware, async (r
   }
 });
 
-// Upload task images
 app.post('/api/upload/task-image', upload.single('image'), authMiddleware, async (req, res) => {
   try {
     if (!req.file) {
@@ -331,7 +372,6 @@ app.post('/api/upload/task-image', upload.single('image'), authMiddleware, async
   }
 });
 
-// Upload multiple task images
 app.post('/api/upload/task-images', upload.array('images', 5), authMiddleware, async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -354,7 +394,6 @@ app.post('/api/upload/task-images', upload.array('images', 5), authMiddleware, a
   }
 });
 
-// Delete image from Cloudinary
 app.post('/api/delete-image', authMiddleware, async (req, res) => {
   try {
     const { public_id } = req.body;
@@ -548,7 +587,7 @@ app.post('/api/auth/register', async (req, res) => {
       role: role || 'poster', 
       initials, 
       emailVerified: true, 
-      adminVerified: false, // Default to false for new users
+      adminVerified: false,
       verificationStatus: 'not_requested',
       verificationRequested: false
     });
@@ -585,6 +624,11 @@ app.post('/api/tasks', async (req, res) => {
   try {
     const task = new Task(req.body);
     await task.save();
+    
+    // Emit new task to all helpers
+    const io = req.app.get('io');
+    io.emit('new-task', task);
+    
     res.status(201).json(task);
   } catch (error) {
     await logError(error, '/api/tasks', null, req);
@@ -594,8 +638,12 @@ app.post('/api/tasks', async (req, res) => {
 
 app.get('/api/tasks', async (req, res) => {
   try {
-    const { email } = req.query;
-    const tasks = await Task.find(email ? { userId: email } : {}).sort({ createdAt: -1 });
+    const { email, status } = req.query;
+    const query = {};
+    if (email) query.userId = email;
+    if (status) query.status = status;
+    
+    const tasks = await Task.find(query).sort({ createdAt: -1 });
     res.json(tasks);
   } catch (error) {
     await logError(error, '/api/tasks', null, req);
@@ -642,6 +690,187 @@ app.delete('/api/tasks/:id', async (req, res) => {
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
     await logError(error, '/api/tasks/:id', null, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== OFFER ENDPOINTS (NEW) ==========
+// Helper makes an offer
+app.post('/api/tasks/:taskId/offer', authMiddleware, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { amount } = req.body;
+    const helper = req.user;
+    
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Check if task is open for offers
+    if (task.budgetType !== 'open') {
+      return res.status(400).json({ error: 'This task is not open for offers' });
+    }
+    
+    // Check if helper already made an offer
+    const existingOffer = await Offer.findOne({ 
+      taskId, 
+      helperId: helper.email,
+      status: 'pending'
+    });
+    
+    if (existingOffer) {
+      return res.status(400).json({ error: 'You already have a pending offer for this task' });
+    }
+    
+    // Create offer
+    const offer = new Offer({
+      taskId,
+      helperId: helper.email,
+      helperName: helper.name,
+      helperEmail: helper.email,
+      amount,
+      status: 'pending',
+      createdAt: new Date()
+    });
+    
+    await offer.save();
+    
+    // Notify poster via socket
+    const io = req.app.get('io');
+    io.to(`user:${task.userId}`).emit('new-offer', {
+      taskId,
+      offerId: offer._id,
+      helperName: helper.name,
+      amount
+    });
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Offer sent successfully',
+      offer 
+    });
+    
+  } catch (error) {
+    await logError(error, '/api/tasks/:taskId/offer', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get offers for a task
+app.get('/api/tasks/:taskId/offers', authMiddleware, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const task = await Task.findById(taskId);
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Only poster or admin can view offers
+    if (task.userId !== req.user.email && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    
+    const offers = await Offer.find({ taskId }).sort({ createdAt: -1 });
+    res.json(offers);
+    
+  } catch (error) {
+    await logError(error, '/api/tasks/:taskId/offers', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Poster responds to an offer
+app.put('/api/offers/:offerId', authMiddleware, async (req, res) => {
+  try {
+    const { offerId } = req.params;
+    const { status, counterAmount } = req.body;
+    
+    const offer = await Offer.findById(offerId);
+    if (!offer) {
+      return res.status(404).json({ error: 'Offer not found' });
+    }
+    
+    const task = await Task.findById(offer.taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Only poster or admin can respond
+    if (task.userId !== req.user.email && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    
+    offer.status = status;
+    offer.updatedAt = new Date();
+    
+    if (counterAmount) {
+      offer.counterAmount = counterAmount;
+    }
+    
+    await offer.save();
+    
+    // Notify helper via socket
+    const io = req.app.get('io');
+    io.to(`user:${offer.helperId}`).emit('offer-response', {
+      offerId: offer._id,
+      taskId: offer.taskId,
+      status,
+      counterAmount
+    });
+    
+    res.json({ success: true, offer });
+    
+  } catch (error) {
+    await logError(error, '/api/offers/:offerId', req.user?._id, req);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper accepts a task with fixed budget
+app.post('/api/tasks/:taskId/accept', authMiddleware, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const helper = req.user;
+    
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Check if task is available
+    if (task.status !== 'posted' && task.status !== 'active') {
+      return res.status(400).json({ error: 'Task is no longer available' });
+    }
+    
+    // Check if budget is fixed (not open)
+    if (task.budgetType === 'open') {
+      return res.status(400).json({ error: 'Please make an offer for open budget tasks' });
+    }
+    
+    // Update task
+    task.status = 'in-progress';
+    task.helperId = helper.email;
+    task.helperName = helper.name;
+    task.helperAvatar = helper.profileImage;
+    await task.save();
+    
+    // Notify poster
+    const io = req.app.get('io');
+    io.to(`user:${task.userId}`).emit('task-accepted', {
+      taskId,
+      helperName: helper.name
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Task accepted successfully',
+      task 
+    });
+    
+  } catch (error) {
+    await logError(error, '/api/tasks/:taskId/accept', req.user?._id, req);
     res.status(500).json({ error: error.message });
   }
 });
@@ -723,29 +952,24 @@ app.delete('/api/users/:email', async (req, res) => {
 });
 
 // ========== VERIFICATION REQUEST ROUTES ==========
-// User requests verification
 app.post('/api/users/:email/verify', authMiddleware, async (req, res) => {
   try {
     const { email } = req.params;
     
-    // Verify the authenticated user matches the email
     if (req.user.email !== email) {
       return res.status(403).json({ error: 'You can only request verification for your own account' });
     }
 
     const user = req.user;
 
-    // Check if user has profile image
     if (!user.profileImage) {
       return res.status(400).json({ error: 'Profile image is required for verification' });
     }
 
-    // Check if already verified
     if (user.adminVerified) {
       return res.status(400).json({ error: 'User already verified' });
     }
 
-    // Check if there's already a pending request
     const existingRequest = await VerificationRequest.findOne({ 
       userEmail: email, 
       status: 'pending' 
@@ -755,7 +979,6 @@ app.post('/api/users/:email/verify', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Verification request already pending' });
     }
 
-    // Check if rejected recently (you can adjust the time window)
     const rejectedRequest = await VerificationRequest.findOne({ 
       userEmail: email, 
       status: 'rejected' 
@@ -771,21 +994,19 @@ app.post('/api/users/:email/verify', authMiddleware, async (req, res) => {
       }
     }
 
-    // Create verification request using profile image as ID document
     const verificationRequest = new VerificationRequest({
       userId: user._id,
       userEmail: user.email,
       userName: user.name,
       userRole: user.role,
       idType: 'national_id',
-      idImage: user.profileImage, // Use profile image as ID document
+      idImage: user.profileImage,
       status: 'pending',
       createdAt: new Date()
     });
 
     await verificationRequest.save();
 
-    // Update user status
     user.verificationStatus = 'pending';
     user.verificationRequested = true;
     user.verificationRequestedAt = new Date();
@@ -803,7 +1024,6 @@ app.post('/api/users/:email/verify', authMiddleware, async (req, res) => {
   }
 });
 
-// Get user's verification status
 app.get('/api/users/:email/verification-status', authMiddleware, async (req, res) => {
   try {
     const { email } = req.params;
@@ -944,7 +1164,6 @@ app.get('/api/admin/users/:userId', adminAuth, async (req, res) => {
     const user = await User.findById(req.params.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    // Get verification requests for this user
     const verificationRequests = await VerificationRequest.find({ 
       userEmail: user.email 
     }).sort({ createdAt: -1 });
@@ -1007,12 +1226,10 @@ app.put('/api/admin/users/:userId', adminAuth, async (req, res) => {
       }
     }
     
-    // Handle verification status update
     if (adminVerified !== undefined || verificationStatus) {
       update.adminVerified = adminVerified !== undefined ? adminVerified : verificationStatus === 'approved';
       update.verificationStatus = verificationStatus || (adminVerified ? 'approved' : user.verificationStatus);
       
-      // If approving, update any pending verification request
       if (update.adminVerified) {
         await VerificationRequest.updateMany(
           { userEmail: user.email, status: 'pending' },
@@ -1024,7 +1241,6 @@ app.put('/api/admin/users/:userId', adminAuth, async (req, res) => {
         );
       }
       
-      // If rejecting, update the latest pending request
       if (verificationStatus === 'rejected' && rejectionReason) {
         update.rejectionReason = rejectionReason;
         const pendingRequest = await VerificationRequest.findOne({ 
@@ -1241,7 +1457,6 @@ app.get('/api/admin/verificationrequests/:requestId', adminAuth, async (req, res
     const verification = await VerificationRequest.findById(req.params.requestId);
     if (!verification) return res.status(404).json({ error: 'Verification request not found' });
     
-    // Get user details
     const user = await User.findOne({ email: verification.userEmail }).select('-password');
     
     res.json({
@@ -1270,7 +1485,6 @@ app.put('/api/admin/verificationrequests/:requestId', adminAuth, async (req, res
     }
     await verification.save();
     
-    // Update user verification status
     const user = await User.findOne({ email: verification.userEmail });
     if (user) {
       if (status === 'approved') {
@@ -1302,7 +1516,6 @@ app.put('/api/admin/verificationrequests/:requestId', adminAuth, async (req, res
   }
 });
 
-// Also keep the old endpoint for backward compatibility
 app.get('/api/admin/verifications', adminAuth, async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
@@ -1522,10 +1735,12 @@ app.put('/api/admin/settings', adminAuth, async (req, res) => {
 });
 
 // ========== START SERVER ==========
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
   console.log(`📊 Admin: http://localhost:${port}/admin`);
+  console.log(`👥 Helper: http://localhost:${port}/helper`);
   console.log(`☁️ Cloudinary configured for: ${process.env.CLOUDINARY_CLOUD_NAME || 'not set'}`);
+  console.log(`🔌 Socket.IO enabled`);
   console.log(`🔧 Debug endpoints:`);
   console.log(`   - GET /api/debug/test-log`);
   console.log(`   - GET /api/debug/check-logs`);
