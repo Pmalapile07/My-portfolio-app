@@ -150,7 +150,7 @@
             color: #FF286F;
         }
 
-        /* === FULLSCREEN MAP === */
+        /* === FULLSCREEN MAP - DARK STYLE === */
         #map {
             position: absolute;
             top: 0;
@@ -158,6 +158,14 @@
             width: 100%;
             height: 100%;
             z-index: 1;
+        }
+
+        .mapboxgl-map {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .mapboxgl-ctrl-logo {
+            display: none !important;
         }
 
         .map-error {
@@ -311,7 +319,7 @@
             transform: translateX(calc(var(--button-width) - var(--toggle-diameter) - var(--button-toggle-offset) * 2));
         }
 
-        /* === TASKS FEED - MINIMALIST === */
+        /* === TASKS FEED === */
         .tasks-feed {
             position: absolute;
             bottom: 0;
@@ -374,7 +382,7 @@
             scroll-behavior: smooth;
         }
 
-        /* Task Card - Minimalist */
+        /* Task Card */
         .helper-task-card {
             background: #ffffff;
             border-radius: 16px;
@@ -825,7 +833,7 @@
             }
         }
 
-        /* Profile Menu Styles (minimal) */
+        /* Profile Menu Styles */
         .profile-menu {
             font-family: 'Inter', sans-serif;
             position: fixed;
@@ -915,7 +923,7 @@
     </style>
 </head>
 <body>
-    <!-- MAP -->
+    <!-- MAP - Dark Style -->
     <div id="map"></div>
     
     <!-- Debug Console -->
@@ -1049,10 +1057,8 @@
                 debugLogs.appendChild(log);
                 debugLogs.scrollTop = debugLogs.scrollHeight;
                 
-                // Also log to console
                 console.log(`[${type}] ${message}`);
                 
-                // Show debug console if there's an error
                 if (type === 'error') {
                     debugConsole.classList.add('active');
                 }
@@ -1063,7 +1069,7 @@
                 addDebugLog('Debug logs cleared', 'info');
             };
 
-            // Show debug console toggle (double tap on header)
+            // Show debug console (double tap on header)
             let debugTapCount = 0;
             let debugTapTimer;
             document.querySelector('.helper-header').addEventListener('dblclick', () => {
@@ -1148,7 +1154,7 @@
                 return token;
             }
 
-            // ===== CHECK AUTH STATUS =====
+            // ===== CHECK AUTH =====
             async function checkAuth() {
                 addDebugLog('Checking authentication...', 'info');
                 
@@ -1164,7 +1170,6 @@
                     return false;
                 }
                 
-                // Verify token with backend
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
                         headers: {
@@ -1175,6 +1180,7 @@
                     if (response.ok) {
                         const data = await response.json();
                         addDebugLog(`Authenticated as: ${data.user.email}`, 'success');
+                        currentUser = data.user;
                         return true;
                     } else {
                         addDebugLog('Token invalid, redirecting to login', 'error');
@@ -1189,12 +1195,59 @@
                 }
             }
 
-            // ===== MAP INITIALIZATION =====
+            // ===== PARSE COORDINATES (FIXED) =====
+            function parseTaskCoordinates(coordinateString) {
+                if (!coordinateString) return null;
+                
+                const parts = coordinateString.split(',').map(Number);
+                
+                if (parts.length === 2) {
+                    const first = parts[0];
+                    const second = parts[1];
+                    
+                    // Check format: In South Africa, lat is around -22 to -35, lng is 16-33
+                    // If first is between -35 and -22, it's lat (lat,lng format)
+                    // If second is between -35 and -22, it's lng,lat format
+                    
+                    let lng, lat;
+                    
+                    if (first >= -35 && first <= -22) {
+                        // Format: lat, lng
+                        lat = first;
+                        lng = second;
+                        addDebugLog(`Coordinates format: lat,lng (${lat}, ${lng})`, 'info');
+                    } else if (second >= -35 && second <= -22) {
+                        // Format: lng, lat
+                        lng = first;
+                        lat = second;
+                        addDebugLog(`Coordinates format: lng,lat (${lng}, ${lat})`, 'info');
+                    } else {
+                        // Can't determine, assume lng,lat (Mapbox standard)
+                        lng = first;
+                        lat = second;
+                        addDebugLog(`Unknown format, assuming lng,lat (${lng}, ${lat})`, 'warning');
+                    }
+                    
+                    // Validate South Africa bounds (but don't skip)
+                    if (lat < -35 || lat > -22 || lng < 16 || lng > 33) {
+                        addDebugLog(`⚠️ Coordinates outside SA: lat=${lat.toFixed(4)}, lng=${lng.toFixed(4)}`, 'warning');
+                    } else {
+                        addDebugLog(`✅ Valid SA coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
+                    }
+                    
+                    return { lng, lat };
+                }
+                
+                addDebugLog(`Invalid coordinate format: ${coordinateString}`, 'error');
+                return null;
+            }
+
+            // ===== MAP INIT =====
             function initMap() {
                 try {
                     map = new mapboxgl.Map({
                         container: 'map',
-                        style: 'mapbox://styles/mapbox/light-v11',
+                        style: 'mapbox://styles/mapbox/dark-v11', // DARK STYLE
                         center: [28.034088, -26.195246],
                         zoom: 12
                     });
@@ -1203,7 +1256,6 @@
                         addDebugLog('Map loaded successfully', 'success');
                         mapError.style.display = 'none';
                         
-                        // Add route source
                         map.addSource('route', {
                             'type': 'geojson',
                             'data': {
@@ -1257,7 +1309,6 @@
                     const response = await fetch('/config.js');
                     const script = await response.text();
                     
-                    // Extract token using regex (safer than eval)
                     const tokenMatch = script.match(/MAPBOX_TOKEN='([^']+)'/);
                     if (tokenMatch && tokenMatch[1]) {
                         mapboxgl.accessToken = tokenMatch[1];
@@ -1311,7 +1362,7 @@
                 }
             }
 
-            // ===== SHOW ROUTE ON MAP =====
+            // ===== SHOW ROUTE =====
             async function showRoute(taskId) {
                 addDebugLog(`Showing route for task: ${taskId}`, 'info');
                 
@@ -1333,14 +1384,17 @@
                     return;
                 }
 
-                const [taskLng, taskLat] = task.coordinates.split(',').map(Number);
-                
-                // Validate coordinates (South Africa bounds)
-                if (taskLat < -35 || taskLat > -22 || taskLng < 16 || taskLng > 33) {
-                    addDebugLog(`Invalid coordinates: ${taskLat}, ${taskLng}`, 'error');
+                const coords = parseTaskCoordinates(task.coordinates);
+                if (!coords) {
+                    addDebugLog(`Invalid coordinates: ${task.coordinates}`, 'error');
                     showToast('Invalid task location', 'error');
                     return;
                 }
+
+                const { lng: taskLng, lat: taskLat } = coords;
+                
+                addDebugLog(`Task location: ${taskLat.toFixed(4)}, ${taskLng.toFixed(4)}`, 'success');
+                addDebugLog(`Your location: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`, 'info');
 
                 selectedTaskId = taskId;
                 
@@ -1390,13 +1444,11 @@
                         'geometry': route.geometry
                     });
 
-                    // Update task card
                     document.querySelectorAll('.helper-task-card').forEach(card => {
                         card.classList.remove('selected');
                     });
                     document.querySelector(`[data-task-id="${taskId}"]`)?.classList.add('selected');
 
-                    // Update badge
                     const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
                     if (taskCard) {
                         const badge = taskCard.querySelector('.task-badge');
@@ -1442,7 +1494,6 @@
                         
                         addDebugLog(`Received ${tasks.length} tasks`, 'info');
                         
-                        // Filter out user's own tasks
                         if (currentUser) {
                             const beforeCount = tasks.length;
                             tasks = tasks.filter(task => {
@@ -1509,8 +1560,6 @@
                             'Authorization': `Bearer ${authToken}`
                         },
                         body: JSON.stringify({ 
-                            helperId: user.email,
-                            helperName: user.name,
                             amount: amount
                         })
                     });
@@ -1635,12 +1684,8 @@
                     const budget = task.budgetAmount || task.budget;
                     const isOpenOffer = task.budgetType === 'open';
                     
-                    // Check coordinates
-                    let hasValidCoords = false;
-                    if (task.coordinates) {
-                        const [lng, lat] = task.coordinates.split(',').map(Number);
-                        hasValidCoords = lat >= -35 && lat <= -22 && lng >= 16 && lng <= 33;
-                    }
+                    const coords = parseTaskCoordinates(task.coordinates);
+                    const hasValidCoords = coords !== null;
 
                     const posterName = task.posterName || task.userName || 'Someone';
                     const posterAvatar = task.posterAvatar || null;
@@ -1649,7 +1694,9 @@
                         <div class="helper-task-card ${selectedTaskId === taskId ? 'selected' : ''}" data-task-id="${taskId}">
                             <div class="task-header-row">
                                 <span class="task-title">${task.taskDescription || 'Help needed'}</span>
-                                <span class="task-badge ${hasValidCoords ? 'valid' : ''}">${hasValidCoords ? '?' : 'no location'}</span>
+                                <span class="task-badge ${hasValidCoords ? 'valid' : ''}">
+                                    ${hasValidCoords ? '📍' : '❌'}
+                                </span>
                             </div>
                             
                             <div class="task-location-row">
@@ -1660,7 +1707,7 @@
                             <div class="task-meta-row">
                                 <span class="task-distance">
                                     <span class="material-symbols-outlined">near_me</span>
-                                    ${hasValidCoords ? 'tap Show Route' : 'invalid'}
+                                    ${hasValidCoords ? 'Tap Show Route' : 'No location'}
                                 </span>
                                 <span>
                                     <span class="material-symbols-outlined">schedule</span>
@@ -1686,6 +1733,13 @@
                                     <span class="detail-label">Area:</span>
                                     <span class="detail-value">${task.area || task.location || 'Not specified'}</span>
                                 </div>
+                                
+                                ${coords ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Location:</span>
+                                    <span class="detail-value">${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</span>
+                                </div>
+                                ` : ''}
                                 
                                 ${task.scheduledDate ? `
                                 <div class="detail-item">
@@ -1764,33 +1818,38 @@
                 markers.forEach(marker => marker.remove());
                 markers = [];
 
+                let validMarkers = 0;
+
                 tasks.forEach(task => {
                     if (task.coordinates) {
-                        const [lng, lat] = task.coordinates.split(',').map(Number);
+                        const coords = parseTaskCoordinates(task.coordinates);
                         
-                        if (lat < -35 || lat > -22 || lng < 16 || lng > 33) {
-                            addDebugLog(`Skipping invalid coords: ${lat}, ${lng}`, 'warning');
-                            return;
+                        if (coords) {
+                            const { lng, lat } = coords;
+                            
+                            const marker = new mapboxgl.Marker({ color: '#FF286F' })
+                                .setLngLat([lng, lat])
+                                .setPopup(new mapboxgl.Popup().setHTML(`
+                                    <div style="font-family: 'Inter', sans-serif; padding: 0.5rem;">
+                                        <strong>${task.taskDescription || 'Help needed'}</strong><br>
+                                        <button onclick="window.showRouteOnMap('${task._id || task.id}')" 
+                                            style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:40px; margin-top:0.5rem; cursor:pointer; width:100%;">
+                                            Show Route
+                                        </button>
+                                    </div>
+                                `))
+                                .addTo(map);
+                            
+                            markers.push(marker);
+                            validMarkers++;
+                            addDebugLog(`Added marker for task ${task._id || task.id} at ${lat.toFixed(4)}, ${lng.toFixed(4)}`, 'success');
+                        } else {
+                            addDebugLog(`Skipping invalid coords: ${task.coordinates}`, 'warning');
                         }
-                        
-                        const marker = new mapboxgl.Marker({ color: '#FF286F' })
-                            .setLngLat([lng, lat])
-                            .setPopup(new mapboxgl.Popup().setHTML(`
-                                <div style="font-family: 'Inter', sans-serif; padding: 0.5rem;">
-                                    <strong>${task.taskDescription || 'Help needed'}</strong><br>
-                                    <button onclick="window.showRouteOnMap('${task._id || task.id}')" 
-                                        style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:40px; margin-top:0.5rem; cursor:pointer; width:100%;">
-                                        Show Route
-                                    </button>
-                                </div>
-                            `))
-                            .addTo(map);
-                        
-                        markers.push(marker);
                     }
                 });
                 
-                addDebugLog(`Added ${markers.length} markers to map`, 'info');
+                addDebugLog(`Added ${validMarkers} valid markers to map`, 'info');
             }
 
             // ===== NOTIFICATIONS =====
@@ -1847,7 +1906,7 @@
                     addDebugLog('Connecting to socket...', 'info');
                     socket = io(API_BASE_URL, {
                         query: { userId: currentUser?.email },
-                        auth: { token: authToken }
+                        transports: ['websocket', 'polling'] // Add polling fallback
                     });
 
                     socket.on('connect', () => {
@@ -1855,7 +1914,8 @@
                     });
 
                     socket.on('connect_error', (error) => {
-                        addDebugLog(`Socket error: ${error.message}`, 'error');
+                        addDebugLog(`Socket error: ${error.message} - using polling fallback`, 'warning');
+                        // Still works with polling
                     });
 
                     socket.on('new-task', (task) => {
@@ -1872,8 +1932,18 @@
                         showToast('New task available!', 'success');
                     });
 
+                    socket.on('offer-response', (data) => {
+                        addDebugLog(`Offer response: ${data.status}`, 'info');
+                        addNotification({
+                            title: `Offer ${data.status}`,
+                            message: `Your offer was ${data.status}`,
+                            time: 'Just now',
+                            taskId: data.taskId
+                        });
+                    });
+
                 } catch (error) {
-                    addDebugLog(`Socket failed: ${error.message}`, 'error');
+                    addDebugLog(`Socket setup error: ${error.message}`, 'error');
                 }
             }
 
@@ -1928,18 +1998,27 @@
                 }
             });
 
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    accountModal.classList.remove('active');
+                    imageModal.classList.remove('active');
+                    profileModalOverlay.classList.remove('active');
+                    notificationsPanel.classList.remove('active');
+                }
+            });
+
             // ===== PROFILE FUNCTIONS =====
             function renderProfile() {
                 const user = currentUser;
                 if (!user) return;
 
                 let avatarContent = user.profileImage 
-                    ? `<img src="${user.profileImage}" alt="profile" onerror="this.src='https://ui-avatars.com/api/?name=${user.name}&background=003E71&color=fff'">`
+                    ? `<img src="${user.profileImage}" alt="profile" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=${user.name}&background=003E71&color=fff'">`
                     : `<span>${user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</span>`;
 
                 profileModalContent.innerHTML = `
-                    <div class="profile-info" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
-                        <div class="avatar" style="width: 56px; height: 56px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" id="profileAvatar">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                        <div style="width: 56px; height: 56px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" id="profileAvatar">
                             ${avatarContent}
                         </div>
                         <div>
@@ -1951,8 +2030,8 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div class="menu-item" id="accountMenuItem" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+                    <div style="display: flex; flex-direction: column;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid #f0f0f0; cursor: pointer;" id="accountMenuItem">
                             <div style="display: flex; align-items: center; gap: 1rem;">
                                 <span class="material-symbols-outlined">account_circle</span>
                                 <span>Account</span>
@@ -1960,7 +2039,7 @@
                             <span class="material-symbols-outlined">chevron_right</span>
                         </div>
 
-                        <div class="logout-item" id="logoutFromMenu" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin-top: auto; cursor: pointer; opacity: 0.7;">
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0; margin-top: auto; cursor: pointer; opacity: 0.7;" id="logoutFromMenu">
                             <span class="material-symbols-outlined">logout</span>
                             <span>Logout</span>
                         </div>
@@ -2143,7 +2222,6 @@
                 
                 await loadMapboxToken();
                 
-                // Show debug console initially for troubleshooting
                 debugConsole.classList.add('active');
                 addDebugLog(`User: ${currentUser?.email}`, 'success');
                 addDebugLog(`API: ${API_BASE_URL}`, 'info');
