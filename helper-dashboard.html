@@ -254,34 +254,6 @@
             box-shadow: calc(var(--toggle-shadow-offset) * -1) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
         }
 
-        /* === FLOATING ACTION BUTTON === */
-        .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            background: #000;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            transition: all 0.2s;
-        }
-
-        .fab:hover {
-            transform: scale(1.1);
-        }
-
-        .fab .material-symbols-outlined {
-            color: white;
-            font-size: 28px;
-        }
-
         /* === BOTTOM SHEET - TASKS FEED === */
         .tasks-feed {
             position: absolute;
@@ -659,36 +631,6 @@
             color: #999;
         }
 
-        /* Earnings Widget */
-        .earnings-widget {
-            position: fixed;
-            bottom: 100px;
-            left: 20px;
-            background: white;
-            border-radius: 30px;
-            padding: 0.75rem 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-            color: #003E71;
-            border: 1px solid rgba(0,62,113,0.1);
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .earnings-widget:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-        }
-
-        .earnings-widget .material-symbols-outlined {
-            color: #FF286F;
-            font-size: 20px;
-        }
-
         /* Loading States */
         .loading-tasks {
             text-align: center;
@@ -777,11 +719,6 @@
                 bottom: 20px;
                 border-radius: 16px;
                 max-height: 60%;
-            }
-
-            .fab {
-                bottom: 30px;
-                right: 30px;
             }
         }
 
@@ -1144,12 +1081,6 @@
         </div>
     </div>
 
-    <!-- Earnings Widget -->
-    <div class="earnings-widget" id="earningsWidget">
-        <span class="material-symbols-outlined">payments</span>
-        <span id="earningsTotal">R 0</span>
-    </div>
-
     <!-- Tasks Feed -->
     <div class="tasks-feed" id="tasksFeed">
         <div class="feed-header" id="feedHeader">
@@ -1171,11 +1102,6 @@
             </div>
         </div>
     </div>
-
-    <!-- FAB - Scroll toggle -->
-    <button class="fab" id="fabBtn">
-        <span class="material-symbols-outlined" id="fabIcon">vertical_align_center</span>
-    </button>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -1232,11 +1158,7 @@
             const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
             const notificationsList = document.getElementById('notificationsList');
             const notificationBadge = document.getElementById('notificationBadge');
-            const fabBtn = document.getElementById('fabBtn');
-            const fabIcon = document.getElementById('fabIcon');
             const toast = document.getElementById('toast');
-            const earningsTotalSpan = document.getElementById('earningsTotal');
-            const earningsWidget = document.getElementById('earningsWidget');
             const profileMenuBtn = document.getElementById('profileMenuBtn');
             const profileModalOverlay = document.getElementById('profileModalOverlay');
             const profileModalContent = document.getElementById('profileModalContent');
@@ -1261,10 +1183,8 @@
             let endMarker = null;
             let notifications = [];
             let socket = null;
-            let earningsTotal = 0;
             let smoothScrollEnabled = true;
             let map = null;
-            let isAtBottom = false;
             let isOnline = true;
             let selectedTaskId = null;
 
@@ -1694,13 +1614,21 @@
                     return;
                 }
 
+                // Validate coordinates (check if they're in South Africa roughly)
+                const [taskLng, taskLat] = task.coordinates.split(',').map(Number);
+                
+                // South Africa bounds roughly: lat -35 to -22, lng 16 to 33
+                if (taskLat < -35 || taskLat > -22 || taskLng < 16 || taskLng > 33) {
+                    showToast('Invalid task location coordinates', 'error');
+                    console.error('Invalid coordinates:', taskLat, taskLng);
+                    return;
+                }
+
                 selectedTaskId = taskId;
                 
                 // Remove previous end marker
                 if (endMarker) endMarker.remove();
 
-                const [taskLng, taskLat] = task.coordinates.split(',').map(Number);
-                
                 // Add task marker
                 endMarker = new mapboxgl.Marker({ color: '#FF286F' })
                     .setLngLat([taskLng, taskLat])
@@ -1721,6 +1649,11 @@
 
                     if (response.ok) {
                         const data = await response.json();
+                        
+                        if (!data.routes || data.routes.length === 0) {
+                            throw new Error('No route found');
+                        }
+                        
                         const route = data.routes[0];
                         const distance = route.distance; // in meters
                         
@@ -1750,12 +1683,22 @@
                         });
                         document.querySelector(`[data-task-id="${taskId}"]`)?.classList.add('selected');
 
+                        // Update the task card's distance badge
+                        const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+                        if (taskCard) {
+                            const badge = taskCard.querySelector('.task-badge');
+                            if (badge) badge.textContent = distanceStr;
+                            
+                            const distanceSpan = taskCard.querySelector('.task-distance span:last-child');
+                            if (distanceSpan) distanceSpan.textContent = distanceStr;
+                        }
+
                     } else {
                         throw new Error('Failed to get route');
                     }
                 } catch (error) {
                     console.error('Error getting route:', error);
-                    showToast('Could not calculate route', 'error');
+                    showToast('Could not calculate route - location might be unreachable', 'error');
                 }
             }
 
@@ -1984,8 +1927,12 @@
                     const budget = task.budgetAmount || task.budget;
                     const isOpenOffer = task.budgetType === 'open';
                     
-                    // Show placeholder distance until route is calculated
-                    const distancePlaceholder = selectedTaskId === taskId ? distanceText.textContent : '?';
+                    // Check if coordinates are valid (rough South Africa bounds)
+                    let hasValidCoords = false;
+                    if (task.coordinates) {
+                        const [lng, lat] = task.coordinates.split(',').map(Number);
+                        hasValidCoords = lat >= -35 && lat <= -22 && lng >= 16 && lng <= 33;
+                    }
 
                     const posterName = task.posterName || task.userName || 'Someone';
                     const posterAvatar = task.posterAvatar || null;
@@ -1994,7 +1941,7 @@
                         <div class="helper-task-card ${selectedTaskId === taskId ? 'selected' : ''}" data-task-id="${taskId}">
                             <div class="task-header-row">
                                 <span class="task-title">${task.taskDescription || 'Help needed'}</span>
-                                <span class="task-badge">${selectedTaskId === taskId ? distancePlaceholder : '?'}</span>
+                                ${hasValidCoords ? '<span class="task-badge">?</span>' : '<span class="task-badge" style="background:#999;">Invalid</span>'}
                             </div>
                             
                             <div class="task-location-row">
@@ -2005,7 +1952,7 @@
                             <div class="task-meta-row">
                                 <span class="task-distance">
                                     <span class="material-symbols-outlined">near_me</span>
-                                    ${selectedTaskId === taskId ? distancePlaceholder : 'Click "Show Route"'}
+                                    ${hasValidCoords ? 'Click "Show Route"' : 'Invalid location'}
                                 </span>
                                 <span class="task-time">
                                     <span class="material-symbols-outlined">schedule</span>
@@ -2051,10 +1998,12 @@
                                     Full address visible after acceptance
                                 </div>
 
-                                <button class="action-btn show-route-btn" onclick="window.showRouteOnMap('${taskId}')">
-                                    <span class="material-symbols-outlined">map</span>
-                                    Show Route on Map
-                                </button>
+                                ${hasValidCoords ? `
+                                    <button class="action-btn show-route-btn" onclick="window.showRouteOnMap('${taskId}')">
+                                        <span class="material-symbols-outlined">map</span>
+                                        Show Route on Map
+                                    </button>
+                                ` : ''}
 
                                 ${isOpenOffer ? `
                                     <div class="offer-input-group">
@@ -2103,7 +2052,7 @@
             function addTaskMarkers(tasks) {
                 if (!map) return;
                 
-                // Remove old task markers (keep start marker)
+                // Remove old task markers
                 if (markers.length > 0) {
                     markers.forEach(marker => marker.remove());
                     markers = [];
@@ -2112,6 +2061,12 @@
                 tasks.forEach(task => {
                     if (task.coordinates) {
                         const [lng, lat] = task.coordinates.split(',').map(Number);
+                        
+                        // Validate coordinates (South Africa bounds)
+                        if (lat < -35 || lat > -22 || lng < 16 || lng > 33) {
+                            console.warn('Invalid coordinates for task:', task._id, lat, lng);
+                            return; // Skip invalid coordinates
+                        }
                         
                         const marker = new mapboxgl.Marker({ color: '#FF286F' })
                             .setLngLat([lng, lat])
@@ -2174,13 +2129,6 @@
                     if (response.ok) {
                         showToast('Task accepted! You can now help.', 'success');
                         
-                        const task = availableTasks.find(t => (t._id || t.id) === taskId);
-                        if (task && task.budgetAmount && task.budgetType !== 'open') {
-                            earningsTotal += task.budgetAmount;
-                            earningsTotalSpan.textContent = `R ${earningsTotal}`;
-                            localStorage.setItem('helper_earnings', earningsTotal);
-                        }
-                        
                         availableTasks = availableTasks.filter(t => (t._id || t.id) !== taskId);
                         renderTasks(availableTasks);
                         addTaskMarkers(availableTasks);
@@ -2213,25 +2161,6 @@
                     showToast('Error accepting task', 'error');
                 }
             };
-
-            // ===== SCROLL TOGGLE =====
-            feedContent.addEventListener('scroll', () => {
-                const scrollTop = feedContent.scrollTop;
-                const scrollHeight = feedContent.scrollHeight;
-                const clientHeight = feedContent.clientHeight;
-                
-                isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
-                fabIcon.textContent = isAtBottom ? 'vertical_align_top' : 'vertical_align_center';
-            });
-
-            fabBtn.addEventListener('click', () => {
-                if (isAtBottom) {
-                    feedContent.scrollTo({ top: 0, behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
-                    fabIcon.textContent = 'vertical_align_center';
-                } else {
-                    feedContent.scrollTo({ top: feedContent.scrollHeight, behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
-                }
-            });
 
             // ===== ONLINE TOGGLE =====
             onlineToggle.addEventListener('change', (e) => {
@@ -2320,10 +2249,6 @@
                 notificationsPanel.classList.remove('active');
             });
 
-            earningsWidget.addEventListener('click', () => {
-                showToast(`Total earnings: R ${earningsTotal}`, 'success');
-            });
-
             profileMenuBtn.addEventListener('click', openProfileModal);
 
             profileModalOverlay.addEventListener('click', (e) => {
@@ -2364,12 +2289,6 @@
                 window.location.href = '/login.html';
             } else {
                 checkVerificationStatus();
-
-                const savedEarnings = localStorage.getItem('helper_earnings');
-                if (savedEarnings) {
-                    earningsTotal = parseInt(savedEarnings);
-                    earningsTotalSpan.textContent = `R ${earningsTotal}`;
-                }
             }
 
             // Periodically check verification status
