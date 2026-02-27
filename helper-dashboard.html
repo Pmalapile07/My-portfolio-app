@@ -12,8 +12,11 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap">
     
     <!-- Mapbox GL JS -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.19.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.19.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <!-- Turf.js for distance calculations -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     
     <!-- Socket.io for real-time notifications -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
@@ -41,6 +44,33 @@
             font-style: normal !important;
             font-size: 24px !important;
             line-height: 1 !important;
+        }
+
+        /* === DISTANCE CONTAINER === */
+        .distance-container {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            z-index: 1001;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #003E71;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .distance-container.active {
+            display: flex;
+        }
+
+        .distance-container .material-symbols-outlined {
+            font-size: 18px !important;
+            color: #FF286F;
         }
 
         /* === FULLSCREEN MAP === */
@@ -154,7 +184,7 @@
             border: 2px solid white;
         }
 
-        /* Online Status Toggle - From Uiverse.io */
+        /* Online Status Toggle */
         .online-toggle {
             display: flex;
             align-items: center;
@@ -222,14 +252,6 @@
         .switch input[type="checkbox"]:checked + .slider::after {
             transform: translateX(calc(var(--button-width) - var(--toggle-diameter) - var(--button-toggle-offset) * 2));
             box-shadow: calc(var(--toggle-shadow-offset) * -1) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
-        }
-
-        .switch input[type="checkbox"]:active + .slider::after {
-            width: var(--toggle-wider);
-        }
-
-        .switch input[type="checkbox"]:checked:active + .slider::after {
-            transform: translateX(calc(var(--button-width) - var(--toggle-wider) - var(--button-toggle-offset) * 2));
         }
 
         /* === FLOATING ACTION BUTTON === */
@@ -319,32 +341,7 @@
             scroll-behavior: smooth;
         }
 
-        /* Pull to refresh indicator */
-        .refresh-indicator {
-            display: flex;
-            justify-content: center;
-            padding: 0.5rem;
-            color: #666;
-            font-size: 0.8rem;
-            transform: translateY(-100%);
-            transition: transform 0.3s;
-        }
-
-        .refresh-indicator.show {
-            transform: translateY(0);
-        }
-
-        .refresh-indicator .material-symbols-outlined {
-            animation: spin 1s linear infinite;
-            font-size: 18px !important;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Task Card - Helper specific */
+        /* Task Card */
         .helper-task-card {
             background: #f5f9ff;
             border-radius: 12px;
@@ -367,14 +364,15 @@
             }
         }
 
-        .helper-task-card.new {
-            border-left-color: #FF286F;
-            background: #fff0f5;
-        }
-
         .helper-task-card:hover {
             transform: translateX(5px);
             box-shadow: 0 4px 12px rgba(0,62,113,0.1);
+        }
+
+        .helper-task-card.selected {
+            border-left-width: 6px;
+            border-left-color: #FF286F;
+            background: #fff0f5;
         }
 
         .task-header-row {
@@ -468,11 +466,6 @@
             object-fit: cover;
         }
 
-        .poster-name-mini {
-            font-size: 0.8rem;
-            color: #003E71;
-        }
-
         .action-btn {
             width: 100%;
             padding: 0.75rem;
@@ -502,13 +495,15 @@
             background: #002b4f;
         }
 
-        .offer-btn {
-            background: #f59e0b;
-            color: white;
+        .show-route-btn {
+            background: white;
+            color: #003E71;
+            border: 1px solid #003E71;
+            margin-top: 0.5rem;
         }
 
-        .offer-btn:hover {
-            background: #e68a00;
+        .show-route-btn:hover {
+            background: #f0f5ff;
         }
 
         .offer-input-group {
@@ -534,7 +529,6 @@
             cursor: pointer;
         }
 
-        /* Expanded task details */
         .task-details-expanded {
             max-height: 0;
             overflow: hidden;
@@ -543,7 +537,7 @@
         }
 
         .helper-task-card.expanded .task-details-expanded {
-            max-height: 400px;
+            max-height: 500px;
             margin-top: 1rem;
             padding-top: 1rem;
             border-top: 1px solid rgba(0,62,113,0.1);
@@ -592,17 +586,6 @@
         .notifications-panel.active {
             display: block;
             animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .notifications-header {
@@ -1056,12 +1039,6 @@
             position: relative;
         }
 
-        .profile-menu .edit-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         .profile-menu .edit-avatar .avatar-overlay {
             position: absolute;
             top: 0;
@@ -1115,37 +1092,17 @@
         .profile-menu .verification-badge.missing {
             color: #ef4444;
         }
-
-        .profile-menu .verification-status {
-            margin: 2rem 0;
-            padding: 1rem;
-            background: #f9f9f9;
-            border-radius: 8px;
-        }
-
-        .profile-menu .verification-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            cursor: pointer;
-        }
-
-        .profile-menu .verification-item:last-child {
-            border-bottom: none;
-        }
-
-        .profile-menu .verification-left {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
     </style>
 </head>
 <body>
     <!-- MAP -->
     <div id="map"></div>
+    
+    <!-- Distance Container -->
+    <div class="distance-container" id="distanceContainer">
+        <span class="material-symbols-outlined">route</span>
+        <span id="distanceText">0 km</span>
+    </div>
     
     <!-- Map Error Message -->
     <div class="map-error" id="mapError">
@@ -1215,7 +1172,7 @@
         </div>
     </div>
 
-    <!-- FAB - Now used for scroll to top/bottom -->
+    <!-- FAB - Scroll toggle -->
     <button class="fab" id="fabBtn">
         <span class="material-symbols-outlined" id="fabIcon">vertical_align_center</span>
     </button>
@@ -1290,6 +1247,8 @@
             const backFromAccount = document.getElementById('backFromAccountBtn');
             const backFromImage = document.getElementById('backFromImageBtn');
             const onlineToggle = document.getElementById('onlineToggle');
+            const distanceContainer = document.getElementById('distanceContainer');
+            const distanceText = document.getElementById('distanceText');
 
             // ===== STATE =====
             let currentUser = null;
@@ -1297,6 +1256,9 @@
             let currentLng = null;
             let availableTasks = [];
             let markers = [];
+            let routeSource = null;
+            let startMarker = null;
+            let endMarker = null;
             let notifications = [];
             let socket = null;
             let earningsTotal = 0;
@@ -1304,7 +1266,7 @@
             let map = null;
             let isAtBottom = false;
             let isOnline = true;
-            let distanceCache = new Map(); // Cache for distances
+            let selectedTaskId = null;
 
             // ===== TOAST =====
             function showToast(message, type = 'success') {
@@ -1335,7 +1297,7 @@
                 return localStorage.getItem('taskmart_token');
             }
 
-            // ===== FETCH USER PROFILE FROM CLOUDINARY VIA BACKEND =====
+            // ===== FETCH USER PROFILE =====
             async function fetchUserProfile(email) {
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/users/${email}`, {
@@ -1409,8 +1371,6 @@
                         }
                     });
 
-                    const data = await response.json();
-
                     if (response.ok) {
                         user.verificationStatus = 'pending';
                         user.verificationRequested = true;
@@ -1420,6 +1380,7 @@
                         checkVerificationStatus();
                         renderProfile();
                     } else {
+                        const data = await response.json();
                         showToast(data.error || 'Failed to request verification', 'error');
                     }
                 } catch (error) {
@@ -1607,6 +1568,33 @@
                         console.log('✅ Map loaded successfully');
                         mapError.style.display = 'none';
                         
+                        // Add route source
+                        map.addSource('route', {
+                            'type': 'geojson',
+                            'data': {
+                                'type': 'Feature',
+                                'geometry': {
+                                    'type': 'LineString',
+                                    'coordinates': []
+                                }
+                            }
+                        });
+
+                        map.addLayer({
+                            'id': 'route',
+                            'type': 'line',
+                            'source': 'route',
+                            'layout': {
+                                'line-join': 'round',
+                                'line-cap': 'round'
+                            },
+                            'paint': {
+                                'line-color': '#FF286F',
+                                'line-width': 4,
+                                'line-opacity': 0.8
+                            }
+                        });
+
                         currentUser = getCurrentUser();
                         if (currentUser) {
                             getUserLocation();
@@ -1632,7 +1620,7 @@
                 }
             }
 
-            // ===== LOAD MAPBOX TOKEN FROM CONFIG.JS =====
+            // ===== LOAD MAPBOX TOKEN =====
             mapError.innerHTML = `
                 <span class="material-symbols-outlined">sync</span>
                 <p>Loading map...</p>
@@ -1648,7 +1636,7 @@
                         mapboxgl.accessToken = window.MAPBOX_TOKEN;
                         initMap();
                     } else {
-                        throw new Error('No Mapbox token found in config.js');
+                        throw new Error('No Mapbox token found');
                     }
                 })
                 .catch(error => {
@@ -1672,10 +1660,13 @@
                         (pos) => {
                             currentLat = pos.coords.latitude;
                             currentLng = pos.coords.longitude;
+                            
                             if (map) {
                                 map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
                                 
-                                new mapboxgl.Marker({ color: '#003E71' })
+                                // Add user location marker
+                                if (startMarker) startMarker.remove();
+                                startMarker = new mapboxgl.Marker({ color: '#003E71' })
                                     .setLngLat([currentLng, currentLat])
                                     .setPopup(new mapboxgl.Popup().setHTML('You are here'))
                                     .addTo(map);
@@ -1692,6 +1683,79 @@
                     );
                 } else {
                     fetchTasks();
+                }
+            }
+
+            // ===== SHOW ROUTE ON MAP =====
+            async function showRoute(taskId) {
+                const task = availableTasks.find(t => (t._id || t.id) === taskId);
+                if (!task || !task.coordinates || !currentLat || !currentLng) {
+                    showToast('Cannot calculate route', 'error');
+                    return;
+                }
+
+                selectedTaskId = taskId;
+                
+                // Remove previous end marker
+                if (endMarker) endMarker.remove();
+
+                const [taskLng, taskLat] = task.coordinates.split(',').map(Number);
+                
+                // Add task marker
+                endMarker = new mapboxgl.Marker({ color: '#FF286F' })
+                    .setLngLat([taskLng, taskLat])
+                    .setPopup(new mapboxgl.Popup().setHTML(task.taskDescription || 'Task location'))
+                    .addTo(map);
+
+                // Fit bounds to show both markers
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend([currentLng, currentLat]);
+                bounds.extend([taskLng, taskLat]);
+                map.fitBounds(bounds, { padding: 50 });
+
+                try {
+                    // Get route from Mapbox Directions API
+                    const response = await fetch(
+                        `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${taskLng},${taskLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const route = data.routes[0];
+                        const distance = route.distance; // in meters
+                        
+                        // Format distance
+                        let distanceStr;
+                        if (distance < 1000) {
+                            distanceStr = Math.round(distance) + 'm';
+                        } else {
+                            distanceStr = (distance / 1000).toFixed(1) + 'km';
+                        }
+                        
+                        // Update distance display
+                        distanceText.textContent = distanceStr;
+                        distanceContainer.classList.add('active');
+
+                        // Draw route on map
+                        const geojson = {
+                            'type': 'Feature',
+                            'geometry': route.geometry
+                        };
+
+                        map.getSource('route').setData(geojson);
+
+                        // Update task card to show selected
+                        document.querySelectorAll('.helper-task-card').forEach(card => {
+                            card.classList.remove('selected');
+                        });
+                        document.querySelector(`[data-task-id="${taskId}"]`)?.classList.add('selected');
+
+                    } else {
+                        throw new Error('Failed to get route');
+                    }
+                } catch (error) {
+                    console.error('Error getting route:', error);
+                    showToast('Could not calculate route', 'error');
                 }
             }
 
@@ -1856,41 +1920,6 @@
                 }
             }
 
-            // ===== CALCULATE DISTANCE USING MAPBOX DIRECTIONS API =====
-            async function calculateAccurateDistance(destLat, destLng) {
-                if (!currentLat || !currentLng || !destLat || !destLng) return null;
-                
-                const cacheKey = `${currentLat},${currentLng}-${destLat},${destLng}`;
-                if (distanceCache.has(cacheKey)) {
-                    return distanceCache.get(cacheKey);
-                }
-
-                try {
-                    const response = await fetch(
-                        `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${destLng},${destLat}?access_token=${mapboxgl.accessToken}&geometries=geojson&overview=false`
-                    );
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.routes && data.routes[0]) {
-                            const distance = data.routes[0].distance; // in meters
-                            let formattedDistance;
-                            if (distance < 1000) {
-                                formattedDistance = Math.round(distance) + 'm';
-                            } else {
-                                formattedDistance = (distance / 1000).toFixed(1) + 'km';
-                            }
-                            distanceCache.set(cacheKey, formattedDistance);
-                            return formattedDistance;
-                        }
-                    }
-                    return null;
-                } catch (error) {
-                    console.error('Error calculating distance:', error);
-                    return null;
-                }
-            }
-
             // ===== MAKE OFFER =====
             async function makeOffer(taskId, amount) {
                 const user = getCurrentUser();
@@ -1942,7 +1971,7 @@
             }
 
             // ===== RENDER TASKS =====
-            async function renderTasks(tasks) {
+            function renderTasks(tasks) {
                 if (!tasks || tasks.length === 0) {
                     feedContent.innerHTML = '<div class="no-tasks">No tasks available<br><small>Check back soon!</small></div>';
                     return;
@@ -1950,25 +1979,22 @@
 
                 let tasksHtml = '';
 
-                for (const task of tasks) {
+                tasks.forEach(task => {
                     const taskId = task._id || task.id;
                     const budget = task.budgetAmount || task.budget;
                     const isOpenOffer = task.budgetType === 'open';
                     
-                    let distanceText = '?';
-                    if (currentLat && currentLng && task.coordinates) {
-                        const [lng, lat] = task.coordinates.split(',').map(Number);
-                        distanceText = await calculateAccurateDistance(lat, lng) || '?';
-                    }
+                    // Show placeholder distance until route is calculated
+                    const distancePlaceholder = selectedTaskId === taskId ? distanceText.textContent : '?';
 
                     const posterName = task.posterName || task.userName || 'Someone';
                     const posterAvatar = task.posterAvatar || null;
 
                     tasksHtml += `
-                        <div class="helper-task-card" data-task-id="${taskId}">
+                        <div class="helper-task-card ${selectedTaskId === taskId ? 'selected' : ''}" data-task-id="${taskId}">
                             <div class="task-header-row">
                                 <span class="task-title">${task.taskDescription || 'Help needed'}</span>
-                                <span class="task-badge">${distanceText}</span>
+                                <span class="task-badge">${selectedTaskId === taskId ? distancePlaceholder : '?'}</span>
                             </div>
                             
                             <div class="task-location-row">
@@ -1979,7 +2005,7 @@
                             <div class="task-meta-row">
                                 <span class="task-distance">
                                     <span class="material-symbols-outlined">near_me</span>
-                                    ${distanceText} away
+                                    ${selectedTaskId === taskId ? distancePlaceholder : 'Click "Show Route"'}
                                 </span>
                                 <span class="task-time">
                                     <span class="material-symbols-outlined">schedule</span>
@@ -2025,6 +2051,11 @@
                                     Full address visible after acceptance
                                 </div>
 
+                                <button class="action-btn show-route-btn" onclick="window.showRouteOnMap('${taskId}')">
+                                    <span class="material-symbols-outlined">map</span>
+                                    Show Route on Map
+                                </button>
+
                                 ${isOpenOffer ? `
                                     <div class="offer-input-group">
                                         <input type="number" class="offer-input" id="offer-${taskId}" placeholder="Your offer (R)" min="1">
@@ -2041,7 +2072,7 @@
                             </div>
                         </div>
                     `;
-                }
+                });
 
                 feedContent.innerHTML = tasksHtml;
 
@@ -2052,6 +2083,10 @@
                     });
                 });
             }
+
+            window.showRouteOnMap = function(taskId) {
+                showRoute(taskId);
+            };
 
             window.submitOffer = function(taskId) {
                 const input = document.getElementById(`offer-${taskId}`);
@@ -2068,8 +2103,11 @@
             function addTaskMarkers(tasks) {
                 if (!map) return;
                 
-                markers.forEach(marker => marker.remove());
-                markers = [];
+                // Remove old task markers (keep start marker)
+                if (markers.length > 0) {
+                    markers.forEach(marker => marker.remove());
+                    markers = [];
+                }
 
                 tasks.forEach(task => {
                     if (task.coordinates) {
@@ -2081,9 +2119,9 @@
                                 <div style="font-family: 'Manrope', sans-serif; padding: 0.5rem;">
                                     <strong>${task.taskDescription || 'Help needed'}</strong><br>
                                     ${task.budgetType === 'open' ? 'Open to offers' : 'R ' + task.budgetAmount}<br>
-                                    <button onclick="window.viewTaskDetails('${task._id || task.id}')" 
+                                    <button onclick="window.showRouteOnMap('${task._id || task.id}')" 
                                         style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:5px; margin-top:0.5rem; cursor:pointer; width:100%;">
-                                        View Details
+                                        Show Route
                                     </button>
                                 </div>
                             `))
@@ -2093,17 +2131,6 @@
                     }
                 });
             }
-
-            window.viewTaskDetails = function(taskId) {
-                tasksFeed.classList.add('expanded');
-                setTimeout(() => {
-                    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-                    if (taskElement) {
-                        taskElement.scrollIntoView({ behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
-                        taskElement.classList.add('expanded');
-                    }
-                }, 300);
-            };
 
             // ===== ACCEPT TASK =====
             window.acceptTask = async function(taskId) {
@@ -2164,6 +2191,20 @@
                             time: 'Just now',
                             taskId: taskId
                         });
+
+                        // Clear route if task was selected
+                        if (selectedTaskId === taskId) {
+                            selectedTaskId = null;
+                            distanceContainer.classList.remove('active');
+                            if (endMarker) endMarker.remove();
+                            map.getSource('route').setData({
+                                'type': 'Feature',
+                                'geometry': {
+                                    'type': 'LineString',
+                                    'coordinates': []
+                                }
+                            });
+                        }
                     } else {
                         showToast('Task already taken', 'error');
                     }
@@ -2198,10 +2239,10 @@
                 const statusText = document.querySelector('.online-toggle span:nth-child(2)');
                 statusText.textContent = isOnline ? 'Available' : 'Offline';
                 
-                if (!isOnline) {
-                    if (socket) socket.disconnect();
-                } else {
-                    if (socket) socket.connect();
+                if (!isOnline && socket) {
+                    socket.disconnect();
+                } else if (isOnline && socket) {
+                    socket.connect();
                 }
                 
                 showToast(`You are now ${isOnline ? 'available' : 'offline'}`, 'success');
