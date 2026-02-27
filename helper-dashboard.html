@@ -154,35 +154,85 @@
             border: 2px solid white;
         }
 
-        /* Online Status */
-        .online-status {
+        /* Online Status Toggle - From Uiverse.io */
+        .online-toggle {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             background: rgba(0,0,0,0.7);
             backdrop-filter: blur(4px);
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 1rem 0.4rem 0.8rem;
             border-radius: 30px;
             color: white;
             font-size: 0.8rem;
             margin-left: 1rem;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .online-toggle span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .switch {
+            --button-width: 2.8em;
+            --button-height: 1.6em;
+            --toggle-diameter: 1.2em;
+            --button-toggle-offset: calc((var(--button-height) - var(--toggle-diameter)) / 2);
+            --toggle-shadow-offset: 8px;
+            --toggle-wider: 2.4em;
+            --color-grey: #666;
+            --color-green: #10b981;
+        }
+
+        .slider {
+            display: inline-block;
+            width: var(--button-width);
+            height: var(--button-height);
+            background-color: var(--color-grey);
+            border-radius: calc(var(--button-height) / 2);
+            position: relative;
+            transition: 0.3s all ease-in-out;
+            cursor: pointer;
+        }
+
+        .slider::after {
+            content: "";
+            display: inline-block;
+            width: var(--toggle-diameter);
+            height: var(--toggle-diameter);
+            background-color: #fff;
             border-radius: 50%;
-            background: #10b981;
-            animation: pulse 2s infinite;
+            position: absolute;
+            top: var(--button-toggle-offset);
+            left: var(--button-toggle-offset);
+            transform: translateX(0);
+            box-shadow: var(--toggle-shadow-offset) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
+            transition: 0.3s all ease-in-out;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+        .switch input[type="checkbox"] {
+            display: none;
         }
 
-        /* === FLOATING ACTION BUTTON === */
+        .switch input[type="checkbox"]:checked + .slider {
+            background-color: var(--color-green);
+        }
+
+        .switch input[type="checkbox"]:checked + .slider::after {
+            transform: translateX(calc(var(--button-width) - var(--toggle-diameter) - var(--button-toggle-offset) * 2));
+            box-shadow: calc(var(--toggle-shadow-offset) * -1) 0 calc(var(--toggle-shadow-offset) * 4) rgba(0, 0, 0, 0.1);
+        }
+
+        .switch input[type="checkbox"]:active + .slider::after {
+            width: var(--toggle-wider);
+        }
+
+        .switch input[type="checkbox"]:checked:active + .slider::after {
+            transform: translateX(calc(var(--button-width) - var(--toggle-wider) - var(--button-toggle-offset) * 2));
+        }
+
+        /* === FLOATING ACTION BUTTON - Now used for scroll to top/bottom === */
         .fab {
             position: fixed;
             bottom: 30px;
@@ -267,6 +317,31 @@
             overflow-y: auto;
             padding: 1rem 1.5rem;
             scroll-behavior: smooth;
+        }
+
+        /* Pull to refresh indicator */
+        .refresh-indicator {
+            display: flex;
+            justify-content: center;
+            padding: 0.5rem;
+            color: #666;
+            font-size: 0.8rem;
+            transform: translateY(-100%);
+            transition: transform 0.3s;
+        }
+
+        .refresh-indicator.show {
+            transform: translateY(0);
+        }
+
+        .refresh-indicator .material-symbols-outlined {
+            animation: spin 1s linear infinite;
+            font-size: 18px !important;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Task Card - Helper specific */
@@ -384,6 +459,13 @@
             align-items: center;
             justify-content: center;
             font-size: 0.7rem;
+            overflow: hidden;
+        }
+
+        .poster-avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .poster-name-mini {
@@ -391,11 +473,9 @@
             color: #003E71;
         }
 
-        .accept-task-btn {
+        .action-btn {
             width: 100%;
             padding: 0.75rem;
-            background: #003E71;
-            color: white;
             border: none;
             border-radius: 8px;
             font-weight: 600;
@@ -403,15 +483,55 @@
             cursor: pointer;
             margin-top: 0.75rem;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn .material-symbols-outlined {
+            font-size: 18px !important;
+        }
+
+        .accept-task-btn {
+            background: #003E71;
+            color: white;
         }
 
         .accept-task-btn:hover {
             background: #002b4f;
         }
 
-        .accept-task-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .offer-btn {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .offer-btn:hover {
+            background: #e68a00;
+        }
+
+        .offer-input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .offer-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .submit-offer-btn {
+            padding: 0.75rem 1rem;
+            background: #003E71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         /* Expanded task details */
@@ -423,7 +543,7 @@
         }
 
         .helper-task-card.expanded .task-details-expanded {
-            max-height: 300px;
+            max-height: 400px;
             margin-top: 1rem;
             padding-top: 1rem;
             border-top: 1px solid rgba(0,62,113,0.1);
@@ -443,6 +563,15 @@
         .detail-value {
             flex: 1;
             color: #000;
+        }
+
+        .address-hidden {
+            background: #f0f0f0;
+            padding: 0.5rem;
+            border-radius: 8px;
+            text-align: center;
+            color: #999;
+            font-style: italic;
         }
 
         /* Notifications Panel */
@@ -547,7 +676,7 @@
             color: #999;
         }
 
-        /* Earnings Widget */
+        /* Earnings Widget - Now shows total earnings */
         .earnings-widget {
             position: fixed;
             bottom: 100px;
@@ -564,6 +693,7 @@
             color: #003E71;
             border: 1px solid rgba(0,62,113,0.1);
             transition: all 0.2s;
+            cursor: pointer;
         }
 
         .earnings-widget:hover {
@@ -654,39 +784,6 @@
 
         .toast.error {
             background: #ef4444;
-        }
-
-        /* Verification Banner */
-        .verification-banner {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.9);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 30px;
-            z-index: 2000;
-            display: none;
-            backdrop-filter: blur(4px);
-            font-size: 0.8rem;
-            cursor: pointer;
-            animation: slideDown 0.3s ease;
-        }
-
-        .verification-banner.active {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .verification-banner .material-symbols-outlined {
-            color: #f59e0b;
-            font-size: 16px !important;
-        }
-
-        .verification-banner:hover {
-            background: #000;
         }
 
         /* Tablet/Desktop adjustments */
@@ -959,6 +1056,12 @@
             position: relative;
         }
 
+        .profile-menu .edit-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .profile-menu .edit-avatar .avatar-overlay {
             position: absolute;
             top: 0;
@@ -1058,9 +1161,13 @@
             </button>
         </div>
         <div class="header-right" style="display: flex; align-items: center; gap: 10px;">
-            <div class="online-status">
-                <span class="status-dot"></span>
+            <div class="online-toggle">
+                <span class="material-symbols-outlined">wifi</span>
                 <span>Available</span>
+                <label class="switch">
+                    <input type="checkbox" id="onlineToggle" checked>
+                    <span class="slider"></span>
+                </label>
             </div>
             <button class="notifications-btn" id="notificationsBtn">
                 <span class="material-symbols-outlined">notifications</span>
@@ -1108,16 +1215,10 @@
         </div>
     </div>
 
-    <!-- FAB - Quick Actions -->
+    <!-- FAB - Now used for scroll to top/bottom -->
     <button class="fab" id="fabBtn">
-        <span class="material-symbols-outlined">support_agent</span>
+        <span class="material-symbols-outlined" id="fabIcon">vertical_align_center</span>
     </button>
-
-    <!-- Verification Banner -->
-    <div class="verification-banner" id="verificationBanner">
-        <span class="material-symbols-outlined">verified</span>
-        <span>Complete your profile to start earning</span>
-    </div>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -1175,7 +1276,7 @@
             const notificationsList = document.getElementById('notificationsList');
             const notificationBadge = document.getElementById('notificationBadge');
             const fabBtn = document.getElementById('fabBtn');
-            const verificationBanner = document.getElementById('verificationBanner');
+            const fabIcon = document.getElementById('fabIcon');
             const toast = document.getElementById('toast');
             const earningsTotalSpan = document.getElementById('earningsTotal');
             const earningsWidget = document.getElementById('earningsWidget');
@@ -1188,6 +1289,7 @@
             const fullSizeImage = document.getElementById('fullSizeImage');
             const backFromAccount = document.getElementById('backFromAccountBtn');
             const backFromImage = document.getElementById('backFromImageBtn');
+            const onlineToggle = document.getElementById('onlineToggle');
 
             // ===== STATE =====
             let currentUser = null;
@@ -1200,6 +1302,8 @@
             let earningsTotal = 0;
             let smoothScrollEnabled = true;
             let map = null;
+            let isAtBottom = false;
+            let isOnline = true;
 
             // ===== TOAST =====
             function showToast(message, type = 'success') {
@@ -1249,34 +1353,6 @@
                         user.verificationStatus = status.verificationStatus;
                         user.verificationRequested = status.verificationRequested;
                         localStorage.setItem('taskmart_user', JSON.stringify(user));
-                        
-                        if (!user.adminVerified && !user.verificationRequested && user.profileImage) {
-                            verificationBanner.innerHTML = `
-                                <span class="material-symbols-outlined">verified</span>
-                                <span>Request verification to start earning</span>
-                            `;
-                            verificationBanner.classList.add('active');
-                        } else if (!user.profileImage) {
-                            verificationBanner.innerHTML = `
-                                <span class="material-symbols-outlined">photo_camera</span>
-                                <span>Add a profile picture to get verified</span>
-                            `;
-                            verificationBanner.classList.add('active');
-                        } else if (user.verificationStatus === 'pending') {
-                            verificationBanner.innerHTML = `
-                                <span class="material-symbols-outlined">hourglass_top</span>
-                                <span>Verification pending - Check back soon</span>
-                            `;
-                            verificationBanner.classList.add('active');
-                        } else if (user.verificationStatus === 'rejected') {
-                            verificationBanner.innerHTML = `
-                                <span class="material-symbols-outlined">error</span>
-                                <span>Verification rejected - Please update your profile</span>
-                            `;
-                            verificationBanner.classList.add('active');
-                        } else {
-                            verificationBanner.classList.remove('active');
-                        }
                     }
                 } catch (error) {
                     console.error('Error checking verification status:', error);
@@ -1512,7 +1588,6 @@
                         console.log('✅ Map loaded successfully');
                         mapError.style.display = 'none';
                         
-                        // Now that map is loaded, get user location and tasks
                         currentUser = getCurrentUser();
                         if (currentUser) {
                             getUserLocation();
@@ -1548,7 +1623,6 @@
             fetch('/config.js')
                 .then(response => response.text())
                 .then(script => {
-                    // Execute the script to set window.MAPBOX_TOKEN
                     eval(script);
                     
                     if (window.MAPBOX_TOKEN) {
@@ -1566,7 +1640,6 @@
                         <p>Unable to load map. Please try again later.</p>
                     `;
                     
-                    // Still try to load app without map
                     currentUser = getCurrentUser();
                     if (currentUser) {
                         getUserLocation();
@@ -1639,6 +1712,17 @@
                         console.log('Task accepted by someone else:', data);
                         availableTasks = availableTasks.filter(t => (t._id || t.id) !== data.taskId);
                         renderTasks(availableTasks);
+                    });
+
+                    socket.on('offer-response', (data) => {
+                        console.log('Offer response:', data);
+                        addNotification({
+                            title: `Offer ${data.status}`,
+                            message: `Your offer was ${data.status}`,
+                            time: 'Just now',
+                            taskId: data.taskId
+                        });
+                        showToast(`Offer ${data.status}`, data.status === 'accepted' ? 'success' : 'error');
                     });
 
                 } catch (error) {
@@ -1743,19 +1827,73 @@
                 }
             }
 
-            // ===== CALCULATE DISTANCE =====
+            // ===== CALCULATE DISTANCE - Fixed for accuracy =====
             function calculateDistance(lat1, lon1, lat2, lon2) {
                 if (!lat1 || !lon1 || !lat2 || !lon2) return null;
                 
-                const R = 6371;
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = 
-                    Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c;
+                const R = 6371e3; // Earth's radius in meters
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                const distance = R * c; // Distance in meters
+                
+                if (distance < 1000) {
+                    return Math.round(distance) + 'm';
+                } else {
+                    return (distance / 1000).toFixed(1) + 'km';
+                }
+            }
+
+            // ===== MAKE OFFER =====
+            async function makeOffer(taskId, amount) {
+                const user = getCurrentUser();
+                
+                if (!user) {
+                    showToast('Please log in', 'error');
+                    return;
+                }
+
+                if (!user.profileImage || !user.adminVerified) {
+                    showToast('Complete verification first', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/offer`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getAuthToken()}`
+                        },
+                        body: JSON.stringify({ 
+                            helperId: user.email,
+                            helperName: user.name,
+                            amount: amount
+                        })
+                    });
+
+                    if (response.ok) {
+                        showToast('Offer sent! Waiting for poster response.', 'success');
+                        addNotification({
+                            title: 'Offer Sent',
+                            message: `Your offer of R${amount} has been sent`,
+                            time: 'Just now',
+                            taskId: taskId
+                        });
+                    } else {
+                        showToast('Failed to send offer', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error making offer:', error);
+                    showToast('Error making offer', 'error');
+                }
             }
 
             // ===== RENDER TASKS =====
@@ -1770,56 +1908,55 @@
                 tasks.forEach(task => {
                     const taskId = task._id || task.id;
                     const budget = task.budgetAmount || task.budget;
-                    const budgetDisplay = task.budgetType === 'open' 
-                        ? '<span class="task-budget open">Open to offers</span>' 
-                        : `<span class="task-budget">R ${budget}</span>`;
+                    const isOpenOffer = task.budgetType === 'open';
                     
-                    let distanceText = '';
-                    if (currentLat && currentLng && task.coordinates) {
-                        const [lng, lat] = task.coordinates.split(',').map(Number);
-                        const distance = calculateDistance(currentLat, currentLng, lat, lng);
-                        if (distance !== null) {
-                            distanceText = distance < 1 
-                                ? `${Math.round(distance * 1000)}m` 
-                                : `${distance.toFixed(1)}km`;
-                        }
-                    }
+                    let distanceText = calculateDistance(currentLat, currentLng, 
+                        task.coordinates ? parseFloat(task.coordinates.split(',')[1]) : null,
+                        task.coordinates ? parseFloat(task.coordinates.split(',')[0]) : null) || '?';
 
                     const posterName = task.userName || 'Someone nearby';
+                    const posterAvatar = task.userAvatar || null;
 
                     tasksHtml += `
                         <div class="helper-task-card" data-task-id="${taskId}">
                             <div class="task-header-row">
                                 <span class="task-title">${task.taskDescription || 'Help needed'}</span>
-                                <span class="task-badge">${distanceText || 'Nearby'}</span>
+                                <span class="task-badge">${distanceText}</span>
                             </div>
                             
                             <div class="task-location-row">
                                 <span class="material-symbols-outlined">location_on</span>
-                                <span>${task.location || 'Location not specified'}</span>
+                                <span>${task.area || task.location || 'Nearby'}</span>
                             </div>
                             
                             <div class="task-meta-row">
                                 <span class="task-distance">
                                     <span class="material-symbols-outlined">near_me</span>
-                                    ${distanceText || '?'} away
+                                    ${distanceText} away
                                 </span>
-                                <span>⏱️ ${task.when || 'Now'}</span>
+                                <span class="task-time">
+                                    <span class="material-symbols-outlined">schedule</span>
+                                    ${task.when === 'now' ? 'Now' : (task.scheduledTime || 'Flexible')}
+                                </span>
                             </div>
                             
                             <div style="display: flex; justify-content: space-between; align-items: center;">
-                                ${budgetDisplay}
+                                <div class="task-budget ${isOpenOffer ? 'open' : ''}">
+                                    ${isOpenOffer ? 'Open to offers' : `R ${budget}`}
+                                </div>
                                 
                                 <div class="poster-mini">
-                                    <div class="poster-avatar-mini">${posterName.charAt(0)}</div>
+                                    <div class="poster-avatar-mini">
+                                        ${posterAvatar ? `<img src="${posterAvatar}" alt="poster">` : posterName.charAt(0)}
+                                    </div>
                                     <span class="poster-name-mini">${posterName.split(' ')[0]}</span>
                                 </div>
                             </div>
                             
                             <div class="task-details-expanded">
                                 <div class="detail-item">
-                                    <span class="detail-label">Address:</span>
-                                    <span class="detail-value">${task.streetName || 'Not specified'}</span>
+                                    <span class="detail-label">Area:</span>
+                                    <span class="detail-value">${task.area || task.location || 'Not specified'}</span>
                                 </div>
                                 
                                 ${task.scheduledDate ? `
@@ -1831,14 +1968,29 @@
                                 
                                 ${task.moreDetails ? `
                                 <div class="detail-item">
-                                    <span class="detail-label">Notes:</span>
+                                    <span class="detail-label">Details:</span>
                                     <span class="detail-value">${task.moreDetails}</span>
                                 </div>
                                 ` : ''}
 
-                                <button class="accept-task-btn" onclick="window.acceptTask('${taskId}')">
-                                    Accept & Help
-                                </button>
+                                <div class="address-hidden">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">lock</span>
+                                    Full address visible after acceptance
+                                </div>
+
+                                ${isOpenOffer ? `
+                                    <div class="offer-input-group">
+                                        <input type="number" class="offer-input" id="offer-${taskId}" placeholder="Your offer (R)" min="1">
+                                        <button class="submit-offer-btn" onclick="window.submitOffer('${taskId}')">
+                                            <span class="material-symbols-outlined">send</span>
+                                        </button>
+                                    </div>
+                                ` : `
+                                    <button class="action-btn accept-task-btn" onclick="window.acceptTask('${taskId}')">
+                                        <span class="material-symbols-outlined">check_circle</span>
+                                        Accept & Help
+                                    </button>
+                                `}
                             </div>
                         </div>
                     `;
@@ -1848,11 +2000,22 @@
 
                 document.querySelectorAll('.helper-task-card').forEach(card => {
                     card.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('accept-task-btn')) return;
+                        if (e.target.closest('button') || e.target.closest('input')) return;
                         this.classList.toggle('expanded');
                     });
                 });
             }
+
+            window.submitOffer = function(taskId) {
+                const input = document.getElementById(`offer-${taskId}`);
+                const amount = parseFloat(input.value);
+                if (!amount || amount < 1) {
+                    showToast('Please enter a valid amount', 'error');
+                    return;
+                }
+                makeOffer(taskId, amount);
+                input.value = '';
+            };
 
             // ===== ADD MARKERS TO MAP =====
             function addTaskMarkers(tasks) {
@@ -1870,10 +2033,10 @@
                             .setPopup(new mapboxgl.Popup().setHTML(`
                                 <div style="font-family: 'Manrope', sans-serif; padding: 0.5rem;">
                                     <strong>${task.taskDescription || 'Help needed'}</strong><br>
-                                    Budget: ${task.budgetAmount ? 'R ' + task.budgetAmount : 'Open to offers'}<br>
-                                    <button onclick="window.acceptTask('${task._id || task.id}')" 
+                                    ${task.budgetType === 'open' ? 'Open to offers' : 'R ' + task.budgetAmount}<br>
+                                    <button onclick="window.viewTaskDetails('${task._id || task.id}')" 
                                         style="background:#003E71; color:white; border:none; padding:0.5rem 1rem; border-radius:5px; margin-top:0.5rem; cursor:pointer; width:100%;">
-                                        Accept
+                                        View Details
                                     </button>
                                 </div>
                             `))
@@ -1883,6 +2046,17 @@
                     }
                 });
             }
+
+            window.viewTaskDetails = function(taskId) {
+                tasksFeed.classList.add('expanded');
+                setTimeout(() => {
+                    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (taskElement) {
+                        taskElement.scrollIntoView({ behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
+                        taskElement.classList.add('expanded');
+                    }
+                }, 300);
+            };
 
             // ===== ACCEPT TASK =====
             window.acceptTask = async function(taskId) {
@@ -1896,13 +2070,16 @@
 
                 if (!user.profileImage) {
                     showToast('Add a profile picture first', 'error');
-                    verificationBanner.classList.add('active');
                     return;
                 }
 
                 if (!user.adminVerified && user.verificationStatus !== 'approved') {
                     showToast('Please complete verification first', 'error');
-                    verificationBanner.classList.add('active');
+                    return;
+                }
+
+                if (!isOnline) {
+                    showToast('Set your status to available first', 'error');
                     return;
                 }
 
@@ -1924,7 +2101,7 @@
                         showToast('Task accepted! You can now help.', 'success');
                         
                         const task = availableTasks.find(t => (t._id || t.id) === taskId);
-                        if (task && task.budgetAmount) {
+                        if (task && task.budgetAmount && task.budgetType !== 'open') {
                             earningsTotal += task.budgetAmount;
                             earningsTotalSpan.textContent = `R ${earningsTotal}`;
                             localStorage.setItem('helper_earnings', earningsTotal);
@@ -1949,6 +2126,100 @@
                 }
             };
 
+            // ===== SCROLL TOGGLE =====
+            feedContent.addEventListener('scroll', () => {
+                const scrollTop = feedContent.scrollTop;
+                const scrollHeight = feedContent.scrollHeight;
+                const clientHeight = feedContent.clientHeight;
+                
+                isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+                fabIcon.textContent = isAtBottom ? 'vertical_align_top' : 'vertical_align_center';
+            });
+
+            fabBtn.addEventListener('click', () => {
+                if (isAtBottom) {
+                    feedContent.scrollTo({ top: 0, behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
+                    fabIcon.textContent = 'vertical_align_center';
+                } else {
+                    feedContent.scrollTo({ top: feedContent.scrollHeight, behavior: smoothScrollEnabled ? 'smooth' : 'auto' });
+                }
+            });
+
+            // ===== ONLINE TOGGLE =====
+            onlineToggle.addEventListener('change', (e) => {
+                isOnline = e.target.checked;
+                const statusText = document.querySelector('.online-toggle span:nth-child(2)');
+                statusText.textContent = isOnline ? 'Available' : 'Offline';
+                
+                if (!isOnline) {
+                    // Disconnect socket when offline
+                    if (socket) socket.disconnect();
+                } else {
+                    // Reconnect socket when online
+                    if (socket) socket.connect();
+                }
+                
+                showToast(`You are now ${isOnline ? 'available' : 'offline'}`, 'success');
+            });
+
+            // ===== PULL TO REFRESH =====
+            let touchStartY = 0;
+            let touchMoveY = 0;
+            const refreshThreshold = 100;
+            let refreshIndicator = null;
+
+            function createRefreshIndicator() {
+                const indicator = document.createElement('div');
+                indicator.className = 'refresh-indicator';
+                indicator.innerHTML = '<span class="material-symbols-outlined">refresh</span><span>Release to refresh</span>';
+                feedContent.parentNode.insertBefore(indicator, feedContent);
+                return indicator;
+            }
+
+            feedContent.addEventListener('touchstart', (e) => {
+                if (feedContent.scrollTop === 0) {
+                    touchStartY = e.touches[0].clientY;
+                    if (!refreshIndicator) {
+                        refreshIndicator = createRefreshIndicator();
+                    }
+                }
+            });
+
+            feedContent.addEventListener('touchmove', (e) => {
+                if (touchStartY > 0 && feedContent.scrollTop === 0) {
+                    touchMoveY = e.touches[0].clientY;
+                    const pullDistance = touchMoveY - touchStartY;
+                    
+                    if (pullDistance > 0 && pullDistance < refreshThreshold) {
+                        refreshIndicator.style.transform = `translateY(${pullDistance}px)`;
+                        refreshIndicator.classList.add('show');
+                    } else if (pullDistance >= refreshThreshold) {
+                        refreshIndicator.innerHTML = '<span class="material-symbols-outlined">refresh</span><span>Release to refresh</span>';
+                    }
+                }
+            });
+
+            feedContent.addEventListener('touchend', (e) => {
+                if (touchStartY > 0 && feedContent.scrollTop === 0) {
+                    const pullDistance = touchMoveY - touchStartY;
+                    
+                    if (pullDistance >= refreshThreshold) {
+                        refreshIndicator.innerHTML = '<span class="material-symbols-outlined">sync</span><span>Refreshing...</span>';
+                        fetchTasks();
+                        setTimeout(() => {
+                            refreshIndicator.classList.remove('show');
+                            refreshIndicator.style.transform = '';
+                        }, 1000);
+                    } else {
+                        refreshIndicator.classList.remove('show');
+                        refreshIndicator.style.transform = '';
+                    }
+                }
+                
+                touchStartY = 0;
+                touchMoveY = 0;
+            });
+
             // ===== EVENT LISTENERS =====
             feedHeader.addEventListener('click', () => {
                 tasksFeed.classList.toggle('expanded');
@@ -1961,19 +2232,6 @@
 
             closeNotificationsBtn.addEventListener('click', () => {
                 notificationsPanel.classList.remove('active');
-            });
-
-            fabBtn.addEventListener('click', () => {
-                showToast('Refreshing tasks...', 'success');
-                fetchTasks();
-            });
-
-            verificationBanner.addEventListener('click', () => {
-                openProfileModal();
-                setTimeout(() => {
-                    const accountMenuItem = document.getElementById('accountMenuItem');
-                    if (accountMenuItem) accountMenuItem.click();
-                }, 500);
             });
 
             earningsWidget.addEventListener('click', () => {
