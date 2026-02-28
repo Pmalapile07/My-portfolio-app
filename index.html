@@ -881,64 +881,27 @@
         (function() {
             'use strict';
             
-            // ========= TASK DATA FROM JSON =========
-            const taskData = {
-                "allowedTasks": [
-                    {"task": "Laundry", "category": "Home"},
-                    {"task": "Ironing", "category": "Home"},
-                    {"task": "Grocery shopping", "category": "Home"},
-                    {"task": "Cooking / meal prep", "category": "Home"},
-                    {"task": "Cleaning / tidying", "category": "Home"},
-                    {"task": "Dog walking / pet care", "category": "Home"},
-                    {"task": "Babysitting / child care", "category": "Home"},
-                    {"task": "Elderly care / companionship", "category": "Home"},
-                    {"task": "Plumbing (minor fixes)", "category": "Repairs"},
-                    {"task": "Electrical work (minor)", "category": "Repairs"},
-                    {"task": "Furniture assembly", "category": "Repairs"},
-                    {"task": "Gardening / lawn care", "category": "Repairs"},
-                    {"task": "Painting walls / touch-ups", "category": "Repairs"},
-                    {"task": "Moving / lifting heavy objects", "category": "Repairs"},
-                    {"task": "Website setup", "category": "Tech"},
-                    {"task": "Software troubleshooting", "category": "Tech"},
-                    {"task": "Device setup (phones/laptops)", "category": "Tech"},
-                    {"task": "Graphic design / logo design", "category": "Tech"},
-                    {"task": "Social media support", "category": "Tech"},
-                    {"task": "Picking up parcels", "category": "Errands"},
-                    {"task": "Delivery of small items", "category": "Errands"},
-                    {"task": "Car washing / cleaning", "category": "Errands"},
-                    {"task": "Running personal errands", "category": "Errands"},
-                    {"task": "House sitting", "category": "Home"},
-                    {"task": "Pet sitting", "category": "Home"},
-                    {"task": "Event setup / decorating", "category": "Events"},
-                    {"task": "Photography / videography", "category": "Events"},
-                    {"task": "Tutoring / lessons", "category": "Education"},
-                    {"task": "Moving / relocation help", "category": "Repairs"},
-                    {"task": "Assembling electronics", "category": "Tech"},
-                    {"task": "Minor car maintenance", "category": "Repairs"},
-                    {"task": "Package wrapping / gift prep", "category": "Home"},
-                    {"task": "Shopping for gifts / items", "category": "Errands"},
-                    {"task": "Plant care / watering", "category": "Home"},
-                    {"task": "Cleaning windows", "category": "Home"},
-                    {"task": "Packing / unpacking", "category": "Home"},
-                    {"task": "Minor sewing / clothing repair", "category": "Home"},
-                    {"task": "Furniture moving", "category": "Repairs"},
-                    {"task": "Appliance setup", "category": "Tech"},
-                    {"task": "Data entry / admin support", "category": "Tech"},
-                    {"task": "Email / inbox management", "category": "Tech"},
-                    {"task": "Basic accounting / bookkeeping", "category": "Tech"},
-                    {"task": "Errand planning / scheduling", "category": "Errands"},
-                    {"task": "Toy / small item repair", "category": "Home"},
-                    {"task": "Basic sewing / mending", "category": "Home"},
-                    {"task": "Recycling / trash pickup", "category": "Home"},
-                    {"task": "Inventory check / organizing", "category": "Home"},
-                    {"task": "Pet training / basic commands", "category": "Home"},
-                    {"task": "Tech device troubleshooting", "category": "Tech"},
-                    {"task": "Gift wrapping / decoration", "category": "Home"},
-                    {"task": "Small handyman tasks", "category": "Repairs"}
-                ]
-            };
-            const tasks = taskData.allowedTasks;
-            // ========================================
+            // ========= TASKS WILL BE FETCHED FROM BACKEND =========
+            let tasks = []; // Will be populated from your Node.js backend
+
+            // Update this URL to your actual Render backend URL
+            const API_BASE_URL = 'https://taskmartapp.onrender.com'; // CHANGE THIS TO YOUR RENDER URL
+
+            async function loadTasks() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/tasks`);
+                    const data = await response.json();
+                    tasks = data.tasks; // Array of task names
+                    console.log('✅ Tasks loaded:', tasks.length, 'tasks');
+                } catch (error) {
+                    console.error('❌ Error loading tasks:', error);
+                    tasks = [];
+                }
+            }
+
+            // Call this when the page loads
+            loadTasks();
+            // ========================================================
 
             let currentCoordinates = '', currentLocationName = '', taskDescription = '';
 
@@ -981,17 +944,25 @@
             const locationLink = document.getElementById('currentLocationLink');
             const suggestionsList = document.getElementById('suggestionsList');
 
+            // Helper function to capitalize first letter
+            function capitalizeFirstLetter(string) {
+                return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+            }
+
             // ========= SUGGESTIONS LOGIC =========
             if (searchInput && suggestionsList) {
                 searchInput.addEventListener('input', function() {
                     const query = this.value.trim().toLowerCase();
-                    if (query.length < 1) {
+                    
+                    // Don't show suggestions if query is too short or tasks not loaded
+                    if (query.length < 1 || tasks.length === 0) {
                         suggestionsList.classList.remove('active');
                         return;
                     }
 
-                    const matches = tasks.filter(item => 
-                        item.task.toLowerCase().includes(query)
+                    // Filter tasks that match the query
+                    const matches = tasks.filter(task => 
+                        task.toLowerCase().includes(query)
                     ).slice(0, 8); // limit to 8 suggestions
 
                     if (matches.length === 0) {
@@ -999,22 +970,21 @@
                         return;
                     }
 
-                    // Build suggestion items
-                    suggestionsList.innerHTML = matches.map(item => 
-                        `<div class="suggestion-item" data-task="${item.task}" data-category="${item.category}">
-                            ${item.task} <span class="category-badge">${item.category}</span>
-                        </div>`
-                    ).join('');
+                    // Build suggestion items - DISPLAY in sentence case (first letter capital)
+                    suggestionsList.innerHTML = matches.map(task => {
+                        const displayTask = capitalizeFirstLetter(task);
+                        return `<div class="suggestion-item" data-task="${task}">${displayTask}</div>`;
+                    }).join('');
                     
                     suggestionsList.classList.add('active');
 
                     // Add click handlers to each suggestion
                     document.querySelectorAll('.suggestion-item').forEach(el => {
                         el.addEventListener('click', function() {
-                            const task = this.dataset.task;
-                            searchInput.value = task;
+                            const task = this.dataset.task; // Get the original lowercase task
+                            // Fill search bar with LOWERCASE (so it reads naturally with placeholder)
+                            searchInput.value = task.toLowerCase();
                             suggestionsList.classList.remove('active');
-                            // Optionally trigger search
                         });
                     });
                 });
