@@ -59,7 +59,7 @@
             line-height: 1 !important;
         }
 
-        /* === SPLASH SCREEN - MATCHING LOGIN PAGE === */
+        /* === SPLASH SCREEN === */
         .splash-screen {
             position: fixed;
             top: 0;
@@ -163,7 +163,7 @@
             z-index: 1;
         }
 
-        /* Draggable pin - REDUCED SIZE */
+        /* Draggable pin */
         .draggable-pin {
             position: absolute;
             top: 40%;
@@ -199,7 +199,7 @@
             border-radius: 50%;
         }
 
-        /* === WHITE CONTAINER - NO BORDER RADIUS === */
+        /* === WHITE CONTAINER - WITH TOP SPACING === */
         .home-sheet {
             position: absolute;
             bottom: 0;
@@ -208,7 +208,7 @@
             background: white;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
             z-index: 10;
-            padding: 24px 20px 28px;
+            padding: 32px 20px 28px;
             transition: padding-bottom 0.3s ease;
         }
 
@@ -220,7 +220,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            margin-top: 8px;
         }
 
         .home-sheet h2 {
@@ -238,7 +239,7 @@
             align-items: center;
         }
 
-        /* Refresh location button - black */
+        /* Refresh location button */
         .refresh-location-btn {
             background: #000000;
             border: none;
@@ -277,7 +278,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Search container - matching original index */
+        /* Search container */
         .search-container {
             width: 100%;
             max-width: 750px;
@@ -308,7 +309,7 @@
             font-weight: 200 !important;
         }
 
-        /* Chevron button - matching original */
+        /* Chevron button */
         .search-circle-btn {
             position: absolute;
             right: 8px;
@@ -367,7 +368,7 @@
             background-color: #f5f5f5;
         }
 
-        /* === CREATE TASK CONTAINER - NO BORDER RADIUS === */
+        /* === CREATE TASK CONTAINER === */
         .create-task-container {
             position: fixed;
             top: 0;
@@ -444,7 +445,7 @@
             font-size: 20px !important;
         }
 
-        /* Gray input fields - no borders */
+        /* Gray input fields */
         .location-field-wrapper {
             position: relative;
             margin-bottom: 1rem;
@@ -471,7 +472,7 @@
             font-weight: 200 !important;
         }
 
-        /* Edit location icon - black background */
+        /* Edit location icon */
         .location-icon {
             position: absolute;
             right: 8px;
@@ -503,7 +504,7 @@
             font-weight: 200;
         }
 
-        /* More details button - black */
+        /* More details button */
         .more-details-btn-container {
             display: flex;
             justify-content: flex-end;
@@ -529,14 +530,14 @@
             color: white !important;
         }
 
-        /* Collapsible section - gray background */
+        /* Collapsible section */
         .collapsible-section {
             background: #f5f5f5;
             padding: 1.25rem;
             margin-top: 1rem;
         }
 
-        /* When options - no border radius */
+        /* When options */
         .when-options, .budget-options {
             display: flex;
             gap: 1rem;
@@ -614,7 +615,7 @@
             margin: 0;
         }
 
-        /* Upload area - gray */
+        /* Upload area */
         .upload-area {
             background: #f0f0f0;
             padding: 2rem 1rem;
@@ -699,7 +700,7 @@
             font-weight: 200;
         }
 
-        /* Image preview - using URLs only */
+        /* Image preview */
         .image-preview-container {
             margin-top: 1rem;
             display: flex;
@@ -747,7 +748,7 @@
             min-height: 80px;
         }
 
-        /* Next button - black */
+        /* Next button */
         .post-btn-container {
             padding: 1rem 1.25rem 1.5rem;
             border-top: 1px solid rgba(0,0,0,0.08);
@@ -961,15 +962,10 @@
         .error-toast {
             background: #dc3545;
         }
-
-        /* ===== TASK SUGGESTIONS DATA ===== */
-        .task-data {
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <!-- Splash Screen - Smaller, lowercase, 3 seconds -->
+    <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">taskmart</div>
     </div>
@@ -987,10 +983,10 @@
     <!-- MAP - DARK STYLE -->
     <div id="map"></div>
 
-    <!-- Draggable pin - REDUCED SIZE -->
+    <!-- Draggable pin -->
     <div class="draggable-pin" id="locationPin"></div>
 
-    <!-- WHITE CONTAINER - HOME SHEET -->
+    <!-- WHITE CONTAINER - HOME SHEET with spacing -->
     <div class="home-sheet" id="homeSheet">
         <div class="sheet-header">
             <h2>Find trusted help nearby.</h2>
@@ -1170,10 +1166,13 @@
     <script>
         (function() {
             'use strict';
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
-            // ===== TASK SUGGESTIONS DATA =====
+            // ===== API ENDPOINTS (your backend) =====
+            const API_BASE_URL = ''; // Empty = same server
+
+            // ===== TASK SUGGESTIONS =====
             const taskSuggestions = [
                 "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
                 "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
@@ -1192,11 +1191,55 @@
                 "gift wrapping / decoration", "small handyman tasks"
             ];
 
+            // ===== FETCH TASKS FROM FIREBASE (via your backend) =====
+            async function fetchTasksFromFirebase() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`);
+                    const data = await response.json();
+                    console.log('📥 Tasks fetched:', data.tasks?.length || 0);
+                    return data.tasks || [];
+                } catch (error) {
+                    console.error('Error fetching tasks:', error);
+                    return [];
+                }
+            }
+
+            // ===== SAVE TASK TO FIREBASE (via your backend) =====
+            async function saveTaskToFirebase(taskData) {
+                try {
+                    document.getElementById('loadingOverlay').classList.add('active');
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to save task');
+                    }
+                    
+                    const result = await response.json();
+                    console.log('✅ Task saved to Firebase:', result);
+                    
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    showToast('Task posted successfully!', 'success');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('Error saving task:', error);
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    showToast('Failed to save task', 'error');
+                    return false;
+                }
+            }
+
             // ===== KEYBOARD DETECTION =====
             const homeSheet = document.getElementById('homeSheet');
             const mainSearchInput = document.getElementById('mainSearchInput');
             
-            // Detect keyboard open on mobile
             if (mainSearchInput) {
                 mainSearchInput.addEventListener('focus', function() {
                     homeSheet.classList.add('keyboard-open');
@@ -1212,7 +1255,6 @@
             const splashShown = localStorage.getItem('splashShown');
 
             if (!splashShown) {
-                // Show splash for 3 seconds
                 setTimeout(() => {
                     splashScreen.classList.add('hidden');
                     localStorage.setItem('splashShown', 'true');
@@ -1240,10 +1282,6 @@
                     window.location.href = '/login.html';
                     return false;
                 }
-                if (!user.profileImage || !user.email) {
-                    document.getElementById('verificationBanner').classList.add('active');
-                    return false;
-                }
                 return true;
             }
 
@@ -1268,9 +1306,8 @@
             function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
 
             // ===== STATE =====
-            let currentLat = null, currentLng = null;
-            let uploadedImageUrls = []; // Store Cloudinary URLs instead of base64
-            let uploadedFiles = []; // Temporary file storage before upload
+            let currentLat = -26.195246, currentLng = 28.034088;
+            let uploadedFiles = [];
 
             map.on('load', () => console.log('Map loaded'));
 
@@ -1383,7 +1420,6 @@
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
                             
-                            // Open create task container
                             if (canUserPost()) {
                                 createTaskContainer.style.display = 'flex';
                             }
@@ -1450,6 +1486,7 @@
 
             streetInput.addEventListener('input', validateForm);
             budgetAmount.addEventListener('input', validateForm);
+            locationInput.addEventListener('input', validateForm);
 
             // ===== MORE DETAILS TOGGLE =====
             moreDetailsBtn.addEventListener('click', ()=>{
@@ -1511,7 +1548,7 @@
                 validateForm();
             });
 
-            // ===== IMAGE UPLOAD - OPTIMIZED =====
+            // ===== IMAGE UPLOAD =====
             const uploadArea = document.getElementById('uploadArea');
             
             uploadArea.addEventListener('click', ()=>{
@@ -1544,7 +1581,6 @@
                     return;
                 }
                 
-                // Create object URL for preview (doesn't store base64)
                 const previewUrl = URL.createObjectURL(file);
                 uploadedFiles.push({ file, previewUrl });
                 displayPreviews();
@@ -1593,7 +1629,6 @@
                     rm.className = 'remove-image';
                     rm.textContent = '×'; 
                     rm.onclick = () => { 
-                        // Clean up object URL
                         URL.revokeObjectURL(item.previewUrl);
                         uploadedFiles.splice(idx, 1); 
                         displayPreviews(); 
@@ -1675,108 +1710,14 @@
                 validateForm();
             });
 
-            // ===== UPLOAD IMAGES TO CLOUDINARY =====
-            async function uploadImagesToCloudinary() {
-                const uploadedUrls = [];
-                
-                for (const item of uploadedFiles) {
-                    try {
-                        const formData = new FormData();
-                        formData.append('image', item.file);
-                        
-                        // Get token for auth
-                        const token = localStorage.getItem('taskmart_token');
-                        
-                        const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: formData
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error('Upload failed');
-                        }
-                        
-                        const data = await response.json();
-                        uploadedUrls.push(data.url); // Store only the URL
-                        
-                    } catch (error) {
-                        console.error('Error uploading image:', error);
-                        showUploadStatus('Failed to upload some images', 'error');
-                    }
-                }
-                
-                return uploadedUrls;
-            }
-
-            // ===== POST TASK TO MONGODB =====
-            async function postTaskToMongoDB(taskData) {
-                try {
-                    const token = localStorage.getItem('taskmart_token');
-                    const user = getCurrentUser();
-                    
-                    if (!token || !user) {
-                        showToast('Please log in to post a task', 'error');
-                        return false;
-                    }
-
-                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            ...taskData,
-                            userId: user.email,
-                            userName: user.name,
-                            userAvatar: user.profileImage || '',
-                            status: 'posted',
-                            createdAt: new Date()
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    console.log('Task posted successfully:', result);
-                    return true;
-                } catch (error) {
-                    console.error('Error posting task:', error);
-                    showToast('Failed to post task. Please try again.', 'error');
-                    return false;
-                }
-            }
-
-            function showToast(message, type = 'success') {
-                const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
-                toast.textContent = message;
-                toast.style.display = 'block';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 3000);
-            }
-
-            // ===== NEXT BUTTON - POST TASK =====
+            // ===== NEXT BUTTON - SAVE TO FIREBASE =====
             const offersContainer = document.getElementById('offersContainer');
             let offersMap = null;
 
             nextBtn.addEventListener('click', async ()=>{
-                // Show loading
-                document.getElementById('loadingOverlay').classList.add('active');
+                const user = getCurrentUser();
                 
-                // Upload images first
-                let imageUrls = [];
-                if (uploadedFiles.length > 0) {
-                    showUploadStatus('Uploading images...', 'info');
-                    imageUrls = await uploadImagesToCloudinary();
-                }
-                
-                // Collect all task data with image URLs
+                // Collect all task data
                 const taskData = {
                     location: locationInput.value,
                     coordinates: `${currentLat},${currentLng}`,
@@ -1788,17 +1729,16 @@
                     budgetType: fixedBudgetBtn.classList.contains('active') ? 'fixed' : 'open',
                     budgetAmount: fixedBudgetBtn.classList.contains('active') ? budgetAmount.value : null,
                     moreDetails: extraNotes.value,
-                    images: imageUrls // Store only URLs, not base64
+                    images: uploadedFiles.map(f => f.previewUrl),
+                    userId: user?.email || 'anonymous',
+                    userName: user?.name || 'Anonymous',
+                    userAvatar: user?.profileImage || ''
                 };
                 
-                // Post to MongoDB
-                const success = await postTaskToMongoDB(taskData);
+                // Save to Firebase
+                const saved = await saveTaskToFirebase(taskData);
                 
-                document.getElementById('loadingOverlay').classList.remove('active');
-                
-                if (success) {
-                    showToast('Task posted successfully!', 'success');
-                    
+                if (saved) {
                     // Show offers page
                     createTaskContainer.style.display = 'none';
                     offersContainer.classList.add('active');
@@ -1819,7 +1759,7 @@
                             .addTo(offersMap);
                     }, 100);
                     
-                    // Reset form and clean up object URLs
+                    // Reset form
                     uploadedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl));
                     uploadedFiles = [];
                     taskInput.value = '';
@@ -1863,9 +1803,26 @@
                 });
             }
 
+            // ===== TOAST FUNCTION =====
+            function showToast(message, type = 'success') {
+                const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            }
+
             // Initial validation
             validateForm();
             checkVerificationStatus();
+
+            // Optional: Poll for new tasks every 30 seconds (for helpers)
+            // setInterval(async () => {
+            //     const tasks = await fetchTasksFromFirebase();
+            //     console.log('📋 Current tasks:', tasks.length);
+            //     // Update UI with new tasks here
+            // }, 30000);
         })();
     </script>
 
