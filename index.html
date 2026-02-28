@@ -187,7 +187,7 @@
         .desktop-cta {
             display: flex;
             align-items: center;
-            gap: 1.5rem;  /* increased gap for nav links */
+            gap: 1.5rem;
         }
         .desktop-nav-links {
             display: flex;
@@ -222,7 +222,7 @@
 
         /* ========= HAMBURGER (NAKAMOZ) – REDUCED SIZE ========= */
         .hamburger {
-            display: none;  /* flex in mobile */
+            display: none;
             align-items: center;
             justify-content: center;
             cursor: pointer;
@@ -314,6 +314,50 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         /* ===================================================== */
+
+        /* ========= AUTOCOMPLETE SUGGESTIONS ========= */
+        .suggestions-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .suggestions-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .suggestions-list.active {
+            display: block;
+        }
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 300;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        .suggestion-item:hover {
+            background-color: #f5f5f5;
+        }
+        .suggestion-item .category-badge {
+            font-size: 0.75rem;
+            color: #666;
+            margin-left: 8px;
+            font-weight: 300;
+        }
+        /* ============================================= */
 
         .hero {
             width: 100%;
@@ -635,7 +679,6 @@
             text-decoration: none;
             padding: 0.2rem 0;
         }
-        /* NO DIVIDER – completely removed */
 
         /* Planner iframe */
         #taskPlannerFrame {
@@ -713,15 +756,13 @@
                 <img class="brand-logo" src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Cream%20Black%20Typography%20Loop%20Brand%20Logo%20(500%20x%20180%20px).png" alt="Cream Black Loop" loading="eager" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22200%22%20height%3D%2265%22%20viewBox%3D%220%200%20200%2065%22%3E%3Crect%20width%3D%22200%22%20height%3D%2265%22%20fill%3D%22%23003E71%22%2F%3E%3Ctext%20x%3D%2212%22%20y%3D%2244%22%20font-family%3D%22system-ui%2C%20sans-serif%22%20font-size%3D%2224%22%20font-weight%3D%22500%22%20fill%3D%22%23FFFCF5%22%3ECream%20Black%20Loop%3C%2Ftext%3E%3C%2Fsvg%3E';">
             </div>
             <div class="desktop-cta">
-                <!-- New desktop navigation links -->
                 <div class="desktop-nav-links">
-                    <a href="#" class="desktop-nav-link">How it works</ua>
+                    <a href="#" class="desktop-nav-link">How it works</a>
                     <a href="#" class="desktop-nav-link">Safety</a>
                     <a href="#" class="desktop-nav-link">Contact</a>
                 </div>
                 <button class="desktop-cta-btn" id="desktopJoinBtn">Join the waitlist</button>
             </div>
-            <!-- Hamburger (closing via header only) -->
             <label class="hamburger" id="menuBtn" aria-label="Menu">
                 <input type="checkbox" id="menuCheckbox">
                 <div class="checkmark">
@@ -744,8 +785,8 @@
 
         <div class="search-container">
             <div class="search-wrapper">
-                <input type="text" class="search-input" placeholder="I need help with..." aria-label="Search tasks" id="searchInputField">
-                <!-- Chevron button with functional checkbox for animation -->
+                <input type="text" class="search-input" placeholder="I need help with..." aria-label="Search tasks" id="searchInputField" autocomplete="off">
+                <div id="suggestionsList" class="suggestions-list"></div>
                 <label class="search-circle-btn" id="searchIconBtn" aria-label="Search">
                     <input type="checkbox" id="chevronToggle">
                     <svg viewBox="0 0 320 512" class="chevron-svg">
@@ -822,7 +863,7 @@
         </div>
     </div>
 
-    <!-- Mobile nav overlay – NO close button, NO border line -->
+    <!-- Mobile nav overlay -->
     <div class="nav-overlay" id="navOverlay" aria-hidden="true">
         <div class="nav-container">
             <div class="nav-join-btn">Join the waitlist</div>
@@ -833,13 +874,72 @@
                 <a href="#" class="nav-link">Pricing</a>
                 <a href="#" class="nav-link">Contact</a>
             </div>
-            <!-- NO DIVIDER -->
         </div>
     </div>
 
     <script>
         (function() {
             'use strict';
+            
+            // ========= TASK DATA FROM JSON =========
+            const taskData = {
+                "allowedTasks": [
+                    {"task": "Laundry", "category": "Home"},
+                    {"task": "Ironing", "category": "Home"},
+                    {"task": "Grocery shopping", "category": "Home"},
+                    {"task": "Cooking / meal prep", "category": "Home"},
+                    {"task": "Cleaning / tidying", "category": "Home"},
+                    {"task": "Dog walking / pet care", "category": "Home"},
+                    {"task": "Babysitting / child care", "category": "Home"},
+                    {"task": "Elderly care / companionship", "category": "Home"},
+                    {"task": "Plumbing (minor fixes)", "category": "Repairs"},
+                    {"task": "Electrical work (minor)", "category": "Repairs"},
+                    {"task": "Furniture assembly", "category": "Repairs"},
+                    {"task": "Gardening / lawn care", "category": "Repairs"},
+                    {"task": "Painting walls / touch-ups", "category": "Repairs"},
+                    {"task": "Moving / lifting heavy objects", "category": "Repairs"},
+                    {"task": "Website setup", "category": "Tech"},
+                    {"task": "Software troubleshooting", "category": "Tech"},
+                    {"task": "Device setup (phones/laptops)", "category": "Tech"},
+                    {"task": "Graphic design / logo design", "category": "Tech"},
+                    {"task": "Social media support", "category": "Tech"},
+                    {"task": "Picking up parcels", "category": "Errands"},
+                    {"task": "Delivery of small items", "category": "Errands"},
+                    {"task": "Car washing / cleaning", "category": "Errands"},
+                    {"task": "Running personal errands", "category": "Errands"},
+                    {"task": "House sitting", "category": "Home"},
+                    {"task": "Pet sitting", "category": "Home"},
+                    {"task": "Event setup / decorating", "category": "Events"},
+                    {"task": "Photography / videography", "category": "Events"},
+                    {"task": "Tutoring / lessons", "category": "Education"},
+                    {"task": "Moving / relocation help", "category": "Repairs"},
+                    {"task": "Assembling electronics", "category": "Tech"},
+                    {"task": "Minor car maintenance", "category": "Repairs"},
+                    {"task": "Package wrapping / gift prep", "category": "Home"},
+                    {"task": "Shopping for gifts / items", "category": "Errands"},
+                    {"task": "Plant care / watering", "category": "Home"},
+                    {"task": "Cleaning windows", "category": "Home"},
+                    {"task": "Packing / unpacking", "category": "Home"},
+                    {"task": "Minor sewing / clothing repair", "category": "Home"},
+                    {"task": "Furniture moving", "category": "Repairs"},
+                    {"task": "Appliance setup", "category": "Tech"},
+                    {"task": "Data entry / admin support", "category": "Tech"},
+                    {"task": "Email / inbox management", "category": "Tech"},
+                    {"task": "Basic accounting / bookkeeping", "category": "Tech"},
+                    {"task": "Errand planning / scheduling", "category": "Errands"},
+                    {"task": "Toy / small item repair", "category": "Home"},
+                    {"task": "Basic sewing / mending", "category": "Home"},
+                    {"task": "Recycling / trash pickup", "category": "Home"},
+                    {"task": "Inventory check / organizing", "category": "Home"},
+                    {"task": "Pet training / basic commands", "category": "Home"},
+                    {"task": "Tech device troubleshooting", "category": "Tech"},
+                    {"task": "Gift wrapping / decoration", "category": "Home"},
+                    {"task": "Small handyman tasks", "category": "Repairs"}
+                ]
+            };
+            const tasks = taskData.allowedTasks;
+            // ========================================
+
             let currentCoordinates = '', currentLocationName = '', taskDescription = '';
 
             async function getLocationName(lat, lon) {
@@ -860,7 +960,10 @@
                 body.classList.add('planner-open');
                 const sendData = () => {
                     if (plannerFrame.contentWindow) plannerFrame.contentWindow.postMessage({
-                        type: 'OPEN_PLANNER', location: currentLocationName, coordinates: currentCoordinates, taskDescription: taskDescription
+                        type: 'OPEN_PLANNER', 
+                        location: currentLocationName, 
+                        coordinates: currentCoordinates, 
+                        taskDescription: taskDescription
                     }, '*');
                 };
                 if (plannerFrame.contentDocument?.readyState === 'complete') sendData();
@@ -876,6 +979,53 @@
             const searchIconBtn = document.getElementById('searchIconBtn');
             const chevronToggle = document.getElementById('chevronToggle');
             const locationLink = document.getElementById('currentLocationLink');
+            const suggestionsList = document.getElementById('suggestionsList');
+
+            // ========= SUGGESTIONS LOGIC =========
+            if (searchInput && suggestionsList) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim().toLowerCase();
+                    if (query.length < 1) {
+                        suggestionsList.classList.remove('active');
+                        return;
+                    }
+
+                    const matches = tasks.filter(item => 
+                        item.task.toLowerCase().includes(query)
+                    ).slice(0, 8); // limit to 8 suggestions
+
+                    if (matches.length === 0) {
+                        suggestionsList.classList.remove('active');
+                        return;
+                    }
+
+                    // Build suggestion items
+                    suggestionsList.innerHTML = matches.map(item => 
+                        `<div class="suggestion-item" data-task="${item.task}" data-category="${item.category}">
+                            ${item.task} <span class="category-badge">${item.category}</span>
+                        </div>`
+                    ).join('');
+                    
+                    suggestionsList.classList.add('active');
+
+                    // Add click handlers to each suggestion
+                    document.querySelectorAll('.suggestion-item').forEach(el => {
+                        el.addEventListener('click', function() {
+                            const task = this.dataset.task;
+                            searchInput.value = task;
+                            suggestionsList.classList.remove('active');
+                            // Optionally trigger search
+                        });
+                    });
+                });
+
+                // Hide suggestions when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                        suggestionsList.classList.remove('active');
+                    }
+                });
+            }
 
             if (locationLink) {
                 locationLink.addEventListener('click', function(e) {
@@ -953,7 +1103,7 @@
             if (closeB) closeB.addEventListener('click', () => modalB.classList.remove('active'));
             modalB.addEventListener('click', (e) => { if (e.target === modalB) modalB.classList.remove('active'); });
 
-            // Mobile menu – close only via header hamburger
+            // Mobile menu
             const menuCheckbox = document.getElementById('menuCheckbox');
             const navOverlay = document.getElementById('navOverlay');
 
