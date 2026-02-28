@@ -59,7 +59,7 @@
             line-height: 1 !important;
         }
 
-        /* === SPLASH SCREEN === */
+        /* === SPLASH SCREEN - MATCHING LOGIN PAGE === */
         .splash-screen {
             position: fixed;
             top: 0;
@@ -82,29 +82,35 @@
 
         .splash-logo {
             font-family: 'Codec Cold News', sans-serif;
-            font-size: 4rem;
+            font-size: 2.5rem;
             color: white;
-            letter-spacing: 4px;
+            letter-spacing: 2px;
+            text-transform: lowercase;
             opacity: 0;
-            transform: scale(0.8);
-            animation: logoAppear 1.5s ease forwards;
+            transform: scale(0.9);
+            animation: logoAppear 2s ease forwards;
         }
 
         @keyframes logoAppear {
             0% {
                 opacity: 0;
-                transform: scale(0.8);
+                transform: scale(0.9);
+                letter-spacing: 2px;
+            }
+            30% {
+                opacity: 0.8;
+                transform: scale(1.05);
                 letter-spacing: 4px;
             }
-            50% {
-                opacity: 0.8;
-                transform: scale(1.1);
-                letter-spacing: 8px;
+            60% {
+                opacity: 1;
+                transform: scale(1);
+                letter-spacing: 2px;
             }
             100% {
                 opacity: 1;
                 transform: scale(1);
-                letter-spacing: 4px;
+                letter-spacing: 2px;
             }
         }
 
@@ -693,7 +699,7 @@
             font-weight: 200;
         }
 
-        /* Image preview */
+        /* Image preview - using URLs only */
         .image-preview-container {
             margin-top: 1rem;
             display: flex;
@@ -949,6 +955,12 @@
             display:none;
             z-index:4000000;
         }
+        .success-toast {
+            background: #28a745;
+        }
+        .error-toast {
+            background: #dc3545;
+        }
 
         /* ===== TASK SUGGESTIONS DATA ===== */
         .task-data {
@@ -957,9 +969,9 @@
     </style>
 </head>
 <body>
-    <!-- Splash Screen -->
+    <!-- Splash Screen - Smaller, lowercase, 3 seconds -->
     <div class="splash-screen" id="splashScreen">
-        <div class="splash-logo">TASKMART</div>
+        <div class="splash-logo">taskmart</div>
     </div>
 
     <!-- Verification Banner -->
@@ -1195,15 +1207,16 @@
                 });
             }
 
-            // ===== SPLASH SCREEN =====
+            // ===== SPLASH SCREEN - 3 SECONDS =====
             const splashScreen = document.getElementById('splashScreen');
             const splashShown = localStorage.getItem('splashShown');
 
             if (!splashShown) {
+                // Show splash for 3 seconds
                 setTimeout(() => {
                     splashScreen.classList.add('hidden');
                     localStorage.setItem('splashShown', 'true');
-                }, 2000);
+                }, 3000);
             } else {
                 splashScreen.style.display = 'none';
             }
@@ -1255,7 +1268,9 @@
             function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
 
             // ===== STATE =====
-            let currentLat = null, currentLng = null, uploadedImages = [];
+            let currentLat = null, currentLng = null;
+            let uploadedImageUrls = []; // Store Cloudinary URLs instead of base64
+            let uploadedFiles = []; // Temporary file storage before upload
 
             map.on('load', () => console.log('Map loaded'));
 
@@ -1326,6 +1341,8 @@
             const pickDateBtn = document.getElementById('pickDateBtn');
             const pickTimeBtn = document.getElementById('pickTimeBtn');
             const taskCharCount = document.getElementById('taskCharCount');
+            const extraNotes = document.getElementById('extraNotes');
+            const locationInput = document.getElementById('locationInput');
 
             // ===== SUGGESTIONS FUNCTION =====
             function capitalizeFirstLetter(string) {
@@ -1414,6 +1431,7 @@
             function validateForm() {
                 const taskFilled = taskInput.value.trim() !== '';
                 const streetFilled = streetInput.value.trim() !== '';
+                const locationFilled = locationInput.value.trim() !== '';
                 
                 let budgetValid = true;
                 if (fixedBudgetBtn.classList.contains('active')) {
@@ -1427,7 +1445,7 @@
                     whenValid = dateSelected && timeSelected;
                 }
                 
-                nextBtn.disabled = !(taskFilled && streetFilled && budgetValid && whenValid);
+                nextBtn.disabled = !(taskFilled && streetFilled && locationFilled && budgetValid && whenValid);
             }
 
             streetInput.addEventListener('input', validateForm);
@@ -1493,7 +1511,7 @@
                 validateForm();
             });
 
-            // ===== IMAGE UPLOAD =====
+            // ===== IMAGE UPLOAD - OPTIMIZED =====
             const uploadArea = document.getElementById('uploadArea');
             
             uploadArea.addEventListener('click', ()=>{
@@ -1509,13 +1527,13 @@
                 
                 input.onchange = (e) => {
                     const files = Array.from(e.target.files);
-                    files.forEach(file => handleFileUpload(file));
+                    files.forEach(file => handleFileSelection(file));
                 };
                 
                 input.click();
             });
 
-            function handleFileUpload(file) {
+            function handleFileSelection(file) {
                 if (!file.type.startsWith('image/')) {
                     showUploadStatus('File must be an image', 'error');
                     return;
@@ -1526,23 +1544,11 @@
                     return;
                 }
                 
-                showUploadStatus(`Uploading ${file.name}...`, 'info');
-                showUploadProgress('Upload in progress...');
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    setTimeout(() => {
-                        uploadedImages.push(e.target.result);
-                        displayPreviews();
-                        showUploadStatus('Upload successful!', 'success');
-                        hideUploadProgress();
-                    }, 800);
-                };
-                reader.onerror = () => {
-                    showUploadStatus('Upload failed - file read error', 'error');
-                    hideUploadProgress();
-                };
-                reader.readAsDataURL(file);
+                // Create object URL for preview (doesn't store base64)
+                const previewUrl = URL.createObjectURL(file);
+                uploadedFiles.push({ file, previewUrl });
+                displayPreviews();
+                showUploadStatus('Ready to upload', 'info');
             }
 
             function showUploadStatus(message, type = 'info') {
@@ -1575,19 +1581,21 @@
             function displayPreviews() {
                 const container = document.getElementById('imagePreviewContainer');
                 container.innerHTML = '';
-                uploadedImages.forEach((url, idx) => {
+                uploadedFiles.forEach((item, idx) => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-preview-wrapper';
                     
                     const img = document.createElement('img'); 
-                    img.src = url; 
+                    img.src = item.previewUrl; 
                     img.className = 'image-preview';
                     
                     const rm = document.createElement('button'); 
                     rm.className = 'remove-image';
                     rm.textContent = '×'; 
                     rm.onclick = () => { 
-                        uploadedImages.splice(idx, 1); 
+                        // Clean up object URL
+                        URL.revokeObjectURL(item.previewUrl);
+                        uploadedFiles.splice(idx, 1); 
                         displayPreviews(); 
                         showUploadStatus('Image removed', 'warning');
                     };
@@ -1603,7 +1611,6 @@
             const openMapBtn = document.getElementById('openMapBtn');
             const closeMapModalBtn = document.getElementById('closeMapModalBtn');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
-            const locationInput = document.getElementById('locationInput');
             
             let mapModalInstance = null;
             let marker = null;
@@ -1668,28 +1675,181 @@
                 validateForm();
             });
 
-            // ===== NEXT BUTTON - SHOW OFFERS PAGE =====
+            // ===== UPLOAD IMAGES TO CLOUDINARY =====
+            async function uploadImagesToCloudinary() {
+                const uploadedUrls = [];
+                
+                for (const item of uploadedFiles) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', item.file);
+                        
+                        // Get token for auth
+                        const token = localStorage.getItem('taskmart_token');
+                        
+                        const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Upload failed');
+                        }
+                        
+                        const data = await response.json();
+                        uploadedUrls.push(data.url); // Store only the URL
+                        
+                    } catch (error) {
+                        console.error('Error uploading image:', error);
+                        showUploadStatus('Failed to upload some images', 'error');
+                    }
+                }
+                
+                return uploadedUrls;
+            }
+
+            // ===== POST TASK TO MONGODB =====
+            async function postTaskToMongoDB(taskData) {
+                try {
+                    const token = localStorage.getItem('taskmart_token');
+                    const user = getCurrentUser();
+                    
+                    if (!token || !user) {
+                        showToast('Please log in to post a task', 'error');
+                        return false;
+                    }
+
+                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            ...taskData,
+                            userId: user.email,
+                            userName: user.name,
+                            userAvatar: user.profileImage || '',
+                            status: 'posted',
+                            createdAt: new Date()
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('Task posted successfully:', result);
+                    return true;
+                } catch (error) {
+                    console.error('Error posting task:', error);
+                    showToast('Failed to post task. Please try again.', 'error');
+                    return false;
+                }
+            }
+
+            function showToast(message, type = 'success') {
+                const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            }
+
+            // ===== NEXT BUTTON - POST TASK =====
             const offersContainer = document.getElementById('offersContainer');
             let offersMap = null;
 
-            nextBtn.addEventListener('click', ()=>{
-                createTaskContainer.style.display = 'none';
-                offersContainer.classList.add('active');
+            nextBtn.addEventListener('click', async ()=>{
+                // Show loading
+                document.getElementById('loadingOverlay').classList.add('active');
                 
-                setTimeout(() => {
-                    if (offersMap) offersMap.remove();
+                // Upload images first
+                let imageUrls = [];
+                if (uploadedFiles.length > 0) {
+                    showUploadStatus('Uploading images...', 'info');
+                    imageUrls = await uploadImagesToCloudinary();
+                }
+                
+                // Collect all task data with image URLs
+                const taskData = {
+                    location: locationInput.value,
+                    coordinates: `${currentLat},${currentLng}`,
+                    streetName: streetInput.value,
+                    when: whenNowBtn.classList.contains('active') ? 'now' : 'later',
+                    scheduledDate: whenLaterBtn.classList.contains('active') ? nativeDatePicker.value : null,
+                    scheduledTime: whenLaterBtn.classList.contains('active') ? nativeTimePicker.value : null,
+                    taskDescription: taskInput.value,
+                    budgetType: fixedBudgetBtn.classList.contains('active') ? 'fixed' : 'open',
+                    budgetAmount: fixedBudgetBtn.classList.contains('active') ? budgetAmount.value : null,
+                    moreDetails: extraNotes.value,
+                    images: imageUrls // Store only URLs, not base64
+                };
+                
+                // Post to MongoDB
+                const success = await postTaskToMongoDB(taskData);
+                
+                document.getElementById('loadingOverlay').classList.remove('active');
+                
+                if (success) {
+                    showToast('Task posted successfully!', 'success');
                     
-                    offersMap = new mapboxgl.Map({
-                        container: 'offersMap',
-                        style: 'mapbox://styles/mapbox/dark-v11',
-                        center: [currentLng || 28.034088, currentLat || -26.195246],
-                        zoom: 15
-                    });
+                    // Show offers page
+                    createTaskContainer.style.display = 'none';
+                    offersContainer.classList.add('active');
                     
-                    new mapboxgl.Marker({ color: '#000000' })
-                        .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                        .addTo(offersMap);
-                }, 100);
+                    // Initialize offers map
+                    setTimeout(() => {
+                        if (offersMap) offersMap.remove();
+                        
+                        offersMap = new mapboxgl.Map({
+                            container: 'offersMap',
+                            style: 'mapbox://styles/mapbox/dark-v11',
+                            center: [currentLng || 28.034088, currentLat || -26.195246],
+                            zoom: 15
+                        });
+                        
+                        new mapboxgl.Marker({ color: '#000000' })
+                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                            .addTo(offersMap);
+                    }, 100);
+                    
+                    // Reset form and clean up object URLs
+                    uploadedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl));
+                    uploadedFiles = [];
+                    taskInput.value = '';
+                    mainSearchInput.value = '';
+                    streetInput.value = '';
+                    budgetAmount.value = '';
+                    extraNotes.value = '';
+                    taskCharCount.textContent = '0/50';
+                    displayPreviews();
+                    whenNowBtn.click();
+                    fixedBudgetBtn.click();
+                    dateDisplay.textContent = 'Pick date';
+                    timeDisplay.textContent = 'Pick time';
+                    validateForm();
+                    
+                    // Trigger confetti
+                    if (typeof confetti === 'function') {
+                        confetti({ 
+                            particleCount: 100, 
+                            spread: 70, 
+                            origin: { y: 0.6 }, 
+                            colors: ['#000000', '#333333'] 
+                        });
+                    }
+                }
+            });
+
+            // ===== POST OFFER BUTTON =====
+            document.getElementById('postOfferBtn').addEventListener('click', ()=>{
+                offersContainer.classList.remove('active');
             });
 
             // ===== BACK BUTTON =====
@@ -1702,40 +1862,6 @@
                     createTaskContainer.style.display = 'flex';
                 });
             }
-
-            // ===== POST OFFER BUTTON =====
-            document.getElementById('postOfferBtn').addEventListener('click', ()=>{
-                document.getElementById('loadingOverlay').classList.add('active');
-                
-                setTimeout(() => {
-                    document.getElementById('loadingOverlay').classList.remove('active');
-                    showUploadStatus('Task posted successfully!', 'success');
-                    offersContainer.classList.remove('active');
-                    
-                    // Reset form
-                    taskInput.value = '';
-                    mainSearchInput.value = '';
-                    streetInput.value = '';
-                    budgetAmount.value = '';
-                    taskCharCount.textContent = '0/50';
-                    uploadedImages = [];
-                    displayPreviews();
-                    whenNowBtn.click();
-                    fixedBudgetBtn.click();
-                    dateDisplay.textContent = 'Pick date';
-                    timeDisplay.textContent = 'Pick time';
-                    validateForm();
-                    
-                    if (typeof confetti === 'function') {
-                        confetti({ 
-                            particleCount: 100, 
-                            spread: 70, 
-                            origin: { y: 0.6 }, 
-                            colors: ['#000000', '#333333'] 
-                        });
-                    }
-                }, 1500);
-            });
 
             // Initial validation
             validateForm();
