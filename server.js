@@ -8,6 +8,20 @@ const cloudinary = require('cloudinary').v2;
 const http = require('http');
 const socketIo = require('socket.io');
 
+// ========== FIREBASE ADMIN SDK (NEW) ==========
+const admin = require("firebase-admin");
+
+// Load service account from environment variable (set in Render)
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com"
+});
+
+const db = admin.database(); // Firebase Realtime Database reference
+// ==============================================
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -329,7 +343,8 @@ app.get('/health', (req, res) => {
     status: 'OK', 
     token_set: !!process.env.MAPBOX_ACCESS_TOKEN,
     mongodb_connected: mongoose.connection.readyState === 1,
-    cloudinary_configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
+    cloudinary_configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET),
+    firebase_configured: !!admin.apps.length
   });
 });
 
@@ -356,6 +371,117 @@ app.get('/api/tasks/suggestions/full', (req, res) => {
   } catch (error) {
     console.error('Error fetching full task suggestions:', error);
     res.status(500).json({ error: 'Failed to fetch task suggestions' });
+  }
+});
+
+// ========== NEW: FIREBASE TASKS ENDPOINTS ==========
+
+// Get all tasks
+app.get('/api/firebase/tasks', async (req, res) => {
+  try {
+    const tasksRef = db.ref('tasks');
+    const snapshot = await tasksRef.orderByChild('createdAt').limitToLast(50).once('value');
+    const tasks = snapshot.val();
+    
+    // Convert object to array and sort by date (newest first)
+    const tasksArray = tasks ? Object.entries(tasks).map(([id, task]) => ({
+      id,
+      ...task
+    })).sort((a, b) => b.createdAt - a.createdAt) : [];
+    
+    res.json({ tasks: tasksArray });
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+// Save a new task
+app.post('/api/firebase/tasks', async (req, res) => {
+  try {
+    const taskData = req.body;
+    
+    // Add timestamps
+    const taskToSave = {
+      ...taskData,
+      createdAt: Date.now(),
+      status: 'open',
+      updatedAt: Date.now()
+    };
+    
+    // Save to Firebase
+    const tasksRef = db.ref('tasks');
+    const newTaskRef = tasksRef.push();
+    await newTaskRef.set(taskToSave);
+    
+    // Get the saved task with its ID
+    const savedTask = {
+      id: newTaskRef.key,
+      ...taskToSave
+    };
+    
+    res.json({ success: true, task: savedTask });
+  } catch (error) {
+    console.error('Error saving task:', error);
+    res.status(500).json({ error: 'Failed to save task' });
+  }
+});
+
+// Get tasks by user
+app.get('/api/firebase/tasks/user/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const tasksRef = db.ref('tasks');
+    const snapshot = await tasksRef.orderByChild('userId').equalTo(email).once('value');
+    const tasks = snapshot.val();
+    
+    const tasksArray = tasks ? Object.entries(tasks).map(([id, task]) => ({
+      id,
+      ...task
+    })).sort((a, b) => b.createdAt - a.createdAt) : [];
+    
+    res.json({ tasks: tasksArray });
+  } catch (error) {
+    console.error('Error fetching user tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch user tasks' });
+  }
+});
+
+// Get a single task
+app.get('/api/firebase/tasks/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const taskRef = db.ref(`tasks/${id}`);
+    const snapshot = await taskRef.once('value');
+    const task = snapshot.val();
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    res.json({ id, ...task });
+  } catch (error) {
+    console.error('Error fetching task:', error);
+    res.status(500).json({ error: 'Failed to fetch task' });
+  }
+});
+
+// Update task status
+app.patch('/api/firebase/tasks/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    updates.updatedAt = Date.now();
+    
+    const taskRef = db.ref(`tasks/${id}`);
+    await taskRef.update(updates);
+    
+    const snapshot = await taskRef.once('value');
+    res.json({ id, ...snapshot.val() });
+  } catch (error) {
+    console.error('Error updating task:', error);
+    res.status(500).json({ error: 'Failed to update task' });
   }
 });
 
@@ -773,8 +899,7 @@ app.delete('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// ========== OFFER ENDPOINTS (NEW) ==========
-// Helper makes an offer
+// ========== OFFER ENDPOINTS ==========
 app.post('/api/tasks/:taskId/offer', authMiddleware, async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -786,12 +911,10 @@ app.post('/api/tasks/:taskId/offer', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Check if task is open for offers
     if (task.budgetType !== 'open') {
       return res.status(400).json({ error: 'This task is not open for offers' });
     }
     
-    // Check if helper already made an offer
     const existingOffer = await Offer.findOne({ 
       taskId, 
       helperId: helper.email,
@@ -802,7 +925,6 @@ app.post('/api/tasks/:taskId/offer', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'You already have a pending offer for this task' });
     }
     
-    // Create offer
     const offer = new Offer({
       taskId,
       helperId: helper.email,
@@ -815,7 +937,6 @@ app.post('/api/tasks/:taskId/offer', authMiddleware, async (req, res) => {
     
     await offer.save();
     
-    // Notify poster via socket
     const io = req.app.get('io');
     io.to(`user:${task.userId}`).emit('new-offer', {
       taskId,
@@ -836,7 +957,6 @@ app.post('/api/tasks/:taskId/offer', authMiddleware, async (req, res) => {
   }
 });
 
-// Get offers for a task
 app.get('/api/tasks/:taskId/offers', authMiddleware, async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -846,7 +966,6 @@ app.get('/api/tasks/:taskId/offers', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Only poster or admin can view offers
     if (task.userId !== req.user.email && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized' });
     }
@@ -860,7 +979,6 @@ app.get('/api/tasks/:taskId/offers', authMiddleware, async (req, res) => {
   }
 });
 
-// Poster responds to an offer
 app.put('/api/offers/:offerId', authMiddleware, async (req, res) => {
   try {
     const { offerId } = req.params;
@@ -876,7 +994,6 @@ app.put('/api/offers/:offerId', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Only poster or admin can respond
     if (task.userId !== req.user.email && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized' });
     }
@@ -890,7 +1007,6 @@ app.put('/api/offers/:offerId', authMiddleware, async (req, res) => {
     
     await offer.save();
     
-    // Notify helper via socket
     const io = req.app.get('io');
     io.to(`user:${offer.helperId}`).emit('offer-response', {
       offerId: offer._id,
@@ -907,7 +1023,6 @@ app.put('/api/offers/:offerId', authMiddleware, async (req, res) => {
   }
 });
 
-// Helper accepts a task with fixed budget
 app.post('/api/tasks/:taskId/accept', authMiddleware, async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -918,24 +1033,20 @@ app.post('/api/tasks/:taskId/accept', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Check if task is available
     if (task.status !== 'posted' && task.status !== 'active') {
       return res.status(400).json({ error: 'Task is no longer available' });
     }
     
-    // Check if budget is fixed (not open)
     if (task.budgetType === 'open') {
       return res.status(400).json({ error: 'Please make an offer for open budget tasks' });
     }
     
-    // Update task
     task.status = 'in-progress';
     task.helperId = helper.email;
     task.helperName = helper.name;
     task.helperAvatar = helper.profileImage;
     await task.save();
     
-    // Notify poster
     const io = req.app.get('io');
     io.to(`user:${task.userId}`).emit('task-accepted', {
       taskId,
@@ -1820,6 +1931,7 @@ server.listen(port, () => {
   console.log(`👥 Helper: http://localhost:${port}/helper`);
   console.log(`☁️ Cloudinary configured for: ${process.env.CLOUDINARY_CLOUD_NAME || 'not set'}`);
   console.log(`🔌 Socket.IO enabled`);
+  console.log(`🔥 Firebase configured: ${!!admin.apps.length}`);
   console.log(`🔧 Debug endpoints:`);
   console.log(`   - GET /api/debug/test-log`);
   console.log(`   - GET /api/debug/check-logs`);
@@ -1827,4 +1939,7 @@ server.listen(port, () => {
   console.log(`   - GET /api/debug/test-failed-login`);
   console.log(`📝 Task suggestions endpoint:`);
   console.log(`   - GET /api/tasks/suggestions`);
+  console.log(`🔥 Firebase endpoints:`);
+  console.log(`   - GET /api/firebase/tasks`);
+  console.log(`   - POST /api/firebase/tasks`);
 });
