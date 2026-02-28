@@ -1170,7 +1170,7 @@
     <script>
         (function() {
             'use strict';
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            
             if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
             // ===== TASK SUGGESTIONS DATA =====
@@ -1196,7 +1196,6 @@
             const homeSheet = document.getElementById('homeSheet');
             const mainSearchInput = document.getElementById('mainSearchInput');
             
-            // Detect keyboard open on mobile
             if (mainSearchInput) {
                 mainSearchInput.addEventListener('focus', function() {
                     homeSheet.classList.add('keyboard-open');
@@ -1212,7 +1211,6 @@
             const splashShown = localStorage.getItem('splashShown');
 
             if (!splashShown) {
-                // Show splash for 3 seconds
                 setTimeout(() => {
                     splashScreen.classList.add('hidden');
                     localStorage.setItem('splashShown', 'true');
@@ -1240,10 +1238,6 @@
                     window.location.href = '/login.html';
                     return false;
                 }
-                if (!user.profileImage || !user.email) {
-                    document.getElementById('verificationBanner').classList.add('active');
-                    return false;
-                }
                 return true;
             }
 
@@ -1268,9 +1262,8 @@
             function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
 
             // ===== STATE =====
-            let currentLat = null, currentLng = null;
-            let uploadedImageUrls = []; // Store Cloudinary URLs instead of base64
-            let uploadedFiles = []; // Temporary file storage before upload
+            let currentLat = -26.195246, currentLng = 28.034088;
+            let uploadedFiles = []; // For preview only, no actual upload
 
             map.on('load', () => console.log('Map loaded'));
 
@@ -1383,7 +1376,6 @@
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
                             
-                            // Open create task container
                             if (canUserPost()) {
                                 createTaskContainer.style.display = 'flex';
                             }
@@ -1511,7 +1503,7 @@
                 validateForm();
             });
 
-            // ===== IMAGE UPLOAD - OPTIMIZED =====
+            // ===== IMAGE UPLOAD - PREVIEW ONLY (NO BACKEND) =====
             const uploadArea = document.getElementById('uploadArea');
             
             uploadArea.addEventListener('click', ()=>{
@@ -1544,7 +1536,6 @@
                     return;
                 }
                 
-                // Create object URL for preview (doesn't store base64)
                 const previewUrl = URL.createObjectURL(file);
                 uploadedFiles.push({ file, previewUrl });
                 displayPreviews();
@@ -1593,7 +1584,6 @@
                     rm.className = 'remove-image';
                     rm.textContent = '×'; 
                     rm.onclick = () => { 
-                        // Clean up object URL
                         URL.revokeObjectURL(item.previewUrl);
                         uploadedFiles.splice(idx, 1); 
                         displayPreviews(); 
@@ -1675,181 +1665,54 @@
                 validateForm();
             });
 
-            // ===== UPLOAD IMAGES TO CLOUDINARY =====
-            async function uploadImagesToCloudinary() {
-                const uploadedUrls = [];
-                
-                for (const item of uploadedFiles) {
-                    try {
-                        const formData = new FormData();
-                        formData.append('image', item.file);
-                        
-                        // Get token for auth
-                        const token = localStorage.getItem('taskmart_token');
-                        
-                        const response = await fetch(`${API_BASE_URL}/api/upload/task-image`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: formData
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error('Upload failed');
-                        }
-                        
-                        const data = await response.json();
-                        uploadedUrls.push(data.url); // Store only the URL
-                        
-                    } catch (error) {
-                        console.error('Error uploading image:', error);
-                        showUploadStatus('Failed to upload some images', 'error');
-                    }
-                }
-                
-                return uploadedUrls;
-            }
-
-            // ===== POST TASK TO MONGODB =====
-            async function postTaskToMongoDB(taskData) {
-                try {
-                    const token = localStorage.getItem('taskmart_token');
-                    const user = getCurrentUser();
-                    
-                    if (!token || !user) {
-                        showToast('Please log in to post a task', 'error');
-                        return false;
-                    }
-
-                    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            ...taskData,
-                            userId: user.email,
-                            userName: user.name,
-                            userAvatar: user.profileImage || '',
-                            status: 'posted',
-                            createdAt: new Date()
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    console.log('Task posted successfully:', result);
-                    return true;
-                } catch (error) {
-                    console.error('Error posting task:', error);
-                    showToast('Failed to post task. Please try again.', 'error');
-                    return false;
-                }
-            }
-
-            function showToast(message, type = 'success') {
-                const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
-                toast.textContent = message;
-                toast.style.display = 'block';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 3000);
-            }
-
-            // ===== NEXT BUTTON - POST TASK =====
+            // ===== NEXT BUTTON - JUST GO TO OFFERS PAGE (NO SAVING) =====
             const offersContainer = document.getElementById('offersContainer');
             let offersMap = null;
 
-            nextBtn.addEventListener('click', async ()=>{
-                // Show loading
-                document.getElementById('loadingOverlay').classList.add('active');
+            nextBtn.addEventListener('click', ()=>{
+                // Hide create task, show offers page
+                createTaskContainer.style.display = 'none';
+                offersContainer.classList.add('active');
                 
-                // Upload images first
-                let imageUrls = [];
-                if (uploadedFiles.length > 0) {
-                    showUploadStatus('Uploading images...', 'info');
-                    imageUrls = await uploadImagesToCloudinary();
-                }
-                
-                // Collect all task data with image URLs
-                const taskData = {
-                    location: locationInput.value,
-                    coordinates: `${currentLat},${currentLng}`,
-                    streetName: streetInput.value,
-                    when: whenNowBtn.classList.contains('active') ? 'now' : 'later',
-                    scheduledDate: whenLaterBtn.classList.contains('active') ? nativeDatePicker.value : null,
-                    scheduledTime: whenLaterBtn.classList.contains('active') ? nativeTimePicker.value : null,
-                    taskDescription: taskInput.value,
-                    budgetType: fixedBudgetBtn.classList.contains('active') ? 'fixed' : 'open',
-                    budgetAmount: fixedBudgetBtn.classList.contains('active') ? budgetAmount.value : null,
-                    moreDetails: extraNotes.value,
-                    images: imageUrls // Store only URLs, not base64
-                };
-                
-                // Post to MongoDB
-                const success = await postTaskToMongoDB(taskData);
-                
-                document.getElementById('loadingOverlay').classList.remove('active');
-                
-                if (success) {
-                    showToast('Task posted successfully!', 'success');
+                // Initialize offers map
+                setTimeout(() => {
+                    if (offersMap) offersMap.remove();
                     
-                    // Show offers page
-                    createTaskContainer.style.display = 'none';
-                    offersContainer.classList.add('active');
+                    offersMap = new mapboxgl.Map({
+                        container: 'offersMap',
+                        style: 'mapbox://styles/mapbox/dark-v11',
+                        center: [currentLng || 28.034088, currentLat || -26.195246],
+                        zoom: 15
+                    });
                     
-                    // Initialize offers map
-                    setTimeout(() => {
-                        if (offersMap) offersMap.remove();
-                        
-                        offersMap = new mapboxgl.Map({
-                            container: 'offersMap',
-                            style: 'mapbox://styles/mapbox/dark-v11',
-                            center: [currentLng || 28.034088, currentLat || -26.195246],
-                            zoom: 15
-                        });
-                        
-                        new mapboxgl.Marker({ color: '#000000' })
-                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                            .addTo(offersMap);
-                    }, 100);
-                    
-                    // Reset form and clean up object URLs
-                    uploadedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl));
-                    uploadedFiles = [];
-                    taskInput.value = '';
-                    mainSearchInput.value = '';
-                    streetInput.value = '';
-                    budgetAmount.value = '';
-                    extraNotes.value = '';
-                    taskCharCount.textContent = '0/50';
-                    displayPreviews();
-                    whenNowBtn.click();
-                    fixedBudgetBtn.click();
-                    dateDisplay.textContent = 'Pick date';
-                    timeDisplay.textContent = 'Pick time';
-                    validateForm();
-                    
-                    // Trigger confetti
-                    if (typeof confetti === 'function') {
-                        confetti({ 
-                            particleCount: 100, 
-                            spread: 70, 
-                            origin: { y: 0.6 }, 
-                            colors: ['#000000', '#333333'] 
-                        });
-                    }
-                }
+                    new mapboxgl.Marker({ color: '#000000' })
+                        .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                        .addTo(offersMap);
+                }, 100);
+                
+                // Show success toast
+                showToast('Task ready for offers!', 'success');
             });
 
             // ===== POST OFFER BUTTON =====
             document.getElementById('postOfferBtn').addEventListener('click', ()=>{
                 offersContainer.classList.remove('active');
+                
+                // Reset form
+                uploadedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl));
+                uploadedFiles = [];
+                taskInput.value = '';
+                mainSearchInput.value = '';
+                streetInput.value = '';
+                budgetAmount.value = '';
+                extraNotes.value = '';
+                taskCharCount.textContent = '0/50';
+                displayPreviews();
+                whenNowBtn.click();
+                fixedBudgetBtn.click();
+                dateDisplay.textContent = 'Pick date';
+                timeDisplay.textContent = 'Pick time';
+                validateForm();
             });
 
             // ===== BACK BUTTON =====
@@ -1861,6 +1724,16 @@
                     offersContainer.classList.remove('active');
                     createTaskContainer.style.display = 'flex';
                 });
+            }
+
+            // ===== TOAST FUNCTION =====
+            function showToast(message, type = 'success') {
+                const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
             }
 
             // Initial validation
