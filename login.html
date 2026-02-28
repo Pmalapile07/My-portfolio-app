@@ -484,6 +484,28 @@
                 gap: 0.5rem;
             }
         }
+
+        /* Quick login buttons for testing */
+        .quick-login {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .quick-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 300;
+        }
+
+        .quick-btn:hover {
+            background: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -540,6 +562,12 @@
                     <span class="material-symbols-outlined">progress_activity</span>
                 </span>
             </button>
+
+            <!-- Quick login buttons for testing -->
+            <div class="quick-login">
+                <button type="button" class="quick-btn" onclick="quickLogin('poster')">Poster</button>
+                <button type="button" class="quick-btn" onclick="quickLogin('helper')">Helper</button>
+            </div>
         </form>
 
         <!-- Signup Form -->
@@ -769,7 +797,46 @@
             updateSelectedSkills();
         }
 
-        // ===== FAKE LOGIN - NO DATABASE =====
+        // ===== QUICK LOGIN - BYPASS EVERYTHING =====
+        function quickLogin(role) {
+            // Create FULLY VERIFIED user object
+            const userData = {
+                name: role === 'helper' ? 'Helper User' : 'Poster User',
+                email: role === 'helper' ? 'helper@example.com' : 'poster@example.com',
+                role: role,
+                verified: true,           // <- FORCE verified
+                profileImage: 'https://via.placeholder.com/150',
+                emailVerified: true,
+                adminVerified: true,       // <- Also force admin verified
+                phone: '+27721234567',
+                skills: role === 'helper' ? ['cleaning', 'laundry'] : [],
+                createdAt: new Date().toISOString()
+            };
+
+            // Create fake token
+            const token = btoa(`${userData.email}:${Date.now()}`);
+
+            // Store in localStorage
+            localStorage.setItem('taskmart_user', JSON.stringify(userData));
+            localStorage.setItem('taskmart_token', token);
+
+            // Show success message
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = 'Quick login successful! Redirecting...';
+            errorDiv.style.color = '#28a745';
+            errorDiv.classList.add('show');
+
+            // Redirect based on role
+            setTimeout(() => {
+                if (role === 'helper') {
+                    window.location.href = '/helper-dashboard.html';
+                } else {
+                    window.location.href = '/task-planner.html';
+                }
+            }, 1000);
+        }
+
+        // ===== FAKE LOGIN - WITH FORCED VERIFICATION =====
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -785,23 +852,25 @@
             
             // Simulate network delay
             setTimeout(() => {
-                // Any email/password works in demo mode
-                // Create fake user object
-                const fakeUser = {
+                // Create FULLY VERIFIED user object
+                const userData = {
                     name: email.split('@')[0] || 'Demo User',
                     email: email,
                     role: 'poster', // Default to poster
-                    profileImage: null,
+                    verified: true,                    // <- FORCE verified
+                    profileImage: 'https://via.placeholder.com/150',
                     emailVerified: true,
+                    adminVerified: true,                // <- Also force admin verified
+                    phone: '+27720000000',
                     createdAt: new Date().toISOString()
                 };
 
                 // Create fake token
-                const fakeToken = btoa(`${email}:${Date.now()}`);
+                const token = btoa(`${email}:${Date.now()}`);
 
                 // Store in localStorage
-                localStorage.setItem('taskmart_user', JSON.stringify(fakeUser));
-                localStorage.setItem('taskmart_token', fakeToken);
+                localStorage.setItem('taskmart_user', JSON.stringify(userData));
+                localStorage.setItem('taskmart_token', token);
 
                 // Show success message
                 errorDiv.textContent = 'Login successful! Redirecting...';
@@ -818,7 +887,7 @@
             }, 1000);
         });
 
-        // ===== FAKE SIGNUP - NO DATABASE =====
+        // ===== FAKE SIGNUP - WITH FORCED VERIFICATION =====
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -844,24 +913,26 @@
             
             // Simulate network delay
             setTimeout(() => {
-                // Create fake user object
-                const fakeUser = {
+                // Create FULLY VERIFIED user object
+                const userData = {
                     name: name,
                     email: email,
                     phone: `+27${phone.replace(/\s/g, '')}`,
                     role: selectedRole,
                     skills: selectedRole === 'helper' ? selectedSkills : [],
-                    profileImage: null,
+                    verified: true,                    // <- FORCE verified
+                    profileImage: 'https://via.placeholder.com/150',
                     emailVerified: true,
+                    adminVerified: true,                // <- Also force admin verified
                     createdAt: new Date().toISOString()
                 };
 
                 // Create fake token
-                const fakeToken = btoa(`${email}:${Date.now()}`);
+                const token = btoa(`${email}:${Date.now()}`);
 
                 // Store in localStorage
-                localStorage.setItem('taskmart_user', JSON.stringify(fakeUser));
-                localStorage.setItem('taskmart_token', fakeToken);
+                localStorage.setItem('taskmart_user', JSON.stringify(userData));
+                localStorage.setItem('taskmart_token', token);
 
                 // Show success message
                 errorDiv.textContent = 'Account created successfully! Redirecting...';
@@ -888,7 +959,7 @@
             const token = localStorage.getItem('taskmart_token');
             
             if (user && token) {
-                // Uncomment to auto-redirect
+                // Auto-redirect if you want
                 // const userData = JSON.parse(user);
                 // if (userData.role === 'helper') {
                 //     window.location.href = '/helper-dashboard.html';
