@@ -31,7 +31,7 @@
 
         body {
             font-family: 'Manrope', sans-serif;
-            background: white;
+            background: #f5f5f5;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -531,7 +531,7 @@
                     <input type="checkbox" id="remember">
                     <label for="remember">Remember me</label>
                 </div>
-                <a href="#" class="forgot-password">Forgot password?</a>
+                <a href="#" class="forgot-password" onclick="showForgotMessage()">Forgot password?</a>
             </div>
 
             <button type="submit" class="auth-btn" id="loginBtn">
@@ -630,11 +630,11 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://taskmartapp.onrender.com';
+        // No API calls - everything is fake/local
         let selectedRole = 'poster';
         let selectedSkills = [];
 
-        // ===== TASK SUGGESTIONS DATA (from JSON) =====
+        // ===== TASK SUGGESTIONS DATA =====
         const skillOptions = [
             "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
             "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
@@ -665,6 +665,14 @@
                 passwordInput.type = 'password';
                 icon.textContent = 'visibility';
             }
+        }
+
+        // Forgot password message
+        function showForgotMessage() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = 'Demo mode: Password reset would be sent to your email.';
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 3000);
         }
 
         // Switch between login and signup tabs
@@ -713,7 +721,6 @@
         function initializeSkillsDropdown() {
             const skillsInput = document.getElementById('skillsInput');
             const skillsDropdown = document.getElementById('skillsDropdown');
-            const selectedSkillsDiv = document.getElementById('selectedSkills');
 
             // Populate dropdown
             skillsDropdown.innerHTML = skillOptions.map(skill => 
@@ -762,7 +769,7 @@
             updateSelectedSkills();
         }
 
-        // Handle Login
+        // ===== FAKE LOGIN - NO DATABASE =====
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -776,51 +783,48 @@
             loginBtn.disabled = true;
             errorDiv.classList.remove('show');
             
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+            // Simulate network delay
+            setTimeout(() => {
+                // Any email/password works in demo mode
+                // Create fake user object
+                const fakeUser = {
+                    name: email.split('@')[0] || 'Demo User',
+                    email: email,
+                    role: 'poster', // Default to poster
+                    profileImage: null,
+                    emailVerified: true,
+                    createdAt: new Date().toISOString()
+                };
 
-                const data = await response.json();
+                // Create fake token
+                const fakeToken = btoa(`${email}:${Date.now()}`);
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Login failed');
-                }
+                // Store in localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify(fakeUser));
+                localStorage.setItem('taskmart_token', fakeToken);
 
-                // Store user data and token
-                localStorage.setItem('taskmart_user', JSON.stringify(data.user));
-                localStorage.setItem('taskmart_token', data.token);
-
-                // Redirect based on role
-                if (data.user.role === 'helper') {
-                    window.location.href = '/helper-dashboard.html';
-                } else {
-                    window.location.href = '/task-planner.html';
-                }
-                
-            } catch (error) {
-                errorDiv.textContent = error.message;
+                // Show success message
+                errorDiv.textContent = 'Login successful! Redirecting...';
+                errorDiv.style.color = '#28a745';
                 errorDiv.classList.add('show');
+
+                // Redirect to task planner
+                setTimeout(() => {
+                    window.location.href = '/task-planner.html';
+                }, 1000);
+
                 loginBtn.classList.remove('loading');
                 loginBtn.disabled = false;
-            }
+            }, 1000);
         });
 
-        // Handle Signup
+        // ===== FAKE SIGNUP - NO DATABASE =====
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const phone = document.getElementById('signupPhone').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            // Format phone number with +27
-            const formattedPhone = `+27${phone.replace(/\s/g, '')}`;
             
             const signupBtn = document.getElementById('signupBtn');
             const errorDiv = document.getElementById('errorMessage');
@@ -829,54 +833,53 @@
             signupBtn.disabled = true;
             errorDiv.classList.remove('show');
             
-            try {
-                const userData = { 
-                    name, 
-                    email, 
-                    password, 
-                    phone: formattedPhone,
-                    role: selectedRole 
-                };
-
-                // Add skills if helper
-                if (selectedRole === 'helper') {
-                    if (selectedSkills.length === 0) {
-                        throw new Error('Please select at least one skill');
-                    }
-                    userData.skills = selectedSkills;
-                }
-
-                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(userData)
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Registration failed');
-                }
-
-                // Store user data and token
-                localStorage.setItem('taskmart_user', JSON.stringify(data.user));
-                localStorage.setItem('taskmart_token', data.token);
-
-                // Redirect based on role
-                if (selectedRole === 'helper') {
-                    window.location.href = '/helper-dashboard.html';
-                } else {
-                    window.location.href = '/task-planner.html';
-                }
-                
-            } catch (error) {
-                errorDiv.textContent = error.message;
+            // Validate skills for helper
+            if (selectedRole === 'helper' && selectedSkills.length === 0) {
+                errorDiv.textContent = 'Please select at least one skill';
                 errorDiv.classList.add('show');
                 signupBtn.classList.remove('loading');
                 signupBtn.disabled = false;
+                return;
             }
+            
+            // Simulate network delay
+            setTimeout(() => {
+                // Create fake user object
+                const fakeUser = {
+                    name: name,
+                    email: email,
+                    phone: `+27${phone.replace(/\s/g, '')}`,
+                    role: selectedRole,
+                    skills: selectedRole === 'helper' ? selectedSkills : [],
+                    profileImage: null,
+                    emailVerified: true,
+                    createdAt: new Date().toISOString()
+                };
+
+                // Create fake token
+                const fakeToken = btoa(`${email}:${Date.now()}`);
+
+                // Store in localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify(fakeUser));
+                localStorage.setItem('taskmart_token', fakeToken);
+
+                // Show success message
+                errorDiv.textContent = 'Account created successfully! Redirecting...';
+                errorDiv.style.color = '#28a745';
+                errorDiv.classList.add('show');
+
+                // Redirect based on role
+                setTimeout(() => {
+                    if (selectedRole === 'helper') {
+                        window.location.href = '/helper-dashboard.html';
+                    } else {
+                        window.location.href = '/task-planner.html';
+                    }
+                }, 1000);
+
+                signupBtn.classList.remove('loading');
+                signupBtn.disabled = false;
+            }, 1000);
         });
 
         // Check if already logged in
@@ -885,7 +888,7 @@
             const token = localStorage.getItem('taskmart_token');
             
             if (user && token) {
-                // Optional: Auto-redirect based on role
+                // Uncomment to auto-redirect
                 // const userData = JSON.parse(user);
                 // if (userData.role === 'helper') {
                 //     window.location.href = '/helper-dashboard.html';
