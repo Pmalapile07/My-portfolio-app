@@ -19,6 +19,63 @@ const io = socketIo(server, {
 
 const port = process.env.PORT || 3000;
 
+// ========== TASK SUGGESTIONS DATA ==========
+const taskSuggestions = {
+  "allowedTasks": [
+    {"task": "Laundry", "category": "Home"},
+    {"task": "Ironing", "category": "Home"},
+    {"task": "Grocery shopping", "category": "Home"},
+    {"task": "Cooking / meal prep", "category": "Home"},
+    {"task": "Cleaning / tidying", "category": "Home"},
+    {"task": "Dog walking / pet care", "category": "Home"},
+    {"task": "Babysitting / child care", "category": "Home"},
+    {"task": "Elderly care / companionship", "category": "Home"},
+    {"task": "Plumbing (minor fixes)", "category": "Repairs"},
+    {"task": "Electrical work (minor)", "category": "Repairs"},
+    {"task": "Furniture assembly", "category": "Repairs"},
+    {"task": "Gardening / lawn care", "category": "Repairs"},
+    {"task": "Painting walls / touch-ups", "category": "Repairs"},
+    {"task": "Moving / lifting heavy objects", "category": "Repairs"},
+    {"task": "Website setup", "category": "Tech"},
+    {"task": "Software troubleshooting", "category": "Tech"},
+    {"task": "Device setup (phones/laptops)", "category": "Tech"},
+    {"task": "Graphic design / logo design", "category": "Tech"},
+    {"task": "Social media support", "category": "Tech"},
+    {"task": "Picking up parcels", "category": "Errands"},
+    {"task": "Delivery of small items", "category": "Errands"},
+    {"task": "Car washing / cleaning", "category": "Errands"},
+    {"task": "Running personal errands", "category": "Errands"},
+    {"task": "House sitting", "category": "Home"},
+    {"task": "Pet sitting", "category": "Home"},
+    {"task": "Event setup / decorating", "category": "Events"},
+    {"task": "Photography / videography", "category": "Events"},
+    {"task": "Tutoring / lessons", "category": "Education"},
+    {"task": "Moving / relocation help", "category": "Repairs"},
+    {"task": "Assembling electronics", "category": "Tech"},
+    {"task": "Minor car maintenance", "category": "Repairs"},
+    {"task": "Package wrapping / gift prep", "category": "Home"},
+    {"task": "Shopping for gifts / items", "category": "Errands"},
+    {"task": "Plant care / watering", "category": "Home"},
+    {"task": "Cleaning windows", "category": "Home"},
+    {"task": "Packing / unpacking", "category": "Home"},
+    {"task": "Minor sewing / clothing repair", "category": "Home"},
+    {"task": "Furniture moving", "category": "Repairs"},
+    {"task": "Appliance setup", "category": "Tech"},
+    {"task": "Data entry / admin support", "category": "Tech"},
+    {"task": "Email / inbox management", "category": "Tech"},
+    {"task": "Basic accounting / bookkeeping", "category": "Tech"},
+    {"task": "Errand planning / scheduling", "category": "Errands"},
+    {"task": "Toy / small item repair", "category": "Home"},
+    {"task": "Basic sewing / mending", "category": "Home"},
+    {"task": "Recycling / trash pickup", "category": "Home"},
+    {"task": "Inventory check / organizing", "category": "Home"},
+    {"task": "Pet training / basic commands", "category": "Home"},
+    {"task": "Tech device troubleshooting", "category": "Tech"},
+    {"task": "Gift wrapping / decoration", "category": "Home"},
+    {"task": "Small handyman tasks", "category": "Repairs"}
+  ]
+};
+
 // ========== CLOUDINARY CONFIGURATION ==========
 console.log('☁️ Configuring Cloudinary with:');
 console.log('Cloud name:', process.env.CLOUDINARY_CLOUD_NAME);
@@ -278,6 +335,28 @@ app.get('/health', (req, res) => {
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ========== TASK SUGGESTIONS ENDPOINT ==========
+app.get('/api/tasks/suggestions', (req, res) => {
+  try {
+    // Extract only the task names
+    const taskNames = taskSuggestions.allowedTasks.map(item => item.task);
+    res.json({ tasks: taskNames });
+  } catch (error) {
+    console.error('Error fetching task suggestions:', error);
+    res.status(500).json({ error: 'Failed to fetch task suggestions' });
+  }
+});
+
+// Optional: Return full task data with categories if needed elsewhere
+app.get('/api/tasks/suggestions/full', (req, res) => {
+  try {
+    res.json(taskSuggestions);
+  } catch (error) {
+    console.error('Error fetching full task suggestions:', error);
+    res.status(500).json({ error: 'Failed to fetch task suggestions' });
+  }
 });
 
 // ========== AUTH MIDDLEWARE ==========
@@ -1746,4 +1825,6 @@ server.listen(port, () => {
   console.log(`   - GET /api/debug/check-logs`);
   console.log(`   - GET /api/debug/mongo-check`);
   console.log(`   - GET /api/debug/test-failed-login`);
+  console.log(`📝 Task suggestions endpoint:`);
+  console.log(`   - GET /api/tasks/suggestions`);
 });
