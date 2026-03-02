@@ -280,6 +280,7 @@
             display: flex;
             align-items: flex-start;
             gap: 16px;
+            position: relative;
         }
 
         .task-card:last-child {
@@ -570,6 +571,14 @@
                 border: 1px solid rgba(0,0,0,0.1);
             }
         }
+
+        /* Profile menu container */
+        #profile-menu-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10000;
+        }
     </style>
 </head>
 <body>
@@ -607,12 +616,16 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- Profile Menu Container -->
+    <div id="profile-menu-container"></div>
+
     <script>
         (function() {
             'use strict';
 
-            const API_BASE_URL = '';
+            const API_BASE_URL = ''; // Same server
 
+            // ===== STATE =====
             let currentUser = null;
             let currentLat = null;
             let currentLng = null;
@@ -628,6 +641,7 @@
             let animationFrame = null;
             let userSkills = [];
 
+            // ===== DOM ELEMENTS =====
             const tasksSheet = document.getElementById('tasksSheet');
             const sheetHeader = document.getElementById('sheetHeader');
             const sheetContent = document.getElementById('sheetContent');
@@ -639,6 +653,7 @@
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
 
+            // ===== TOAST =====
             function showToast(message) {
                 toast.textContent = message;
                 toast.className = 'toast show';
@@ -647,6 +662,7 @@
                 }, 3000);
             }
 
+            // ===== GET USER =====
             function getCurrentUser() {
                 try {
                     const user = localStorage.getItem('taskmart_user');
@@ -656,6 +672,25 @@
                 }
             }
 
+            function getAuthToken() {
+                return localStorage.getItem('taskmart_token');
+            }
+
+            // ===== LOAD PROFILE MENU =====
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('profile-menu-container').innerHTML = html;
+                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = document.createElement('script');
+                        script.textContent = scripts[i].textContent;
+                        document.body.appendChild(script);
+                    }
+                })
+                .catch(error => console.error('Failed to load profile menu:', error));
+
+            // ===== CREATE CUSTOM MARKERS =====
             function createHelperMarker() {
                 const el = document.createElement('div');
                 el.className = 'helper-marker';
@@ -668,12 +703,15 @@
                 return el;
             }
 
+            // ===== CREATE BEEPING DOTS ALONG ROUTE =====
             function createBeepingDots(coordinates) {
+                // Remove existing dots
                 beepingDots.forEach(dot => dot.remove());
                 beepingDots = [];
 
                 if (!coordinates || coordinates.length < 2) return;
 
+                // Create 5 dots along the route
                 for (let i = 1; i <= 5; i++) {
                     const fraction = i / 6;
                     const index = Math.floor(coordinates.length * fraction);
@@ -683,6 +721,7 @@
                         const dot = document.createElement('div');
                         dot.className = 'beeping-dot';
                         
+                        // Convert to screen coordinates
                         const point = map.project([lng, lat]);
                         dot.style.left = point.x + 'px';
                         dot.style.top = point.y + 'px';
@@ -690,6 +729,7 @@
                         document.getElementById('map').appendChild(dot);
                         beepingDots.push(dot);
                         
+                        // Animate dot movement as map moves
                         const updateDotPosition = () => {
                             const newPoint = map.project([lng, lat]);
                             dot.style.left = newPoint.x + 'px';
@@ -704,6 +744,7 @@
                 }
             }
 
+            // ===== MAP INIT =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) {
                     console.error('No Mapbox token');
@@ -749,11 +790,13 @@
                     getUserLocation();
                 });
 
+                // Update dot positions on map move
                 map.on('move', () => {
-                    // Dots update in animation frame
+                    // Dots will be updated in animation frame
                 });
             }
 
+            // ===== GET LOCATION =====
             function getUserLocation() {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
@@ -765,6 +808,7 @@
                             
                             if (startMarker) startMarker.remove();
                             
+                            // Helper marker - square with pulsing white circle
                             const helperEl = createHelperMarker();
                             startMarker = new mapboxgl.Marker({ element: helperEl })
                                 .setLngLat([currentLng, currentLat])
@@ -782,14 +826,15 @@
                 }
             }
 
-            // Check if task matches helper's skills
+            // ===== CHECK IF TASK MATCHES USER SKILLS =====
             function taskMatchesSkills(task) {
-                if (!userSkills || userSkills.length === 0) return true; // Show all if no skills set
+                if (!userSkills || userSkills.length === 0) return false;
                 
-                const taskLower = task.taskDescription.toLowerCase();
+                const taskLower = (task.taskDescription || '').toLowerCase();
                 return userSkills.some(skill => taskLower.includes(skill.toLowerCase()));
             }
 
+            // ===== FETCH TASKS =====
             async function fetchTasks() {
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`);
@@ -798,6 +843,7 @@
                         const data = await response.json();
                         let tasks = data.tasks || [];
 
+                        // Filter out user's own tasks and only show open tasks
                         if (currentUser) {
                             tasks = tasks.filter(task => 
                                 task.userId !== currentUser.email && 
@@ -825,9 +871,11 @@
                     }
                 } catch (error) {
                     console.error('Error fetching tasks:', error);
+                    sheetContent.innerHTML = '<div class="no-tasks">Error loading tasks</div>';
                 }
             }
 
+            // ===== CALCULATE ROUTE =====
             async function calculateRoute(taskId) {
                 const task = availableTasks.find(t => t.id === taskId);
                 if (!task || !task.coordinates || !currentLat || !currentLng) {
@@ -835,12 +883,14 @@
                     return;
                 }
 
+                // Parse coordinates (lat,lng format from task planner)
                 const [taskLat, taskLng] = task.coordinates.split(',').map(Number);
 
                 selectedTaskId = taskId;
 
                 if (endMarker) endMarker.remove();
 
+                // Poster marker - circle with pulsing white circle
                 const posterEl = createPosterMarker();
                 endMarker = new mapboxgl.Marker({ element: posterEl })
                     .setLngLat([taskLng, taskLat])
@@ -871,13 +921,16 @@
                         routeDuration.textContent = duration + 'min';
                         routeInfo.classList.add('active');
 
+                        // Draw route
                         map.getSource('route').setData({
                             type: 'Feature',
                             geometry: route.geometry
                         });
 
+                        // Create beeping dots along route
                         createBeepingDots(route.geometry.coordinates);
 
+                        // Update selected card
                         document.querySelectorAll('.task-card').forEach(card => {
                             card.classList.remove('selected');
                         });
@@ -892,6 +945,7 @@
                 }
             }
 
+            // ===== RENDER TASKS =====
             function renderTasks(tasks) {
                 let html = '';
 
@@ -937,7 +991,7 @@
                                         
                                         <div class="poster-info">
                                             <div class="poster-avatar">
-                                                ${posterAvatar ? `<img src="${posterAvatar}">` : posterInitial}
+                                                ${posterAvatar ? `<img src="${posterAvatar}" alt="${posterName}">` : posterInitial}
                                             </div>
                                             <div class="poster-details">
                                                 <div class="poster-name">${posterName}</div>
@@ -965,6 +1019,7 @@
                 sheetContent.innerHTML = html;
             }
 
+            // ===== SELECT TASK =====
             window.selectTask = function(taskId) {
                 const card = document.querySelector(`[data-task-id="${taskId}"]`);
                 if (card) {
@@ -984,6 +1039,7 @@
                 }
             };
 
+            // ===== MAKE OFFER =====
             window.makeOffer = async function(taskId) {
                 const input = document.getElementById(`offer-${taskId}`);
                 const amount = parseFloat(input.value);
@@ -998,18 +1054,30 @@
                     return;
                 }
 
-                // In real app, send offer to backend
                 showToast('Offer sent');
                 input.value = '';
+                
+                // In real implementation, send to backend
+                // await fetch(`${API_BASE_URL}/api/firebase/tasks/${taskId}/offer`, {...})
             };
 
+            // ===== ACCEPT TASK =====
             window.acceptTask = async function(taskId, budget) {
                 if (!isOnline) {
                     showToast('Set status to available');
                     return;
                 }
 
+                const task = availableTasks.find(t => t.id === taskId);
+                if (!task) return;
+
                 showToast('Task accepted');
+
+                // In real implementation, update task status
+                // await fetch(`${API_BASE_URL}/api/firebase/tasks/${taskId}`, {
+                //     method: 'PATCH',
+                //     body: JSON.stringify({ status: 'in-progress' })
+                // });
 
                 availableTasks = availableTasks.filter(t => t.id !== taskId);
                 renderTasks(availableTasks);
@@ -1021,6 +1089,7 @@
                     geometry: { type: 'LineString', coordinates: [] }
                 });
                 
+                // Remove beeping dots
                 beepingDots.forEach(dot => dot.remove());
                 beepingDots = [];
                 if (animationFrame) {
@@ -1028,6 +1097,7 @@
                 }
             };
 
+            // ===== ADD MARKERS =====
             function addTaskMarkers(tasks) {
                 if (window.taskMarkers) {
                     window.taskMarkers.forEach(marker => marker.remove());
@@ -1054,29 +1124,34 @@
                 });
             }
 
+            // ===== ONLINE TOGGLE =====
             onlineToggle.addEventListener('click', () => {
                 isOnline = !isOnline;
                 statusDot.className = isOnline ? 'status-dot' : 'status-dot offline';
                 statusText.textContent = isOnline ? 'Available' : 'Offline';
+                showToast(`You are now ${isOnline ? 'available' : 'offline'}`);
             });
 
+            // ===== SHEET TOGGLE =====
             sheetHeader.addEventListener('click', () => {
                 tasksSheet.classList.toggle('expanded');
             });
 
-            // Poll for new tasks every 10 seconds (instant updates)
+            // ===== AUTO REFRESH TASKS =====
             setInterval(() => {
                 if (isOnline) {
                     fetchTasks();
                 }
-            }, 10000);
+            }, 10000); // Refresh every 10 seconds
 
+            // ===== INIT =====
             currentUser = getCurrentUser();
-            authToken = getCurrentUser()?.token;
+            authToken = getAuthToken();
 
-            // Get user skills from profile
-            if (currentUser && currentUser.skills) {
-                userSkills = currentUser.skills;
+            // Load user skills
+            if (currentUser) {
+                userSkills = currentUser.skills || [];
+                console.log('User skills loaded:', userSkills);
             }
 
             if (!currentUser || !authToken) {
