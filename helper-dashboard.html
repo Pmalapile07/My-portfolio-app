@@ -140,6 +140,24 @@
             100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
+        /* === BLUR OVERLAY FOR NOTIFICATIONS === */
+        .blur-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            pointer-events: none;
+        }
+
+        .blur-overlay.active {
+            display: block;
+        }
+
         /* === LEFT SIDE NAVIGATION MENU === */
         .nav-menu {
             position: fixed;
@@ -165,7 +183,7 @@
             font-size: 24px !important;
         }
 
-        /* === RIGHT SIDE HEADER SECTION - STACKED VERTICALLY === */
+        /* === RIGHT SIDE HEADER SECTION - STACKED VERTICALLY WITH EQUAL GAPS === */
         .right-header {
             position: fixed;
             top: 20px;
@@ -174,7 +192,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 8px;
+            gap: 12px; /* Equal gaps between all cards */
             pointer-events: none;
         }
 
@@ -183,7 +201,7 @@
             align-items: center;
             gap: 8px;
             background: white;
-            padding: 8px 16px;
+            padding: 0 16px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             pointer-events: auto;
@@ -211,13 +229,13 @@
             letter-spacing: 0.3px;
         }
 
-        /* Route info - with walking distance */
+        /* Route info - single line with toggle */
         .route-info {
             background: white;
-            padding: 8px 16px;
+            padding: 0 16px;
             display: flex;
-            flex-direction: column;
-            gap: 4px;
+            align-items: center;
+            gap: 12px;
             font-weight: 400;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             border: none;
@@ -225,42 +243,38 @@
             pointer-events: auto;
             opacity: 0;
             transition: opacity 0.3s ease;
-            height: 60px;
-            justify-content: center;
+            height: 44px;
+            cursor: pointer;
         }
 
         .route-info.active {
             opacity: 1;
         }
 
-        .route-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         .route-info .material-symbols-outlined {
             color: #000 !important;
-            font-size: 16px !important;
+            font-size: 18px !important;
         }
 
         .route-info span {
             color: #000;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 300;
             font-family: 'Manrope', sans-serif;
         }
 
-        .route-label {
-            font-weight: 400;
-            color: #666;
-            margin-right: 4px;
+        .route-toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .route-toggle-icon.rotated {
+            transform: rotate(180deg);
         }
 
         /* === EARNINGS CARD - UNDER ROUTE INFO === */
         .earnings-card {
             background: white;
-            padding: 8px 16px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -285,25 +299,24 @@
         /* === NOTIFICATION SECTION - BELL ONLY === */
         .notification-section {
             position: fixed;
-            top: 156px; /* 20px + 44px + 8px + 60px + 8px + 44px */
+            top: 20px;
             right: 20px;
-            z-index: 100;
+            z-index: 10001; /* Above blur overlay */
             pointer-events: auto;
             width: fit-content;
         }
 
         .notification-bell {
             background: white;
-            padding: 12px;
+            padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: relative;
-            width: fit-content;
-            height: 44px;
             width: 44px;
+            height: 44px;
         }
 
         .notification-bell .material-symbols-outlined {
@@ -344,7 +357,7 @@
             background: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             display: none;
-            z-index: 1000;
+            z-index: 10002; /* Above blur overlay */
             max-height: 400px;
             overflow-y: auto;
         }
@@ -418,11 +431,18 @@
         .notification-status {
             font-size: 0.7rem;
             font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 4px;
             color: #f59e0b;
         }
 
         .notification-status.rejected {
             color: #ef4444;
+        }
+
+        .notification-status .material-symbols-outlined {
+            font-size: 14px !important;
         }
 
         /* === TASKS SHEET - WITH SHADOW === */
@@ -466,16 +486,11 @@
         }
 
         .sheet-header-left h3 {
-            font-size: 1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             color: #000;
             font-family: 'Manrope', sans-serif;
             letter-spacing: 0.5px;
-            text-transform: lowercase;
-        }
-
-        .sheet-header-left h3::first-letter {
-            text-transform: uppercase;
         }
 
         .expand-icon {
@@ -494,6 +509,41 @@
             flex: 1;
             overflow-y: auto;
             padding: 12px 16px;
+        }
+
+        /* === SKELETON LOADING === */
+        .skeleton-card {
+            padding: 16px 0;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            width: 100%;
+        }
+
+        .skeleton-line.short {
+            width: 60%;
+        }
+
+        .skeleton-line.medium {
+            width: 80%;
+        }
+
+        .skeleton-line.long {
+            width: 100%;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         /* === TASK CARDS === */
@@ -528,7 +578,7 @@
             padding-left: 12px;
         }
 
-        /* Top row - Title and Price with Flag over amount */
+        /* Top row - Title and Price */
         .task-row-top {
             display: flex;
             justify-content: space-between;
@@ -545,11 +595,6 @@
             flex: 1;
         }
 
-        .task-price-container {
-            position: relative;
-            display: inline-block;
-        }
-
         .task-price {
             font-size: 1rem;
             font-weight: 600;
@@ -562,23 +607,6 @@
             font-weight: 400;
             font-size: 0.85rem;
             color: #666;
-        }
-
-        .task-flag {
-            position: absolute;
-            top: -15px;
-            right: -8px;
-            color: #999;
-            cursor: pointer;
-            font-size: 16px !important;
-            transition: color 0.2s;
-            background: white;
-            border-radius: 50%;
-            padding: 2px;
-        }
-
-        .task-flag:hover {
-            color: #000;
         }
 
         /* Skill match badge */
@@ -781,13 +809,7 @@
             font-size: 0.8rem;
             font-weight: 700;
             color: #000;
-            text-transform: lowercase;
-            letter-spacing: 0.5px;
             margin-bottom: 12px;
-        }
-
-        .in-progress-header::first-letter {
-            text-transform: uppercase;
         }
 
         .in-progress-card {
@@ -849,13 +871,7 @@
             font-size: 0.8rem;
             font-weight: 700;
             color: #000;
-            text-transform: lowercase;
-            letter-spacing: 0.5px;
             margin-bottom: 12px;
-        }
-
-        .matching-header::first-letter {
-            text-transform: uppercase;
         }
 
         .matching-card {
@@ -887,6 +903,14 @@
             color: #f59e0b;
             font-weight: 400;
             margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .matching-status .material-symbols-outlined {
+            font-size: 14px !important;
+            color: #f59e0b !important;
         }
 
         .confirm-btn {
@@ -975,6 +999,9 @@
 <body>
     <div id="map"></div>
 
+    <!-- Blur Overlay -->
+    <div class="blur-overlay" id="blurOverlay"></div>
+
     <!-- Navigation Menu - Left Side -->
     <div class="nav-menu">
         <div class="menu-icon" id="profileMenuBtn">
@@ -990,20 +1017,11 @@
         </div>
 
         <div class="route-info" id="routeInfo">
-            <div class="route-row">
-                <span class="material-symbols-outlined">directions_car</span>
-                <span class="route-label">drive</span>
-                <span id="routeDistance">0 km</span>
-                <span class="material-symbols-outlined">fiber_manual_record</span>
-                <span id="routeDuration">0 min</span>
-            </div>
-            <div class="route-row">
-                <span class="material-symbols-outlined">directions_walk</span>
-                <span class="route-label">walk</span>
-                <span id="walkDistance">0 km</span>
-                <span class="material-symbols-outlined">fiber_manual_record</span>
-                <span id="walkDuration">0 min</span>
-            </div>
+            <span class="material-symbols-outlined" id="routeIcon">directions_car</span>
+            <span id="routeDistance">0 km</span>
+            <span class="material-symbols-outlined">fiber_manual_record</span>
+            <span id="routeDuration">0 min</span>
+            <span class="material-symbols-outlined route-toggle-icon" id="routeToggle">sync_alt</span>
         </div>
 
         <!-- Earnings Card - Under Route Info -->
@@ -1037,8 +1055,21 @@
         </div>
 
         <div class="sheet-content" id="sheetContent">
-            <div class="loading-tasks">
-                <div>Finding tasks near you...</div>
+            <!-- Skeleton loading will be shown initially -->
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line long"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line long"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line long"></div>
             </div>
         </div>
     </div>
@@ -1080,6 +1111,7 @@
             let todayEarnings = 0;
             let notificationSound = document.getElementById('notificationSound');
             let soundPlayedOnLoad = false;
+            let isDriving = true; // true for driving, false for walking
 
             // ===== DOM ELEMENTS =====
             const tasksSheet = document.getElementById('tasksSheet');
@@ -1088,10 +1120,10 @@
             const sheetContent = document.getElementById('sheetContent');
             const toast = document.getElementById('toast');
             const routeInfo = document.getElementById('routeInfo');
+            const routeIcon = document.getElementById('routeIcon');
             const routeDistance = document.getElementById('routeDistance');
             const routeDuration = document.getElementById('routeDuration');
-            const walkDistance = document.getElementById('walkDistance');
-            const walkDuration = document.getElementById('walkDuration');
+            const routeToggle = document.getElementById('routeToggle');
             const onlineToggle = document.getElementById('onlineToggle');
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
@@ -1102,6 +1134,29 @@
             const clearNotificationsBtn = document.getElementById('clearNotificationsBtn');
             const todayEarningsSpan = document.getElementById('todayEarnings');
             const profileMenuBtn = document.getElementById('profileMenuBtn');
+            const blurOverlay = document.getElementById('blurOverlay');
+
+            // ===== ROUTE TOGGLE =====
+            let drivingData = null;
+            let walkingData = null;
+            let currentTaskLocation = null;
+
+            routeInfo.addEventListener('click', () => {
+                if (!drivingData || !walkingData) return;
+                
+                isDriving = !isDriving;
+                routeToggle.classList.toggle('rotated');
+                
+                if (isDriving) {
+                    routeIcon.textContent = 'directions_car';
+                    routeDistance.textContent = drivingData.distance;
+                    routeDuration.textContent = drivingData.duration;
+                } else {
+                    routeIcon.textContent = 'directions_walk';
+                    routeDistance.textContent = walkingData.distance;
+                    routeDuration.textContent = walkingData.duration;
+                }
+            });
 
             // ===== CLEAR ALL NOTIFICATIONS =====
             clearNotificationsBtn.addEventListener('click', (e) => {
@@ -1111,6 +1166,7 @@
                 renderNotifications();
                 localStorage.removeItem('taskmart_notifications');
                 showToast('All notifications cleared');
+                blurOverlay.classList.remove('active');
             });
 
             // ===== PLAY NOTIFICATION SOUND AND SHAKE =====
@@ -1127,14 +1183,25 @@
                 }, 500);
             }
 
-            // ===== CLOSE DROPDOWNS WHEN CLICKING OUTSIDE =====
-            document.addEventListener('click', () => {
-                notificationDropdown.classList.remove('active');
-            });
-
+            // ===== NOTIFICATION DROPDOWN WITH BLUR =====
             notificationBell.addEventListener('click', (e) => {
                 e.stopPropagation();
-                notificationDropdown.classList.toggle('active');
+                const isActive = notificationDropdown.classList.contains('active');
+                
+                if (!isActive) {
+                    blurOverlay.classList.add('active');
+                    notificationDropdown.classList.add('active');
+                } else {
+                    blurOverlay.classList.remove('active');
+                    notificationDropdown.classList.remove('active');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                    blurOverlay.classList.remove('active');
+                    notificationDropdown.classList.remove('active');
+                }
             });
 
             notificationDropdown.addEventListener('click', (e) => {
@@ -1251,10 +1318,10 @@
                     
                     if (n.status === 'rejected') {
                         statusClass = 'rejected';
-                        statusText = '<div class="notification-status rejected">❌ Poster rejected</div>';
+                        statusText = '<div class="notification-status rejected"><span class="material-symbols-outlined">close</span> Poster rejected</div>';
                     } else if (n.status === 'pending') {
                         statusClass = 'pending';
-                        statusText = '<div class="notification-status">⏳ Pending confirmation</div>';
+                        statusText = '<div class="notification-status"><span class="material-symbols-outlined">hourglass_empty</span> Pending confirmation</div>';
                     }
                     
                     return `
@@ -1282,6 +1349,7 @@
                             selectTask(taskId);
                         }
                         
+                        blurOverlay.classList.remove('active');
                         notificationDropdown.classList.remove('active');
                     });
                 });
@@ -1462,6 +1530,9 @@
             
             async function fetchTasks() {
                 try {
+                    // Show skeleton loading
+                    showSkeletonLoading();
+                    
                     const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`);
                     
                     if (response.ok) {
@@ -1513,7 +1584,29 @@
                     }
                 } catch (error) {
                     console.error('Error fetching tasks:', error);
+                    sheetContent.innerHTML = '<div class="no-tasks">Error loading tasks</div>';
                 }
+            }
+
+            // ===== SKELETON LOADING =====
+            function showSkeletonLoading() {
+                sheetContent.innerHTML = `
+                    <div class="skeleton-card">
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line long"></div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line long"></div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line long"></div>
+                    </div>
+                `;
             }
 
             // ===== CALCULATE ROUTE =====
@@ -1527,6 +1620,7 @@
                 const [taskLat, taskLng] = task.coordinates.split(',').map(Number);
 
                 selectedTaskId = taskId;
+                currentTaskLocation = { lat: taskLat, lng: taskLng };
 
                 if (endMarker) endMarker.remove();
 
@@ -1573,10 +1667,23 @@
                             ? Math.round(walkingDistance) + 'm' 
                             : (walkingDistance / 1000).toFixed(1) + 'km';
 
+                        // Store for toggle
+                        drivingData = {
+                            distance: drivingDistanceStr,
+                            duration: drivingDuration + 'min'
+                        };
+                        
+                        walkingData = {
+                            distance: walkingDistanceStr,
+                            duration: walkingDuration + 'min'
+                        };
+
+                        // Set initial to driving
+                        isDriving = true;
+                        routeIcon.textContent = 'directions_car';
                         routeDistance.textContent = drivingDistanceStr;
                         routeDuration.textContent = drivingDuration + 'min';
-                        walkDistance.textContent = walkingDistanceStr;
-                        walkDuration.textContent = walkingDuration + 'min';
+                        routeToggle.classList.remove('rotated');
                         
                         routeInfo.classList.add('active');
 
@@ -1614,7 +1721,10 @@
                             <div class="matching-card">
                                 <div class="matching-title">${task.taskDescription}</div>
                                 <div class="matching-poster">Posted by: ${task.userName || 'Someone'}</div>
-                                <div class="matching-status">⏳ Pending confirmation</div>
+                                <div class="matching-status">
+                                    <span class="material-symbols-outlined">hourglass_empty</span>
+                                    Pending confirmation
+                                </div>
                                 <button class="confirm-btn" onclick="confirmMatch('${task.id}')">
                                     Confirm & Start
                                 </button>
@@ -1698,11 +1808,8 @@
                             <div class="task-card ${isMatch ? 'matched' : ''}" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
                                 <div class="task-row-top">
                                     <div class="task-title">${taskTitle}</div>
-                                    <div class="task-price-container">
-                                        <div class="task-price ${isOpenOffer ? 'open' : ''}">
-                                            ${isOpenOffer ? 'Open' : `R${budget}`}
-                                        </div>
-                                        <span class="material-symbols-outlined task-flag" onclick="event.stopPropagation(); flagTask('${taskId}')">flag</span>
+                                    <div class="task-price ${isOpenOffer ? 'open' : ''}">
+                                        ${isOpenOffer ? 'Open' : `R${budget}`}
                                     </div>
                                 </div>
                                 
@@ -1742,12 +1849,6 @@
                 // Setup swipe detection for new cards
                 setupSwipeDetection();
             }
-
-            // ===== FLAG TASK =====
-            window.flagTask = function(taskId) {
-                showToast('Task flagged');
-                // Implement flagging logic here
-            };
 
             // ===== EXPRESS INTEREST =====
             window.expressInterest = async function(taskId, budget) {
