@@ -54,7 +54,7 @@
             line-height: 1 !important;
         }
 
-        /* === FULLSCREEN MAP - NEW OUTDOORS STYLE === */
+        /* === FULLSCREEN MAP - DARK STYLE (BACK TO ORIGINAL) === */
         #map {
             position: absolute;
             top: 0;
@@ -140,6 +140,31 @@
             100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
+        /* === LEFT SIDE NAVIGATION MENU === */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+
+        .menu-icon {
+            width: 44px;
+            height: 44px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .menu-icon .material-symbols-outlined {
+            color: #000;
+            font-size: 24px !important;
+        }
+
         /* === RIGHT SIDE HEADER SECTION - STACKED VERTICALLY === */
         .right-header {
             position: fixed;
@@ -185,27 +210,19 @@
             letter-spacing: 0.3px;
         }
 
-        /* === EARNINGS CARD - NEW === */
+        /* === EARNINGS CARD - UNDER NAV MENU (NO ICON) === */
         .earnings-card {
+            position: fixed;
+            top: 80px;
+            left: 20px;
             background: white;
             padding: 8px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
+            z-index: 100;
             display: flex;
             align-items: center;
             gap: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            pointer-events: auto;
-            width: fit-content;
-        }
-
-        .earnings-icon {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .earnings-icon .material-symbols-outlined {
-            color: #000;
-            font-size: 18px !important;
         }
 
         .earnings-label {
@@ -256,7 +273,7 @@
         /* === NOTIFICATION SECTION - BELL ONLY === */
         .notification-section {
             position: fixed;
-            top: 184px; /* Adjusted to make room for earnings card and route info */
+            top: 140px; /* Adjusted to make room for earnings card */
             right: 20px;
             z-index: 100;
             pointer-events: auto;
@@ -448,7 +465,7 @@
             padding-left: 12px;
         }
 
-        /* Top row - Title and Price */
+        /* Top row - Title, Price and Flag */
         .task-row-top {
             display: flex;
             justify-content: space-between;
@@ -465,13 +482,18 @@
             flex: 1;
         }
 
+        .task-price-flag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .task-price {
             font-size: 1rem;
             font-weight: 600;
             color: #000;
             font-family: 'Manrope', sans-serif;
             white-space: nowrap;
-            margin-left: 12px;
         }
 
         .task-price.open {
@@ -480,7 +502,18 @@
             color: #666;
         }
 
-        /* Skill match badge */
+        .task-flag {
+            color: #999;
+            cursor: pointer;
+            font-size: 18px !important;
+            transition: color 0.2s;
+        }
+
+        .task-flag:hover {
+            color: #000;
+        }
+
+        /* Skill match badge - positioned under the flag area */
         .skill-match {
             font-size: 0.7rem;
             color: #000;
@@ -489,6 +522,7 @@
             padding: 2px 8px;
             font-weight: 300;
             width: fit-content;
+            margin-top: 4px;
         }
 
         /* Meta row - Location and Time */
@@ -554,21 +588,6 @@
             gap: 8px;
             margin-top: 8px;
             position: relative;
-        }
-
-        .task-flag {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            color: #999;
-            cursor: pointer;
-            font-size: 18px !important;
-            transition: color 0.2s;
-            z-index: 5;
-        }
-
-        .task-flag:hover {
-            color: #000;
         }
 
         .action-btn {
@@ -673,7 +692,6 @@
         .expanded-details {
             background: #fafafa;
             padding: 16px;
-            position: relative;
         }
 
         .expanded-details p {
@@ -683,7 +701,6 @@
             line-height: 1.5;
             font-size: 0.85rem;
             font-family: 'Manrope', sans-serif;
-            padding-right: 30px; /* Make room for flag */
         }
 
         /* === IN-PROGRESS TASK CARD === */
@@ -891,20 +908,24 @@
 <body>
     <div id="map"></div>
 
+    <!-- Navigation Menu - Left Side -->
+    <div class="nav-menu">
+        <div class="menu-icon" id="profileMenuBtn">
+            <span class="material-symbols-outlined">menu</span>
+        </div>
+    </div>
+
+    <!-- Earnings Card - Under Nav Menu -->
+    <div class="earnings-card">
+        <span class="earnings-label">today</span>
+        <span class="earnings-amount" id="todayEarnings">R0</span>
+    </div>
+
     <!-- Right Side Header Section - Stacked Vertically -->
     <div class="right-header">
         <div class="online-toggle" id="onlineToggle">
             <span class="status-dot" id="statusDot"></span>
             <span class="status-text" id="statusText">Available</span>
-        </div>
-
-        <!-- Earnings Card -->
-        <div class="earnings-card">
-            <div class="earnings-icon">
-                <span class="material-symbols-outlined">payments</span>
-                <span class="earnings-label">today</span>
-            </div>
-            <span class="earnings-amount" id="todayEarnings">R0</span>
         </div>
 
         <div class="route-info" id="routeInfo">
@@ -978,6 +999,7 @@
             let currentTaskId = null;
             let todayEarnings = 0;
             let notificationSound = document.getElementById('notificationSound');
+            let soundPlayedOnLoad = false;
 
             // ===== DOM ELEMENTS =====
             const tasksSheet = document.getElementById('tasksSheet');
@@ -996,6 +1018,7 @@
             const notificationBadge = document.getElementById('notificationBadge');
             const notificationList = document.getElementById('notificationList');
             const todayEarningsSpan = document.getElementById('todayEarnings');
+            const profileMenuBtn = document.getElementById('profileMenuBtn');
 
             // ===== PLAY NOTIFICATION SOUND =====
             function playNotificationSound() {
@@ -1151,10 +1174,13 @@
                     updateNotificationBadge();
                     renderNotifications();
                     
-                    // Play sound if there are unread notifications on page load
+                    // Play sound on page load if there are unread notifications
                     const unreadCount = notifications.filter(n => !n.read).length;
-                    if (unreadCount > 0) {
-                        playNotificationSound();
+                    if (unreadCount > 0 && !soundPlayedOnLoad) {
+                        setTimeout(() => {
+                            playNotificationSound();
+                            soundPlayedOnLoad = true;
+                        }, 500); // Small delay to ensure page is loaded
                     }
                 }
             }
@@ -1196,6 +1222,13 @@
                 })
                 .catch(error => console.error('Failed to load profile menu:', error));
 
+            // ===== PROFILE MENU BUTTON =====
+            profileMenuBtn.addEventListener('click', () => {
+                // Trigger the profile menu from the loaded content
+                const menuBtn = document.getElementById('profileMenuBtn');
+                if (menuBtn) menuBtn.click();
+            });
+
             // ===== CREATE CUSTOM MARKERS =====
             function createHelperMarker() {
                 const container = document.createElement('div');
@@ -1232,7 +1265,7 @@
 
                 map = new mapboxgl.Map({
                     container: 'map',
-                    style: 'mapbox://styles/mapbox/outdoors-v12', // Changed to outdoors style
+                    style: 'mapbox://styles/mapbox/dark-v11', // Back to dark style
                     center: [28.034088, -26.195246],
                     zoom: 13
                 });
@@ -1517,21 +1550,23 @@
                                         <span class="material-symbols-outlined">close</span>
                                         Pass
                                     </button>
-                                    <span class="material-symbols-outlined task-flag" onclick="event.stopPropagation(); flagTask('${taskId}')">flag</span>
                                 </div>
                             `;
                         }
 
                         html += `
                             <div class="task-card ${isMatch ? 'matched' : ''}" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
-                                ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
-                                
                                 <div class="task-row-top">
                                     <div class="task-title">${taskTitle}</div>
-                                    <div class="task-price ${isOpenOffer ? 'open' : ''}">
-                                        ${isOpenOffer ? 'Open' : `R${budget}`}
+                                    <div class="task-price-flag">
+                                        <div class="task-price ${isOpenOffer ? 'open' : ''}">
+                                            ${isOpenOffer ? 'Open' : `R${budget}`}
+                                        </div>
+                                        <span class="material-symbols-outlined task-flag" onclick="event.stopPropagation(); flagTask('${taskId}')">flag</span>
                                     </div>
                                 </div>
+                                
+                                ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
                                 
                                 <div class="task-meta">
                                     <span>
@@ -1669,6 +1704,7 @@
                 if (task.budgetAmount) {
                     todayEarnings += task.budgetAmount;
                     todayEarningsSpan.textContent = `R${todayEarnings}`;
+                    localStorage.setItem('taskmart_today_earnings', todayEarnings);
                 }
                 
                 addNotification(
