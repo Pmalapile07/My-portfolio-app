@@ -68,11 +68,11 @@
         .helper-marker {
             width: 24px;
             height: 24px;
-            background: black;
+            background: #003fe1; /* Changed to blue */
             border: 2px solid white;
             position: relative;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+            box-shadow: 0 0 20px rgba(0,63,225,0.3);
             z-index: 10;
         }
 
@@ -139,24 +139,6 @@
             100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
-        /* === BLUR OVERLAY FOR NOTIFICATIONS === */
-        .blur-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: none;
-            pointer-events: none;
-        }
-
-        .blur-overlay.active {
-            display: block;
-        }
-
         /* === LEFT SIDE NAVIGATION MENU === */
         .nav-menu {
             position: fixed;
@@ -182,7 +164,7 @@
             font-size: 24px !important;
         }
 
-        /* === RIGHT SIDE STACK - DYNAMIC POSITIONING === */
+        /* === RIGHT SIDE STACK - CLEAN === */
         .right-stack {
             position: fixed;
             top: 20px;
@@ -195,15 +177,9 @@
             pointer-events: none;
         }
 
-        /* Base styles for all cards - white background */
-        .availability-card, .earnings-card, .distance-card, .notification-card {
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            pointer-events: auto;
-        }
-
         /* Availability card */
         .availability-card {
+            background: white;
             height: 44px;
             padding: 0 16px;
             display: flex;
@@ -212,6 +188,8 @@
             cursor: pointer;
             border: none;
             width: fit-content;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
         }
 
         .status-dot {
@@ -229,17 +207,19 @@
             color: #000;
             font-size: 0.85rem;
             font-weight: 400;
-            font-family: 'Manrope', sans-serif;
         }
 
         /* Earnings card */
         .earnings-card {
+            background: white;
             height: 44px;
             padding: 0 16px;
             display: flex;
             align-items: center;
             gap: 12px;
             width: fit-content;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
         }
 
         .earnings-label {
@@ -254,70 +234,26 @@
             color: #000;
         }
 
-        /* Distance card */
-        .distance-card {
-            height: 44px;
-            padding: 0 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            border: none;
-            width: fit-content;
-            opacity: 0;
-            transform: translateY(-20px);
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        .distance-card.active {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .distance-card .material-symbols-outlined {
-            color: #000 !important;
-            font-size: 18px !important;
-        }
-
-        .distance-card span {
-            color: #000;
-            font-size: 0.8rem;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .route-toggle-icon {
-            transition: transform 0.3s;
-        }
-
-        .route-toggle-icon.rotated {
-            transform: rotate(180deg);
-        }
-
-        /* Notification card */
-        .notification-card {
+        /* Notification bell - now just a button to open full screen */
+        .notification-bell {
+            background: white;
             width: 44px;
             height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
             position: relative;
-            transition: transform 0.3s ease;
         }
 
-        .notification-card.distance-hidden {
-            transform: translateY(-56px);
-        }
-
-        .notification-card .material-symbols-outlined {
+        .notification-bell .material-symbols-outlined {
             color: #000;
             font-size: 22px !important;
         }
 
-        .notification-card.has-notifications {
+        .notification-bell.has-notifications {
             animation: shake 0.5s ease-in-out;
         }
 
@@ -342,100 +278,216 @@
             font-weight: 400;
         }
 
-        .notification-dropdown {
-            position: absolute;
-            top: 50px;
-            right: 0;
-            width: 320px;
+        /* === FLOATING DISTANCE CARD - ON TOP OF TASKS SHEET === */
+        .floating-distance-card {
+            position: fixed;
+            bottom: calc(35% + 20px); /* Sits right above the tasks sheet */
+            left: 50%;
+            transform: translateX(-50%);
             background: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            display: none;
-            z-index: 10002;
-            max-height: 400px;
-            overflow-y: auto;
+            height: 44px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 50;
+            pointer-events: auto;
+            cursor: pointer;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, bottom 0.3s ease;
+            white-space: nowrap;
         }
 
-        .notification-dropdown.active {
-            display: block;
+        .floating-distance-card.active {
+            opacity: 1;
         }
 
-        .notification-header {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+        .tasks-sheet.expanded + .floating-distance-card {
+            bottom: calc(70% + 20px);
+        }
+
+        .floating-distance-card .material-symbols-outlined {
+            color: #000 !important;
+            font-size: 18px !important;
+        }
+
+        .floating-distance-card span {
+            color: #000;
+            font-size: 0.85rem;
+            font-weight: 400;
+        }
+
+        .route-toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .route-toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* === FULL SCREEN NOTIFICATIONS PAGE === */
+        .notifications-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 20000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .notifications-fullscreen.active {
+            transform: translateY(0);
+        }
+
+        .notifications-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-weight: 500;
-            font-size: 0.9rem;
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: white;
+            flex-shrink: 0;
         }
 
-        .clear-notifications {
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 0.75rem;
-            cursor: pointer;
-            padding: 4px 8px;
-            transition: color 0.2s;
-        }
-
-        .clear-notifications:hover {
+        .notifications-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
             color: #000;
         }
 
-        .notification-item {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+        .close-notifications {
+            width: 44px;
+            height: 44px;
+            background: none;
+            border: none;
             cursor: pointer;
-            transition: background 0.2s;
-            position: relative;
-        }
-
-        .notification-item:hover {
-            background: #f5f5f5;
-        }
-
-        .notification-item.unread {
-            background: #f0f0f0;
-        }
-
-        .notification-item.rejected {
-            background: #fff0f0;
-            border-left: 3px solid #ef4444;
-        }
-
-        .notification-item.pending {
-            background: #fff9e6;
-            border-left: 3px solid #f59e0b;
-        }
-
-        .notification-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .notification-meta {
-            font-size: 0.75rem;
-            color: #666;
-            margin-bottom: 4px;
-        }
-
-        .notification-status {
-            font-size: 0.7rem;
-            font-weight: 300;
             display: flex;
             align-items: center;
-            gap: 4px;
-            color: #f59e0b;
+            justify-content: center;
         }
 
-        .notification-status.rejected {
-            color: #ef4444;
+        .close-notifications .material-symbols-outlined {
+            color: #000;
+            font-size: 24px !important;
         }
 
-        .notification-status .material-symbols-outlined {
-            font-size: 14px !important;
+        .notifications-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .notification-group {
+            margin-bottom: 30px;
+        }
+
+        .notification-group h3 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .full-notification-item {
+            padding: 16px;
+            background: #fafafa;
+            margin-bottom: 12px;
+            border-left: 3px solid transparent;
+        }
+
+        .full-notification-item.pending {
+            border-left-color: #f59e0b;
+            background: #fff9e6;
+        }
+
+        .full-notification-item.accepted {
+            border-left-color: #10b981;
+            background: #f0fff4;
+        }
+
+        .full-notification-item.rejected {
+            border-left-color: #ef4444;
+            background: #fff0f0;
+        }
+
+        .full-notification-item.earnings {
+            border-left-color: #003fe1;
+            background: #f0f5ff;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #999;
+            margin-bottom: 6px;
+        }
+
+        .notification-main-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        .notification-desc {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .notification-amount {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #003fe1;
+            margin-top: 6px;
+        }
+
+        .notification-status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            font-weight: 400;
+            margin-top: 8px;
+        }
+
+        .notification-status-badge.pending {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .notification-status-badge.accepted {
+            background: #10b981;
+            color: white;
+        }
+
+        .notification-status-badge.rejected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .notification-status-badge.earned {
+            background: #003fe1;
+            color: white;
+        }
+
+        .clear-all-btn {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-left: 16px;
         }
 
         /* === TASKS SHEET === */
@@ -452,6 +504,10 @@
             transition: max-height 0.3s ease;
             border-top: 1px solid rgba(0,0,0,0.1);
             box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+        }
+
+        .tasks-sheet.expanded {
+            max-height: 70%;
         }
 
         .tasks-sheet.collapsed {
@@ -479,7 +535,6 @@
             font-size: 1.2rem;
             font-weight: 700;
             color: #000;
-            font-family: 'Manrope', sans-serif;
         }
 
         .expand-icon {
@@ -549,7 +604,7 @@
         }
 
         .task-card.matched {
-            border-left: 3px solid #000;
+            border-left: 3px solid #003fe1;
             padding-left: 12px;
         }
 
@@ -557,7 +612,6 @@
             font-size: 0.9rem;
             font-weight: 600;
             color: #000;
-            font-family: 'Manrope', sans-serif;
             margin-bottom: 2px;
         }
 
@@ -571,17 +625,16 @@
             font-size: 1.1rem;
             font-weight: 600;
             color: #000;
-            font-family: 'Manrope', sans-serif;
             line-height: 1.3;
         }
 
         .skill-match {
             font-size: 0.7rem;
-            color: #000;
-            background: #f0f0f0;
+            color: white;
+            background: #003fe1;
             display: inline-block;
-            padding: 2px 8px;
-            font-weight: 300;
+            padding: 4px 10px;
+            font-weight: 400;
             width: fit-content;
             margin-top: 4px;
         }
@@ -593,7 +646,6 @@
             font-size: 0.8rem;
             color: #666;
             font-weight: 300;
-            font-family: 'Manrope', sans-serif;
             margin-top: 4px;
         }
 
@@ -659,7 +711,6 @@
             align-items: center;
             justify-content: center;
             gap: 4px;
-            font-family: 'Manrope', sans-serif;
             color: #000;
         }
 
@@ -699,7 +750,6 @@
             padding: 10px;
             background: #f5f5f5;
             border: none;
-            font-family: 'Manrope', sans-serif;
             font-size: 0.8rem;
             font-weight: 300;
             outline: none;
@@ -721,7 +771,6 @@
             border: none;
             cursor: pointer;
             font-weight: 400;
-            font-family: 'Manrope', sans-serif;
             font-size: 0.8rem;
         }
 
@@ -880,7 +929,6 @@
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 300;
-            font-family: 'Manrope', sans-serif;
         }
 
         .confirm-btn:hover {
@@ -905,7 +953,6 @@
             text-align: center;
             border: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            font-family: 'Manrope', sans-serif;
         }
 
         .toast.show {
@@ -941,6 +988,16 @@
                 max-height: 70%;
                 border: 1px solid rgba(0,0,0,0.1);
             }
+            
+            .floating-distance-card {
+                left: 210px; /* Positioned next to the tasks sheet */
+                transform: none;
+                bottom: 20px;
+            }
+            
+            .tasks-sheet.expanded ~ .floating-distance-card {
+                bottom: 20px;
+            }
         }
 
         #profile-menu-container {
@@ -954,15 +1011,15 @@
 <body>
     <div id="map"></div>
 
-    <div class="blur-overlay" id="blurOverlay"></div>
-
+    <!-- Navigation Menu - Left Side -->
     <div class="nav-menu">
         <div class="menu-icon" id="profileMenuBtn">
             <span class="material-symbols-outlined">menu</span>
         </div>
     </div>
 
-    <div class="right-stack" id="rightStack">
+    <!-- Right Side Stack -->
+    <div class="right-stack">
         <div class="availability-card" id="onlineToggle">
             <span class="status-dot" id="statusDot"></span>
             <span class="status-text" id="statusText">Available</span>
@@ -973,24 +1030,31 @@
             <span class="earnings-amount" id="todayEarnings">R0</span>
         </div>
 
-        <div class="distance-card" id="distanceCard">
-            <span class="material-symbols-outlined" id="routeIcon">directions_car</span>
-            <span id="routeDistance">0 km</span>
-            <span class="material-symbols-outlined">fiber_manual_record</span>
-            <span id="routeDuration">0 min</span>
-            <span class="material-symbols-outlined route-toggle-icon" id="routeToggle">sync_alt</span>
-        </div>
-
-        <div class="notification-card" id="notificationCard">
+        <div class="notification-bell" id="notificationBell">
             <span class="material-symbols-outlined">notifications</span>
             <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-            <div class="notification-dropdown" id="notificationDropdown">
-                <div class="notification-header">
-                    Notifications
-                    <button class="clear-notifications" id="clearNotificationsBtn">Clear all</button>
-                </div>
-                <div id="notificationList"></div>
-            </div>
+        </div>
+    </div>
+
+    <!-- Floating Distance Card - Appears above tasks sheet -->
+    <div class="floating-distance-card" id="floatingDistanceCard">
+        <span class="material-symbols-outlined" id="routeIcon">directions_car</span>
+        <span id="routeDistance">0 km</span>
+        <span class="material-symbols-outlined">fiber_manual_record</span>
+        <span id="routeDuration">0 min</span>
+        <span class="material-symbols-outlined route-toggle-icon" id="routeToggle">sync_alt</span>
+    </div>
+
+    <!-- Full Screen Notifications Page -->
+    <div class="notifications-fullscreen" id="notificationsFullscreen">
+        <div class="notifications-header">
+            <h2>Notifications</h2>
+            <button class="close-notifications" id="closeNotificationsBtn">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="notifications-content" id="notificationsFullContent">
+            <!-- Notifications will be populated here -->
         </div>
     </div>
 
@@ -1050,8 +1114,6 @@
             let authToken = null;
             let userSkills = [];
             let notifications = [];
-            let touchStartX = 0;
-            let currentTaskId = null;
             let todayEarnings = 0;
             let notificationSound = document.getElementById('notificationSound');
             let soundPlayedOnLoad = false;
@@ -1059,13 +1121,13 @@
             let drivingData = null;
             let walkingData = null;
 
+            // DOM Elements
             const tasksSheet = document.getElementById('tasksSheet');
             const sheetHeader = document.getElementById('sheetHeader');
             const expandIcon = document.getElementById('expandIcon');
             const sheetContent = document.getElementById('sheetContent');
             const toast = document.getElementById('toast');
-            const distanceCard = document.getElementById('distanceCard');
-            const notificationCard = document.getElementById('notificationCard');
+            const floatingDistanceCard = document.getElementById('floatingDistanceCard');
             const routeIcon = document.getElementById('routeIcon');
             const routeDistance = document.getElementById('routeDistance');
             const routeDuration = document.getElementById('routeDuration');
@@ -1073,23 +1135,127 @@
             const onlineToggle = document.getElementById('onlineToggle');
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
-            const notificationDropdown = document.getElementById('notificationDropdown');
+            const notificationBell = document.getElementById('notificationBell');
             const notificationBadge = document.getElementById('notificationBadge');
-            const notificationList = document.getElementById('notificationList');
-            const clearNotificationsBtn = document.getElementById('clearNotificationsBtn');
+            const notificationsFullscreen = document.getElementById('notificationsFullscreen');
+            const notificationsFullContent = document.getElementById('notificationsFullContent');
+            const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
             const todayEarningsSpan = document.getElementById('todayEarnings');
             const profileMenuBtn = document.getElementById('profileMenuBtn');
-            const blurOverlay = document.getElementById('blurOverlay');
 
-            function updateNotificationPosition() {
-                if (distanceCard.classList.contains('active')) {
-                    notificationCard.classList.remove('distance-hidden');
-                } else {
-                    notificationCard.classList.add('distance-hidden');
+            // ===== FULL SCREEN NOTIFICATIONS =====
+            notificationBell.addEventListener('click', () => {
+                renderFullNotifications();
+                notificationsFullscreen.classList.add('active');
+                
+                // Mark all as read
+                notifications.forEach(n => n.read = true);
+                updateNotificationBadge();
+                localStorage.setItem('taskmart_notifications', JSON.stringify(notifications));
+            });
+
+            closeNotificationsBtn.addEventListener('click', () => {
+                notificationsFullscreen.classList.remove('active');
+            });
+
+            function renderFullNotifications() {
+                let html = '';
+
+                // Earnings notifications
+                const earningsNotifs = notifications.filter(n => n.type === 'earnings' || n.title.includes('earned'));
+                if (earningsNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Earnings</h3>';
+                    earningsNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item earnings">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                ${n.amount ? `<div class="notification-amount">+R${n.amount}</div>` : ''}
+                                <div class="notification-status-badge earned">Earned</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
                 }
+
+                // Accepted notifications
+                const acceptedNotifs = notifications.filter(n => n.status === 'accepted' || n.title.includes('accepted'));
+                if (acceptedNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Accepted</h3>';
+                    acceptedNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item accepted">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge accepted">Accepted</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                // Pending notifications
+                const pendingNotifs = notifications.filter(n => n.status === 'pending');
+                if (pendingNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Pending</h3>';
+                    pendingNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item pending">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge pending">Pending</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                // Rejected notifications
+                const rejectedNotifs = notifications.filter(n => n.status === 'rejected');
+                if (rejectedNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Rejected</h3>';
+                    rejectedNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item rejected">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge rejected">Rejected</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                if (notifications.length === 0) {
+                    html = '<div style="text-align: center; padding: 60px 20px; color: #999;">No notifications yet</div>';
+                }
+
+                // Add clear all button
+                if (notifications.length > 0) {
+                    html += `
+                        <div style="padding: 20px; text-align: center;">
+                            <button class="clear-all-btn" onclick="clearAllNotifications()">Clear All</button>
+                        </div>
+                    `;
+                }
+
+                notificationsFullContent.innerHTML = html;
             }
 
-            distanceCard.addEventListener('click', () => {
+            window.clearAllNotifications = function() {
+                notifications = [];
+                localStorage.removeItem('taskmart_notifications');
+                updateNotificationBadge();
+                renderFullNotifications();
+                showToast('All notifications cleared');
+            };
+
+            // ===== ROUTE TOGGLE =====
+            floatingDistanceCard.addEventListener('click', () => {
                 if (!drivingData || !walkingData) return;
                 
                 isDriving = !isDriving;
@@ -1106,116 +1272,26 @@
                 }
             });
 
-            clearNotificationsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notifications = [];
-                updateNotificationBadge();
-                renderNotifications();
-                localStorage.removeItem('taskmart_notifications');
-                showToast('All notifications cleared');
-                blurOverlay.classList.remove('active');
-            });
-
+            // ===== NOTIFICATION SYSTEM =====
             function playNotificationSound() {
                 if (notificationSound) {
                     notificationSound.currentTime = 0;
                     notificationSound.play().catch(e => console.log('Sound play failed:', e));
                 }
                 
-                notificationCard.classList.add('has-notifications');
+                notificationBell.classList.add('has-notifications');
                 setTimeout(() => {
-                    notificationCard.classList.remove('has-notifications');
+                    notificationBell.classList.remove('has-notifications');
                 }, 500);
             }
 
-            notificationCard.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isActive = notificationDropdown.classList.contains('active');
-                
-                if (!isActive) {
-                    blurOverlay.classList.add('active');
-                    notificationDropdown.classList.add('active');
-                } else {
-                    blurOverlay.classList.remove('active');
-                    notificationDropdown.classList.remove('active');
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!notificationCard.contains(e.target) && !notificationDropdown.contains(e.target)) {
-                    blurOverlay.classList.remove('active');
-                    notificationDropdown.classList.remove('active');
-                }
-            });
-
-            notificationDropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-
-            function setupSwipeDetection() {
-                const taskCards = document.querySelectorAll('.task-card');
-                taskCards.forEach(card => {
-                    card.addEventListener('touchstart', (e) => {
-                        touchStartX = e.touches[0].clientX;
-                        currentTaskId = card.dataset.taskId;
-                        card.classList.add('swiping');
-                    }, { passive: true });
-
-                    card.addEventListener('touchmove', (e) => {
-                        if (!currentTaskId) return;
-                        const touchX = e.touches[0].clientX;
-                        const diffX = touchX - touchStartX;
-                        
-                        if (diffX < -30) {
-                            card.style.transform = `translateX(${diffX}px)`;
-                            card.style.opacity = 1 - (Math.abs(diffX) / 200);
-                        }
-                    }, { passive: true });
-
-                    card.addEventListener('touchend', (e) => {
-                        if (!currentTaskId) return;
-                        
-                        const diffX = e.changedTouches[0].clientX - touchStartX;
-                        
-                        if (diffX < -80) {
-                            card.style.transition = 'transform 0.2s, opacity 0.2s';
-                            card.style.transform = 'translateX(-200px)';
-                            card.style.opacity = '0';
-                            
-                            setTimeout(() => {
-                                const taskIndex = availableTasks.findIndex(t => t.id === currentTaskId);
-                                if (taskIndex !== -1) {
-                                    availableTasks.splice(taskIndex, 1);
-                                    renderTasks();
-                                    showToast('Task dismissed (will return on refresh)');
-                                }
-                                card.classList.remove('swiping');
-                                card.style.transition = '';
-                                card.style.transform = '';
-                                card.style.opacity = '';
-                            }, 200);
-                        } else {
-                            card.style.transition = 'transform 0.2s';
-                            card.style.transform = '';
-                            card.style.opacity = '';
-                            setTimeout(() => {
-                                card.style.transition = '';
-                                card.classList.remove('swiping');
-                            }, 200);
-                        }
-                        
-                        currentTaskId = null;
-                        touchStartX = 0;
-                    }, { passive: true });
-                });
-            }
-
-            function addNotification(title, message, taskId = null, status = null) {
+            function addNotification(title, message, type = 'info', amount = null, status = null) {
                 const notification = {
                     id: Date.now() + Math.random(),
                     title,
                     message,
-                    taskId,
+                    type,
+                    amount,
                     status,
                     read: false,
                     timestamp: new Date().toLocaleTimeString()
@@ -1223,7 +1299,6 @@
                 
                 notifications.unshift(notification);
                 updateNotificationBadge();
-                renderNotifications();
                 
                 showToast(message);
                 playNotificationSound();
@@ -1237,62 +1312,13 @@
                     notificationBadge.style.display = 'flex';
                     notificationBadge.textContent = unreadCount;
                     
-                    notificationCard.classList.add('has-notifications');
+                    notificationBell.classList.add('has-notifications');
                     setTimeout(() => {
-                        notificationCard.classList.remove('has-notifications');
+                        notificationBell.classList.remove('has-notifications');
                     }, 500);
                 } else {
                     notificationBadge.style.display = 'none';
                 }
-            }
-
-            function renderNotifications() {
-                if (notifications.length === 0) {
-                    notificationList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">No notifications</div>';
-                    return;
-                }
-                
-                notificationList.innerHTML = notifications.map(n => {
-                    let statusClass = '';
-                    let statusText = '';
-                    
-                    if (n.status === 'rejected') {
-                        statusClass = 'rejected';
-                        statusText = '<div class="notification-status rejected"><span class="material-symbols-outlined">close</span> Poster rejected</div>';
-                    } else if (n.status === 'pending') {
-                        statusClass = 'pending';
-                        statusText = '<div class="notification-status"><span class="material-symbols-outlined">hourglass_empty</span> Pending confirmation</div>';
-                    }
-                    
-                    return `
-                        <div class="notification-item ${n.read ? '' : 'unread'} ${statusClass}" data-id="${n.id}" data-task="${n.taskId || ''}">
-                            <div class="notification-title">${n.title}</div>
-                            <div class="notification-meta">${n.message} • ${n.timestamp}</div>
-                            ${statusText}
-                        </div>
-                    `;
-                }).join('');
-                
-                document.querySelectorAll('.notification-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const id = item.dataset.id;
-                        const taskId = item.dataset.task;
-                        
-                        const notification = notifications.find(n => n.id == id);
-                        if (notification) {
-                            notification.read = true;
-                            updateNotificationBadge();
-                            renderNotifications();
-                        }
-                        
-                        if (taskId) {
-                            selectTask(taskId);
-                        }
-                        
-                        blurOverlay.classList.remove('active');
-                        notificationDropdown.classList.remove('active');
-                    });
-                });
             }
 
             function loadNotifications() {
@@ -1300,7 +1326,6 @@
                 if (saved) {
                     notifications = JSON.parse(saved);
                     updateNotificationBadge();
-                    renderNotifications();
                     
                     const unreadCount = notifications.filter(n => !n.read).length;
                     if (unreadCount > 0 && !soundPlayedOnLoad) {
@@ -1312,6 +1337,7 @@
                 }
             }
 
+            // ===== TOAST =====
             function showToast(message) {
                 toast.textContent = message;
                 toast.className = 'toast show';
@@ -1320,6 +1346,7 @@
                 }, 3000);
             }
 
+            // ===== GET USER =====
             function getCurrentUser() {
                 try {
                     const user = localStorage.getItem('taskmart_user');
@@ -1333,6 +1360,7 @@
                 return localStorage.getItem('taskmart_token');
             }
 
+            // ===== LOAD PROFILE MENU =====
             fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
                 .then(response => response.text())
                 .then(html => {
@@ -1351,6 +1379,7 @@
                 if (menuBtn) menuBtn.click();
             });
 
+            // ===== CREATE CUSTOM MARKERS =====
             function createHelperMarker() {
                 const container = document.createElement('div');
                 container.style.position = 'relative';
@@ -1375,6 +1404,7 @@
                 return el;
             }
 
+            // ===== MAP INIT =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) {
                     console.error('No Mapbox token');
@@ -1421,6 +1451,7 @@
                 });
             }
 
+            // ===== GET LOCATION =====
             function getUserLocation() {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
@@ -1449,6 +1480,7 @@
                 }
             }
 
+            // ===== CHECK IF TASK MATCHES USER SKILLS =====
             function taskMatchesSkills(task) {
                 if (!userSkills || userSkills.length === 0) return false;
                 
@@ -1456,6 +1488,7 @@
                 return userSkills.some(skill => taskLower.includes(skill.toLowerCase()));
             }
 
+            // ===== FETCH TASKS =====
             let lastTaskCount = 0;
             
             async function fetchTasks() {
@@ -1492,7 +1525,7 @@
                                     addNotification(
                                         'New Task Match!',
                                         `${task.taskDescription} - This matches your skills!`,
-                                        task.id
+                                        'match'
                                     );
                                 }
                             });
@@ -1537,6 +1570,7 @@
                 `;
             }
 
+            // ===== CALCULATE ROUTE =====
             async function calculateRoute(taskId) {
                 const task = availableTasks.find(t => t.id === taskId);
                 if (!task || !task.coordinates || !currentLat || !currentLng) {
@@ -1606,8 +1640,7 @@
                         routeDuration.textContent = drivingDuration + 'min';
                         routeToggle.classList.remove('rotated');
                         
-                        distanceCard.classList.add('active');
-                        updateNotificationPosition();
+                        floatingDistanceCard.classList.add('active');
 
                         map.getSource('route').setData({
                             type: 'Feature',
@@ -1628,6 +1661,7 @@
                 }
             }
 
+            // ===== RENDER TASKS =====
             function renderTasks() {
                 let html = '';
 
@@ -1760,7 +1794,6 @@
                 }
 
                 sheetContent.innerHTML = html;
-                setupSwipeDetection();
             }
 
             window.selectTask = function(taskId) {
@@ -1779,8 +1812,7 @@
                     if (!wasExpanded) {
                         calculateRoute(taskId);
                     } else {
-                        distanceCard.classList.remove('active');
-                        updateNotificationPosition();
+                        floatingDistanceCard.classList.remove('active');
                     }
                 }
             };
@@ -1794,27 +1826,15 @@
                 const task = availableTasks.find(t => t.id === taskId);
                 if (!task) return;
 
-                const interestData = {
-                    taskId: taskId,
-                    taskDescription: task.taskDescription,
-                    helperId: currentUser.email,
-                    helperName: currentUser.name,
-                    helperAvatar: currentUser.profileImage,
-                    budget: budget,
-                    timestamp: Date.now(),
-                    type: 'interest'
-                };
-                
-                localStorage.setItem('taskmart_interest_' + taskId, JSON.stringify(interestData));
-                
-                showToast('Interest sent to poster!');
-                
                 addNotification(
                     'Interest Sent',
                     `You expressed interest in: ${task.taskDescription}`,
-                    taskId,
+                    'interest',
+                    null,
                     'pending'
                 );
+                
+                showToast('Interest sent to poster!');
             };
 
             window.makeOffer = async function(taskId) {
@@ -1831,31 +1851,16 @@
                     return;
                 }
 
-                const task = availableTasks.find(t => t.id === taskId);
-                if (!task) return;
-
-                const offerData = {
-                    taskId: taskId,
-                    taskDescription: task.taskDescription,
-                    helperId: currentUser.email,
-                    helperName: currentUser.name,
-                    helperAvatar: currentUser.profileImage,
-                    amount: amount,
-                    timestamp: Date.now(),
-                    type: 'offer'
-                };
-                
-                localStorage.setItem('taskmart_offer_' + taskId, JSON.stringify(offerData));
+                addNotification(
+                    'Offer Sent',
+                    `You offered R${amount}`,
+                    'offer',
+                    amount,
+                    'pending'
+                );
                 
                 showToast('Offer sent! Waiting for poster to respond.');
                 input.value = '';
-                
-                addNotification(
-                    'Offer Sent',
-                    `You offered R${amount} for: ${task.taskDescription}`,
-                    taskId,
-                    'pending'
-                );
             };
 
             window.passOnTask = async function(taskId) {
@@ -1872,19 +1877,20 @@
                 
                 renderTasks();
                 
-                showToast('Match confirmed! Task is now in progress.');
-                
                 if (task.budgetAmount) {
                     todayEarnings += task.budgetAmount;
                     todayEarningsSpan.textContent = `R${todayEarnings}`;
                     localStorage.setItem('taskmart_today_earnings', todayEarnings);
+                    
+                    addNotification(
+                        'Payment Received',
+                        `You earned R${task.budgetAmount} from: ${task.taskDescription}`,
+                        'earnings',
+                        task.budgetAmount
+                    );
                 }
                 
-                addNotification(
-                    'Match Confirmed',
-                    `You confirmed: ${task.taskDescription}`,
-                    taskId
-                );
+                showToast('Match confirmed! Task is now in progress.');
             };
 
             function addTaskMarkers(tasks) {
@@ -1922,12 +1928,12 @@
 
             expandIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                tasksSheet.classList.toggle('collapsed');
+                tasksSheet.classList.toggle('expanded');
             });
 
             sheetHeader.addEventListener('click', (e) => {
                 if (e.target === expandIcon) return;
-                tasksSheet.classList.toggle('collapsed');
+                tasksSheet.classList.toggle('expanded');
             });
 
             setInterval(() => {
@@ -1955,8 +1961,6 @@
                     todayEarnings = parseInt(savedEarnings);
                     todayEarningsSpan.textContent = `R${todayEarnings}`;
                 }
-                
-                updateNotificationPosition();
             }
         })();
     </script>
