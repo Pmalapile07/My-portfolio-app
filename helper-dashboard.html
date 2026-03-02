@@ -118,12 +118,6 @@
         }
 
         /* === ROUTE LINE WITH BEEPING DOTS === */
-        .beeping-route {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
         .beeping-dot {
             width: 6px;
             height: 6px;
@@ -216,7 +210,7 @@
             letter-spacing: 0.3px;
         }
 
-        /* === TASKS SHEET - MINIMAL === */
+        /* === TASKS SHEET - CLEAN === */
         .tasks-sheet {
             position: absolute;
             bottom: 0;
@@ -276,7 +270,7 @@
             padding: 16px 20px;
         }
 
-        /* === TASK CARDS - MINIMAL LUXURY === */
+        /* === TASK CARDS - CLEAN === */
         .task-card {
             padding: 20px 0;
             margin-bottom: 16px;
@@ -296,7 +290,11 @@
             opacity: 0.7;
         }
 
-        /* Task Icon - Left */
+        .task-card.matched {
+            border-left: 3px solid #000;
+            padding-left: 12px;
+        }
+
         .task-icon {
             width: 48px;
             height: 48px;
@@ -312,7 +310,6 @@
             color: #000 !important;
         }
 
-        /* Task Content - Middle */
         .task-content {
             flex: 1;
             min-width: 0;
@@ -326,6 +323,16 @@
             font-family: 'Manrope', sans-serif;
             letter-spacing: -0.02em;
             line-height: 1.3;
+        }
+
+        .skill-match {
+            font-size: 0.7rem;
+            color: #000;
+            background: #f0f0f0;
+            display: inline-block;
+            padding: 2px 8px;
+            margin-bottom: 8px;
+            font-weight: 300;
         }
 
         .task-meta {
@@ -349,7 +356,6 @@
             color: #999 !important;
         }
 
-        /* Task Price - Right */
         .task-price {
             font-size: 1.1rem;
             font-weight: 600;
@@ -365,7 +371,6 @@
             color: #666;
         }
 
-        /* Expanded Section */
         .task-expanded {
             max-height: 0;
             overflow: hidden;
@@ -375,14 +380,14 @@
         }
 
         .task-card.expanded .task-expanded {
-            max-height: 300px;
+            max-height: 400px;
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid rgba(0,0,0,0.05);
         }
 
         .expanded-content {
-            padding-left: 64px; /* Align with icon */
+            padding-left: 64px;
         }
 
         .expanded-details {
@@ -433,21 +438,6 @@
             color: #000;
             font-size: 0.85rem;
             font-family: 'Manrope', sans-serif;
-        }
-
-        .poster-rating {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            color: #000;
-            font-size: 0.7rem;
-            font-weight: 300;
-            opacity: 0.5;
-        }
-
-        .poster-rating .material-symbols-outlined {
-            font-size: 12px !important;
-            color: #000 !important;
         }
 
         .action-btn {
@@ -524,7 +514,6 @@
             background: #333;
         }
 
-        /* === TOAST - MINIMAL === */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -555,7 +544,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* === LOADING STATES === */
         .loading-tasks {
             text-align: center;
             padding: 60px 20px;
@@ -572,7 +560,6 @@
             font-family: 'Manrope', sans-serif;
         }
 
-        /* === TABLET/DESKTOP === */
         @media (min-width: 768px) {
             .tasks-sheet {
                 left: 20px;
@@ -586,10 +573,8 @@
     </style>
 </head>
 <body>
-    <!-- MAP -->
     <div id="map"></div>
 
-    <!-- Route Info -->
     <div class="route-info" id="routeInfo">
         <span class="material-symbols-outlined">swap_driving_apps</span>
         <span id="routeDistance">0 km</span>
@@ -597,7 +582,6 @@
         <span id="routeDuration">0 min</span>
     </div>
 
-    <!-- Header -->
     <div class="helper-header">
         <div class="online-toggle" id="onlineToggle">
             <span class="status-dot" id="statusDot"></span>
@@ -605,33 +589,30 @@
         </div>
     </div>
 
-    <!-- Tasks Sheet -->
     <div class="tasks-sheet" id="tasksSheet">
         <div class="sheet-header" id="sheetHeader">
             <h3>
                 <span class="material-symbols-outlined">list</span>
-                Tasks
+                Tasks for you
             </h3>
             <span class="material-symbols-outlined expand-icon">expand_less</span>
         </div>
 
         <div class="sheet-content" id="sheetContent">
             <div class="loading-tasks">
-                <div>Finding tasks near you...</div>
+                <div>Finding tasks for you...</div>
             </div>
         </div>
     </div>
 
-    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
         (function() {
             'use strict';
 
-            const API_BASE_URL = ''; // Same server
+            const API_BASE_URL = '';
 
-            // ===== STATE =====
             let currentUser = null;
             let currentLat = null;
             let currentLng = null;
@@ -645,8 +626,8 @@
             let authToken = null;
             let beepingDots = [];
             let animationFrame = null;
+            let userSkills = [];
 
-            // ===== DOM ELEMENTS =====
             const tasksSheet = document.getElementById('tasksSheet');
             const sheetHeader = document.getElementById('sheetHeader');
             const sheetContent = document.getElementById('sheetContent');
@@ -658,8 +639,7 @@
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
 
-            // ===== TOAST =====
-            function showToast(message, type = 'success') {
+            function showToast(message) {
                 toast.textContent = message;
                 toast.className = 'toast show';
                 setTimeout(() => {
@@ -667,7 +647,6 @@
                 }, 3000);
             }
 
-            // ===== GET USER =====
             function getCurrentUser() {
                 try {
                     const user = localStorage.getItem('taskmart_user');
@@ -677,11 +656,6 @@
                 }
             }
 
-            function getAuthToken() {
-                return localStorage.getItem('taskmart_token');
-            }
-
-            // ===== CREATE CUSTOM MARKERS =====
             function createHelperMarker() {
                 const el = document.createElement('div');
                 el.className = 'helper-marker';
@@ -694,15 +668,12 @@
                 return el;
             }
 
-            // ===== CREATE BEEPING DOTS ALONG ROUTE =====
             function createBeepingDots(coordinates) {
-                // Remove existing dots
                 beepingDots.forEach(dot => dot.remove());
                 beepingDots = [];
 
                 if (!coordinates || coordinates.length < 2) return;
 
-                // Create 5 dots along the route
                 for (let i = 1; i <= 5; i++) {
                     const fraction = i / 6;
                     const index = Math.floor(coordinates.length * fraction);
@@ -712,7 +683,6 @@
                         const dot = document.createElement('div');
                         dot.className = 'beeping-dot';
                         
-                        // Convert to screen coordinates
                         const point = map.project([lng, lat]);
                         dot.style.left = point.x + 'px';
                         dot.style.top = point.y + 'px';
@@ -720,7 +690,6 @@
                         document.getElementById('map').appendChild(dot);
                         beepingDots.push(dot);
                         
-                        // Animate dot movement as map moves
                         const updateDotPosition = () => {
                             const newPoint = map.project([lng, lat]);
                             dot.style.left = newPoint.x + 'px';
@@ -735,7 +704,6 @@
                 }
             }
 
-            // ===== MAP INIT =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) {
                     console.error('No Mapbox token');
@@ -781,15 +749,11 @@
                     getUserLocation();
                 });
 
-                // Update dot positions on map move
                 map.on('move', () => {
-                    beepingDots.forEach(dot => {
-                        // Dots will be updated in animation frame
-                    });
+                    // Dots update in animation frame
                 });
             }
 
-            // ===== GET LOCATION =====
             function getUserLocation() {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
@@ -801,11 +765,10 @@
                             
                             if (startMarker) startMarker.remove();
                             
-                            // Helper marker - square with pulsing white circle
                             const helperEl = createHelperMarker();
                             startMarker = new mapboxgl.Marker({ element: helperEl })
                                 .setLngLat([currentLng, currentLat])
-                                .setPopup(new mapboxgl.Popup().setHTML('<div style="font-family: Manrope; font-weight: 300;">Your location</div>'))
+                                .setPopup(new mapboxgl.Popup().setHTML('<div style="font-family: Manrope; font-weight: 300;">You</div>'))
                                 .addTo(map);
 
                             fetchTasks();
@@ -819,7 +782,14 @@
                 }
             }
 
-            // ===== FETCH TASKS =====
+            // Check if task matches helper's skills
+            function taskMatchesSkills(task) {
+                if (!userSkills || userSkills.length === 0) return true; // Show all if no skills set
+                
+                const taskLower = task.taskDescription.toLowerCase();
+                return userSkills.some(skill => taskLower.includes(skill.toLowerCase()));
+            }
+
             async function fetchTasks() {
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`);
@@ -835,6 +805,15 @@
                             );
                         }
 
+                        // Sort tasks - matched skills first
+                        tasks.sort((a, b) => {
+                            const aMatches = taskMatchesSkills(a);
+                            const bMatches = taskMatchesSkills(b);
+                            if (aMatches && !bMatches) return -1;
+                            if (!aMatches && bMatches) return 1;
+                            return 0;
+                        });
+
                         availableTasks = tasks;
 
                         if (tasks.length === 0) {
@@ -849,7 +828,6 @@
                 }
             }
 
-            // ===== CALCULATE ROUTE =====
             async function calculateRoute(taskId) {
                 const task = availableTasks.find(t => t.id === taskId);
                 if (!task || !task.coordinates || !currentLat || !currentLng) {
@@ -863,7 +841,6 @@
 
                 if (endMarker) endMarker.remove();
 
-                // Poster marker - circle with pulsing white circle
                 const posterEl = createPosterMarker();
                 endMarker = new mapboxgl.Marker({ element: posterEl })
                     .setLngLat([taskLng, taskLat])
@@ -894,16 +871,13 @@
                         routeDuration.textContent = duration + 'min';
                         routeInfo.classList.add('active');
 
-                        // Draw route
                         map.getSource('route').setData({
                             type: 'Feature',
                             geometry: route.geometry
                         });
 
-                        // Create beeping dots along route
                         createBeepingDots(route.geometry.coordinates);
 
-                        // Update selected card
                         document.querySelectorAll('.task-card').forEach(card => {
                             card.classList.remove('selected');
                         });
@@ -918,7 +892,6 @@
                 }
             }
 
-            // ===== RENDER TASKS =====
             function renderTasks(tasks) {
                 let html = '';
 
@@ -930,15 +903,17 @@
                     const posterInitial = posterName.charAt(0).toUpperCase();
                     const posterAvatar = task.userAvatar || null;
                     const taskTitle = task.taskDescription || 'Help needed';
+                    const isMatch = taskMatchesSkills(task);
 
                     html += `
-                        <div class="task-card" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
+                        <div class="task-card ${isMatch ? 'matched' : ''}" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
                             <div class="task-icon">
                                 <span class="material-symbols-outlined">task_alt</span>
                             </div>
                             
                             <div class="task-content">
                                 <div class="task-title">${taskTitle}</div>
+                                ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
                                 <div class="task-meta">
                                     <span>
                                         <span class="material-symbols-outlined">schedule</span>
@@ -966,10 +941,6 @@
                                             </div>
                                             <div class="poster-details">
                                                 <div class="poster-name">${posterName}</div>
-                                                <div class="poster-rating">
-                                                    <span class="material-symbols-outlined">star</span>
-                                                    <span>4.9</span>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -994,7 +965,6 @@
                 sheetContent.innerHTML = html;
             }
 
-            // ===== SELECT TASK =====
             window.selectTask = function(taskId) {
                 const card = document.querySelector(`[data-task-id="${taskId}"]`);
                 if (card) {
@@ -1014,7 +984,6 @@
                 }
             };
 
-            // ===== MAKE OFFER =====
             window.makeOffer = async function(taskId) {
                 const input = document.getElementById(`offer-${taskId}`);
                 const amount = parseFloat(input.value);
@@ -1029,19 +998,16 @@
                     return;
                 }
 
+                // In real app, send offer to backend
                 showToast('Offer sent');
                 input.value = '';
             };
 
-            // ===== ACCEPT TASK =====
             window.acceptTask = async function(taskId, budget) {
                 if (!isOnline) {
                     showToast('Set status to available');
                     return;
                 }
-
-                const task = availableTasks.find(t => t.id === taskId);
-                if (!task) return;
 
                 showToast('Task accepted');
 
@@ -1055,7 +1021,6 @@
                     geometry: { type: 'LineString', coordinates: [] }
                 });
                 
-                // Remove beeping dots
                 beepingDots.forEach(dot => dot.remove());
                 beepingDots = [];
                 if (animationFrame) {
@@ -1063,7 +1028,6 @@
                 }
             };
 
-            // ===== ADD MARKERS =====
             function addTaskMarkers(tasks) {
                 if (window.taskMarkers) {
                     window.taskMarkers.forEach(marker => marker.remove());
@@ -1090,28 +1054,30 @@
                 });
             }
 
-            // ===== ONLINE TOGGLE =====
             onlineToggle.addEventListener('click', () => {
                 isOnline = !isOnline;
                 statusDot.className = isOnline ? 'status-dot' : 'status-dot offline';
                 statusText.textContent = isOnline ? 'Available' : 'Offline';
             });
 
-            // ===== SHEET TOGGLE =====
             sheetHeader.addEventListener('click', () => {
                 tasksSheet.classList.toggle('expanded');
             });
 
-            // ===== AUTO REFRESH =====
+            // Poll for new tasks every 10 seconds (instant updates)
             setInterval(() => {
                 if (isOnline) {
                     fetchTasks();
                 }
-            }, 30000);
+            }, 10000);
 
-            // ===== INIT =====
             currentUser = getCurrentUser();
-            authToken = getAuthToken();
+            authToken = getCurrentUser()?.token;
+
+            // Get user skills from profile
+            if (currentUser && currentUser.skills) {
+                userSkills = currentUser.skills;
+            }
 
             if (!currentUser || !authToken) {
                 window.location.href = '/login.html';
