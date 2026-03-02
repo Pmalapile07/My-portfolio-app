@@ -64,7 +64,7 @@
             z-index: 1;
         }
 
-        /* === CUSTOM MARKERS === */
+        /* === CUSTOM MARKERS WITH RADIUS === */
         .helper-marker {
             width: 24px;
             height: 24px;
@@ -73,6 +73,7 @@
             position: relative;
             cursor: pointer;
             box-shadow: 0 0 20px rgba(255,255,255,0.3);
+            z-index: 10;
         }
 
         .helper-marker::after {
@@ -85,6 +86,28 @@
             height: 10px;
             background: white;
             animation: pulse-white 1.5s infinite;
+        }
+
+        /* Radius ring around helper marker */
+        .helper-radius {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(0, 63, 225, 0.15);
+            border: 2px solid rgba(0, 63, 225, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: pulse-blue 2s infinite;
+            z-index: 5;
+        }
+
+        @keyframes pulse-blue {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
         }
 
         .poster-marker {
@@ -137,7 +160,7 @@
             background: white;
             padding: 8px 16px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             pointer-events: auto;
             border: none;
             width: fit-content;
@@ -170,7 +193,7 @@
             align-items: center;
             gap: 8px;
             font-weight: 400;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             white-space: nowrap;
             border: none;
             width: fit-content;
@@ -195,7 +218,7 @@
             font-family: 'Manrope', sans-serif;
         }
 
-        /* === NOTIFICATION SECTION === */
+        /* === NOTIFICATION SECTION - BELL ONLY === */
         .notification-section {
             position: fixed;
             top: 104px;
@@ -207,42 +230,34 @@
 
         .notification-bell {
             background: white;
-            padding: 8px 16px;
+            padding: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: relative;
             width: fit-content;
         }
 
-        .bell-icon {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-        }
-
-        .bell-icon .material-symbols-outlined {
+        .notification-bell .material-symbols-outlined {
             color: #000;
-            font-size: 20px !important;
-        }
-
-        .bell-text {
-            color: #000;
-            font-size: 0.8rem;
-            font-weight: 400;
-            font-family: 'Manrope', sans-serif;
+            font-size: 22px !important;
         }
 
         .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
             background: #000;
             color: white;
-            padding: 2px 6px;
+            width: 20px;
+            height: 20px;
             font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 400;
-            margin-left: 4px;
         }
 
         .notification-dropdown {
@@ -295,7 +310,7 @@
             color: #666;
         }
 
-        /* === TASKS SHEET === */
+        /* === TASKS SHEET - WITH SHADOW === */
         .tasks-sheet {
             position: absolute;
             bottom: 0;
@@ -308,10 +323,21 @@
             flex-direction: column;
             transition: max-height 0.3s ease;
             border-top: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
         }
 
-        .tasks-sheet.expanded {
-            max-height: 70%;
+        .tasks-sheet.collapsed {
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        .tasks-sheet.collapsed .sheet-content {
+            display: none;
+        }
+
+        .tasks-sheet.collapsed .in-progress-section,
+        .tasks-sheet.collapsed .matching-section {
+            display: none;
         }
 
         .sheet-header {
@@ -321,6 +347,7 @@
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
+            background: white;
         }
 
         .sheet-header-left {
@@ -346,7 +373,7 @@
             user-select: none;
         }
 
-        .tasks-sheet.expanded .expand-icon {
+        .tasks-sheet.collapsed .expand-icon {
             transform: rotate(180deg);
         }
 
@@ -356,7 +383,7 @@
             padding: 12px 16px;
         }
 
-        /* === TASK CARDS - CLEAN SPACING === */
+        /* === TASK CARDS - WITH FLAG ICON === */
         .task-card {
             padding: 16px 0;
             margin-bottom: 12px;
@@ -366,6 +393,13 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            position: relative;
+            transform: translateX(0);
+            transition: transform 0.2s ease;
+        }
+
+        .task-card.swiping {
+            transition: none;
         }
 
         .task-card:last-child {
@@ -381,7 +415,7 @@
             padding-left: 12px;
         }
 
-        /* Top row - Title and Price */
+        /* Top row - Title and Price with Flag */
         .task-row-top {
             display: flex;
             justify-content: space-between;
@@ -411,6 +445,17 @@
             font-weight: 400;
             font-size: 0.85rem;
             color: #666;
+        }
+
+        .task-flag {
+            margin-left: 8px;
+            color: #999;
+            cursor: pointer;
+            font-size: 18px !important;
+        }
+
+        .task-flag:hover {
+            color: #000;
         }
 
         /* Skill match badge - no star */
@@ -745,6 +790,7 @@
             font-weight: 300;
             text-align: center;
             border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             font-family: 'Manrope', sans-serif;
         }
 
@@ -812,14 +858,11 @@
         </div>
     </div>
 
-    <!-- Notification Section -->
+    <!-- Notification Section - Bell Only -->
     <div class="notification-section">
         <div class="notification-bell" id="notificationBell">
-            <div class="bell-icon">
-                <span class="material-symbols-outlined">notifications</span>
-                <span class="bell-text">Notifications</span>
-                <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
-            </div>
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
             <div class="notification-dropdown" id="notificationDropdown">
                 <div class="notification-header">Notifications</div>
                 <div id="notificationList"></div>
@@ -830,9 +873,9 @@
     <div class="tasks-sheet" id="tasksSheet">
         <div class="sheet-header" id="sheetHeader">
             <div class="sheet-header-left">
-                <span class="material-symbols-outlined expand-icon" id="expandIcon">expand_less</span>
                 <h3>Tasks for you</h3>
             </div>
+            <span class="material-symbols-outlined expand-icon" id="expandIcon">expand_less</span>
         </div>
 
         <div class="sheet-content" id="sheetContent">
@@ -869,6 +912,8 @@
             let authToken = null;
             let userSkills = [];
             let notifications = [];
+            let touchStartX = 0;
+            let currentTaskId = null;
 
             // ===== DOM ELEMENTS =====
             const tasksSheet = document.getElementById('tasksSheet');
@@ -886,6 +931,82 @@
             const notificationDropdown = document.getElementById('notificationDropdown');
             const notificationBadge = document.getElementById('notificationBadge');
             const notificationList = document.getElementById('notificationList');
+
+            // ===== CLOSE DROPDOWNS WHEN CLICKING OUTSIDE =====
+            document.addEventListener('click', () => {
+                notificationDropdown.classList.remove('active');
+            });
+
+            notificationBell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationDropdown.classList.toggle('active');
+            });
+
+            notificationDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            // ===== SWIPE TO DISMISS TASK =====
+            function setupSwipeDetection() {
+                const taskCards = document.querySelectorAll('.task-card');
+                taskCards.forEach(card => {
+                    card.addEventListener('touchstart', (e) => {
+                        touchStartX = e.touches[0].clientX;
+                        currentTaskId = card.dataset.taskId;
+                        card.classList.add('swiping');
+                    }, { passive: true });
+
+                    card.addEventListener('touchmove', (e) => {
+                        if (!currentTaskId) return;
+                        const touchX = e.touches[0].clientX;
+                        const diffX = touchX - touchStartX;
+                        
+                        if (diffX < -30) { // Swipe left
+                            card.style.transform = `translateX(${diffX}px)`;
+                            card.style.opacity = 1 - (Math.abs(diffX) / 200);
+                        }
+                    }, { passive: true });
+
+                    card.addEventListener('touchend', (e) => {
+                        if (!currentTaskId) return;
+                        
+                        const diffX = e.changedTouches[0].clientX - touchStartX;
+                        
+                        if (diffX < -80) { // Swipe left enough
+                            card.style.transition = 'transform 0.2s, opacity 0.2s';
+                            card.style.transform = 'translateX(-200px)';
+                            card.style.opacity = '0';
+                            
+                            setTimeout(() => {
+                                // Hide task temporarily (will come back on refresh)
+                                const taskIndex = availableTasks.findIndex(t => t.id === currentTaskId);
+                                if (taskIndex !== -1) {
+                                    const task = availableTasks[taskIndex];
+                                    availableTasks.splice(taskIndex, 1);
+                                    renderTasks();
+                                    showToast('Task dismissed (will return on refresh)');
+                                }
+                                card.classList.remove('swiping');
+                                card.style.transition = '';
+                                card.style.transform = '';
+                                card.style.opacity = '';
+                            }, 200);
+                        } else {
+                            // Reset position
+                            card.style.transition = 'transform 0.2s';
+                            card.style.transform = '';
+                            card.style.opacity = '';
+                            setTimeout(() => {
+                                card.style.transition = '';
+                                card.classList.remove('swiping');
+                            }, 200);
+                        }
+                        
+                        currentTaskId = null;
+                        touchStartX = 0;
+                    }, { passive: true });
+                });
+            }
 
             // ===== NOTIFICATION SYSTEM =====
             function addNotification(title, message, taskId = null) {
@@ -915,7 +1036,7 @@
             function updateNotificationBadge() {
                 const unreadCount = notifications.filter(n => !n.read).length;
                 if (unreadCount > 0) {
-                    notificationBadge.style.display = 'inline-block';
+                    notificationBadge.style.display = 'flex';
                     notificationBadge.textContent = unreadCount;
                 } else {
                     notificationBadge.style.display = 'none';
@@ -955,19 +1076,6 @@
                     });
                 });
             }
-
-            notificationBell.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notificationDropdown.classList.toggle('active');
-            });
-
-            document.addEventListener('click', () => {
-                notificationDropdown.classList.remove('active');
-            });
-
-            notificationDropdown.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
 
             function loadNotifications() {
                 const saved = localStorage.getItem('taskmart_notifications');
@@ -1017,9 +1125,21 @@
 
             // ===== CREATE CUSTOM MARKERS =====
             function createHelperMarker() {
-                const el = document.createElement('div');
-                el.className = 'helper-marker';
-                return el;
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                container.style.width = '24px';
+                container.style.height = '24px';
+                
+                const radius = document.createElement('div');
+                radius.className = 'helper-radius';
+                
+                const marker = document.createElement('div');
+                marker.className = 'helper-marker';
+                
+                container.appendChild(radius);
+                container.appendChild(marker);
+                
+                return container;
             }
 
             function createPosterMarker() {
@@ -1337,6 +1457,7 @@
                                     <div class="task-price ${isOpenOffer ? 'open' : ''}">
                                         ${isOpenOffer ? 'Open' : `R${budget}`}
                                     </div>
+                                    <span class="material-symbols-outlined task-flag" onclick="event.stopPropagation(); flagTask('${taskId}')">flag</span>
                                 </div>
                                 
                                 <div class="task-meta">
@@ -1369,7 +1490,16 @@
                 }
 
                 sheetContent.innerHTML = html;
+                
+                // Setup swipe detection for new cards
+                setupSwipeDetection();
             }
+
+            // ===== FLAG TASK =====
+            window.flagTask = function(taskId) {
+                showToast('Task flagged');
+                // Implement flagging logic here
+            };
 
             // ===== EXPRESS INTEREST =====
             window.expressInterest = async function(taskId, budget) {
@@ -1527,7 +1657,13 @@
             // ===== SHEET TOGGLE =====
             expandIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                tasksSheet.classList.toggle('expanded');
+                tasksSheet.classList.toggle('collapsed');
+            });
+
+            // Click on header toggles as well
+            sheetHeader.addEventListener('click', (e) => {
+                if (e.target === expandIcon) return;
+                tasksSheet.classList.toggle('collapsed');
             });
 
             // ===== AUTO REFRESH TASKS =====
