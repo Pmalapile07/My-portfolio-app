@@ -183,8 +183,8 @@
             font-size: 24px !important;
         }
 
-        /* === RIGHT SIDE HEADER SECTION - STACKED VERTICALLY WITH EQUAL GAPS === */
-        .right-header {
+        /* === RIGHT SIDE STACK - DYNAMIC POSITIONING === */
+        .right-stack {
             position: fixed;
             top: 20px;
             right: 20px;
@@ -192,22 +192,29 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 12px; /* Equal gaps between all cards */
+            gap: 12px;
             pointer-events: none;
         }
 
-        .online-toggle {
+        /* Base card styles - all same height */
+        .stack-card {
+            background: white;
+            height: 44px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: white;
-            padding: 0 16px;
-            cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             pointer-events: auto;
-            border: none;
+            transition: all 0.3s ease;
             width: fit-content;
-            height: 44px;
+        }
+
+        /* Availability card - always first */
+        .availability-card {
+            composes: stack-card;
+            padding: 0 16px;
+            gap: 8px;
+            cursor: pointer;
+            border: none;
         }
 
         .status-dot {
@@ -226,62 +233,13 @@
             font-size: 0.85rem;
             font-weight: 400;
             font-family: 'Manrope', sans-serif;
-            letter-spacing: 0.3px;
         }
 
-        /* Route info - single line with toggle */
-        .route-info {
-            background: white;
-            padding: 0 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 400;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: none;
-            width: fit-content;
-            pointer-events: auto;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            height: 44px;
-            cursor: pointer;
-        }
-
-        .route-info.active {
-            opacity: 1;
-        }
-
-        .route-info .material-symbols-outlined {
-            color: #000 !important;
-            font-size: 18px !important;
-        }
-
-        .route-info span {
-            color: #000;
-            font-size: 0.8rem;
-            font-weight: 300;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .route-toggle-icon {
-            transition: transform 0.3s;
-        }
-
-        .route-toggle-icon.rotated {
-            transform: rotate(180deg);
-        }
-
-        /* === EARNINGS CARD - UNDER ROUTE INFO === */
+        /* Earnings card - always second */
         .earnings-card {
-            background: white;
+            composes: stack-card;
             padding: 0 16px;
-            display: flex;
-            align-items: center;
             gap: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            pointer-events: auto;
-            width: fit-content;
-            height: 44px;
         }
 
         .earnings-label {
@@ -296,35 +254,65 @@
             color: #000;
         }
 
-        /* === NOTIFICATION SECTION - BELL ONLY === */
-        .notification-section {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10001; /* Above blur overlay */
-            pointer-events: auto;
-            width: fit-content;
+        /* Distance card - third when active */
+        .distance-card {
+            composes: stack-card;
+            padding: 0 16px;
+            gap: 12px;
+            cursor: pointer;
+            border: none;
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        .notification-bell {
-            background: white;
-            padding: 0;
-            display: flex;
-            align-items: center;
+        .distance-card.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .distance-card .material-symbols-outlined {
+            color: #000 !important;
+            font-size: 18px !important;
+        }
+
+        .distance-card span {
+            color: #000;
+            font-size: 0.8rem;
+            font-weight: 300;
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .route-toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .route-toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* Notification card - moves up when distance card is hidden */
+        .notification-card {
+            composes: stack-card;
+            width: 44px;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: relative;
-            width: 44px;
-            height: 44px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        .notification-bell .material-symbols-outlined {
+        .notification-card.distance-hidden {
+            transform: translateY(-56px); /* Moves up to fill the gap (44px + 12px gap) */
+        }
+
+        .notification-card .material-symbols-outlined {
             color: #000;
             font-size: 22px !important;
         }
 
-        .notification-bell.has-notifications {
+        .notification-card.has-notifications {
             animation: shake 0.5s ease-in-out;
         }
 
@@ -347,6 +335,7 @@
             align-items: center;
             justify-content: center;
             font-weight: 400;
+            border-radius: 0;
         }
 
         .notification-dropdown {
@@ -357,7 +346,7 @@
             background: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             display: none;
-            z-index: 10002; /* Above blur overlay */
+            z-index: 10002;
             max-height: 400px;
             overflow-y: auto;
         }
@@ -490,7 +479,6 @@
             font-weight: 700;
             color: #000;
             font-family: 'Manrope', sans-serif;
-            letter-spacing: 0.5px;
         }
 
         .expand-icon {
@@ -578,35 +566,27 @@
             padding-left: 12px;
         }
 
-        /* Top row - Title and Price */
-        .task-row-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
+        /* Price above title */
+        .task-price-above {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #000;
+            font-family: 'Manrope', sans-serif;
+            margin-bottom: 2px;
+        }
+
+        .task-price-above.open {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #666;
         }
 
         .task-title {
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: #000;
             font-family: 'Manrope', sans-serif;
             line-height: 1.3;
-            flex: 1;
-        }
-
-        .task-price {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #000;
-            font-family: 'Manrope', sans-serif;
-            white-space: nowrap;
-        }
-
-        .task-price.open {
-            font-weight: 400;
-            font-size: 0.85rem;
-            color: #666;
         }
 
         /* Skill match badge */
@@ -618,6 +598,7 @@
             padding: 2px 8px;
             font-weight: 300;
             width: fit-content;
+            margin-top: 4px;
         }
 
         /* Meta row - Location and Time */
@@ -629,6 +610,7 @@
             color: #666;
             font-weight: 300;
             font-family: 'Manrope', sans-serif;
+            margin-top: 4px;
         }
 
         .task-meta span {
@@ -1009,14 +991,22 @@
         </div>
     </div>
 
-    <!-- Right Side Header Section - Stacked Vertically -->
-    <div class="right-header">
-        <div class="online-toggle" id="onlineToggle">
+    <!-- Right Side Stack - Dynamic Positioning -->
+    <div class="right-stack" id="rightStack">
+        <!-- 1. Availability Card - Always on top -->
+        <div class="availability-card" id="onlineToggle">
             <span class="status-dot" id="statusDot"></span>
             <span class="status-text" id="statusText">Available</span>
         </div>
 
-        <div class="route-info" id="routeInfo">
+        <!-- 2. Earnings Card - Always second -->
+        <div class="earnings-card">
+            <span class="earnings-label">today</span>
+            <span class="earnings-amount" id="todayEarnings">R0</span>
+        </div>
+
+        <!-- 3. Distance Card - Appears when task selected, disappears otherwise -->
+        <div class="distance-card" id="distanceCard">
             <span class="material-symbols-outlined" id="routeIcon">directions_car</span>
             <span id="routeDistance">0 km</span>
             <span class="material-symbols-outlined">fiber_manual_record</span>
@@ -1024,16 +1014,8 @@
             <span class="material-symbols-outlined route-toggle-icon" id="routeToggle">sync_alt</span>
         </div>
 
-        <!-- Earnings Card - Under Route Info -->
-        <div class="earnings-card">
-            <span class="earnings-label">today</span>
-            <span class="earnings-amount" id="todayEarnings">R0</span>
-        </div>
-    </div>
-
-    <!-- Notification Section - Bell Only -->
-    <div class="notification-section">
-        <div class="notification-bell" id="notificationBell">
+        <!-- 4. Notification Card - Moves up when distance card is hidden -->
+        <div class="notification-card" id="notificationCard">
             <span class="material-symbols-outlined">notifications</span>
             <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
             <div class="notification-dropdown" id="notificationDropdown">
@@ -1111,7 +1093,9 @@
             let todayEarnings = 0;
             let notificationSound = document.getElementById('notificationSound');
             let soundPlayedOnLoad = false;
-            let isDriving = true; // true for driving, false for walking
+            let isDriving = true;
+            let drivingData = null;
+            let walkingData = null;
 
             // ===== DOM ELEMENTS =====
             const tasksSheet = document.getElementById('tasksSheet');
@@ -1119,7 +1103,8 @@
             const expandIcon = document.getElementById('expandIcon');
             const sheetContent = document.getElementById('sheetContent');
             const toast = document.getElementById('toast');
-            const routeInfo = document.getElementById('routeInfo');
+            const distanceCard = document.getElementById('distanceCard');
+            const notificationCard = document.getElementById('notificationCard');
             const routeIcon = document.getElementById('routeIcon');
             const routeDistance = document.getElementById('routeDistance');
             const routeDuration = document.getElementById('routeDuration');
@@ -1127,7 +1112,7 @@
             const onlineToggle = document.getElementById('onlineToggle');
             const statusDot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
-            const notificationBell = document.getElementById('notificationBell');
+            const notificationBell = document.getElementById('notificationCard');
             const notificationDropdown = document.getElementById('notificationDropdown');
             const notificationBadge = document.getElementById('notificationBadge');
             const notificationList = document.getElementById('notificationList');
@@ -1136,12 +1121,17 @@
             const profileMenuBtn = document.getElementById('profileMenuBtn');
             const blurOverlay = document.getElementById('blurOverlay');
 
-            // ===== ROUTE TOGGLE =====
-            let drivingData = null;
-            let walkingData = null;
-            let currentTaskLocation = null;
+            // ===== UPDATE NOTIFICATION CARD POSITION =====
+            function updateNotificationPosition() {
+                if (distanceCard.classList.contains('active')) {
+                    notificationCard.classList.remove('distance-hidden');
+                } else {
+                    notificationCard.classList.add('distance-hidden');
+                }
+            }
 
-            routeInfo.addEventListener('click', () => {
+            // ===== ROUTE TOGGLE =====
+            distanceCard.addEventListener('click', () => {
                 if (!drivingData || !walkingData) return;
                 
                 isDriving = !isDriving;
@@ -1176,15 +1166,14 @@
                     notificationSound.play().catch(e => console.log('Sound play failed:', e));
                 }
                 
-                // Add shake animation
-                notificationBell.classList.add('has-notifications');
+                notificationCard.classList.add('has-notifications');
                 setTimeout(() => {
-                    notificationBell.classList.remove('has-notifications');
+                    notificationCard.classList.remove('has-notifications');
                 }, 500);
             }
 
             // ===== NOTIFICATION DROPDOWN WITH BLUR =====
-            notificationBell.addEventListener('click', (e) => {
+            notificationCard.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isActive = notificationDropdown.classList.contains('active');
                 
@@ -1198,7 +1187,7 @@
             });
 
             document.addEventListener('click', (e) => {
-                if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                if (!notificationCard.contains(e.target) && !notificationDropdown.contains(e.target)) {
                     blurOverlay.classList.remove('active');
                     notificationDropdown.classList.remove('active');
                 }
@@ -1223,7 +1212,7 @@
                         const touchX = e.touches[0].clientX;
                         const diffX = touchX - touchStartX;
                         
-                        if (diffX < -30) { // Swipe left
+                        if (diffX < -30) {
                             card.style.transform = `translateX(${diffX}px)`;
                             card.style.opacity = 1 - (Math.abs(diffX) / 200);
                         }
@@ -1234,7 +1223,7 @@
                         
                         const diffX = e.changedTouches[0].clientX - touchStartX;
                         
-                        if (diffX < -80) { // Swipe left enough
+                        if (diffX < -80) {
                             card.style.transition = 'transform 0.2s, opacity 0.2s';
                             card.style.transform = 'translateX(-200px)';
                             card.style.opacity = '0';
@@ -1242,7 +1231,6 @@
                             setTimeout(() => {
                                 const taskIndex = availableTasks.findIndex(t => t.id === currentTaskId);
                                 if (taskIndex !== -1) {
-                                    const task = availableTasks[taskIndex];
                                     availableTasks.splice(taskIndex, 1);
                                     renderTasks();
                                     showToast('Task dismissed (will return on refresh)');
@@ -1285,7 +1273,7 @@
                 renderNotifications();
                 
                 showToast(message);
-                playNotificationSound(); // Play sound and shake on new notification
+                playNotificationSound();
                 
                 localStorage.setItem('taskmart_notifications', JSON.stringify(notifications));
             }
@@ -1296,10 +1284,9 @@
                     notificationBadge.style.display = 'flex';
                     notificationBadge.textContent = unreadCount;
                     
-                    // Add shake class if there are unread
-                    notificationBell.classList.add('has-notifications');
+                    notificationCard.classList.add('has-notifications');
                     setTimeout(() => {
-                        notificationBell.classList.remove('has-notifications');
+                        notificationCard.classList.remove('has-notifications');
                     }, 500);
                 } else {
                     notificationBadge.style.display = 'none';
@@ -1362,7 +1349,6 @@
                     updateNotificationBadge();
                     renderNotifications();
                     
-                    // Play sound on page load if there are unread notifications
                     const unreadCount = notifications.filter(n => !n.read).length;
                     if (unreadCount > 0 && !soundPlayedOnLoad) {
                         setTimeout(() => {
@@ -1530,7 +1516,6 @@
             
             async function fetchTasks() {
                 try {
-                    // Show skeleton loading
                     showSkeletonLoading();
                     
                     const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`);
@@ -1620,7 +1605,6 @@
                 const [taskLat, taskLng] = task.coordinates.split(',').map(Number);
 
                 selectedTaskId = taskId;
-                currentTaskLocation = { lat: taskLat, lng: taskLng };
 
                 if (endMarker) endMarker.remove();
 
@@ -1636,12 +1620,10 @@
                 map.fitBounds(bounds, { padding: 50 });
 
                 try {
-                    // Get driving route
                     const drivingResponse = await fetch(
                         `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${taskLng},${taskLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                     );
 
-                    // Get walking route
                     const walkingResponse = await fetch(
                         `https://api.mapbox.com/directions/v5/mapbox/walking/${currentLng},${currentLat};${taskLng},${taskLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                     );
@@ -1658,7 +1640,6 @@
                         const walkingDistance = walkingRoute.distance;
                         const walkingDuration = Math.round(walkingRoute.duration / 60);
 
-                        // Format distances
                         let drivingDistanceStr = drivingDistance < 1000 
                             ? Math.round(drivingDistance) + 'm' 
                             : (drivingDistance / 1000).toFixed(1) + 'km';
@@ -1667,7 +1648,6 @@
                             ? Math.round(walkingDistance) + 'm' 
                             : (walkingDistance / 1000).toFixed(1) + 'km';
 
-                        // Store for toggle
                         drivingData = {
                             distance: drivingDistanceStr,
                             duration: drivingDuration + 'min'
@@ -1678,16 +1658,16 @@
                             duration: walkingDuration + 'min'
                         };
 
-                        // Set initial to driving
                         isDriving = true;
                         routeIcon.textContent = 'directions_car';
                         routeDistance.textContent = drivingDistanceStr;
                         routeDuration.textContent = drivingDuration + 'min';
                         routeToggle.classList.remove('rotated');
                         
-                        routeInfo.classList.add('active');
+                        // Show distance card
+                        distanceCard.classList.add('active');
+                        updateNotificationPosition();
 
-                        // Draw driving route on map
                         map.getSource('route').setData({
                             type: 'Feature',
                             geometry: drivingRoute.geometry
@@ -1711,7 +1691,6 @@
             function renderTasks() {
                 let html = '';
 
-                // Matching Requests Section
                 if (matchingRequests.length > 0) {
                     html += '<div class="matching-section">';
                     html += '<div class="matching-header">You\'ve Been Selected!</div>';
@@ -1735,7 +1714,6 @@
                     html += '</div>';
                 }
 
-                // In Progress Section
                 if (inProgressTasks.length > 0) {
                     html += '<div class="in-progress-section">';
                     html += '<div class="in-progress-header">In Progress</div>';
@@ -1762,7 +1740,6 @@
                     html += '</div>';
                 }
 
-                // Available Tasks
                 if (availableTasks.length === 0) {
                     html += '<div class="no-tasks">No tasks available</div>';
                 } else {
@@ -1806,12 +1783,10 @@
 
                         html += `
                             <div class="task-card ${isMatch ? 'matched' : ''}" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
-                                <div class="task-row-top">
-                                    <div class="task-title">${taskTitle}</div>
-                                    <div class="task-price ${isOpenOffer ? 'open' : ''}">
-                                        ${isOpenOffer ? 'Open' : `R${budget}`}
-                                    </div>
+                                <div class="task-price-above ${isOpenOffer ? 'open' : ''}">
+                                    ${isOpenOffer ? 'Open to offers' : `R${budget}`}
                                 </div>
+                                <div class="task-title">${taskTitle}</div>
                                 
                                 ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
                                 
@@ -1845,8 +1820,6 @@
                 }
 
                 sheetContent.innerHTML = html;
-                
-                // Setup swipe detection for new cards
                 setupSwipeDetection();
             }
 
@@ -1943,7 +1916,6 @@
                 
                 showToast('Match confirmed! Task is now in progress.');
                 
-                // Add to today's earnings
                 if (task.budgetAmount) {
                     todayEarnings += task.budgetAmount;
                     todayEarningsSpan.textContent = `R${todayEarnings}`;
@@ -1973,6 +1945,10 @@
                     
                     if (!wasExpanded) {
                         calculateRoute(taskId);
+                    } else {
+                        // Hide distance card when collapsing
+                        distanceCard.classList.remove('active');
+                        updateNotificationPosition();
                     }
                 }
             };
@@ -2045,12 +2021,14 @@
                 loadNotifications();
                 initMap();
                 
-                // Load today's earnings from localStorage
                 const savedEarnings = localStorage.getItem('taskmart_today_earnings');
                 if (savedEarnings) {
                     todayEarnings = parseInt(savedEarnings);
                     todayEarningsSpan.textContent = `R${todayEarnings}`;
                 }
+                
+                // Initial position
+                updateNotificationPosition();
             }
         })();
     </script>
