@@ -64,7 +64,7 @@
             z-index: 1;
         }
 
-        /* === NOTIFICATION BELL === */
+        /* === NOTIFICATION BELL - LEFT SIDE === */
         .notification-bell {
             position: fixed;
             top: 20px;
@@ -208,17 +208,16 @@
             100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
-        /* === HEADER SECTION - CONTAINER FOR ONLINE TOGGLE AND ROUTE INFO === */
-        .header-section {
+        /* === RIGHT SIDE HEADER SECTION - STACKED VERTICALLY === */
+        .right-header {
             position: fixed;
             top: 20px;
-            left: 0;
-            right: 0;
+            right: 20px;
+            z-index: 100;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-end;
             gap: 8px;
-            z-index: 100;
             pointer-events: none;
         }
 
@@ -229,7 +228,7 @@
             background: white;
             padding: 8px 16px;
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             pointer-events: auto;
             border: none;
             width: fit-content;
@@ -261,7 +260,7 @@
             align-items: center;
             gap: 8px;
             font-weight: 400;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             white-space: nowrap;
             border: none;
             width: fit-content;
@@ -484,6 +483,11 @@
             padding: 12px;
             background: white;
             border: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 8px;
+        }
+
+        .in-progress-card:last-child {
+            margin-bottom: 0;
         }
 
         .in-progress-title {
@@ -521,6 +525,52 @@
             font-size: 0.7rem;
             font-weight: 300;
             margin-top: 8px;
+        }
+
+        /* === MATCHING REQUESTS SECTION === */
+        .matching-section {
+            padding: 16px;
+            background: #fff9f9;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .matching-header {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .matching-card {
+            padding: 12px;
+            background: white;
+            border: 1px solid #000;
+            margin-bottom: 8px;
+        }
+
+        .matching-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .matching-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 8px;
+        }
+
+        .matching-poster {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .matching-status {
+            font-size: 0.7rem;
+            color: #f59e0b;
+            font-weight: 400;
         }
 
         /* Expanded section */
@@ -688,7 +738,7 @@
 <body>
     <div id="map"></div>
 
-    <!-- Notification Bell -->
+    <!-- Notification Bell - Left Side -->
     <div class="notification-bell" id="notificationBell">
         <div class="bell-icon">
             <span class="material-symbols-outlined">notifications</span>
@@ -700,8 +750,8 @@
         </div>
     </div>
 
-    <!-- Header Section - Online Toggle and Route Info stacked -->
-    <div class="header-section">
+    <!-- Right Side Header Section - Stacked Vertically -->
+    <div class="right-header">
         <div class="online-toggle" id="onlineToggle">
             <span class="status-dot" id="statusDot"></span>
             <span class="status-text" id="statusText">Available</span>
@@ -745,6 +795,7 @@
             let currentLng = null;
             let availableTasks = [];
             let inProgressTasks = [];
+            let matchingRequests = []; // Tasks where poster has selected this helper
             let markers = [];
             let startMarker = null;
             let endMarker = null;
@@ -1011,25 +1062,31 @@
                             // Filter out user's own tasks
                             tasks = tasks.filter(task => task.userId !== currentUser.email);
                             
-                            // Separate in-progress tasks
+                            // In-progress tasks (accepted and confirmed)
                             inProgressTasks = tasks.filter(task => 
                                 task.status === 'in-progress' && task.helperId === currentUser.email
                             );
                             
-                            // Available tasks (open and not accepted)
+                            // Matching requests (poster selected this helper, waiting for confirmation)
+                            matchingRequests = tasks.filter(task => 
+                                task.status === 'matching' && 
+                                task.selectedHelperId === currentUser.email
+                            );
+                            
+                            // Available tasks (open and not assigned)
                             availableTasks = tasks.filter(task => 
                                 task.status === 'open'
                             );
                         }
 
-                        // Check for new tasks
+                        // Check for new tasks that match skills
                         if (availableTasks.length > lastTaskCount && lastTaskCount > 0) {
                             const newTasks = availableTasks.slice(0, availableTasks.length - lastTaskCount);
                             newTasks.forEach(task => {
                                 if (taskMatchesSkills(task)) {
                                     addNotification(
                                         'New Task Match!',
-                                        `${task.taskDescription} - R${task.budgetAmount || 'Open'}`,
+                                        `${task.taskDescription} - This matches your skills!`,
                                         task.id
                                     );
                                 }
@@ -1122,6 +1179,28 @@
             function renderTasks() {
                 let html = '';
 
+                // Matching Requests Section (poster selected this helper)
+                if (matchingRequests.length > 0) {
+                    html += '<div class="matching-section">';
+                    html += '<div class="matching-header">You\'ve Been Selected!</div>';
+                    
+                    matchingRequests.forEach(task => {
+                        html += `
+                            <div class="matching-card">
+                                <div class="matching-title">${task.taskDescription}</div>
+                                <div class="matching-poster">Posted by: ${task.userName || 'Someone'}</div>
+                                <div class="matching-status">⏳ Waiting for you to confirm</div>
+                                <button class="action-btn" style="margin-top: 8px;" onclick="confirmMatch('${task.id}')">
+                                    <span class="material-symbols-outlined">check</span>
+                                    Confirm & Start
+                                </button>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                }
+
                 // In Progress Section
                 if (inProgressTasks.length > 0) {
                     html += '<div class="in-progress-section">';
@@ -1141,7 +1220,7 @@
                                         R${task.budgetAmount || 'Open'}
                                     </span>
                                 </div>
-                                <div class="in-progress-status">Task in progress</div>
+                                <div class="in-progress-status">✅ Task in progress</div>
                             </div>
                         `;
                     });
@@ -1165,7 +1244,7 @@
 
                         html += `
                             <div class="task-card ${isMatch ? 'matched' : ''}" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
-                                ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
+                                ${isMatch ? '<div class="skill-match">⭐ Matches your skills</div>' : ''}
                                 
                                 <div class="task-row-top">
                                     <div class="task-title">${taskTitle}</div>
@@ -1202,9 +1281,9 @@
                                                 <button onclick="event.stopPropagation(); makeOffer('${taskId}')">Send</button>
                                             </div>
                                         ` : `
-                                            <button class="action-btn" onclick="event.stopPropagation(); acceptTask('${taskId}', ${budget})">
-                                                <span class="material-symbols-outlined">check</span>
-                                                Accept
+                                            <button class="action-btn" onclick="event.stopPropagation(); expressInterest('${taskId}', ${budget})">
+                                                <span class="material-symbols-outlined">handshake</span>
+                                                I'm interested
                                             </button>
                                         `}
                                     </div>
@@ -1217,24 +1296,45 @@
                 sheetContent.innerHTML = html;
             }
 
-            // ===== SELECT TASK =====
-            window.selectTask = function(taskId) {
-                const card = document.querySelector(`[data-task-id="${taskId}"]`);
-                if (card) {
-                    const wasExpanded = card.classList.contains('expanded');
-                    
-                    document.querySelectorAll('.task-card').forEach(c => {
-                        if (c.dataset.taskId !== taskId) {
-                            c.classList.remove('expanded');
-                        }
-                    });
-                    
-                    card.classList.toggle('expanded');
-                    
-                    if (!wasExpanded) {
-                        calculateRoute(taskId);
-                    }
+            // ===== EXPRESS INTEREST (instead of direct accept) =====
+            window.expressInterest = async function(taskId, budget) {
+                if (!isOnline) {
+                    showToast('Set status to available');
+                    return;
                 }
+
+                const task = availableTasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                // In real implementation, this would notify the poster
+                showToast('Poster notified of your interest!');
+                
+                addNotification(
+                    'Interest Sent',
+                    `You expressed interest in: ${task.taskDescription}`,
+                    taskId
+                );
+            };
+
+            // ===== CONFIRM MATCH (poster selected this helper) =====
+            window.confirmMatch = async function(taskId) {
+                const task = matchingRequests.find(t => t.id === taskId);
+                if (!task) return;
+
+                // Move to in-progress
+                task.status = 'in-progress';
+                inProgressTasks.unshift(task);
+                matchingRequests = matchingRequests.filter(t => t.id !== taskId);
+                
+                renderTasks();
+                
+                showToast('Match confirmed! Task is now in progress.');
+                
+                addNotification(
+                    'Match Confirmed',
+                    `You confirmed: ${task.taskDescription}`,
+                    taskId
+                );
             };
 
             // ===== MAKE OFFER =====
@@ -1256,37 +1356,24 @@
                 input.value = '';
             };
 
-            // ===== ACCEPT TASK =====
-            window.acceptTask = async function(taskId, budget) {
-                if (!isOnline) {
-                    showToast('Set status to available');
-                    return;
+            // ===== SELECT TASK =====
+            window.selectTask = function(taskId) {
+                const card = document.querySelector(`[data-task-id="${taskId}"]`);
+                if (card) {
+                    const wasExpanded = card.classList.contains('expanded');
+                    
+                    document.querySelectorAll('.task-card').forEach(c => {
+                        if (c.dataset.taskId !== taskId) {
+                            c.classList.remove('expanded');
+                        }
+                    });
+                    
+                    card.classList.toggle('expanded');
+                    
+                    if (!wasExpanded) {
+                        calculateRoute(taskId);
+                    }
                 }
-
-                const task = availableTasks.find(t => t.id === taskId);
-                if (!task) return;
-
-                // Update task status
-                task.status = 'in-progress';
-                task.helperId = currentUser.email;
-                
-                // Move to in-progress
-                inProgressTasks.unshift(task);
-                availableTasks = availableTasks.filter(t => t.id !== taskId);
-                
-                renderTasks();
-                
-                routeInfo.classList.remove('active');
-                if (endMarker) endMarker.remove();
-                map.getSource('route').setData({
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: [] }
-                });
-                
-                showToast('Task accepted! Check "In Progress" section.');
-                
-                // Add notification
-                addNotification('Task Accepted', `You accepted: ${task.taskDescription}`, taskId);
             };
 
             // ===== ADD MARKERS =====
