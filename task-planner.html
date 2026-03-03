@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TaskMart · Create Task</title>
+    <title>TaskMart · Helper</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,9 +26,6 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    
     <!-- Config -->
     <script src="/config.js"></script>
 
@@ -40,9 +37,7 @@
         }
 
         body {
-            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            font-weight: 400;
-            font-size: 16px;
+            font-family: 'Manrope', sans-serif;
             background: #000;
             height: 100vh;
             height: 100dvh;
@@ -59,61 +54,6 @@
             line-height: 1 !important;
         }
 
-        /* === SPLASH SCREEN === */
-        .splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: #000;
-            z-index: 9999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.8s ease;
-            pointer-events: none;
-        }
-
-        .splash-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .splash-logo {
-            font-family: 'Codec Cold News', sans-serif;
-            font-size: 2.5rem;
-            color: white;
-            letter-spacing: 2px;
-            text-transform: lowercase;
-            opacity: 0;
-            transform: scale(0.9);
-            animation: logoAppear 2s ease forwards;
-        }
-
-        @keyframes logoAppear {
-            0% {
-                opacity: 0;
-                transform: scale(0.9);
-                letter-spacing: 2px;
-            }
-            30% {
-                opacity: 0.8;
-                transform: scale(1.05);
-                letter-spacing: 4px;
-            }
-            60% {
-                opacity: 1;
-                transform: scale(1);
-                letter-spacing: 2px;
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-                letter-spacing: 2px;
-            }
-        }
-
         /* === FULLSCREEN MAP - DARK STYLE === */
         #map {
             position: absolute;
@@ -124,1052 +64,1864 @@
             z-index: 1;
         }
 
-        /* Draggable pin */
-        .draggable-pin {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -100%);
-            width: 28px;
-            height: 28px;
-            background: #000000;
+        /* === CUSTOM MARKERS === */
+        .helper-marker {
+            width: 24px;
+            height: 24px;
+            background: #003fe1;
             border: 2px solid white;
-            border-radius: 50% 50% 50% 0;
-            rotate: -45deg;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            z-index: 100;
-            cursor: grab;
-            touch-action: none;
-            pointer-events: auto;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,63,225,0.3);
+            z-index: 10;
         }
 
-        .draggable-pin:active {
-            cursor: grabbing;
-            transform: translate(-50%, -100%) scale(1.05) rotate(-45deg);
-        }
-
-        .draggable-pin::after {
+        .helper-marker::after {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: white;
+            animation: pulse-white 1.5s infinite;
+        }
+
+        .helper-radius {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(0, 63, 225, 0.15);
+            border: 2px solid rgba(0, 63, 225, 0.4);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: pulse-blue 2.5s infinite;
+            z-index: 5;
+        }
+
+        @keyframes pulse-blue {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
+        }
+
+        .poster-marker {
+            width: 24px;
+            height: 24px;
+            background: black;
+            border: 2px solid white;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .poster-marker::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 10px;
             height: 10px;
             background: white;
             border-radius: 50%;
+            animation: pulse-white 1.5s infinite;
         }
 
-        /* === WHITE CONTAINER - HOME SHEET === */
-        .home-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-            z-index: 10;
-            padding: 32px 20px 28px;
-            transition: padding-bottom 0.3s ease;
+        @keyframes pulse-white {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
-        .home-sheet.keyboard-open {
-            padding-bottom: 120px;
+        /* === LEFT SIDE NAVIGATION MENU - FIXED === */
+        .nav-menu {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10000;
+            pointer-events: auto;
         }
 
-        .sheet-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            margin-top: 8px;
-        }
-
-        .home-sheet h2 {
-            font-size: 1.3rem;
-            font-weight: 500;
-            color: #000000;
-            line-height: 1.2;
-            letter-spacing: -0.02em;
-            margin: 0;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .refresh-location-btn {
-            background: #000000;
-            border: none;
+        .menu-icon {
             width: 44px;
             height: 44px;
+            background: white;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: none;
+            position: relative;
+            z-index: 10001;
         }
 
-        .refresh-location-btn:active {
-            transform: scale(0.9);
-            background: #333333;
-        }
-
-        .refresh-location-btn .material-symbols-outlined {
-            color: white !important;
+        .menu-icon .material-symbols-outlined {
+            color: #000;
             font-size: 24px !important;
         }
 
-        .refresh-location-btn.loading {
-            opacity: 0.7;
+        /* === RIGHT SIDE STACK === */
+        .right-stack {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
             pointer-events: none;
         }
 
-        .refresh-location-btn.loading .material-symbols-outlined {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* Search container */
-        .search-container {
-            width: 100%;
-            max-width: 750px;
-            margin-bottom: 0.5rem;
-            position: relative;
-        }
-        .search-wrapper {
-            position: relative;
-            width: 100%;
-        }
-        .search-input {
-            width: 100%;
-            padding: 1.2rem 2.2rem;
-            border: none !important;
-            background-color: #f0f0f0 !important;
-            color: rgba(0,0,0,0.8);
-            outline: none;
-            transition: box-shadow 0.2s ease;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 200 !important;
-            font-size: 1rem !important;
-        }
-        .search-input:focus {
-            outline: 2px solid rgba(0,0,0,0.2);
-        }
-        .search-input::placeholder {
-            color: rgba(0,0,0,0.4);
-            font-weight: 200 !important;
-        }
-
-        .search-circle-btn {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
+        .availability-card {
+            background: white;
+            height: 44px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-        .search-circle-btn .chevron-svg {
-            fill: #000000;
-            width: 18px;
-            height: 18px;
-            transition: transform 0.3s ease-in-out;
-        }
-        .search-circle-btn:active .chevron-svg {
-            transform: rotate(90deg);
+            gap: 8px;
+            cursor: pointer;
+            border: none;
+            width: fit-content;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
         }
 
-        .suggestions-list {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #e0e0e0;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .suggestions-list.active {
-            display: block;
-        }
-        .suggestion-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 300;
-            color: #333;
-            border-bottom: 1px solid #f0f0f0;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #003fe1;
             transition: background 0.2s;
         }
-        .suggestion-item:last-child {
-            border-bottom: none;
-        }
-        .suggestion-item:hover {
-            background-color: #f5f5f5;
+
+        .status-dot.offline {
+            background: #ccc;
         }
 
-        /* === CREATE TASK CONTAINER === */
-        .create-task-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        .status-text {
+            color: #000;
+            font-size: 0.85rem;
+            font-weight: 400;
+        }
+
+        .earnings-card {
             background: white;
-            z-index: 1000000;
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .create-task-header {
+            height: 44px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 1.25rem 1.25rem 0.75rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            flex-shrink: 0;
+            gap: 12px;
+            width: fit-content;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
         }
 
-        .close-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .close-btn .material-symbols-outlined {
-            color: #000000 !important;
-            font-size: 28px !important;
-        }
-
-        .create-task-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #000000;
-            margin: 0;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .header-spacer {
-            width: 32px;
-        }
-
-        .create-task-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem 1.25rem 2rem;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .section {
-            margin-bottom: 2rem;
-        }
-
-        .section-label {
-            font-size: 0.9rem;
+        .earnings-label {
+            font-size: 0.8rem;
             font-weight: 300;
-            color: #000000;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: 'Manrope', sans-serif;
+            color: #666;
+            text-transform: lowercase;
         }
 
-        .section-label .material-symbols-outlined {
-            color: #000000 !important;
-            font-size: 20px !important;
+        .earnings-label::first-letter {
+            text-transform: uppercase;
         }
 
-        .location-field-wrapper {
-            position: relative;
-            margin-bottom: 1rem;
+        .earnings-amount {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #003fe1;
         }
 
-        .location-input, .street-input, .task-input, .budget-input, .extra-notes {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            background-color: #f0f0f0 !important;
-            border: none !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 200 !important;
-            font-size: 1rem !important;
-            color: rgba(0,0,0,0.8);
-            outline: none;
-        }
-
-        .location-input:focus, .street-input:focus, .task-input:focus, .budget-input:focus, .extra-notes:focus {
-            outline: 2px solid rgba(0,0,0,0.2);
-        }
-
-        .location-input::placeholder, .street-input::placeholder, .task-input::placeholder, .budget-input::placeholder, .extra-notes::placeholder {
-            color: rgba(0,0,0,0.4);
-            font-weight: 200 !important;
-        }
-
-        .location-icon {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background-color: #000000;
-            transition: background-color 0.2s;
-            border: none;
-            cursor: pointer;
+        .notification-bell {
+            background: white;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: auto;
+            position: relative;
+            border: none;
         }
-        .location-icon:hover {
-            background-color: #333333;
-        }
-        .location-icon .material-symbols-outlined {
-            color: white !important;
+
+        .notification-bell .material-symbols-outlined {
+            color: #000;
             font-size: 22px !important;
         }
 
-        .char-count {
-            text-align: right;
-            font-size: 0.75rem;
-            color: rgba(0,0,0,0.4);
-            margin-top: 0.35rem;
-            font-weight: 200;
+        .notification-bell.has-notifications {
+            animation: shake 0.5s ease-in-out;
         }
 
-        .more-details-btn-container {
-            display: flex;
-            justify-content: flex-end;
-            margin: 0.75rem 0 0.5rem;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+            20%, 40%, 60%, 80% { transform: translateX(2px); }
         }
 
-        .more-details-btn {
-            background: #000000;
-            border: none;
-            padding: 0.5rem 1.2rem;
-            font-size: 0.9rem;
-            font-weight: 500;
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #000;
             color: white;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .more-details-btn .material-symbols-outlined {
-            font-size: 18px !important;
-            color: white !important;
-        }
-
-        .collapsible-section {
-            background: #f5f5f5;
-            padding: 1.25rem;
-            margin-top: 1rem;
-        }
-
-        .when-options, .budget-options {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .when-option, .budget-option {
-            flex: 1;
-            padding: 0.85rem 0;
-            font-size: 1rem;
-            font-weight: 400;
-            cursor: pointer;
-            text-align: center;
-            border: none;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .when-option.active, .budget-option.active {
-            background: #000000;
-            color: white;
-        }
-
-        .when-option.inactive, .budget-option.inactive {
-            background: #e0e0e0;
-            color: #000000;
-        }
-
-        .date-time-pickers {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        .date-time-box {
-            flex: 1;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            padding: 0.85rem 0.5rem;
-            background: #e0e0e0;
+            font-weight: 400;
+        }
+
+        /* === FLOATING DISTANCE CARD === */
+        .floating-distance-card {
+            position: fixed;
+            bottom: calc(35% + 20px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            height: 44px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 50;
+            pointer-events: auto;
             cursor: pointer;
-            position: relative;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 300;
+            border: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, bottom 0.3s ease;
+            white-space: nowrap;
         }
 
-        .date-time-box .material-symbols-outlined {
-            color: #000000 !important;
+        .floating-distance-card.active {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .budget-field-wrapper {
-            position: relative;
-            margin-top: 0.5rem;
+        .tasks-sheet.expanded + .floating-distance-card {
+            bottom: calc(70% + 20px);
         }
 
-        .currency-symbol {
-            position: absolute;
-            left: 1.2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #000000;
-            font-weight: 300;
+        .floating-distance-card .material-symbols-outlined {
+            color: #000 !important;
+            font-size: 18px !important;
         }
 
-        .budget-input {
-            padding-left: 2.5rem;
-        }
-        .budget-input[type="number"] {
-            -moz-appearance: textfield;
-        }
-        .budget-input[type="number"]::-webkit-outer-spin-button,
-        .budget-input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .floating-distance-card span {
+            color: #000;
+            font-size: 0.85rem;
+            font-weight: 400;
         }
 
-        .upload-area {
-            background: #f0f0f0;
-            padding: 2rem 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 1rem;
+        .route-toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .route-toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* === FULL SCREEN NOTIFICATIONS PAGE === */
+        .notifications-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 20000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
+            overflow: hidden;
         }
 
-        .upload-area:hover {
-            background: #e0e0e0;
+        .notifications-fullscreen.active {
+            transform: translateY(0);
         }
 
-        .upload-area .material-symbols-outlined {
-            font-size: 48px !important;
-            color: #000000 !important;
-            background: rgba(0,0,0,0.05);
-            padding: 1rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .upload-area p {
-            color: #000000;
-            font-weight: 500;
-            font-size: 1.1rem;
-            margin: 0;
-            font-family: 'Manrope', sans-serif;
-        }
-
-        .upload-area .upload-hint {
-            font-size: 0.85rem;
-            color: rgba(0,0,0,0.5);
-            font-weight: 200;
-            margin-top: -0.25rem;
-        }
-
-        .upload-status {
-            margin-top: 0.5rem;
-            padding: 0.75rem;
-            font-size: 0.9rem;
-            font-weight: 300;
+        .notifications-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            transition: all 0.2s;
-        }
-
-        .upload-status.info {
-            background: rgba(0,0,0,0.1);
-            color: #000000;
-        }
-
-        .upload-status.success {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-        }
-
-        .upload-status.error {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-        }
-
-        .upload-status.warning {
-            background: rgba(255, 193, 7, 0.1);
-            color: #856404;
-        }
-
-        .upload-status .material-symbols-outlined {
-            font-size: 20px !important;
-        }
-
-        .upload-progress {
-            font-size: 0.75rem;
-            color: #000000;
-            margin-top: 0.25rem;
-            font-weight: 200;
-        }
-
-        .image-preview-container {
-            margin-top: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-        
-        .image-preview-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .image-preview {
-            width: 70px;
-            height: 70px;
-            object-fit: cover;
-            border: 2px solid #000000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        
-        .remove-image {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: #000000;
-            color: white;
-            border: none;
-            width: 22px;
-            height: 22px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
-        }
-        
-        .remove-image:hover {
-            transform: scale(1.1);
-        }
-
-        .extra-notes {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .post-btn-container {
-            padding: 1rem 1.25rem 1.5rem;
-            border-top: 1px solid rgba(0,0,0,0.08);
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             background: white;
             flex-shrink: 0;
         }
 
-        .next-button {
-            width: 100%;
-            background: #000000;
-            color: white;
-            border: none;
-            padding: 0.9rem;
-            font-size: 1.1rem;
+        .notifications-header h2 {
+            font-size: 1.2rem;
             font-weight: 600;
+            color: #000;
+            text-transform: lowercase;
+        }
+
+        .notifications-header h2::first-letter {
+            text-transform: uppercase;
+        }
+
+        .close-notifications {
+            width: 44px;
+            height: 44px;
+            background: none;
+            border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
-            font-family: 'Manrope', sans-serif;
-        }
-        .next-button:disabled { 
-            opacity: 0.5; 
-            cursor: not-allowed; 
-            background: #666;
         }
 
-        /* === OFFERS PAGE - CLEAN === */
-        .offers-container {
+        .close-notifications .material-symbols-outlined {
+            color: #000;
+            font-size: 24px !important;
+        }
+
+        .notifications-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .notification-group {
+            margin-bottom: 30px;
+        }
+
+        .notification-group h3 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+            text-transform: lowercase;
+        }
+
+        .notification-group h3::first-letter {
+            text-transform: uppercase;
+        }
+
+        .full-notification-item {
+            padding: 16px;
+            background: #fafafa;
+            margin-bottom: 12px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .full-notification-item:hover {
+            background: #f0f0f0;
+        }
+
+        .full-notification-item.pending {
+            border-left-color: #f59e0b;
+            background: #fff9e6;
+        }
+
+        .full-notification-item.accepted {
+            border-left-color: #10b981;
+            background: #f0fff4;
+        }
+
+        .full-notification-item.rejected {
+            border-left-color: #ef4444;
+            background: #fff0f0;
+        }
+
+        .full-notification-item.earnings {
+            border-left-color: #003fe1;
+            background: #f0f5ff;
+        }
+
+        .full-notification-item.status-change {
+            border-left-color: #003fe1;
+            background: #f0f5ff;
+        }
+
+        .full-notification-item.chat {
+            border-left-color: #8b5cf6;
+            background: #f5f3ff;
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: #999;
+            margin-bottom: 6px;
+        }
+
+        .notification-main-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 6px;
+            text-transform: lowercase;
+        }
+
+        .notification-main-title::first-letter {
+            text-transform: uppercase;
+        }
+
+        .notification-desc {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            text-transform: lowercase;
+        }
+
+        .notification-desc::first-letter {
+            text-transform: uppercase;
+        }
+
+        .notification-amount {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #003fe1;
+            margin-top: 6px;
+        }
+
+        .notification-status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            font-weight: 400;
+            margin-top: 8px;
+            text-transform: lowercase;
+        }
+
+        .notification-status-badge::first-letter {
+            text-transform: uppercase;
+        }
+
+        .notification-status-badge.pending {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .notification-status-badge.accepted {
+            background: #10b981;
+            color: white;
+        }
+
+        .notification-status-badge.rejected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .notification-status-badge.earned {
+            background: #003fe1;
+            color: white;
+        }
+
+        .notification-status-badge.offline {
+            background: #ccc;
+            color: #000;
+        }
+
+        .notification-status-badge.online {
+            background: #003fe1;
+            color: white;
+        }
+
+        .notification-status-badge.chat {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .clear-all-btn {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 0 16px;
+            height: 44px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            min-width: 120px;
+            text-transform: lowercase;
+        }
+
+        .clear-all-btn::first-letter {
+            text-transform: uppercase;
+        }
+
+        /* === CHAT MODAL === */
+        .chat-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 10000000;
-            display: none;
+            background: white;
+            z-index: 30000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        .offers-container.active {
-            display: flex;
+        .chat-modal.active {
+            transform: translateY(0);
         }
 
-        .offers-map-section {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        #offersMap {
-            width: 100%;
-            height: 100%;
-        }
-
-        .offers-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            z-index: 2;
-            padding: 20px;
-            max-height: 30%;
-            overflow-y: auto;
-            border-top: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .offers-back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 44px;
-            height: 44px;
-            background: white;
+        .chat-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            z-index: 3;
-            cursor: pointer;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: white;
+            gap: 16px;
+        }
+
+        .chat-back-btn {
+            width: 32px;
+            height: 32px;
+            background: none;
             border: none;
-            color: #000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .offers-back-btn .material-symbols-outlined {
-            color: #000 !important;
-        }
-
-        .no-offers-message {
+            cursor: pointer;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #000000;
-            text-align: center;
-            gap: 1rem;
-            padding: 2rem 0;
         }
 
-        .no-offers-message .material-symbols-outlined {
-            font-size: 48px !important;
-            color: #000000 !important;
-            opacity: 0.3;
+        .chat-back-btn .material-symbols-outlined {
+            color: #000;
+            font-size: 24px !important;
         }
 
-        .no-offers-message p {
+        .chat-poster-info {
+            flex: 1;
+        }
+
+        .chat-poster-name {
             font-size: 1rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+        .chat-task-title {
+            font-size: 0.8rem;
+            color: #666;
             font-weight: 300;
         }
 
-        .no-offers-message small {
-            color: #999;
-            font-weight: 200;
+        .chat-task-details {
+            padding: 16px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
-        .map-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            z-index: 5000000;
-            display: none;
+        .chat-detail-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .chat-detail-label {
+            width: 80px;
+            color: #666;
+            font-weight: 300;
+        }
+
+        .chat-detail-value {
+            flex: 1;
+            color: #000;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 0;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .chat-message.helper {
+            align-self: flex-end;
+            background: #003fe1;
+            color: white;
+        }
+
+        .chat-message.poster {
+            align-self: flex-start;
+            background: #f0f0f0;
+            color: #000;
+        }
+
+        .chat-message-time {
+            font-size: 0.65rem;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-input-area {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            gap: 12px;
+            background: white;
+        }
+
+        .chat-input {
+            flex: 1;
+            height: 44px;
+            padding: 0 16px;
+            border: 1px solid #e0e0e0;
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #003fe1;
+        }
+
+        .chat-send-btn {
+            width: 44px;
+            height: 44px;
+            background: #003fe1;
+            border: none;
+            cursor: pointer;
+            display: flex;
             align-items: center;
             justify-content: center;
         }
-        .map-modal.active { display: flex; }
-        
-        .map-modal-content {
-            background: white;
-            width: 90%;
-            max-width: 500px;
-            overflow: hidden;
-        }
-        
-        .map-modal-header {
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-        
-        .map-modal-header h3 {
-            color: #000000;
-            font-size: 1.1rem;
-            font-weight: 500;
-            font-family: 'Manrope', sans-serif;
-        }
-        
-        #mapModalContainer {
-            height: 300px;
-            width: 100%;
-        }
-        
-        .confirm-button {
-            margin: 1rem;
-            padding: 0.7rem 2rem;
-            background: #000000;
+
+        .chat-send-btn .material-symbols-outlined {
             color: white;
-            border: none;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            float: right;
-            font-family: 'Manrope', sans-serif;
+            font-size: 20px !important;
         }
 
-        .loading-overlay {
+        .chat-send-btn:hover {
+            background: #002db3;
+        }
+
+        /* === TASKS SHEET === */
+        .tasks-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            z-index: 10;
+            max-height: 35%;
+            display: flex;
+            flex-direction: column;
+            transition: max-height 0.3s ease;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+        }
+
+        .tasks-sheet.expanded {
+            max-height: 70%;
+        }
+
+        .tasks-sheet.collapsed {
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        .tasks-sheet.collapsed .sheet-content,
+        .tasks-sheet.collapsed .in-progress-section,
+        .tasks-sheet.collapsed .matching-section {
+            display: none;
+        }
+
+        .sheet-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            background: white;
+        }
+
+        .sheet-header-left h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #000;
+            text-transform: lowercase;
+        }
+
+        .sheet-header-left h3::first-letter {
+            text-transform: uppercase;
+        }
+
+        .expand-icon {
+            transition: transform 0.3s;
+            color: #000 !important;
+            font-size: 20px !important;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .tasks-sheet.collapsed .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .sheet-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        /* === SKELETON LOADING === */
+        .skeleton-card {
+            padding: 16px 0;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: #f0f0f0;
+            width: 100%;
+        }
+
+        .skeleton-line.short { width: 60%; }
+        .skeleton-line.medium { width: 80%; }
+        .skeleton-line.long { width: 100%; }
+
+        /* === TASK CARDS === */
+        .task-card {
+            padding: 16px 0;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+
+        .task-card:last-child {
+            border-bottom: none;
+        }
+
+        .task-card:hover {
+            opacity: 0.7;
+        }
+
+        .task-card.matched {
+            border-left: 3px solid #003fe1;
+            padding-left: 12px;
+        }
+
+        .task-price-above {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #003fe1;
+            margin-bottom: 2px;
+        }
+
+        .task-price-above.open {
+            font-weight: 400;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .task-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #000;
+            line-height: 1.3;
+            text-transform: lowercase;
+        }
+
+        .task-title::first-letter {
+            text-transform: uppercase;
+        }
+
+        .skill-match {
+            font-size: 0.7rem;
+            color: white;
+            background: #003fe1;
+            display: inline-block;
+            padding: 4px 10px;
+            font-weight: 400;
+            width: fit-content;
+            margin-top: 4px;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #000;
+            background: transparent;
+            font-weight: 400;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: #000;
+            text-transform: lowercase;
+        }
+
+        .action-btn::first-letter {
+            text-transform: uppercase;
+        }
+
+        .action-btn:hover {
+            background: #000;
+            color: white;
+        }
+
+        .action-btn:hover .material-symbols-outlined {
+            color: white !important;
+        }
+
+        .action-btn .material-symbols-outlined {
+            font-size: 16px !important;
+            color: #000 !important;
+        }
+
+        .action-btn.pass {
+            border-color: #ccc;
+            color: #999;
+        }
+
+        .action-btn.pass:hover {
+            background: #f0f0f0;
+            color: #666;
+            border-color: #999;
+        }
+
+        .offer-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .offer-input input {
+            flex: 1;
+            padding: 10px;
+            background: #f5f5f5;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 300;
+            outline: none;
+        }
+
+        .offer-input input:focus {
+            background: #eee;
+        }
+
+        .offer-input input::placeholder {
+            color: #999;
+            font-weight: 300;
+            text-transform: lowercase;
+        }
+
+        .offer-input input::placeholder::first-letter {
+            text-transform: uppercase;
+        }
+
+        .offer-input button {
+            padding: 10px 16px;
+            background: #000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 400;
+            font-size: 0.8rem;
+            text-transform: lowercase;
+        }
+
+        .offer-input button::first-letter {
+            text-transform: uppercase;
+        }
+
+        .offer-input button:hover {
+            background: #333;
+        }
+
+        .task-expanded {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            margin-top: 0;
+        }
+
+        .task-card.expanded .task-expanded {
+            max-height: 400px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .expanded-details {
+            background: #fafafa;
+            padding: 16px;
+        }
+
+        .expanded-details p {
+            font-weight: 300;
+            color: #333;
+            margin-bottom: 12px;
+            line-height: 1.5;
+            font-size: 0.85rem;
+            text-transform: lowercase;
+        }
+
+        .expanded-details p::first-letter {
+            text-transform: uppercase;
+        }
+
+        /* === IN-PROGRESS SECTION === */
+        .in-progress-section {
+            padding: 16px;
+            background: #fafafa;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .in-progress-header {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 12px;
+            text-transform: lowercase;
+        }
+
+        .in-progress-header::first-letter {
+            text-transform: uppercase;
+        }
+
+        .in-progress-card {
+            padding: 12px;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .in-progress-card:hover {
+            background: #f5f5f5;
+        }
+
+        .in-progress-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .in-progress-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 8px;
+            text-transform: lowercase;
+        }
+
+        .in-progress-title::first-letter {
+            text-transform: uppercase;
+        }
+
+        .in-progress-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 300;
+        }
+
+        .in-progress-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .in-progress-meta .material-symbols-outlined {
+            font-size: 14px !important;
+            color: #999 !important;
+        }
+
+        .in-progress-status {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #f0f0f0;
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 300;
+            margin-top: 8px;
+            text-transform: lowercase;
+        }
+
+        .in-progress-status::first-letter {
+            text-transform: uppercase;
+        }
+
+        /* === MATCHING REQUESTS SECTION === */
+        .matching-section {
+            padding: 16px;
+            background: #fff9f9;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .matching-header {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 12px;
+            text-transform: lowercase;
+        }
+
+        .matching-header::first-letter {
+            text-transform: uppercase;
+        }
+
+        .matching-card {
+            padding: 12px;
+            background: white;
+            border: 1px solid #000;
+            margin-bottom: 8px;
+        }
+
+        .matching-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .matching-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 8px;
+            text-transform: lowercase;
+        }
+
+        .matching-title::first-letter {
+            text-transform: uppercase;
+        }
+
+        .matching-poster {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: lowercase;
+        }
+
+        .matching-poster::first-letter {
+            text-transform: uppercase;
+        }
+
+        .matching-status {
+            font-size: 0.7rem;
+            color: #f59e0b;
+            font-weight: 400;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-transform: lowercase;
+        }
+
+        .matching-status::first-letter {
+            text-transform: uppercase;
+        }
+
+        .matching-status .material-symbols-outlined {
+            font-size: 14px !important;
+            color: #f59e0b !important;
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 8px;
+            background: #000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 300;
+            text-transform: lowercase;
+        }
+
+        .confirm-btn::first-letter {
+            text-transform: uppercase;
+        }
+
+        .confirm-btn:hover {
+            background: #333;
+        }
+
+        /* === TOAST === */
+        .toast {
             position: fixed;
-            top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.5);
-            z-index:3000000;
-            display:none;
-            align-items:center;
-            justify-content:center;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #000;
+            color: white;
+            padding: 12px 20px;
+            z-index: 3000;
+            display: none;
+            font-size: 0.85rem;
+            font-weight: 300;
+            text-align: center;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            text-transform: lowercase;
         }
-        .loading-overlay.active { display:flex; }
-        .loading-content {
-            background:white;
-            padding:2rem;
+
+        .toast::first-letter {
+            text-transform: uppercase;
         }
-        .success-toast, .error-toast {
-            position:fixed;
-            top:20px;
-            right:20px;
-            padding:1rem;
-            color:white;
-            display:none;
-            z-index:4000000;
+
+        .toast.show {
+            display: block;
+            animation: fadeIn 0.3s;
         }
-        .success-toast {
-            background: #28a745;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .error-toast {
-            background: #dc3545;
+
+        .loading-tasks {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-weight: 300;
+            text-transform: lowercase;
+        }
+
+        .loading-tasks::first-letter {
+            text-transform: uppercase;
+        }
+
+        .no-tasks {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-weight: 300;
+            text-transform: lowercase;
+        }
+
+        .no-tasks::first-letter {
+            text-transform: uppercase;
+        }
+
+        @media (min-width: 768px) {
+            .tasks-sheet {
+                left: 20px;
+                right: auto;
+                width: 380px;
+                bottom: 20px;
+                max-height: 70%;
+                border: 1px solid rgba(0,0,0,0.1);
+            }
+            
+            .floating-distance-card {
+                left: 210px;
+                transform: none;
+                bottom: 20px;
+            }
+            
+            .tasks-sheet.expanded ~ .floating-distance-card {
+                bottom: 20px;
+            }
+        }
+
+        /* Profile menu container - ensure it's above everything */
+        #profile-menu-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000000;
+            pointer-events: none;
+        }
+        
+        #profile-menu-container .profile-menu {
+            pointer-events: auto;
         }
     </style>
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div class="splash-screen" id="splashScreen">
-        <div class="splash-logo">taskmart</div>
-    </div>
-
-    <!-- MAP - DARK STYLE -->
     <div id="map"></div>
 
-    <!-- Draggable pin -->
-    <div class="draggable-pin" id="locationPin"></div>
-
-    <!-- WHITE CONTAINER - HOME SHEET -->
-    <div class="home-sheet" id="homeSheet">
-        <div class="sheet-header">
-            <h2>Find trusted help nearby.</h2>
-            <div class="header-actions">
-                <button class="refresh-location-btn" id="refreshLocationBtn">
-                    <span class="material-symbols-outlined">my_location</span>
-                </button>
-            </div>
-        </div>
-        
-        <div class="search-container">
-            <div class="search-wrapper">
-                <input type="text" class="search-input" id="mainSearchInput" placeholder="I need help with..." autocomplete="off">
-                <div id="mainSuggestionsList" class="suggestions-list"></div>
-                <button class="search-circle-btn" id="searchIconBtn">
-                    <svg viewBox="0 0 320 512" class="chevron-svg">
-                        <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CREATE TASK FULL SCREEN -->
-    <div class="create-task-container" id="createTaskContainer">
-        <div class="create-task-header">
-            <button class="close-btn" id="closeCreateTaskBtn">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-            <div class="create-task-title">Create task</div>
-            <div class="header-spacer"></div>
-        </div>
-
-        <div class="create-task-content">
-            <!-- Location Section -->
-            <div class="section">
-                <div class="section-label">
-                    <span class="material-symbols-outlined">location_on</span>
-                    Your location
-                </div>
-                <div class="location-field-wrapper">
-                    <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
-                    <button class="location-icon" id="openMapBtn">
-                        <span class="material-symbols-outlined">edit</span>
-                    </button>
-                </div>
-                <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
-            </div>
-
-            <!-- Task Description -->
-            <div class="section">
-                <div class="section-label">
-                    <span class="material-symbols-outlined">description</span>
-                    I need help with
-                </div>
-                <input type="text" class="task-input" id="taskInput" placeholder="Laundry, cleaning, plumbing..." maxlength="50">
-                <div class="char-count" id="taskCharCount">0/50</div>
-                
-                <div class="more-details-btn-container">
-                    <button class="more-details-btn" id="moreDetailsBtn">
-                        <span class="material-symbols-outlined">add_circle</span>
-                        More details
-                    </button>
-                </div>
-
-                <div class="collapsible-section" id="collapsibleSection" style="display: none;">
-                    <!-- When -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="section-label">When do you need help?</div>
-                        <div class="when-options">
-                            <button class="when-option active" id="whenNowBtn">Now</button>
-                            <button class="when-option inactive" id="whenLaterBtn">Later</button>
-                        </div>
-                        <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
-                            <div class="date-time-box" id="pickDateBtn">
-                                <span class="material-symbols-outlined">calendar_today</span>
-                                <span id="dateDisplay">Pick date</span>
-                                <input type="date" id="nativeDatePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
-                            </div>
-                            <div class="date-time-box" id="pickTimeBtn">
-                                <span class="material-symbols-outlined">schedule</span>
-                                <span id="timeDisplay">Pick time</span>
-                                <input type="time" id="nativeTimePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Budget -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="section-label">Your budget</div>
-                        <div class="budget-options">
-                            <button class="budget-option active" id="fixedBudgetBtn">Fixed</button>
-                            <button class="budget-option inactive" id="openBudgetBtn">Open to offers</button>
-                        </div>
-                        <div id="fixedBudgetInput">
-                            <div class="budget-field-wrapper">
-                                <span class="currency-symbol">R</span>
-                                <input type="number" class="budget-input" id="budgetAmount" placeholder="Enter amount" inputmode="numeric">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Images -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="section-label">Add images (optional)</div>
-                        
-                        <div class="upload-area" id="uploadArea">
-                            <span class="material-symbols-outlined">cloud_upload</span>
-                            <p>Tap to upload photos</p>
-                            <div class="upload-hint">JPG, PNG up to 5MB</div>
-                        </div>
-                        
-                        <div id="uploadStatus" class="upload-status info" style="display: none;">
-                            <span class="material-symbols-outlined">info</span>
-                            <span id="uploadStatusText">Ready to upload</span>
-                        </div>
-                        
-                        <div id="uploadProgress" class="upload-progress" style="display: none;"></div>
-                        
-                        <div id="imagePreviewContainer" class="image-preview-container"></div>
-                    </div>
-
-                    <!-- Extra Notes -->
-                    <div>
-                        <div class="section-label">Extra notes (optional)</div>
-                        <textarea class="extra-notes" id="extraNotes" placeholder="Any specific instructions..." rows="3"></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="post-btn-container">
-            <button class="next-button" id="nextBtn" disabled>Post task</button>
-        </div>
-    </div>
-
-    <!-- OFFERS PAGE -->
-    <div class="offers-container" id="offersContainer">
-        <div class="offers-map-section">
-            <div id="offersMap"></div>
-        </div>
-        
-        <div class="offers-sheet">
-            <div class="no-offers-message" id="noOffersMessage">
-                <span class="material-symbols-outlined">hourglass_empty</span>
-                <p>Waiting for offers</p>
-                <small>We'll notify you when helpers respond</small>
-            </div>
-            <div id="offersList" style="display: none;"></div>
-        </div>
-
-        <button class="offers-back-btn" id="offersBackBtn">
-            <span class="material-symbols-outlined">arrow_back</span>
+    <!-- Navigation Menu - Left Side - FIXED -->
+    <div class="nav-menu">
+        <button class="menu-icon" id="profileMenuBtn">
+            <span class="material-symbols-outlined">menu</span>
         </button>
     </div>
 
-    <!-- Map Modal -->
-    <div class="map-modal" id="mapModal">
-        <div class="map-modal-content">
-            <div class="map-modal-header">
-                <h3>Select precise location</h3>
-                <button class="close-btn" id="closeMapModalBtn">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div id="mapModalContainer"></div>
-            <button class="confirm-button" id="confirmLocationBtn">Confirm</button>
+    <!-- Right Side Stack -->
+    <div class="right-stack">
+        <button class="availability-card" id="onlineToggle">
+            <span class="status-dot" id="statusDot"></span>
+            <span class="status-text" id="statusText">Available</span>
+        </button>
+
+        <div class="earnings-card">
+            <span class="earnings-label">today</span>
+            <span class="earnings-amount" id="todayEarnings">R0</span>
+        </div>
+
+        <button class="notification-bell" id="notificationBell">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+        </button>
+    </div>
+
+    <!-- Floating Distance Card -->
+    <div class="floating-distance-card" id="floatingDistanceCard">
+        <span class="material-symbols-outlined" id="routeIcon">directions_car</span>
+        <span id="routeDistance">0 km</span>
+        <span class="material-symbols-outlined">fiber_manual_record</span>
+        <span id="routeDuration">0 min</span>
+        <span class="material-symbols-outlined route-toggle-icon" id="routeToggle">sync_alt</span>
+    </div>
+
+    <!-- Full Screen Notifications Page -->
+    <div class="notifications-fullscreen" id="notificationsFullscreen">
+        <div class="notifications-header">
+            <h2>Notifications</h2>
+            <button class="close-notifications" id="closeNotificationsBtn">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="notifications-content" id="notificationsFullContent">
+            <!-- Notifications will be populated here -->
         </div>
     </div>
 
-    <!-- Loading, toasts -->
-    <div class="loading-overlay" id="loadingOverlay"><div class="loading-content">Processing...</div></div>
-    <div class="success-toast" id="successToast"></div>
-    <div class="error-toast" id="errorToast"></div>
+    <!-- Chat Modal -->
+    <div class="chat-modal" id="chatModal">
+        <div class="chat-header">
+            <button class="chat-back-btn" id="closeChatBtn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="chat-poster-info">
+                <div class="chat-poster-name" id="chatPosterName">Poster Name</div>
+                <div class="chat-task-title" id="chatTaskTitle">Task title</div>
+            </div>
+        </div>
+        <div class="chat-task-details" id="chatTaskDetails">
+            <!-- Task details will be populated here -->
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Type a message...">
+            <button class="chat-send-btn" id="sendChatBtn">
+                <span class="material-symbols-outlined">send</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="tasks-sheet" id="tasksSheet">
+        <div class="sheet-header" id="sheetHeader">
+            <div class="sheet-header-left">
+                <h3>Tasks near you</h3>
+            </div>
+            <span class="material-symbols-outlined expand-icon" id="expandIcon">expand_less</span>
+        </div>
+
+        <div class="sheet-content" id="sheetContent">
+            <!-- Single skeleton card -->
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line medium"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <audio id="notificationSound" preload="auto">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-ding-101492.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="profile-menu-container"></div>
 
     <script>
         (function() {
             'use strict';
+
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+
+            let currentUser = null;
+            let currentLat = null;
+            let currentLng = null;
+            let availableTasks = [];
+            let inProgressTasks = [];
+            let matchingRequests = [];
+            let markers = [];
+            let startMarker = null;
+            let endMarker = null;
+            let map = null;
+            let isOnline = true;
+            let selectedTaskId = null;
+            let authToken = null;
+            let userSkills = [];
+            let notifications = [];
+            let todayEarnings = 0;
+            let notificationSound = document.getElementById('notificationSound');
+            let soundPlayedOnLoad = false;
+            let isDriving = true;
+            let drivingData = null;
+            let walkingData = null;
+            let activeChat = null;
+            let chatMessages = [];
+
+            // DOM Elements
+            const tasksSheet = document.getElementById('tasksSheet');
+            const sheetHeader = document.getElementById('sheetHeader');
+            const expandIcon = document.getElementById('expandIcon');
+            const sheetContent = document.getElementById('sheetContent');
+            const toast = document.getElementById('toast');
+            const floatingDistanceCard = document.getElementById('floatingDistanceCard');
+            const routeIcon = document.getElementById('routeIcon');
+            const routeDistance = document.getElementById('routeDistance');
+            const routeDuration = document.getElementById('routeDuration');
+            const routeToggle = document.getElementById('routeToggle');
+            const onlineToggle = document.getElementById('onlineToggle');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const notificationBell = document.getElementById('notificationBell');
+            const notificationBadge = document.getElementById('notificationBadge');
+            const notificationsFullscreen = document.getElementById('notificationsFullscreen');
+            const notificationsFullContent = document.getElementById('notificationsFullContent');
+            const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+            const todayEarningsSpan = document.getElementById('todayEarnings');
+            const profileMenuBtn = document.getElementById('profileMenuBtn');
             
-            if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
+            // Chat elements
+            const chatModal = document.getElementById('chatModal');
+            const closeChatBtn = document.getElementById('closeChatBtn');
+            const chatPosterName = document.getElementById('chatPosterName');
+            const chatTaskTitle = document.getElementById('chatTaskTitle');
+            const chatTaskDetails = document.getElementById('chatTaskDetails');
+            const chatMessagesEl = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendChatBtn = document.getElementById('sendChatBtn');
 
-            const API_BASE_URL = '';
-
-            const taskSuggestions = [
-                "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
-                "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
-                "plumbing (minor fixes)", "electrical work (minor)", "furniture assembly", "gardening / lawn care",
-                "painting walls / touch-ups", "moving / lifting heavy objects", "website setup",
-                "software troubleshooting", "device setup (phones/laptops)", "graphic design / logo design",
-                "social media support", "picking up parcels", "delivery of small items", "car washing / cleaning",
-                "running personal errands", "house sitting", "pet sitting", "event setup / decorating",
-                "photography / videography", "tutoring / lessons", "moving / relocation help",
-                "assembling electronics", "minor car maintenance", "package wrapping / gift prep",
-                "shopping for gifts / items", "plant care / watering", "cleaning windows", "packing / unpacking",
-                "minor sewing / clothing repair", "furniture moving", "appliance setup", "data entry / admin support",
-                "email / inbox management", "basic accounting / bookkeeping", "errand planning / scheduling",
-                "toy / small item repair", "basic sewing / mending", "recycling / trash pickup",
-                "inventory check / organizing", "pet training / basic commands", "tech device troubleshooting",
-                "gift wrapping / decoration", "small handyman tasks"
-            ];
-
-            async function saveTaskToFirebase(taskData) {
-                try {
-                    document.getElementById('loadingOverlay').classList.add('active');
+            // ===== PROFILE MENU FIX - DIRECT APPROACH =====
+            function setupProfileMenu() {
+                console.log('Setting up profile menu...');
+                
+                // Direct click handler on our button
+                profileMenuBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Menu button clicked');
                     
-                    const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(taskData)
-                    });
+                    // Try multiple approaches to find and click the actual menu button
+                    const possibleSelectors = [
+                        '#profile-menu-container .menu-btn',
+                        '#profile-menu-container button',
+                        '.profile-menu .menu-btn',
+                        '[id="profileMenuBtn"]'
+                    ];
                     
-                    if (!response.ok) {
-                        throw new Error('Failed to save task');
+                    let menuBtn = null;
+                    for (const selector of possibleSelectors) {
+                        menuBtn = document.querySelector(selector);
+                        if (menuBtn) break;
                     }
                     
-                    const result = await response.json();
-                    console.log('✅ Task saved:', result);
+                    if (menuBtn) {
+                        console.log('Found menu button, clicking...');
+                        menuBtn.click();
+                    } else {
+                        console.log('Menu button not found, will retry');
+                        // If not found, try to find it in the loaded content after a delay
+                        setTimeout(() => {
+                            const retryBtn = document.querySelector('#profile-menu-container .menu-btn') || 
+                                           document.querySelector('.profile-menu .menu-btn');
+                            if (retryBtn) {
+                                console.log('Found menu button on retry');
+                                retryBtn.click();
+                            } else {
+                                console.log('Still no menu button');
+                                showToast('Menu not loaded yet, please try again');
+                            }
+                        }, 500);
+                    }
+                });
+            }
+
+            // ===== LOAD PROFILE MENU WITH ERROR HANDLING =====
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load profile menu');
+                    return response.text();
+                })
+                .then(html => {
+                    const container = document.getElementById('profile-menu-container');
+                    container.innerHTML = html;
                     
-                    document.getElementById('loadingOverlay').classList.remove('active');
-                    showToast('Task posted!', 'success');
-                    return result.task;
+                    // Execute any scripts in the loaded HTML
+                    const scripts = container.getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        try {
+                            const script = document.createElement('script');
+                            script.textContent = scripts[i].textContent;
+                            document.body.appendChild(script);
+                        } catch (e) {
+                            console.log('Script execution error:', e);
+                        }
+                    }
                     
-                } catch (error) {
-                    console.error('Error saving task:', error);
-                    document.getElementById('loadingOverlay').classList.remove('active');
-                    showToast('Failed to save task', 'error');
-                    return null;
+                    console.log('Profile menu loaded successfully');
+                    setupProfileMenu();
+                })
+                .catch(error => {
+                    console.error('Failed to load profile menu:', error);
+                    showToast('Menu failed to load, please refresh');
+                    
+                    // Still set up click handler to show error
+                    profileMenuBtn.addEventListener('click', () => {
+                        showToast('Menu unavailable. Please refresh.');
+                    });
+                });
+
+            // ===== CHAT FUNCTIONS =====
+            function openChat(task, posterName, posterId) {
+                activeChat = {
+                    taskId: task.id,
+                    taskDescription: task.taskDescription,
+                    posterName: posterName,
+                    posterId: posterId,
+                    taskDetails: task
+                };
+                
+                chatPosterName.textContent = posterName;
+                chatTaskTitle.textContent = task.taskDescription;
+                
+                // Populate task details
+                let detailsHtml = `
+                    <div class="chat-detail-row">
+                        <span class="chat-detail-label">Location:</span>
+                        <span class="chat-detail-value">${task.location || 'Not specified'}</span>
+                    </div>
+                    <div class="chat-detail-row">
+                        <span class="chat-detail-label">When:</span>
+                        <span class="chat-detail-value">${task.when === 'now' ? 'Now' : (task.scheduledTime || 'Flexible')}</span>
+                    </div>
+                    <div class="chat-detail-row">
+                        <span class="chat-detail-label">Budget:</span>
+                        <span class="chat-detail-value">${task.budgetType === 'open' ? 'Open to offers' : 'R' + task.budgetAmount}</span>
+                    </div>
+                `;
+                
+                if (task.moreDetails) {
+                    detailsHtml += `
+                        <div class="chat-detail-row">
+                            <span class="chat-detail-label">Notes:</span>
+                            <span class="chat-detail-value">${task.moreDetails}</span>
+                        </div>
+                    `;
+                }
+                
+                if (task.streetName) {
+                    detailsHtml += `
+                        <div class="chat-detail-row">
+                            <span class="chat-detail-label">Street:</span>
+                            <span class="chat-detail-value">${task.streetName}</span>
+                        </div>
+                    `;
+                }
+                
+                chatTaskDetails.innerHTML = detailsHtml;
+                
+                // Load chat messages (simulated for now)
+                chatMessages = [
+                    {
+                        sender: 'poster',
+                        text: 'Hi! Thanks for your interest. Do you have experience with this?',
+                        time: '10:30 AM'
+                    },
+                    {
+                        sender: 'helper',
+                        text: 'Yes, I\'ve done this many times before!',
+                        time: '10:32 AM'
+                    }
+                ];
+                
+                renderChatMessages();
+                chatModal.classList.add('active');
+            }
+
+            function renderChatMessages() {
+                let html = '';
+                chatMessages.forEach(msg => {
+                    html += `
+                        <div class="chat-message ${msg.sender === 'helper' ? 'helper' : 'poster'}">
+                            ${msg.text}
+                            <div class="chat-message-time">${msg.time}</div>
+                        </div>
+                    `;
+                });
+                chatMessagesEl.innerHTML = html;
+                chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+            }
+
+            closeChatBtn.addEventListener('click', () => {
+                chatModal.classList.remove('active');
+                activeChat = null;
+            });
+
+            sendChatBtn.addEventListener('click', () => {
+                const text = chatInput.value.trim();
+                if (!text || !activeChat) return;
+                
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                chatMessages.push({
+                    sender: 'helper',
+                    text: text,
+                    time: timeString
+                });
+                
+                renderChatMessages();
+                chatInput.value = '';
+                
+                // Simulate poster response after 2 seconds
+                setTimeout(() => {
+                    chatMessages.push({
+                        sender: 'poster',
+                        text: 'Got it! Let me check and get back to you.',
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    renderChatMessages();
+                    addNotification('New message', `${activeChat.posterName} replied`, 'chat');
+                }, 2000);
+            });
+
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendChatBtn.click();
+                }
+            });
+
+            // ===== FULL SCREEN NOTIFICATIONS =====
+            notificationBell.addEventListener('click', () => {
+                renderFullNotifications();
+                notificationsFullscreen.classList.add('active');
+                
+                notifications.forEach(n => n.read = true);
+                updateNotificationBadge();
+                localStorage.setItem('taskmart_notifications', JSON.stringify(notifications));
+            });
+
+            closeNotificationsBtn.addEventListener('click', () => {
+                notificationsFullscreen.classList.remove('active');
+            });
+
+            function renderFullNotifications() {
+                let html = '';
+
+                const chatNotifs = notifications.filter(n => n.type === 'chat');
+                if (chatNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Messages</h3>';
+                    chatNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item chat" onclick="openChatFromNotification('${n.taskId}')">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge chat">Message</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                const statusNotifs = notifications.filter(n => n.type === 'status-change');
+                if (statusNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Status changes</h3>';
+                    statusNotifs.forEach(n => {
+                        const statusClass = n.status === 'online' ? 'online' : 'offline';
+                        html += `
+                            <div class="full-notification-item status-change">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge ${statusClass}">${n.status}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                const earningsNotifs = notifications.filter(n => n.type === 'earnings');
+                if (earningsNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Earnings</h3>';
+                    earningsNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item earnings">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                ${n.amount ? `<div class="notification-amount">+R${n.amount}</div>` : ''}
+                                <div class="notification-status-badge earned">Earned</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                const acceptedNotifs = notifications.filter(n => n.status === 'accepted');
+                if (acceptedNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Accepted</h3>';
+                    acceptedNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item accepted">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge accepted">Accepted</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                const pendingNotifs = notifications.filter(n => n.status === 'pending');
+                if (pendingNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Pending</h3>';
+                    pendingNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item pending">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge pending">Pending</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                const rejectedNotifs = notifications.filter(n => n.status === 'rejected');
+                if (rejectedNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Rejected</h3>';
+                    rejectedNotifs.forEach(n => {
+                        html += `
+                            <div class="full-notification-item rejected">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge rejected">Rejected</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                if (notifications.length === 0) {
+                    html = '<div style="text-align: center; padding: 60px 20px; color: #999;">No notifications yet</div>';
+                }
+
+                if (notifications.length > 0) {
+                    html += `
+                        <button class="clear-all-btn" onclick="clearAllNotifications()">Clear all</button>
+                    `;
+                }
+
+                notificationsFullContent.innerHTML = html;
+            }
+
+            window.openChatFromNotification = function(taskId) {
+                notificationsFullscreen.classList.remove('active');
+                const task = [...availableTasks, ...inProgressTasks, ...matchingRequests].find(t => t.id === taskId);
+                if (task) {
+                    openChat(task, task.userName || 'Poster', task.userId);
+                }
+            };
+
+            window.clearAllNotifications = function() {
+                notifications = [];
+                localStorage.removeItem('taskmart_notifications');
+                updateNotificationBadge();
+                renderFullNotifications();
+                showToast('All notifications cleared');
+            };
+
+            // ===== ROUTE TOGGLE =====
+            floatingDistanceCard.addEventListener('click', () => {
+                if (!drivingData || !walkingData) return;
+                
+                isDriving = !isDriving;
+                routeToggle.classList.toggle('rotated');
+                
+                if (isDriving) {
+                    routeIcon.textContent = 'directions_car';
+                    routeDistance.textContent = drivingData.distance;
+                    routeDuration.textContent = drivingData.duration;
+                } else {
+                    routeIcon.textContent = 'directions_walk';
+                    routeDistance.textContent = walkingData.distance;
+                    routeDuration.textContent = walkingData.duration;
+                }
+            });
+
+            // ===== ONLINE/OFFLINE TOGGLE =====
+            onlineToggle.addEventListener('click', () => {
+                isOnline = !isOnline;
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+                
+                statusDot.className = isOnline ? 'status-dot' : 'status-dot offline';
+                statusText.textContent = isOnline ? 'Available' : 'Offline';
+                
+                // Update helper marker visibility on map
+                if (startMarker) {
+                    if (isOnline) {
+                        startMarker.getElement().style.opacity = '1';
+                        startMarker.getElement().style.visibility = 'visible';
+                    } else {
+                        startMarker.getElement().style.opacity = '0.3';
+                    }
+                }
+                
+                if (isOnline) {
+                    addNotification(
+                        'You are now available',
+                        `You went online at ${timeString}. Posters can now see you and you can receive tasks.`,
+                        'status-change',
+                        null,
+                        'online'
+                    );
+                    showToast('You are now available. Posters can see you.');
+                } else {
+                    addNotification(
+                        'You are now offline',
+                        `You went offline at ${timeString}. You will not be visible to posters and cannot receive new tasks.`,
+                        'status-change',
+                        null,
+                        'offline'
+                    );
+                    showToast('You are now offline. Posters cannot see you.');
+                }
+            });
+
+            // ===== NOTIFICATION SYSTEM =====
+            function playNotificationSound() {
+                if (notificationSound) {
+                    notificationSound.currentTime = 0;
+                    notificationSound.play().catch(e => console.log('Sound play failed:', e));
+                }
+                
+                notificationBell.classList.add('has-notifications');
+                setTimeout(() => {
+                    notificationBell.classList.remove('has-notifications');
+                }, 500);
+            }
+
+            function addNotification(title, message, type = 'info', amount = null, status = null, taskId = null) {
+                const notification = {
+                    id: Date.now() + Math.random(),
+                    title,
+                    message,
+                    type,
+                    amount,
+                    status,
+                    taskId,
+                    read: false,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                
+                notifications.unshift(notification);
+                updateNotificationBadge();
+                
+                showToast(message);
+                playNotificationSound();
+                
+                localStorage.setItem('taskmart_notifications', JSON.stringify(notifications));
+            }
+
+            function updateNotificationBadge() {
+                const unreadCount = notifications.filter(n => !n.read).length;
+                if (unreadCount > 0) {
+                    notificationBadge.style.display = 'flex';
+                    notificationBadge.textContent = unreadCount;
+                    
+                    notificationBell.classList.add('has-notifications');
+                    setTimeout(() => {
+                        notificationBell.classList.remove('has-notifications');
+                    }, 500);
+                } else {
+                    notificationBadge.style.display = 'none';
                 }
             }
 
-            const homeSheet = document.getElementById('homeSheet');
-            const mainSearchInput = document.getElementById('mainSearchInput');
-            
-            if (mainSearchInput) {
-                mainSearchInput.addEventListener('focus', function() {
-                    homeSheet.classList.add('keyboard-open');
-                });
-                
-                mainSearchInput.addEventListener('blur', function() {
-                    homeSheet.classList.remove('keyboard-open');
-                });
+            function loadNotifications() {
+                const saved = localStorage.getItem('taskmart_notifications');
+                if (saved) {
+                    try {
+                        notifications = JSON.parse(saved);
+                        updateNotificationBadge();
+                        
+                        const unreadCount = notifications.filter(n => !n.read).length;
+                        if (unreadCount > 0 && !soundPlayedOnLoad) {
+                            setTimeout(() => {
+                                playNotificationSound();
+                                soundPlayedOnLoad = true;
+                            }, 500);
+                        }
+                    } catch (e) {
+                        console.log('Error loading notifications');
+                    }
+                }
             }
 
-            const splashScreen = document.getElementById('splashScreen');
-            const splashShown = localStorage.getItem('splashShown');
-
-            if (!splashShown) {
+            function showToast(message) {
+                toast.textContent = message;
+                toast.className = 'toast show';
                 setTimeout(() => {
-                    splashScreen.classList.add('hidden');
-                    localStorage.setItem('splashShown', 'true');
+                    toast.classList.remove('show');
                 }, 3000);
-            } else {
-                splashScreen.style.display = 'none';
             }
 
+            // ===== GET USER =====
             function getCurrentUser() {
                 try {
                     const user = localStorage.getItem('taskmart_user');
@@ -1179,550 +1931,655 @@
                 }
             }
 
-            function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
-
-            function canUserPost() {
-                const user = getCurrentUser();
-                if (!user) {
-                    window.location.href = '/login.html';
-                    return false;
-                }
-                return true;
+            function getAuthToken() {
+                return localStorage.getItem('taskmart_token');
             }
 
-            const map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/dark-v11',
-                center: [28.034088, -26.195246],
-                zoom: 15
-            });
-
-            let currentLat = -26.195246, currentLng = 28.034088;
-            let uploadedFiles = [];
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        currentLat = pos.coords.latitude;
-                        currentLng = pos.coords.longitude;
-                        map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                        
-                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
-                            .then(r => r.json())
-                            .then(d => { 
-                                if (d.features && d.features[0]) {
-                                    document.getElementById('locationInput').value = d.features[0].place_name;
-                                }
-                            })
-                            .catch(err => console.log('Geocoding error'));
-                    },
-                    (error) => { 
-                        console.log('Geolocation error');
-                    },
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            }
-
-            document.getElementById('refreshLocationBtn').addEventListener('click', function() {
-                const btn = this;
-                btn.classList.add('loading');
+            // ===== CREATE CUSTOM MARKERS =====
+            function createHelperMarker() {
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                container.style.width = '24px';
+                container.style.height = '24px';
                 
+                const radius = document.createElement('div');
+                radius.className = 'helper-radius';
+                
+                const marker = document.createElement('div');
+                marker.className = 'helper-marker';
+                
+                container.appendChild(radius);
+                container.appendChild(marker);
+                
+                return container;
+            }
+
+            function createPosterMarker() {
+                const el = document.createElement('div');
+                el.className = 'poster-marker';
+                return el;
+            }
+
+            // ===== MAP INIT =====
+            function initMap() {
+                if (!window.MAPBOX_TOKEN) {
+                    console.error('No Mapbox token');
+                    return;
+                }
+
+                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+                map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/dark-v11',
+                    center: [28.034088, -26.195246],
+                    zoom: 13
+                });
+
+                map.on('load', () => {
+                    map.addSource('route', {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: []
+                            }
+                        }
+                    });
+
+                    map.addLayer({
+                        id: 'route',
+                        type: 'line',
+                        source: 'route',
+                        layout: {
+                            'line-join': 'round',
+                            'line-cap': 'round'
+                        },
+                        paint: {
+                            'line-color': '#666666',
+                            'line-width': 3,
+                            'line-opacity': 0.6
+                        }
+                    });
+
+                    getUserLocation();
+                });
+            }
+
+            // ===== GET LOCATION =====
+            function getUserLocation() {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
-                        (pos) => { 
-                            currentLat = pos.coords.latitude; currentLng = pos.coords.longitude; 
-                            map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                            btn.classList.remove('loading');
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            
+                            map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
+                            
+                            if (startMarker) startMarker.remove();
+                            
+                            const helperEl = createHelperMarker();
+                            startMarker = new mapboxgl.Marker({ element: helperEl })
+                                .setLngLat([currentLng, currentLat])
+                                .setPopup(new mapboxgl.Popup().setHTML('<div style="font-family: Manrope; font-weight: 300;">You</div>'))
+                                .addTo(map);
+
+                            // Set initial visibility based on online status
+                            if (!isOnline) {
+                                startMarker.getElement().style.opacity = '0.3';
+                            }
+
+                            fetchTasks();
                         },
-                        (e) => { 
-                            btn.classList.remove('loading');
-                        }
+                        (error) => {
+                            console.error('Location error:', error);
+                            fetchTasks();
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
                     );
                 }
-            });
-
-            const mainSuggestionsList = document.getElementById('mainSuggestionsList');
-            const searchIconBtn = document.getElementById('searchIconBtn');
-            const createTaskContainer = document.getElementById('createTaskContainer');
-            const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
-            const taskInput = document.getElementById('taskInput');
-            const streetInput = document.getElementById('streetInput');
-            const budgetAmount = document.getElementById('budgetAmount');
-            const nextBtn = document.getElementById('nextBtn');
-            const moreDetailsBtn = document.getElementById('moreDetailsBtn');
-            const collapsibleSection = document.getElementById('collapsibleSection');
-            const whenNowBtn = document.getElementById('whenNowBtn');
-            const whenLaterBtn = document.getElementById('whenLaterBtn');
-            const dateTimePickers = document.getElementById('dateTimePickers');
-            const dateDisplay = document.getElementById('dateDisplay');
-            const timeDisplay = document.getElementById('timeDisplay');
-            const nativeDatePicker = document.getElementById('nativeDatePicker');
-            const nativeTimePicker = document.getElementById('nativeTimePicker');
-            const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
-            const openBudgetBtn = document.getElementById('openBudgetBtn');
-            const fixedBudgetInput = document.getElementById('fixedBudgetInput');
-            const pickDateBtn = document.getElementById('pickDateBtn');
-            const pickTimeBtn = document.getElementById('pickTimeBtn');
-            const taskCharCount = document.getElementById('taskCharCount');
-            const extraNotes = document.getElementById('extraNotes');
-            const locationInput = document.getElementById('locationInput');
-
-            function capitalizeFirstLetter(string) {
-                return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
             }
 
-            if (mainSearchInput && mainSuggestionsList) {
-                mainSearchInput.addEventListener('input', function() {
-                    const query = this.value.trim().toLowerCase();
+            // ===== CHECK IF TASK MATCHES USER SKILLS =====
+            function taskMatchesSkills(task) {
+                if (!userSkills || userSkills.length === 0) return false;
+                
+                const taskLower = (task.taskDescription || '').toLowerCase();
+                return userSkills.some(skill => taskLower.includes(skill.toLowerCase()));
+            }
+
+            // ===== FETCH TASKS =====
+            let lastTaskCount = 0;
+            
+            async function fetchTasks() {
+                try {
+                    sheetContent.innerHTML = '<div class="skeleton-card"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div></div>';
                     
-                    if (query.length < 1) {
-                        mainSuggestionsList.classList.remove('active');
-                        return;
-                    }
-
-                    const matches = taskSuggestions.filter(task => 
-                        task.toLowerCase().includes(query)
-                    ).slice(0, 8);
-
-                    if (matches.length === 0) {
-                        mainSuggestionsList.classList.remove('active');
-                        return;
-                    }
-
-                    mainSuggestionsList.innerHTML = matches.map(task => {
-                        const displayTask = capitalizeFirstLetter(task);
-                        return `<div class="suggestion-item" data-task="${task}">${displayTask}</div>`;
-                    }).join('');
+                    const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`);
                     
-                    mainSuggestionsList.classList.add('active');
+                    if (response.ok) {
+                        const data = await response.json();
+                        let tasks = data.tasks || [];
 
-                    document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
-                        el.addEventListener('click', function() {
-                            const task = this.dataset.task;
-                            mainSearchInput.value = task;
-                            taskInput.value = task;
-                            mainSuggestionsList.classList.remove('active');
-                            validateForm();
+                        if (currentUser) {
+                            tasks = tasks.filter(task => task.userId !== currentUser.email);
                             
-                            if (canUserPost()) {
-                                createTaskContainer.style.display = 'flex';
-                            }
-                        });
-                    });
-                });
-
-                document.addEventListener('click', function(e) {
-                    if (!mainSearchInput.contains(e.target) && !mainSuggestionsList.contains(e.target)) {
-                        mainSuggestionsList.classList.remove('active');
-                    }
-                });
-            }
-
-            searchIconBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const taskValue = mainSearchInput.value.trim();
-                if (taskValue) {
-                    taskInput.value = taskValue;
-                }
-                if (canUserPost()) {
-                    createTaskContainer.style.display = 'flex';
-                }
-            });
-
-            createTaskContainer.addEventListener('click', (e) => {
-                if (e.target === createTaskContainer) return;
-            });
-            
-            closeCreateTaskBtn.addEventListener('click', ()=>{
-                createTaskContainer.style.display = 'none';
-            });
-
-            taskInput.addEventListener('input', function() {
-                if (this.value.length > 50) this.value = this.value.slice(0,50);
-                taskCharCount.textContent = this.value.length + '/50';
-                mainSearchInput.value = this.value;
-                validateForm();
-            });
-
-            function validateForm() {
-                const taskFilled = taskInput.value.trim() !== '';
-                const streetFilled = streetInput.value.trim() !== '';
-                const locationFilled = locationInput.value.trim() !== '';
-                
-                let budgetValid = true;
-                if (fixedBudgetBtn.classList.contains('active')) {
-                    budgetValid = budgetAmount.value.trim() !== '' && parseInt(budgetAmount.value) > 0;
-                }
-                
-                let whenValid = true;
-                if (whenLaterBtn.classList.contains('active')) {
-                    const dateSelected = dateDisplay.textContent !== 'Pick date';
-                    const timeSelected = timeDisplay.textContent !== 'Pick time';
-                    whenValid = dateSelected && timeSelected;
-                }
-                
-                nextBtn.disabled = !(taskFilled && streetFilled && locationFilled && budgetValid && whenValid);
-            }
-
-            streetInput.addEventListener('input', validateForm);
-            budgetAmount.addEventListener('input', validateForm);
-            locationInput.addEventListener('input', validateForm);
-
-            moreDetailsBtn.addEventListener('click', ()=>{
-                if (collapsibleSection.style.display === 'none') {
-                    collapsibleSection.style.display = 'block';
-                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
-                } else {
-                    collapsibleSection.style.display = 'none';
-                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
-                }
-            });
-
-            whenNowBtn.addEventListener('click', ()=>{ 
-                whenNowBtn.className = 'when-option active'; 
-                whenLaterBtn.className = 'when-option inactive'; 
-                dateTimePickers.style.display = 'none'; 
-                validateForm();
-            });
-            
-            whenLaterBtn.addEventListener('click', ()=>{ 
-                whenLaterBtn.className = 'when-option active'; 
-                whenNowBtn.className = 'when-option inactive'; 
-                dateTimePickers.style.display = 'flex'; 
-                validateForm();
-            });
-
-            pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
-            pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
-
-            nativeDatePicker.addEventListener('change', function() {
-                if (this.value) {
-                    const d = new Date(this.value);
-                    dateDisplay.textContent = d.toLocaleDateString('en-GB');
-                    validateForm();
-                }
-            });
-            
-            nativeTimePicker.addEventListener('change', function() {
-                if (this.value) {
-                    timeDisplay.textContent = this.value;
-                    validateForm();
-                }
-            });
-
-            fixedBudgetBtn.addEventListener('click', ()=>{ 
-                fixedBudgetBtn.className = 'budget-option active'; 
-                openBudgetBtn.className = 'budget-option inactive'; 
-                fixedBudgetInput.style.display = 'block'; 
-                validateForm();
-            });
-            
-            openBudgetBtn.addEventListener('click', ()=>{ 
-                openBudgetBtn.className = 'budget-option active'; 
-                fixedBudgetBtn.className = 'budget-option inactive'; 
-                fixedBudgetInput.style.display = 'none'; 
-                validateForm();
-            });
-
-            const uploadArea = document.getElementById('uploadArea');
-            
-            uploadArea.addEventListener('click', ()=>{
-                if (!isUserLoggedIn()) { 
-                    showUploadStatus('Please log in', 'warning');
-                    return; 
-                }
-                
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.multiple = true;
-                
-                input.onchange = (e) => {
-                    const files = Array.from(e.target.files);
-                    files.forEach(file => handleFileSelection(file));
-                };
-                
-                input.click();
-            });
-
-            function handleFileSelection(file) {
-                if (!file.type.startsWith('image/')) {
-                    showUploadStatus('File must be an image', 'error');
-                    return;
-                }
-                
-                if (file.size > 5 * 1024 * 1024) {
-                    showUploadStatus('File too large (max 5MB)', 'error');
-                    return;
-                }
-                
-                const previewUrl = URL.createObjectURL(file);
-                uploadedFiles.push({ file, previewUrl });
-                displayPreviews();
-                showUploadStatus('Ready to upload', 'info');
-            }
-
-            function showUploadStatus(message, type = 'info') {
-                const status = document.getElementById('uploadStatus');
-                const statusText = document.getElementById('uploadStatusText');
-                const icon = status.querySelector('.material-symbols-outlined');
-                
-                status.className = `upload-status ${type}`;
-                statusText.textContent = message;
-                status.style.display = 'flex';
-                
-                if (type === 'success') icon.textContent = 'check_circle';
-                else if (type === 'error') icon.textContent = 'error';
-                else if (type === 'warning') icon.textContent = 'warning';
-                else icon.textContent = 'info';
-                
-                if (type === 'success' || type === 'error') setTimeout(() => status.style.display = 'none', 4000);
-            }
-
-            function showUploadProgress(message) {
-                const progress = document.getElementById('uploadProgress');
-                progress.textContent = message;
-                progress.style.display = 'block';
-            }
-
-            function hideUploadProgress() {
-                document.getElementById('uploadProgress').style.display = 'none';
-            }
-
-            function displayPreviews() {
-                const container = document.getElementById('imagePreviewContainer');
-                container.innerHTML = '';
-                uploadedFiles.forEach((item, idx) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'image-preview-wrapper';
-                    
-                    const img = document.createElement('img'); 
-                    img.src = item.previewUrl; 
-                    img.className = 'image-preview';
-                    
-                    const rm = document.createElement('button'); 
-                    rm.className = 'remove-image';
-                    rm.textContent = '×'; 
-                    rm.onclick = () => { 
-                        URL.revokeObjectURL(item.previewUrl);
-                        uploadedFiles.splice(idx, 1); 
-                        displayPreviews(); 
-                        showUploadStatus('Image removed', 'warning');
-                    };
-                    
-                    wrapper.appendChild(img); 
-                    wrapper.appendChild(rm); 
-                    container.appendChild(wrapper);
-                });
-            }
-
-            const mapModal = document.getElementById('mapModal');
-            const openMapBtn = document.getElementById('openMapBtn');
-            const closeMapModalBtn = document.getElementById('closeMapModalBtn');
-            const confirmLocationBtn = document.getElementById('confirmLocationBtn');
-            
-            let mapModalInstance = null;
-            let marker = null;
-
-            openMapBtn.addEventListener('click', ()=> {
-                mapModal.classList.add('active');
-                
-                setTimeout(() => {
-                    if (mapModalInstance) mapModalInstance.remove();
-                    
-                    mapModalInstance = new mapboxgl.Map({
-                        container: 'mapModalContainer',
-                        style: 'mapbox://styles/mapbox/dark-v11',
-                        center: [currentLng || 28.034088, currentLat || -26.195246],
-                        zoom: 15
-                    });
-                    
-                    marker = new mapboxgl.Marker({ 
-                        draggable: true, 
-                        color: '#000000' 
-                    })
-                    .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                    .addTo(mapModalInstance);
-                    
-                    marker.on('dragend', () => {
-                        const lngLat = marker.getLngLat();
-                        currentLat = lngLat.lat;
-                        currentLng = lngLat.lng;
-                        
-                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.features && data.features[0]) {
-                                    locationInput.value = data.features[0].place_name;
-                                }
-                            })
-                            .catch(err => console.log('Geocoding error'));
-                    });
-                }, 100);
-            });
-
-            closeMapModalBtn.addEventListener('click', () => {
-                mapModal.classList.remove('active');
-            });
-            
-            confirmLocationBtn.addEventListener('click', () => {
-                if (marker) {
-                    const lngLat = marker.getLngLat();
-                    currentLat = lngLat.lat;
-                    currentLng = lngLat.lng;
-                    
-                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.features && data.features[0]) {
-                                locationInput.value = data.features[0].place_name;
-                            }
-                        })
-                        .catch(err => console.log('Geocoding error'));
-                }
-                mapModal.classList.remove('active');
-                validateForm();
-            });
-
-            const offersContainer = document.getElementById('offersContainer');
-            let offersMap = null;
-
-            // Listen for offers via polling
-            function startOfferPolling(taskId) {
-                const checkOffers = setInterval(async () => {
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/firebase/tasks/${taskId}`);
-                        const task = await response.json();
-                        
-                        if (task.offers && task.offers.length > 0) {
-                            // Show offers
-                            document.getElementById('noOffersMessage').style.display = 'none';
-                            const offersList = document.getElementById('offersList');
-                            offersList.style.display = 'block';
+                            inProgressTasks = tasks.filter(task => 
+                                task.status === 'in-progress' && task.helperId === currentUser.email
+                            );
                             
-                            offersList.innerHTML = task.offers.map(offer => `
-                                <div class="offer-item">
-                                    <p>R${offer.amount} from ${offer.helperName}</p>
-                                    <button onclick="acceptOffer('${offer.id}')">Accept</button>
-                                </div>
-                            `).join('');
+                            matchingRequests = tasks.filter(task => 
+                                task.status === 'matching' && 
+                                task.selectedHelperId === currentUser.email
+                            );
                             
-                            clearInterval(checkOffers);
+                            availableTasks = tasks.filter(task => 
+                                task.status === 'open'
+                            );
                         }
-                    } catch (e) {
-                        console.log('Checking for offers...');
+
+                        if (availableTasks.length > lastTaskCount && lastTaskCount > 0 && isOnline) {
+                            const newTasks = availableTasks.slice(0, availableTasks.length - lastTaskCount);
+                            newTasks.forEach(task => {
+                                if (taskMatchesSkills(task)) {
+                                    addNotification(
+                                        'New task match!',
+                                        `${task.taskDescription} - This matches your skills!`,
+                                        'match',
+                                        null,
+                                        null,
+                                        task.id
+                                    );
+                                }
+                            });
+                        }
+                        
+                        lastTaskCount = availableTasks.length;
+
+                        availableTasks.sort((a, b) => {
+                            const aMatches = taskMatchesSkills(a);
+                            const bMatches = taskMatchesSkills(b);
+                            if (aMatches && !bMatches) return -1;
+                            if (!aMatches && bMatches) return 1;
+                            return 0;
+                        });
+
+                        renderTasks();
+                        addTaskMarkers(availableTasks);
                     }
-                }, 5000); // Check every 5 seconds
+                } catch (error) {
+                    console.error('Error fetching tasks:', error);
+                    sheetContent.innerHTML = '<div class="no-tasks">Error loading tasks</div>';
+                }
             }
 
-            nextBtn.addEventListener('click', async ()=>{
-                const user = getCurrentUser();
-                
-                const taskData = {
-                    location: locationInput.value,
-                    coordinates: `${currentLat},${currentLng}`,
-                    streetName: streetInput.value,
-                    when: whenNowBtn.classList.contains('active') ? 'now' : 'later',
-                    scheduledDate: whenLaterBtn.classList.contains('active') ? nativeDatePicker.value : null,
-                    scheduledTime: whenLaterBtn.classList.contains('active') ? nativeTimePicker.value : null,
-                    taskDescription: taskInput.value,
-                    budgetType: fixedBudgetBtn.classList.contains('active') ? 'fixed' : 'open',
-                    budgetAmount: fixedBudgetBtn.classList.contains('active') ? budgetAmount.value : null,
-                    moreDetails: extraNotes.value,
-                    images: uploadedFiles.map(f => f.previewUrl),
-                    userId: user?.email || 'anonymous',
-                    userName: user?.name || 'Anonymous',
-                    userAvatar: user?.profileImage || '',
-                    status: 'open',
-                    offers: []
+            // ===== CALCULATE ROUTE =====
+            async function calculateRoute(taskId) {
+                const task = availableTasks.find(t => t.id === taskId);
+                if (!task || !task.coordinates || !currentLat || !currentLng) {
+                    showToast('Cannot calculate route');
+                    return;
+                }
+
+                const [taskLat, taskLng] = task.coordinates.split(',').map(Number);
+
+                selectedTaskId = taskId;
+
+                if (endMarker) endMarker.remove();
+
+                const posterEl = createPosterMarker();
+                endMarker = new mapboxgl.Marker({ element: posterEl })
+                    .setLngLat([taskLng, taskLat])
+                    .setPopup(new mapboxgl.Popup().setHTML(`<div style="font-family: Manrope; font-weight: 300;">${task.taskDescription}</div>`))
+                    .addTo(map);
+
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend([currentLng, currentLat]);
+                bounds.extend([taskLng, taskLat]);
+                map.fitBounds(bounds, { padding: 50 });
+
+                try {
+                    const drivingResponse = await fetch(
+                        `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${taskLng},${taskLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
+                    );
+
+                    const walkingResponse = await fetch(
+                        `https://api.mapbox.com/directions/v5/mapbox/walking/${currentLng},${currentLat};${taskLng},${taskLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
+                    );
+
+                    if (drivingResponse.ok && walkingResponse.ok) {
+                        const drivingData = await drivingResponse.json();
+                        const walkingData = await walkingResponse.json();
+                        
+                        const drivingRoute = drivingData.routes[0];
+                        const walkingRoute = walkingData.routes[0];
+                        
+                        const drivingDistance = drivingRoute.distance;
+                        const drivingDuration = Math.round(drivingRoute.duration / 60);
+                        const walkingDistance = walkingRoute.distance;
+                        const walkingDuration = Math.round(walkingRoute.duration / 60);
+
+                        let drivingDistanceStr = drivingDistance < 1000 
+                            ? Math.round(drivingDistance) + 'm' 
+                            : (drivingDistance / 1000).toFixed(1) + 'km';
+                            
+                        let walkingDistanceStr = walkingDistance < 1000 
+                            ? Math.round(walkingDistance) + 'm' 
+                            : (walkingDistance / 1000).toFixed(1) + 'km';
+
+                        drivingData = {
+                            distance: drivingDistanceStr,
+                            duration: drivingDuration + 'min'
+                        };
+                        
+                        walkingData = {
+                            distance: walkingDistanceStr,
+                            duration: walkingDuration + 'min'
+                        };
+
+                        isDriving = true;
+                        routeIcon.textContent = 'directions_car';
+                        routeDistance.textContent = drivingDistanceStr;
+                        routeDuration.textContent = drivingDuration + 'min';
+                        routeToggle.classList.remove('rotated');
+                        
+                        floatingDistanceCard.classList.add('active');
+
+                        map.getSource('route').setData({
+                            type: 'Feature',
+                            geometry: drivingRoute.geometry
+                        });
+
+                        document.querySelectorAll('.task-card').forEach(card => {
+                            card.classList.remove('selected');
+                        });
+                        const selectedCard = document.querySelector(`[data-task-id="${taskId}"]`);
+                        if (selectedCard) {
+                            selectedCard.classList.add('selected');
+                            selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Route error:', error);
+                }
+            }
+
+            // ===== RENDER TASKS =====
+            function renderTasks() {
+                let html = '';
+
+                if (matchingRequests.length > 0) {
+                    html += '<div class="matching-section">';
+                    html += '<div class="matching-header">You\'ve been selected!</div>';
+                    
+                    matchingRequests.forEach(task => {
+                        html += `
+                            <div class="matching-card">
+                                <div class="matching-title">${task.taskDescription}</div>
+                                <div class="matching-poster">Posted by: ${task.userName || 'Someone'}</div>
+                                <div class="matching-status">
+                                    <span class="material-symbols-outlined">hourglass_empty</span>
+                                    Pending confirmation
+                                </div>
+                                <button class="confirm-btn" onclick="confirmMatch('${task.id}')">
+                                    Confirm & start
+                                </button>
+                                <button class="action-btn" onclick="event.stopPropagation(); openChatFromTask('${task.id}')" style="margin-top: 8px;">
+                                    <span class="material-symbols-outlined">chat</span>
+                                    Message poster
+                                </button>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                }
+
+                if (inProgressTasks.length > 0) {
+                    html += '<div class="in-progress-section">';
+                    html += '<div class="in-progress-header">In progress</div>';
+                    
+                    inProgressTasks.forEach(task => {
+                        html += `
+                            <div class="in-progress-card" onclick="selectInProgressTask('${task.id}')">
+                                <div class="in-progress-title">${task.taskDescription}</div>
+                                <div class="in-progress-meta">
+                                    <span>
+                                        <span class="material-symbols-outlined">location_on</span>
+                                        ${task.location ? task.location.split(',')[0] : 'Nearby'}
+                                    </span>
+                                    <span>
+                                        <span class="material-symbols-outlined">payments</span>
+                                        R${task.budgetAmount || 'Open'}
+                                    </span>
+                                </div>
+                                <div class="in-progress-status">Task in progress</div>
+                                <button class="action-btn" onclick="event.stopPropagation(); openChatFromTask('${task.id}')" style="margin-top: 8px;">
+                                    <span class="material-symbols-outlined">chat</span>
+                                    Open chat
+                                </button>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                }
+
+                if (availableTasks.length === 0) {
+                    html += '<div class="no-tasks">No tasks available</div>';
+                } else {
+                    availableTasks.forEach(task => {
+                        const taskId = task.id;
+                        const budget = task.budgetAmount;
+                        const isOpenOffer = task.budgetType === 'open';
+                        const taskTitle = task.taskDescription || 'Help needed';
+                        const isMatch = taskMatchesSkills(task);
+
+                        let actionButtons = '';
+                        
+                        if (isOpenOffer) {
+                            actionButtons = `
+                                <div class="offer-input">
+                                    <input type="number" id="offer-${taskId}" placeholder="Your offer (R)" min="1">
+                                    <button onclick="event.stopPropagation(); makeOffer('${taskId}')">Make offer</button>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                    <button class="action-btn" onclick="event.stopPropagation(); expressInterest('${taskId}', ${budget})">
+                                        <span class="material-symbols-outlined">handshake</span>
+                                        I'm interested
+                                    </button>
+                                    <button class="action-btn pass" onclick="event.stopPropagation(); passOnTask('${taskId}')">
+                                        <span class="material-symbols-outlined">close</span>
+                                        Pass
+                                    </button>
+                                </div>
+                                <button class="action-btn" onclick="event.stopPropagation(); openChatFromTask('${taskId}')" style="margin-top: 8px;">
+                                    <span class="material-symbols-outlined">chat</span>
+                                    Message poster
+                                </button>
+                            `;
+                        } else {
+                            actionButtons = `
+                                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                    <button class="action-btn" onclick="event.stopPropagation(); expressInterest('${taskId}', ${budget})">
+                                        <span class="material-symbols-outlined">handshake</span>
+                                        I'm interested
+                                    </button>
+                                    <button class="action-btn pass" onclick="event.stopPropagation(); passOnTask('${taskId}')">
+                                        <span class="material-symbols-outlined">close</span>
+                                        Pass
+                                    </button>
+                                </div>
+                                <button class="action-btn" onclick="event.stopPropagation(); openChatFromTask('${taskId}')" style="margin-top: 8px;">
+                                    <span class="material-symbols-outlined">chat</span>
+                                    Message poster
+                                </button>
+                            `;
+                        }
+
+                        html += `
+                            <div class="task-card ${isMatch ? 'matched' : ''}" data-task-id="${taskId}" onclick="selectTask('${taskId}')">
+                                <div class="task-price-above ${isOpenOffer ? 'open' : ''}">
+                                    ${isOpenOffer ? 'Open to offers' : `R${budget}`}
+                                </div>
+                                <div class="task-title">${taskTitle}</div>
+                                
+                                ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
+                                
+                                <div class="task-expanded">
+                                    <div class="expanded-details">
+                                        ${task.moreDetails ? `<p>${task.moreDetails}</p>` : ''}
+                                        ${actionButtons}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                sheetContent.innerHTML = html;
+            }
+
+            window.openChatFromTask = function(taskId) {
+                const task = [...availableTasks, ...inProgressTasks, ...matchingRequests].find(t => t.id === taskId);
+                if (task) {
+                    openChat(task, task.userName || 'Poster', task.userId);
+                }
+            };
+
+            window.selectTask = function(taskId) {
+                const card = document.querySelector(`[data-task-id="${taskId}"]`);
+                if (card) {
+                    const wasExpanded = card.classList.contains('expanded');
+                    
+                    document.querySelectorAll('.task-card').forEach(c => {
+                        if (c.dataset.taskId !== taskId) {
+                            c.classList.remove('expanded');
+                        }
+                    });
+                    
+                    card.classList.toggle('expanded');
+                    
+                    if (!wasExpanded) {
+                        calculateRoute(taskId);
+                    } else {
+                        floatingDistanceCard.classList.remove('active');
+                    }
+                }
+            };
+
+            window.selectInProgressTask = function(taskId) {
+                const task = inProgressTasks.find(t => t.id === taskId);
+                if (task && task.coordinates) {
+                    const [taskLat, taskLng] = task.coordinates.split(',').map(Number);
+                    
+                    if (startMarker && endMarker) {
+                        endMarker.remove();
+                    }
+                    
+                    const posterEl = createPosterMarker();
+                    endMarker = new mapboxgl.Marker({ element: posterEl })
+                        .setLngLat([taskLng, taskLat])
+                        .addTo(map);
+                    
+                    const bounds = new mapboxgl.LngLatBounds();
+                    bounds.extend([currentLng, currentLat]);
+                    bounds.extend([taskLng, taskLat]);
+                    map.fitBounds(bounds, { padding: 50 });
+                }
+            };
+
+            window.expressInterest = async function(taskId, budget) {
+                if (!isOnline) {
+                    showToast('You are offline. Go online to express interest.');
+                    return;
+                }
+
+                const task = availableTasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                // Send to Firebase (simulated for now)
+                const interestData = {
+                    taskId: taskId,
+                    taskDescription: task.taskDescription,
+                    helperId: currentUser.email,
+                    helperName: currentUser.name,
+                    helperAvatar: currentUser.profileImage,
+                    budget: budget,
+                    timestamp: Date.now(),
+                    type: 'interest'
                 };
                 
-                const savedTask = await saveTaskToFirebase(taskData);
+                // Store in localStorage as temporary bridge
+                localStorage.setItem('taskmart_interest_' + taskId, JSON.stringify(interestData));
+
+                addNotification(
+                    'Interest sent',
+                    `You expressed interest in: ${task.taskDescription}`,
+                    'interest',
+                    null,
+                    'pending',
+                    taskId
+                );
                 
-                if (savedTask) {
-                    createTaskContainer.style.display = 'none';
-                    offersContainer.classList.add('active');
-                    
-                    setTimeout(() => {
-                        if (offersMap) offersMap.remove();
-                        
-                        offersMap = new mapboxgl.Map({
-                            container: 'offersMap',
-                            style: 'mapbox://styles/mapbox/dark-v11',
-                            center: [currentLng || 28.034088, currentLat || -26.195246],
-                            zoom: 15
-                        });
-                        
-                        new mapboxgl.Marker({ color: '#000000' })
-                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                            .addTo(offersMap);
-                    }, 100);
-                    
-                    // Start polling for offers
-                    startOfferPolling(savedTask.id);
-                    
-                    uploadedFiles.forEach(item => URL.revokeObjectURL(item.previewUrl));
-                    uploadedFiles = [];
-                    taskInput.value = '';
-                    mainSearchInput.value = '';
-                    streetInput.value = '';
-                    budgetAmount.value = '';
-                    extraNotes.value = '';
-                    taskCharCount.textContent = '0/50';
-                    displayPreviews();
-                    whenNowBtn.click();
-                    fixedBudgetBtn.click();
-                    dateDisplay.textContent = 'Pick date';
-                    timeDisplay.textContent = 'Pick time';
-                    validateForm();
-                    
-                    if (typeof confetti === 'function') {
-                        confetti({ 
-                            particleCount: 100, 
-                            spread: 70, 
-                            origin: { y: 0.6 }, 
-                            colors: ['#000000', '#333333'] 
-                        });
-                    }
+                showToast('Interest sent to poster!');
+            };
+
+            window.makeOffer = async function(taskId) {
+                if (!isOnline) {
+                    showToast('You are offline. Go online to make offers.');
+                    return;
                 }
-            });
 
-            document.getElementById('offersBackBtn').addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                offersContainer.classList.remove('active');
-                createTaskContainer.style.display = 'flex';
-            });
+                const input = document.getElementById(`offer-${taskId}`);
+                const amount = parseFloat(input.value);
+                
+                if (!amount || amount < 1) {
+                    showToast('Enter a valid amount');
+                    return;
+                }
 
-            function showToast(message, type = 'success') {
-                const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
-                toast.textContent = message;
-                toast.style.display = 'block';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 3000);
+                const task = availableTasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                const offerData = {
+                    taskId: taskId,
+                    taskDescription: task.taskDescription,
+                    helperId: currentUser.email,
+                    helperName: currentUser.name,
+                    helperAvatar: currentUser.profileImage,
+                    amount: amount,
+                    timestamp: Date.now(),
+                    type: 'offer'
+                };
+                
+                localStorage.setItem('taskmart_offer_' + taskId, JSON.stringify(offerData));
+
+                addNotification(
+                    'Offer sent',
+                    `You offered R${amount} for: ${task.taskDescription}`,
+                    'offer',
+                    amount,
+                    'pending',
+                    taskId
+                );
+                
+                showToast('Offer sent! Waiting for poster to respond.');
+                input.value = '';
+            };
+
+            window.passOnTask = async function(taskId) {
+                availableTasks = availableTasks.filter(t => t.id !== taskId);
+                renderTasks();
+                showToast('Task passed');
+                
+                if (selectedTaskId === taskId) {
+                    floatingDistanceCard.classList.remove('active');
+                }
+            };
+
+            window.confirmMatch = async function(taskId) {
+                const task = matchingRequests.find(t => t.id === taskId);
+                if (!task) return;
+
+                task.status = 'in-progress';
+                task.helperId = currentUser.email;
+                inProgressTasks.unshift(task);
+                matchingRequests = matchingRequests.filter(t => t.id !== taskId);
+                
+                renderTasks();
+                
+                if (task.budgetAmount) {
+                    todayEarnings += task.budgetAmount;
+                    todayEarningsSpan.textContent = `R${todayEarnings}`;
+                    localStorage.setItem('taskmart_today_earnings', todayEarnings);
+                    
+                    addNotification(
+                        'Payment received',
+                        `You earned R${task.budgetAmount} from: ${task.taskDescription}`,
+                        'earnings',
+                        task.budgetAmount,
+                        null,
+                        taskId
+                    );
+                }
+                
+                addNotification(
+                    'Match confirmed',
+                    `You confirmed: ${task.taskDescription}`,
+                    'accepted',
+                    null,
+                    'accepted',
+                    taskId
+                );
+                
+                showToast('Match confirmed! Task is now in progress.');
+            };
+
+            function addTaskMarkers(tasks) {
+                if (window.taskMarkers) {
+                    window.taskMarkers.forEach(marker => marker.remove());
+                }
+                window.taskMarkers = [];
+
+                tasks.forEach(task => {
+                    if (task.coordinates) {
+                        const [lat, lng] = task.coordinates.split(',').map(Number);
+                        
+                        const posterEl = createPosterMarker();
+                        const marker = new mapboxgl.Marker({ element: posterEl })
+                            .setLngLat([lng, lat])
+                            .setPopup(new mapboxgl.Popup().setHTML(`
+                                <div style="font-family: 'Manrope', sans-serif; font-weight: 300; padding: 8px;">
+                                    <strong>${task.taskDescription || 'Help needed'}</strong><br>
+                                    ${task.budgetType === 'open' ? 'Open to offers' : 'R' + task.budgetAmount}
+                                </div>
+                            `))
+                            .addTo(map);
+                        
+                        window.taskMarkers.push(marker);
+                    }
+                });
             }
 
-            validateForm();
-        })();
-    </script>
-
-    <!-- Load profile menu from GitHub -->
-    <script>
-        fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('profile-menu-container').innerHTML = html;
-                const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
-                for (let i = 0; i < scripts.length; i++) {
-                    const script = document.createElement('script');
-                    script.textContent = scripts[i].textContent;
-                    document.body.appendChild(script);
-                }
-            })
-            .catch(error => {
-                console.error('Failed to load profile menu:', error);
+            expandIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tasksSheet.classList.toggle('expanded');
             });
+
+            sheetHeader.addEventListener('click', (e) => {
+                if (e.target === expandIcon) return;
+                tasksSheet.classList.toggle('expanded');
+            });
+
+            setInterval(() => {
+                if (isOnline) {
+                    fetchTasks();
+                }
+            }, 10000);
+
+            currentUser = getCurrentUser();
+            authToken = getAuthToken();
+
+            if (currentUser) {
+                userSkills = currentUser.skills || [];
+                console.log('User skills loaded:', userSkills);
+            }
+
+            if (!currentUser || !authToken) {
+                window.location.href = '/login.html';
+            } else {
+                loadNotifications();
+                initMap();
+                
+                const savedEarnings = localStorage.getItem('taskmart_today_earnings');
+                if (savedEarnings) {
+                    todayEarnings = parseInt(savedEarnings);
+                    todayEarningsSpan.textContent = `R${todayEarnings}`;
+                }
+            }
+        })();
     </script>
 </body>
 </html>
