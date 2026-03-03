@@ -210,7 +210,7 @@
             font-weight: 400;
         }
 
-        /* Earnings card */
+        /* Earnings card - amount in blue */
         .earnings-card {
             background: white;
             height: 44px;
@@ -237,7 +237,7 @@
         .earnings-amount {
             font-size: 0.9rem;
             font-weight: 600;
-            color: #000;
+            color: #003fe1;
         }
 
         /* Notification bell */
@@ -285,7 +285,7 @@
             font-weight: 400;
         }
 
-        /* === FLOATING DISTANCE CARD - FIXED VISIBILITY === */
+        /* === FLOATING DISTANCE CARD === */
         .floating-distance-card {
             position: fixed;
             bottom: calc(35% + 20px);
@@ -443,6 +443,11 @@
             background: #f0f5ff;
         }
 
+        .full-notification-item.status-change {
+            border-left-color: #003fe1;
+            background: #f0f5ff;
+        }
+
         .notification-time {
             font-size: 0.7rem;
             color: #999;
@@ -509,6 +514,16 @@
         }
 
         .notification-status-badge.earned {
+            background: #003fe1;
+            color: white;
+        }
+
+        .notification-status-badge.offline {
+            background: #ccc;
+            color: #000;
+        }
+
+        .notification-status-badge.online {
             background: #003fe1;
             color: white;
         }
@@ -650,7 +665,7 @@
         .task-price-above {
             font-size: 0.9rem;
             font-weight: 600;
-            color: #000;
+            color: #003fe1;
             margin-bottom: 2px;
         }
 
@@ -681,50 +696,6 @@
             font-weight: 400;
             width: fit-content;
             margin-top: 4px;
-        }
-
-        /* Poster info - only shown when task is in progress */
-        .poster-info {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .task-card.in-progress .poster-info {
-            display: flex;
-        }
-
-        .poster-avatar {
-            width: 24px;
-            height: 24px;
-            background: #f0f0f0;
-            color: #666;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 300;
-            overflow: hidden;
-            font-size: 0.7rem;
-        }
-
-        .poster-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .poster-name {
-            font-weight: 300;
-            color: #666;
-            font-size: 0.75rem;
-            text-transform: lowercase;
-        }
-
-        .poster-name::first-letter {
-            text-transform: uppercase;
         }
 
         .action-row {
@@ -1221,6 +1192,7 @@
             let isDriving = true;
             let drivingData = null;
             let walkingData = null;
+            let lastStatusChangeTime = null;
 
             // DOM Elements
             const tasksSheet = document.getElementById('tasksSheet');
@@ -1244,6 +1216,76 @@
             const todayEarningsSpan = document.getElementById('todayEarnings');
             const profileMenuBtn = document.getElementById('profileMenuBtn');
 
+            // ===== PROFILE MENU FIX =====
+            function setupProfileMenu() {
+                // Try immediately
+                const menuBtnFromContent = document.getElementById('profileMenuBtn');
+                if (menuBtnFromContent) {
+                    profileMenuBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        menuBtnFromContent.click();
+                    });
+                } else {
+                    // Try again after a short delay
+                    setTimeout(() => {
+                        const delayedMenuBtn = document.getElementById('profileMenuBtn');
+                        if (delayedMenuBtn) {
+                            profileMenuBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                delayedMenuBtn.click();
+                            });
+                        }
+                    }, 500);
+                }
+            }
+
+            // ===== LOAD PROFILE MENU =====
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('profile-menu-container').innerHTML = html;
+                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = document.createElement('script');
+                        script.textContent = scripts[i].textContent;
+                        document.body.appendChild(script);
+                    }
+                    
+                    // Setup profile menu click handler
+                    setupProfileMenu();
+                })
+                .catch(error => console.error('Failed to load profile menu:', error));
+
+            // ===== ONLINE/OFFLINE TOGGLE WITH DETAILED NOTIFICATIONS =====
+            onlineToggle.addEventListener('click', () => {
+                isOnline = !isOnline;
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+                
+                statusDot.className = isOnline ? 'status-dot' : 'status-dot offline';
+                statusText.textContent = isOnline ? 'Available' : 'Offline';
+                
+                if (isOnline) {
+                    addNotification(
+                        'You are now available',
+                        `You went online at ${timeString}. Posters can now see you and you can receive tasks.`,
+                        'status-change',
+                        null,
+                        'online'
+                    );
+                    showToast('You are now available. Posters can see you.');
+                } else {
+                    addNotification(
+                        'You are now offline',
+                        `You went offline at ${timeString}. You will not be visible to posters and cannot receive new tasks.`,
+                        'status-change',
+                        null,
+                        'offline'
+                    );
+                    showToast('You are now offline. Posters cannot see you.');
+                }
+            });
+
             // ===== FULL SCREEN NOTIFICATIONS =====
             notificationBell.addEventListener('click', () => {
                 renderFullNotifications();
@@ -1260,6 +1302,23 @@
 
             function renderFullNotifications() {
                 let html = '';
+
+                const statusNotifs = notifications.filter(n => n.type === 'status-change');
+                if (statusNotifs.length > 0) {
+                    html += '<div class="notification-group"><h3>Status changes</h3>';
+                    statusNotifs.forEach(n => {
+                        const statusClass = n.status === 'online' ? 'online' : 'offline';
+                        html += `
+                            <div class="full-notification-item status-change">
+                                <div class="notification-time">${n.timestamp}</div>
+                                <div class="notification-main-title">${n.title}</div>
+                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-status-badge ${statusClass}">${n.status}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
 
                 const earningsNotifs = notifications.filter(n => n.type === 'earnings' || n.title.toLowerCase().includes('earned'));
                 if (earningsNotifs.length > 0) {
@@ -1451,35 +1510,6 @@
                 return localStorage.getItem('taskmart_token');
             }
 
-            // ===== LOAD PROFILE MENU WITH EVENT LISTENER FIX =====
-            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('profile-menu-container').innerHTML = html;
-                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
-                    for (let i = 0; i < scripts.length; i++) {
-                        const script = document.createElement('script');
-                        script.textContent = scripts[i].textContent;
-                        document.body.appendChild(script);
-                    }
-                    
-                    // Add click handler for the menu button after content loads
-                    setTimeout(() => {
-                        const profileMenuBtnFromContent = document.getElementById('profileMenuBtn');
-                        if (profileMenuBtnFromContent) {
-                            profileMenuBtn.addEventListener('click', () => {
-                                profileMenuBtnFromContent.click();
-                            });
-                        }
-                    }, 100);
-                })
-                .catch(error => console.error('Failed to load profile menu:', error));
-
-            profileMenuBtn.addEventListener('click', () => {
-                const menuBtn = document.getElementById('profileMenuBtn');
-                if (menuBtn) menuBtn.click();
-            });
-
             // ===== CREATE CUSTOM MARKERS =====
             function createHelperMarker() {
                 const container = document.createElement('div');
@@ -1620,7 +1650,7 @@
                             );
                         }
 
-                        if (availableTasks.length > lastTaskCount && lastTaskCount > 0) {
+                        if (availableTasks.length > lastTaskCount && lastTaskCount > 0 && isOnline) {
                             const newTasks = availableTasks.slice(0, availableTasks.length - lastTaskCount);
                             newTasks.forEach(task => {
                                 if (taskMatchesSkills(task)) {
@@ -1803,11 +1833,8 @@
                         const taskId = task.id;
                         const budget = task.budgetAmount;
                         const isOpenOffer = task.budgetType === 'open';
-                        const posterName = task.userName || 'Someone';
-                        const posterAvatar = task.userAvatar || null;
                         const taskTitle = task.taskDescription || 'Help needed';
                         const isMatch = taskMatchesSkills(task);
-                        const location = task.location ? task.location.split(',')[0] : 'Nearby';
 
                         let actionButtons = '';
                         
@@ -1904,7 +1931,7 @@
 
             window.expressInterest = async function(taskId, budget) {
                 if (!isOnline) {
-                    showToast('Set status to available');
+                    showToast('You are offline. Go online to express interest.');
                     return;
                 }
 
@@ -1920,16 +1947,16 @@
             };
 
             window.makeOffer = async function(taskId) {
+                if (!isOnline) {
+                    showToast('You are offline. Go online to make offers.');
+                    return;
+                }
+
                 const input = document.getElementById(`offer-${taskId}`);
                 const amount = parseFloat(input.value);
                 
                 if (!amount || amount < 1) {
                     showToast('Enter a valid amount');
-                    return;
-                }
-
-                if (!isOnline) {
-                    showToast('Set status to available');
                     return;
                 }
 
@@ -1946,12 +1973,10 @@
             };
 
             window.passOnTask = async function(taskId) {
-                // Remove the task from available tasks
                 availableTasks = availableTasks.filter(t => t.id !== taskId);
                 renderTasks();
                 showToast('Task passed');
                 
-                // Hide distance card if this was the selected task
                 if (selectedTaskId === taskId) {
                     floatingDistanceCard.classList.remove('active');
                 }
@@ -2008,13 +2033,6 @@
                     }
                 });
             }
-
-            onlineToggle.addEventListener('click', () => {
-                isOnline = !isOnline;
-                statusDot.className = isOnline ? 'status-dot' : 'status-dot offline';
-                statusText.textContent = isOnline ? 'Available' : 'Offline';
-                showToast(`You are now ${isOnline ? 'available' : 'offline'}`);
-            });
 
             expandIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
