@@ -118,7 +118,7 @@
         .notification-bell {
             position: fixed;
             top: 20px;
-            left: 80px; /* Positioned next to menu button */
+            left: 80px;
             z-index: 100;
             pointer-events: auto;
             cursor: pointer;
@@ -337,16 +337,6 @@
             background: #f0fff4;
         }
 
-        .full-notification-item.rejected {
-            border-left-color: #ef4444;
-            background: #fff0f0;
-        }
-
-        .full-notification-item.chat {
-            border-left-color: #8b5cf6;
-            background: #f5f3ff;
-        }
-
         .notification-time {
             font-size: 0.7rem;
             color: #999;
@@ -394,11 +384,6 @@
 
         .notification-status-badge.accepted {
             background: #10b981;
-            color: white;
-        }
-
-        .notification-status-badge.chat {
-            background: #8b5cf6;
             color: white;
         }
 
@@ -1397,6 +1382,7 @@
             justify-content: center;
             font-weight: 500;
             font-size: 1rem;
+            border-radius: 0;
         }
 
         .helper-avatar img {
@@ -1442,7 +1428,7 @@
         }
 
         .accept-helper-btn {
-            flex: 1;
+            flex: 2;
             padding: 10px;
             background: #003fe1;
             color: white;
@@ -1486,7 +1472,7 @@
         }
 
         .reject-helper-btn {
-            width: 40px;
+            width: 44px;
             background: transparent;
             border: 1px solid #ccc;
             color: #999;
@@ -1897,6 +1883,11 @@
     <div class="success-toast" id="successToast"></div>
     <div class="error-toast" id="errorToast"></div>
 
+    <!-- Notification Sound -->
+    <audio id="notificationSound" preload="auto">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-ding-101492.mp3" type="audio/mpeg">
+    </audio>
+
     <script>
         (function() {
             'use strict';
@@ -1906,13 +1897,14 @@
             // ===== STATE =====
             let currentUser = null;
             let currentTaskId = null;
-            let currentLat = null, currentLng = null;
+            let currentLat = -26.195246, currentLng = 28.034088;
             let uploadedFiles = [];
             let notifications = [];
             let interestedHelpers = [];
             let acceptedHelper = null;
             let activeChatHelper = null;
             let chatMessages = [];
+            let pollInterval = null;
 
             // ===== DOM ELEMENTS =====
             const homeSheet = document.getElementById('homeSheet');
@@ -1950,6 +1942,36 @@
 
             // ===== PROFILE MENU =====
             const profileMenuBtn = document.getElementById('profileMenuBtn');
+
+            // ===== TASK FORM ELEMENTS =====
+            const createTaskContainer = document.getElementById('createTaskContainer');
+            const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
+            const taskInput = document.getElementById('taskInput');
+            const streetInput = document.getElementById('streetInput');
+            const locationInput = document.getElementById('locationInput');
+            const budgetAmount = document.getElementById('budgetAmount');
+            const nextBtn = document.getElementById('nextBtn');
+            const moreDetailsBtn = document.getElementById('moreDetailsBtn');
+            const collapsibleSection = document.getElementById('collapsibleSection');
+            const whenNowBtn = document.getElementById('whenNowBtn');
+            const whenLaterBtn = document.getElementById('whenLaterBtn');
+            const dateTimePickers = document.getElementById('dateTimePickers');
+            const dateDisplay = document.getElementById('dateDisplay');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const nativeDatePicker = document.getElementById('nativeDatePicker');
+            const nativeTimePicker = document.getElementById('nativeTimePicker');
+            const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
+            const openBudgetBtn = document.getElementById('openBudgetBtn');
+            const fixedBudgetInput = document.getElementById('fixedBudgetInput');
+            const pickDateBtn = document.getElementById('pickDateBtn');
+            const pickTimeBtn = document.getElementById('pickTimeBtn');
+            const taskCharCount = document.getElementById('taskCharCount');
+            const extraNotes = document.getElementById('extraNotes');
+            const offersContainer = document.getElementById('offersContainer');
+            const offersBackBtn = document.getElementById('offersBackBtn');
+            const interestedHelpersList = document.getElementById('interestedHelpersList');
+            const refreshLocationBtn = document.getElementById('refreshLocationBtn');
+            const searchIconBtn = document.getElementById('searchIconBtn');
 
             // ===== GET CURRENT USER =====
             function getCurrentUser() {
@@ -2005,9 +2027,6 @@
                 updateNotificationBadge();
                 renderNotificationDropdown();
                 
-                // Save to Firebase
-                saveNotificationToFirebase(notification);
-                
                 // Play sound
                 playNotificationSound();
             }
@@ -2056,8 +2075,6 @@
                             updateNotificationBadge();
                             renderNotificationDropdown();
                         }
-                        notificationsFullscreen.classList.add('active');
-                        renderFullNotifications();
                     });
                 });
             }
@@ -2104,31 +2121,39 @@
                 notificationsFullContent.innerHTML = html;
             }
 
-            async function saveNotificationToFirebase(notification) {
-                try {
-                    await fetch(`${API_BASE_URL}/api/firebase/notifications/${currentUser.email}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(notification)
-                    });
-                } catch (e) {}
-            }
+            // ===== NOTIFICATION EVENT LISTENERS =====
+            notificationBell.addEventListener('click', () => {
+                renderFullNotifications();
+                notificationsFullscreen.classList.add('active');
+            });
+
+            closeNotificationsBtn.addEventListener('click', () => {
+                notificationsFullscreen.classList.remove('active');
+            });
+
+            clearNotificationsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notifications = [];
+                updateNotificationBadge();
+                renderNotificationDropdown();
+                renderFullNotifications();
+            });
 
             // ===== CHAT FUNCTIONS =====
             function openChat(helper) {
                 activeChatHelper = helper;
-                chatHelperName.textContent = helper.name;
+                chatHelperName.textContent = helper.name || 'Helper';
                 chatTaskTitle.textContent = taskInput.value || 'Task';
                 
                 // Show task details
                 let detailsHtml = `
                     <div class="chat-detail-row">
                         <span class="chat-detail-label">Task:</span>
-                        <span class="chat-detail-value">${taskInput.value}</span>
+                        <span class="chat-detail-value">${taskInput.value || 'Not specified'}</span>
                     </div>
                     <div class="chat-detail-row">
                         <span class="chat-detail-label">Location:</span>
-                        <span class="chat-detail-value">${locationInput.value}</span>
+                        <span class="chat-detail-value">${locationInput.value || 'Not specified'}</span>
                     </div>
                 `;
                 if (streetInput.value) {
@@ -2168,7 +2193,9 @@
                         chatMessages = data.messages || [];
                         renderChatMessages();
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.log('Error fetching chat messages');
+                }
             }
 
             function renderChatMessages() {
@@ -2206,7 +2233,9 @@
                     chatMessages.push(message);
                     renderChatMessages();
                     chatInput.value = '';
-                } catch (e) {}
+                } catch (e) {
+                    console.log('Error sending message');
+                }
             }
 
             closeChatBtn.addEventListener('click', () => {
@@ -2221,22 +2250,10 @@
                 if (e.key === 'Enter') sendChatMessage();
             });
 
-            // ===== NOTIFICATION EVENT LISTENERS =====
-            notificationBell.addEventListener('click', () => {
-                renderFullNotifications();
-                notificationsFullscreen.classList.add('active');
-            });
-
-            closeNotificationsBtn.addEventListener('click', () => {
-                notificationsFullscreen.classList.remove('active');
-            });
-
-            clearNotificationsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notifications = [];
-                updateNotificationBadge();
-                renderNotificationDropdown();
-                renderFullNotifications();
+            chatFloatButton.addEventListener('click', () => {
+                if (acceptedHelper) {
+                    openChat(acceptedHelper);
+                }
             });
 
             // ===== SPLASH SCREEN =====
@@ -2268,7 +2285,7 @@
                             .then(r => r.json())
                             .then(d => { 
                                 if (d.features && d.features[0]) {
-                                    document.getElementById('locationInput').value = d.features[0].place_name;
+                                    locationInput.value = d.features[0].place_name;
                                 }
                             })
                             .catch(() => {});
@@ -2279,23 +2296,25 @@
             }
 
             // ===== REFRESH LOCATION =====
-            document.getElementById('refreshLocationBtn').addEventListener('click', function() {
-                const btn = this;
-                btn.classList.add('loading');
-                
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => { 
-                            currentLat = pos.coords.latitude; currentLng = pos.coords.longitude; 
-                            map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                            btn.classList.remove('loading');
-                        },
-                        () => btn.classList.remove('loading')
-                    );
-                }
-            });
+            if (refreshLocationBtn) {
+                refreshLocationBtn.addEventListener('click', function() {
+                    const btn = this;
+                    btn.classList.add('loading');
+                    
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => { 
+                                currentLat = pos.coords.latitude; currentLng = pos.coords.longitude; 
+                                map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                                btn.classList.remove('loading');
+                            },
+                            () => btn.classList.remove('loading')
+                        );
+                    }
+                });
+            }
 
-            // ===== FORM ELEMENTS =====
+            // ===== TASK SUGGESTIONS =====
             const taskSuggestions = [
                 "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
                 "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
@@ -2319,9 +2338,8 @@
             }
 
             // Search suggestions
-            if (mainSearchInput && document.getElementById('mainSuggestionsList')) {
-                const mainSuggestionsList = document.getElementById('mainSuggestionsList');
-                
+            const mainSuggestionsList = document.getElementById('mainSuggestionsList');
+            if (mainSearchInput && mainSuggestionsList) {
                 mainSearchInput.addEventListener('input', function() {
                     const query = this.value.trim().toLowerCase();
                     
@@ -2368,42 +2386,22 @@
                 });
             }
 
-            document.getElementById('searchIconBtn').addEventListener('click', (e) => {
-                e.preventDefault();
-                const taskValue = mainSearchInput.value.trim();
-                if (taskValue) taskInput.value = taskValue;
-                if (canUserPost()) createTaskContainer.style.display = 'flex';
-            });
+            if (searchIconBtn) {
+                searchIconBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const taskValue = mainSearchInput.value.trim();
+                    if (taskValue) taskInput.value = taskValue;
+                    if (canUserPost()) createTaskContainer.style.display = 'flex';
+                });
+            }
+
+            if (closeCreateTaskBtn) {
+                closeCreateTaskBtn.addEventListener('click', ()=>{
+                    createTaskContainer.style.display = 'none';
+                });
+            }
 
             // ===== TASK FORM LOGIC =====
-            const createTaskContainer = document.getElementById('createTaskContainer');
-            const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
-            const taskInput = document.getElementById('taskInput');
-            const streetInput = document.getElementById('streetInput');
-            const locationInput = document.getElementById('locationInput');
-            const budgetAmount = document.getElementById('budgetAmount');
-            const nextBtn = document.getElementById('nextBtn');
-            const moreDetailsBtn = document.getElementById('moreDetailsBtn');
-            const collapsibleSection = document.getElementById('collapsibleSection');
-            const whenNowBtn = document.getElementById('whenNowBtn');
-            const whenLaterBtn = document.getElementById('whenLaterBtn');
-            const dateTimePickers = document.getElementById('dateTimePickers');
-            const dateDisplay = document.getElementById('dateDisplay');
-            const timeDisplay = document.getElementById('timeDisplay');
-            const nativeDatePicker = document.getElementById('nativeDatePicker');
-            const nativeTimePicker = document.getElementById('nativeTimePicker');
-            const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
-            const openBudgetBtn = document.getElementById('openBudgetBtn');
-            const fixedBudgetInput = document.getElementById('fixedBudgetInput');
-            const pickDateBtn = document.getElementById('pickDateBtn');
-            const pickTimeBtn = document.getElementById('pickTimeBtn');
-            const taskCharCount = document.getElementById('taskCharCount');
-            const extraNotes = document.getElementById('extraNotes');
-
-            closeCreateTaskBtn.addEventListener('click', ()=>{
-                createTaskContainer.style.display = 'none';
-            });
-
             taskInput.addEventListener('input', function() {
                 if (this.value.length > 50) this.value = this.value.slice(0,50);
                 taskCharCount.textContent = this.value.length + '/50';
@@ -2428,39 +2426,49 @@
                     whenValid = dateSelected && timeSelected;
                 }
                 
-                nextBtn.disabled = !(taskFilled && streetFilled && locationFilled && budgetValid && whenValid);
+                if (nextBtn) nextBtn.disabled = !(taskFilled && streetFilled && locationFilled && budgetValid && whenValid);
             }
 
             streetInput.addEventListener('input', validateForm);
             budgetAmount.addEventListener('input', validateForm);
             locationInput.addEventListener('input', validateForm);
 
-            moreDetailsBtn.addEventListener('click', ()=>{
-                if (collapsibleSection.style.display === 'none') {
-                    collapsibleSection.style.display = 'block';
-                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
-                } else {
-                    collapsibleSection.style.display = 'none';
-                    moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
-                }
-            });
+            if (moreDetailsBtn) {
+                moreDetailsBtn.addEventListener('click', ()=>{
+                    if (collapsibleSection.style.display === 'none') {
+                        collapsibleSection.style.display = 'block';
+                        moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
+                    } else {
+                        collapsibleSection.style.display = 'none';
+                        moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">add_circle</span> More details';
+                    }
+                });
+            }
 
-            whenNowBtn.addEventListener('click', ()=>{ 
-                whenNowBtn.className = 'when-option active'; 
-                whenLaterBtn.className = 'when-option inactive'; 
-                dateTimePickers.style.display = 'none'; 
-                validateForm();
-            });
+            if (whenNowBtn) {
+                whenNowBtn.addEventListener('click', ()=>{ 
+                    whenNowBtn.className = 'when-option active'; 
+                    whenLaterBtn.className = 'when-option inactive'; 
+                    dateTimePickers.style.display = 'none'; 
+                    validateForm();
+                });
+            }
             
-            whenLaterBtn.addEventListener('click', ()=>{ 
-                whenLaterBtn.className = 'when-option active'; 
-                whenNowBtn.className = 'when-option inactive'; 
-                dateTimePickers.style.display = 'flex'; 
-                validateForm();
-            });
+            if (whenLaterBtn) {
+                whenLaterBtn.addEventListener('click', ()=>{ 
+                    whenLaterBtn.className = 'when-option active'; 
+                    whenNowBtn.className = 'when-option inactive'; 
+                    dateTimePickers.style.display = 'flex'; 
+                    validateForm();
+                });
+            }
 
-            pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
-            pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
+            if (pickDateBtn) {
+                pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
+            }
+            if (pickTimeBtn) {
+                pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
+            }
 
             nativeDatePicker.addEventListener('change', function() {
                 if (this.value) {
@@ -2477,19 +2485,23 @@
                 }
             });
 
-            fixedBudgetBtn.addEventListener('click', ()=>{ 
-                fixedBudgetBtn.className = 'budget-option active'; 
-                openBudgetBtn.className = 'budget-option inactive'; 
-                fixedBudgetInput.style.display = 'block'; 
-                validateForm();
-            });
+            if (fixedBudgetBtn) {
+                fixedBudgetBtn.addEventListener('click', ()=>{ 
+                    fixedBudgetBtn.className = 'budget-option active'; 
+                    openBudgetBtn.className = 'budget-option inactive'; 
+                    fixedBudgetInput.style.display = 'block'; 
+                    validateForm();
+                });
+            }
             
-            openBudgetBtn.addEventListener('click', ()=>{ 
-                openBudgetBtn.className = 'budget-option active'; 
-                fixedBudgetBtn.className = 'budget-option inactive'; 
-                fixedBudgetInput.style.display = 'none'; 
-                validateForm();
-            });
+            if (openBudgetBtn) {
+                openBudgetBtn.addEventListener('click', ()=>{ 
+                    openBudgetBtn.className = 'budget-option active'; 
+                    fixedBudgetBtn.className = 'budget-option inactive'; 
+                    fixedBudgetInput.style.display = 'none'; 
+                    validateForm();
+                });
+            }
 
             // ===== IMAGE UPLOAD =====
             const uploadArea = document.getElementById('uploadArea');
@@ -2497,24 +2509,26 @@
 
             function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
 
-            uploadArea.addEventListener('click', ()=>{
-                if (!isUserLoggedIn()) { 
-                    showUploadStatus('Please log in', 'warning');
-                    return; 
-                }
-                
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.multiple = true;
-                
-                input.onchange = (e) => {
-                    const files = Array.from(e.target.files);
-                    files.forEach(file => handleFileUpload(file));
-                };
-                
-                input.click();
-            });
+            if (uploadArea) {
+                uploadArea.addEventListener('click', ()=>{
+                    if (!isUserLoggedIn()) { 
+                        showUploadStatus('Please log in', 'warning');
+                        return; 
+                    }
+                    
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.multiple = true;
+                    
+                    input.onchange = (e) => {
+                        const files = Array.from(e.target.files);
+                        files.forEach(file => handleFileUpload(file));
+                    };
+                    
+                    input.click();
+                });
+            }
 
             function handleFileUpload(file) {
                 if (!file.type.startsWith('image/')) {
@@ -2548,6 +2562,7 @@
 
             function showUploadStatus(message, type = 'info') {
                 const status = document.getElementById('uploadStatus');
+                if (!status) return;
                 const statusText = document.getElementById('uploadStatusText');
                 const icon = status.querySelector('.material-symbols-outlined');
                 
@@ -2565,16 +2580,19 @@
 
             function showUploadProgress(message) {
                 const progress = document.getElementById('uploadProgress');
+                if (!progress) return;
                 progress.textContent = message;
                 progress.style.display = 'block';
             }
 
             function hideUploadProgress() {
-                document.getElementById('uploadProgress').style.display = 'none';
+                const progress = document.getElementById('uploadProgress');
+                if (progress) progress.style.display = 'none';
             }
 
             function displayPreviews() {
                 const container = document.getElementById('imagePreviewContainer');
+                if (!container) return;
                 container.innerHTML = '';
                 uploadedImages.forEach((url, idx) => {
                     const wrapper = document.createElement('div');
@@ -2608,27 +2626,54 @@
             let mapModalInstance = null;
             let marker = null;
 
-            openMapBtn.addEventListener('click', ()=> {
-                mapModal.classList.add('active');
-                
-                setTimeout(() => {
-                    if (mapModalInstance) mapModalInstance.remove();
+            if (openMapBtn) {
+                openMapBtn.addEventListener('click', ()=> {
+                    mapModal.classList.add('active');
                     
-                    mapModalInstance = new mapboxgl.Map({
-                        container: 'mapModalContainer',
-                        style: 'mapbox://styles/mapbox/dark-v11',
-                        center: [currentLng || 28.034088, currentLat || -26.195246],
-                        zoom: 15
-                    });
-                    
-                    marker = new mapboxgl.Marker({ 
-                        draggable: true, 
-                        color: '#000000' 
-                    })
-                    .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                    .addTo(mapModalInstance);
-                    
-                    marker.on('dragend', () => {
+                    setTimeout(() => {
+                        if (mapModalInstance) mapModalInstance.remove();
+                        
+                        mapModalInstance = new mapboxgl.Map({
+                            container: 'mapModalContainer',
+                            style: 'mapbox://styles/mapbox/dark-v11',
+                            center: [currentLng || 28.034088, currentLat || -26.195246],
+                            zoom: 15
+                        });
+                        
+                        marker = new mapboxgl.Marker({ 
+                            draggable: true, 
+                            color: '#000000' 
+                        })
+                        .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                        .addTo(mapModalInstance);
+                        
+                        marker.on('dragend', () => {
+                            const lngLat = marker.getLngLat();
+                            currentLat = lngLat.lat;
+                            currentLng = lngLat.lng;
+                            
+                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.features && data.features[0]) {
+                                        locationInput.value = data.features[0].place_name;
+                                    }
+                                })
+                                .catch(err => console.log('Geocoding error'));
+                        });
+                    }, 100);
+                });
+            }
+
+            if (closeMapModalBtn) {
+                closeMapModalBtn.addEventListener('click', () => {
+                    mapModal.classList.remove('active');
+                });
+            }
+            
+            if (confirmLocationBtn) {
+                confirmLocationBtn.addEventListener('click', () => {
+                    if (marker) {
                         const lngLat = marker.getLngLat();
                         currentLat = lngLat.lat;
                         currentLng = lngLat.lng;
@@ -2641,37 +2686,17 @@
                                 }
                             })
                             .catch(err => console.log('Geocoding error'));
-                    });
-                }, 100);
-            });
-
-            closeMapModalBtn.addEventListener('click', () => {
-                mapModal.classList.remove('active');
-            });
-            
-            confirmLocationBtn.addEventListener('click', () => {
-                if (marker) {
-                    const lngLat = marker.getLngLat();
-                    currentLat = lngLat.lat;
-                    currentLng = lngLat.lng;
-                    
-                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.features && data.features[0]) {
-                                locationInput.value = data.features[0].place_name;
-                            }
-                        })
-                        .catch(err => console.log('Geocoding error'));
-                }
-                mapModal.classList.remove('active');
-                validateForm();
-            });
+                    }
+                    mapModal.classList.remove('active');
+                    validateForm();
+                });
+            }
 
             // ===== SAVE TASK TO FIREBASE =====
             async function saveTaskToFirebase(taskData) {
                 try {
-                    document.getElementById('loadingOverlay').classList.add('active');
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) loadingOverlay.classList.add('active');
                     
                     const response = await fetch(`${API_BASE_URL}/api/firebase/tasks`, {
                         method: 'POST',
@@ -2682,13 +2707,14 @@
                     if (!response.ok) throw new Error('Failed to save task');
                     
                     const result = await response.json();
-                    document.getElementById('loadingOverlay').classList.remove('active');
+                    if (loadingOverlay) loadingOverlay.classList.remove('active');
                     showToast('Task posted!', 'success');
                     return result.task;
                     
                 } catch (error) {
                     console.error('Error saving task:', error);
-                    document.getElementById('loadingOverlay').classList.remove('active');
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) loadingOverlay.classList.remove('active');
                     showToast('Failed to save task', 'error');
                     return null;
                 }
@@ -2696,6 +2722,8 @@
 
             // ===== FETCH INTERESTED HELPERS =====
             async function fetchInterestedHelpers(taskId) {
+                if (!taskId) return;
+                
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/firebase/tasks/${taskId}/interests`);
                     if (response.ok) {
@@ -2703,23 +2731,29 @@
                         interestedHelpers = data.interests || [];
                         renderInterestedHelpers();
                         
+                        // Check for new helpers
                         if (interestedHelpers.length > 0) {
-                            addNotification(
-                                'New interest!',
-                                `${interestedHelpers.length} helper(s) interested in your task`,
-                                'interest'
-                            );
+                            const lastCount = parseInt(localStorage.getItem('lastHelperCount_' + taskId) || '0');
+                            if (interestedHelpers.length > lastCount) {
+                                addNotification(
+                                    'New interest!',
+                                    `${interestedHelpers.length - lastCount} new helper(s) interested in your task`,
+                                    'interest'
+                                );
+                            }
+                            localStorage.setItem('lastHelperCount_' + taskId, interestedHelpers.length);
                         }
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.log('Error fetching interests');
+                }
             }
 
             function renderInterestedHelpers() {
-                const list = document.getElementById('interestedHelpersList');
-                if (!list) return;
+                if (!interestedHelpersList) return;
                 
                 if (interestedHelpers.length === 0) {
-                    list.innerHTML = `
+                    interestedHelpersList.innerHTML = `
                         <div class="no-offers-message">
                             <span class="material-symbols-outlined">person_search</span>
                             <p>No interested helpers yet</p>
@@ -2734,13 +2768,13 @@
                     const isAccepted = acceptedHelper && acceptedHelper.id === helper.id;
                     
                     html += `
-                        <div class="interested-helper-card">
+                        <div class="interested-helper-card" data-helper-id="${helper.id}">
                             <div class="interested-helper-header">
                                 <div class="helper-avatar">
-                                    ${helper.avatar ? `<img src="${helper.avatar}" alt="${helper.name}">` : helper.name.charAt(0).toUpperCase()}
+                                    ${helper.avatar ? `<img src="${helper.avatar}" alt="${helper.name}">` : (helper.name ? helper.name.charAt(0).toUpperCase() : 'H')}
                                 </div>
                                 <div class="helper-info">
-                                    <div class="helper-name">${helper.name}</div>
+                                    <div class="helper-name">${helper.name || 'Helper'}</div>
                                     <div class="helper-skills">
                                         ${helper.skills ? helper.skills.slice(0, 3).map(s => `<span class="skill-tag">${s}</span>`).join('') : ''}
                                     </div>
@@ -2750,19 +2784,19 @@
                             ${isAccepted ? 
                                 `<div class="accepted-helper-badge">✓ Accepted</div>` : 
                                 `<div class="helper-actions">
-                                    <button class="accept-helper-btn" onclick="acceptHelper('${helper.id}', '${helper.name}')">Accept</button>
-                                    <button class="chat-helper-btn" onclick="openChatWithHelper('${helper.id}')">
+                                    <button class="accept-helper-btn" onclick="window.acceptHelper('${helper.id}', '${helper.name}')">Accept</button>
+                                    <button class="chat-helper-btn" onclick="window.openChatWithHelper('${helper.id}')">
                                         <span class="material-symbols-outlined">chat</span>
                                         Chat
                                     </button>
-                                    <button class="reject-helper-btn" onclick="rejectHelper('${helper.id}')">✕</button>
+                                    <button class="reject-helper-btn" onclick="window.rejectHelper('${helper.id}')">✕</button>
                                 </div>`
                             }
                         </div>
                     `;
                 });
                 
-                list.innerHTML = html;
+                interestedHelpersList.innerHTML = html;
             }
 
             // ===== ACCEPT HELPER =====
@@ -2796,7 +2830,11 @@
                     
                     // Show chat button
                     chatFloatButton.style.display = 'flex';
-                } catch (e) {}
+                    
+                    showToast(`Accepted ${helperName} for your task!`, 'success');
+                } catch (e) {
+                    showToast('Failed to accept helper', 'error');
+                }
             };
 
             window.openChatWithHelper = function(helperId) {
@@ -2805,97 +2843,109 @@
             };
 
             window.rejectHelper = async function(helperId) {
+                // Remove from list (just visually - in real app you'd update Firebase)
                 interestedHelpers = interestedHelpers.filter(h => h.id !== helperId);
                 renderInterestedHelpers();
+                showToast('Helper removed', 'success');
             };
 
             // ===== POST TASK =====
-            const offersContainer = document.getElementById('offersContainer');
-            const offersBackBtn = document.getElementById('offersBackBtn');
             let offersMap = null;
 
-            nextBtn.addEventListener('click', async ()=>{
-                const user = getCurrentUser();
-                
-                const taskData = {
-                    location: locationInput.value,
-                    coordinates: `${currentLat},${currentLng}`,
-                    streetName: streetInput.value,
-                    when: whenNowBtn.classList.contains('active') ? 'now' : 'later',
-                    scheduledDate: whenLaterBtn.classList.contains('active') ? nativeDatePicker.value : null,
-                    scheduledTime: whenLaterBtn.classList.contains('active') ? nativeTimePicker.value : null,
-                    taskDescription: taskInput.value,
-                    budgetType: fixedBudgetBtn.classList.contains('active') ? 'fixed' : 'open',
-                    budgetAmount: fixedBudgetBtn.classList.contains('active') ? budgetAmount.value : null,
-                    moreDetails: extraNotes.value,
-                    images: uploadedImages,
-                    userId: user?.email || 'anonymous',
-                    userName: user?.name || 'Anonymous',
-                    userAvatar: user?.profileImage || '',
-                    status: 'open',
-                    interests: [],
-                    createdAt: new Date().toISOString()
-                };
-                
-                const savedTask = await saveTaskToFirebase(taskData);
-                
-                if (savedTask) {
-                    currentTaskId = savedTask.id;
+            if (nextBtn) {
+                nextBtn.addEventListener('click', async ()=>{
+                    const user = getCurrentUser();
                     
-                    createTaskContainer.style.display = 'none';
-                    offersContainer.classList.add('active');
+                    const taskData = {
+                        location: locationInput.value,
+                        coordinates: `${currentLat},${currentLng}`,
+                        streetName: streetInput.value,
+                        when: whenNowBtn.classList.contains('active') ? 'now' : 'later',
+                        scheduledDate: whenLaterBtn.classList.contains('active') ? nativeDatePicker.value : null,
+                        scheduledTime: whenLaterBtn.classList.contains('active') ? nativeTimePicker.value : null,
+                        taskDescription: taskInput.value,
+                        budgetType: fixedBudgetBtn.classList.contains('active') ? 'fixed' : 'open',
+                        budgetAmount: fixedBudgetBtn.classList.contains('active') ? budgetAmount.value : null,
+                        moreDetails: extraNotes.value,
+                        images: uploadedImages,
+                        userId: user?.email || 'anonymous',
+                        userName: user?.name || 'Anonymous',
+                        userAvatar: user?.profileImage || '',
+                        status: 'open',
+                        interests: [],
+                        createdAt: new Date().toISOString()
+                    };
                     
-                    setTimeout(() => {
-                        if (offersMap) offersMap.remove();
+                    const savedTask = await saveTaskToFirebase(taskData);
+                    
+                    if (savedTask) {
+                        currentTaskId = savedTask.id;
                         
-                        offersMap = new mapboxgl.Map({
-                            container: 'offersMap',
-                            style: 'mapbox://styles/mapbox/dark-v11',
-                            center: [currentLng || 28.034088, currentLat || -26.195246],
-                            zoom: 15
-                        });
+                        createTaskContainer.style.display = 'none';
+                        offersContainer.classList.add('active');
                         
-                        new mapboxgl.Marker({ color: '#000000' })
-                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
-                            .addTo(offersMap);
-                    }, 100);
-                    
-                    // Start polling for interested helpers
-                    setInterval(() => fetchInterestedHelpers(savedTask.id), 5000);
-                    
-                    // Reset form
-                    uploadedImages.forEach(item => URL.revokeObjectURL(item.previewUrl));
-                    uploadedImages = [];
-                    taskInput.value = '';
-                    mainSearchInput.value = '';
-                    streetInput.value = '';
-                    budgetAmount.value = '';
-                    extraNotes.value = '';
-                    taskCharCount.textContent = '0/50';
-                    displayPreviews();
-                    whenNowBtn.click();
-                    fixedBudgetBtn.click();
-                    dateDisplay.textContent = 'Pick date';
-                    timeDisplay.textContent = 'Pick time';
-                    validateForm();
-                    
-                    if (typeof confetti === 'function') {
-                        confetti({ 
-                            particleCount: 100, 
-                            spread: 70, 
-                            origin: { y: 0.6 }, 
-                            colors: ['#000000', '#333333'] 
-                        });
+                        setTimeout(() => {
+                            if (offersMap) offersMap.remove();
+                            
+                            offersMap = new mapboxgl.Map({
+                                container: 'offersMap',
+                                style: 'mapbox://styles/mapbox/dark-v11',
+                                center: [currentLng || 28.034088, currentLat || -26.195246],
+                                zoom: 15
+                            });
+                            
+                            new mapboxgl.Marker({ color: '#000000' })
+                                .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                                .addTo(offersMap);
+                        }, 100);
+                        
+                        // Clear any existing poll interval
+                        if (pollInterval) clearInterval(pollInterval);
+                        
+                        // Start polling for interested helpers
+                        pollInterval = setInterval(() => fetchInterestedHelpers(savedTask.id), 5000);
+                        
+                        // Reset form
+                        uploadedImages = [];
+                        taskInput.value = '';
+                        mainSearchInput.value = '';
+                        streetInput.value = '';
+                        budgetAmount.value = '';
+                        extraNotes.value = '';
+                        taskCharCount.textContent = '0/50';
+                        displayPreviews();
+                        whenNowBtn.click();
+                        fixedBudgetBtn.click();
+                        dateDisplay.textContent = 'Pick date';
+                        timeDisplay.textContent = 'Pick time';
+                        validateForm();
+                        
+                        if (typeof confetti === 'function') {
+                            confetti({ 
+                                particleCount: 100, 
+                                spread: 70, 
+                                origin: { y: 0.6 }, 
+                                colors: ['#000000', '#333333'] 
+                            });
+                        }
                     }
-                }
-            });
+                });
+            }
 
-            offersBackBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                offersContainer.classList.remove('active');
-                createTaskContainer.style.display = 'flex';
-            });
+            if (offersBackBtn) {
+                offersBackBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    offersContainer.classList.remove('active');
+                    createTaskContainer.style.display = 'flex';
+                    
+                    // Stop polling
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                });
+            }
 
             document.getElementById('postOfferBtn')?.addEventListener('click', ()=>{
                 offersContainer.classList.remove('active');
@@ -2903,6 +2953,7 @@
 
             function showToast(message, type = 'success') {
                 const toast = type === 'success' ? document.getElementById('successToast') : document.getElementById('errorToast');
+                if (!toast) return;
                 toast.textContent = message;
                 toast.style.display = 'block';
                 setTimeout(() => {
@@ -2922,6 +2973,7 @@
             function checkVerificationStatus() {
                 const user = getCurrentUser();
                 const banner = document.getElementById('verificationBanner');
+                if (!banner) return;
                 
                 if (user && (!user.profileImage || !user.email)) {
                     banner.classList.add('active');
@@ -2933,12 +2985,6 @@
             // Initial validation
             validateForm();
             checkVerificationStatus();
-
-            // Add notification sound
-            const audio = document.createElement('audio');
-            audio.id = 'notificationSound';
-            audio.innerHTML = '<source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-ding-101492.mp3" type="audio/mpeg">';
-            document.body.appendChild(audio);
 
         })();
     </script>
