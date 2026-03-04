@@ -153,7 +153,7 @@
             z-index: 1;
         }
 
-        /* Custom pin - black dot with translucent blue radius */
+        /* Custom pulsing pin - black dot with translucent blue radius that pulses */
         .custom-pin {
             position: relative;
             width: 12px;
@@ -164,6 +164,7 @@
             box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
             transform: translate(-50%, -50%);
             pointer-events: none;
+            animation: pulse 2s infinite ease-in-out;
         }
         
         .custom-pin::after {
@@ -178,6 +179,34 @@
             border-radius: 50%;
             pointer-events: none;
             z-index: -1;
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+            }
+        }
+        
+        @keyframes pulse-ring {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.7;
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
         }
 
         /* Re-center button with gps-navigation.png */
@@ -232,7 +261,7 @@
             height: 3rem;
         }
 
-        /* Rotating header text - only two phrases now */
+        /* Rotating header text - fixed transition */
         .rotating-text {
             font-family: 'Manrope-SemiBold', 'Manrope', sans-serif;
             font-size: 1.3rem;
@@ -242,10 +271,14 @@
             letter-spacing: -0.02em;
             margin: 0;
             opacity: 1;
-            transition: opacity 0.5s ease-in-out;
+            transition: opacity 0.4s ease-in-out;
+            white-space: nowrap;
         }
         .rotating-text.fade-out {
             opacity: 0;
+        }
+        .rotating-text.fade-in {
+            opacity: 1;
         }
 
         /* Search container */
@@ -511,14 +544,14 @@
             outline: none;
         }
 
-        /* Edit location button - no background, icon slightly smaller */
+        /* Edit location button - transparent with smaller icon */
         .location-icon {
             position: absolute;
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 36px; /* slightly smaller */
-            height: 36px; /* slightly smaller */
+            width: 36px;
+            height: 36px;
             background: transparent;
             border: none;
             cursor: pointer;
@@ -528,7 +561,7 @@
             border-radius: 5px;
         }
         .location-icon img {
-            width: 20px; /* reduced by ~9% from 22px */
+            width: 20px;
             height: 20px;
         }
 
@@ -559,11 +592,6 @@
             gap: 0.5rem;
             font-family: 'Manrope', sans-serif;
             border-radius: 5px;
-        }
-
-        /* No icons in more/less details button */
-        .more-details-btn img {
-            display: none;
         }
 
         .collapsible-section {
@@ -646,7 +674,7 @@
             background-color: #fff0f0 !important;
         }
 
-        /* Upload area with image-2.png */
+        /* Upload area with image-2.png - FIXED: now shows the icon */
         .upload-area {
             background: #f0f0f0;
             padding: 2rem 1rem;
@@ -665,6 +693,7 @@
         .upload-area img {
             width: 48px;
             height: 48px;
+            display: block; /* Ensure it shows */
             background: rgba(0,0,0,0.05);
             padding: 0.5rem;
             border-radius: 5px;
@@ -865,7 +894,6 @@
         <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/gps-navigation.png" alt="Recenter">
     </button>
 
-    <!-- Custom pin - will be added via Mapbox API -->
     <!-- HOME SHEET with rotating text -->
     <div class="home-sheet" id="homeSheet">
         <div class="sheet-header">
@@ -931,7 +959,6 @@
                 <div class="section-label">Your location</div>
                 <div class="location-field-wrapper">
                     <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
-                    <!-- Edit button with transparent background and smaller icon -->
                     <button class="location-icon" id="openMapBtn">
                         <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/edit.png" alt="Edit">
                     </button>
@@ -945,9 +972,7 @@
                 <div class="char-count" id="taskCharCount">0/50</div>
                 
                 <div class="more-details-btn-container">
-                    <button class="more-details-btn" id="moreDetailsBtn">
-                        More details
-                    </button>
+                    <button class="more-details-btn" id="moreDetailsBtn">More details</button>
                 </div>
 
                 <div class="collapsible-section" id="collapsibleSection" style="display: none;">
@@ -1077,25 +1102,35 @@
                 mainSearchInput.addEventListener('blur', () => homeSheet.classList.remove('keyboard-open'));
             }
 
-            // Rotating header with 3-second intervals - only two phrases
+            // Rotating header with clean transitions - FIXED
             const rotatingHeader = document.getElementById('rotatingHeader');
-            const texts = [
-                "It starts here.",
-                "Get it done."
-            ];
+            const texts = ["It starts here.", "Get it done."];
             let textIndex = 0;
+            let isTransitioning = false;
             
             function rotateText() {
+                if (isTransitioning) return;
+                isTransitioning = true;
+                
+                // Fade out
                 rotatingHeader.classList.add('fade-out');
+                
                 setTimeout(() => {
+                    // Change text after fade out is complete
                     textIndex = (textIndex + 1) % texts.length;
                     rotatingHeader.textContent = texts[textIndex];
+                    
+                    // Fade in
                     rotatingHeader.classList.remove('fade-out');
-                }, 500);
+                    
+                    setTimeout(() => {
+                        isTransitioning = false;
+                    }, 400);
+                }, 400);
             }
             
-            // Start the rotation every 3 seconds
-            setInterval(rotateText, 3000);
+            // Start the rotation every 3.5 seconds (allows for fade transitions)
+            setInterval(rotateText, 3500);
 
             // Splash screen
             const splashScreen = document.getElementById('splashScreen');
@@ -1139,6 +1174,7 @@
             });
 
             let currentLat = null, currentLng = null, uploadedImages = [];
+            let mainMapPin = null; // Store reference to main map pin
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -1146,37 +1182,110 @@
                         currentLat = pos.coords.latitude;
                         currentLng = pos.coords.longitude;
                         map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
-                            .then(r => r.json())
-                            .then(d => { if (d.features?.[0]) document.getElementById('locationInput').value = d.features[0].place_name; });
                         
-                        // Add custom pin after location is found
-                        map.on('load', () => {
-                            // Create custom pin element
+                        // Reverse geocode for location input
+                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.features && data.features[0]) {
+                                    document.getElementById('locationInput').value = data.features[0].place_name;
+                                } else {
+                                    // Fallback to city/area
+                                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            if (d.features?.[0]) document.getElementById('locationInput').value = d.features[0].place_name;
+                                        });
+                                }
+                            });
+                        
+                        // Create and add custom pin element (permanently)
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'custom-pin';
+                        
+                        // Remove existing pin if any
+                        if (mainMapPin) mainMapPin.remove();
+                        
+                        mainMapPin = new mapboxgl.Marker({ 
+                            element: pinElement,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng, currentLat])
+                        .addTo(map);
+                    },
+                    (err) => {
+                        console.log('Geolocation error, using default location');
+                        // Default location with pin
+                        currentLat = -26.195246;
+                        currentLng = 28.034088;
+                        
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'custom-pin';
+                        
+                        mainMapPin = new mapboxgl.Marker({ 
+                            element: pinElement,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng, currentLat])
+                        .addTo(map);
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                // Default location with pin if geolocation not supported
+                currentLat = -26.195246;
+                currentLng = 28.034088;
+                
+                map.on('load', () => {
+                    const pinElement = document.createElement('div');
+                    pinElement.className = 'custom-pin';
+                    
+                    mainMapPin = new mapboxgl.Marker({ 
+                        element: pinElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([currentLng, currentLat])
+                    .addTo(map);
+                });
+            }
+
+            // Re-center button
+            document.getElementById('mapRecenterBtn').addEventListener('click', () => {
+                if (currentLat && currentLng) {
+                    map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                    
+                    // Update pin position if needed (should already be there)
+                    if (!mainMapPin) {
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'custom-pin';
+                        
+                        mainMapPin = new mapboxgl.Marker({ 
+                            element: pinElement,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng, currentLat])
+                        .addTo(map);
+                    }
+                } else if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        currentLat = pos.coords.latitude;
+                        currentLng = pos.coords.longitude;
+                        map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                        
+                        // Update or create pin
+                        if (mainMapPin) {
+                            mainMapPin.setLngLat([currentLng, currentLat]);
+                        } else {
                             const pinElement = document.createElement('div');
                             pinElement.className = 'custom-pin';
                             
-                            new mapboxgl.Marker({ 
+                            mainMapPin = new mapboxgl.Marker({ 
                                 element: pinElement,
                                 anchor: 'center'
                             })
                             .setLngLat([currentLng, currentLat])
                             .addTo(map);
-                        });
-                    },
-                    (err) => console.log('Geolocation error'),
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            }
-
-            // Re-center button
-            document.getElementById('mapRecenterBtn').addEventListener('click', () => {
-                if (currentLat && currentLng) map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
-                else if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition((pos) => {
-                        currentLat = pos.coords.latitude;
-                        currentLng = pos.coords.longitude;
-                        map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                        }
                     });
                 }
             });
@@ -1461,7 +1570,6 @@
                             .then(r => r.json())
                             .then(data => {
                                 if (data.features && data.features[0]) {
-                                    // Get the most precise address
                                     locationInput.value = data.features[0].place_name;
                                 } else {
                                     // Fallback to city/area
@@ -1491,6 +1599,20 @@
                                 locationInput.value = data.features[0].place_name;
                             }
                         });
+                    
+                    // Update main map pin
+                    if (mainMapPin) {
+                        mainMapPin.setLngLat([currentLng, currentLat]);
+                    } else {
+                        const newPin = document.createElement('div');
+                        newPin.className = 'custom-pin';
+                        mainMapPin = new mapboxgl.Marker({ 
+                            element: newPin,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng, currentLat])
+                        .addTo(map);
+                    }
                 } 
                 mapModal.classList.remove('active'); 
                 validateForm(); 
