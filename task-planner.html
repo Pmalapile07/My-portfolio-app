@@ -1905,11 +1905,14 @@
             let activeChatHelper = null;
             let chatMessages = [];
             let pollInterval = null;
+            // Fix: properly initialize offersMap as null
+            let offersMap = null;
 
             // ===== DOM ELEMENTS =====
             const homeSheet = document.getElementById('homeSheet');
             const mainSearchInput = document.getElementById('mainSearchInput');
             const splashScreen = document.getElementById('splashScreen');
+            // Initialize map correctly
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/dark-v11',
@@ -1991,24 +1994,31 @@
             }
 
             // ===== LOAD PROFILE MENU =====
-            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('profile-menu-container').innerHTML = html;
-                    const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
-                    for (let i = 0; i < scripts.length; i++) {
-                        const script = document.createElement('script');
-                        script.textContent = scripts[i].textContent;
-                        document.body.appendChild(script);
-                    }
-                    
-                    // Setup profile menu click
-                    profileMenuBtn.addEventListener('click', () => {
-                        const menuBtn = document.querySelector('#profile-menu-container .menu-btn');
-                        if (menuBtn) menuBtn.click();
-                    });
-                })
-                .catch(error => console.error('Failed to load profile menu:', error));
+            function loadProfileMenu() {
+                fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('profile-menu-container').innerHTML = html;
+                        const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
+                        for (let i = 0; i < scripts.length; i++) {
+                            const script = document.createElement('script');
+                            script.textContent = scripts[i].textContent;
+                            document.body.appendChild(script);
+                        }
+                        
+                        // Setup profile menu click
+                        if (profileMenuBtn) {
+                            profileMenuBtn.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const menuBtn = document.querySelector('#profile-menu-container .menu-btn');
+                                if (menuBtn) menuBtn.click();
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Failed to load profile menu:', error));
+            }
+            loadProfileMenu();
 
             // ===== NOTIFICATION FUNCTIONS =====
             function addNotification(title, message, type = 'info', helperId = null, helperName = null) {
@@ -2122,22 +2132,32 @@
             }
 
             // ===== NOTIFICATION EVENT LISTENERS =====
-            notificationBell.addEventListener('click', () => {
-                renderFullNotifications();
-                notificationsFullscreen.classList.add('active');
-            });
+            if (notificationBell) {
+                notificationBell.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    renderFullNotifications();
+                    notificationsFullscreen.classList.add('active');
+                });
+            }
 
-            closeNotificationsBtn.addEventListener('click', () => {
-                notificationsFullscreen.classList.remove('active');
-            });
+            if (closeNotificationsBtn) {
+                closeNotificationsBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    notificationsFullscreen.classList.remove('active');
+                });
+            }
 
-            clearNotificationsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notifications = [];
-                updateNotificationBadge();
-                renderNotificationDropdown();
-                renderFullNotifications();
-            });
+            if (clearNotificationsBtn) {
+                clearNotificationsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    notifications = [];
+                    updateNotificationBadge();
+                    renderNotificationDropdown();
+                    renderFullNotifications();
+                });
+            }
 
             // ===== CHAT FUNCTIONS =====
             function openChat(helper) {
@@ -2238,23 +2258,43 @@
                 }
             }
 
-            closeChatBtn.addEventListener('click', () => {
-                chatModal.classList.remove('active');
-                activeChatHelper = null;
-                chatTaskDetails.classList.remove('active');
-                chatInputArea.classList.remove('active');
-            });
+            if (closeChatBtn) {
+                closeChatBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    chatModal.classList.remove('active');
+                    activeChatHelper = null;
+                    chatTaskDetails.classList.remove('active');
+                    chatInputArea.classList.remove('active');
+                });
+            }
 
-            sendChatBtn.addEventListener('click', sendChatMessage);
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendChatMessage();
-            });
+            if (sendChatBtn) {
+                sendChatBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sendChatMessage();
+                });
+            }
 
-            chatFloatButton.addEventListener('click', () => {
-                if (acceptedHelper) {
-                    openChat(acceptedHelper);
-                }
-            });
+            if (chatInput) {
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+            }
+
+            if (chatFloatButton) {
+                chatFloatButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (acceptedHelper) {
+                        openChat(acceptedHelper);
+                    }
+                });
+            }
 
             // ===== SPLASH SCREEN =====
             const splashShown = localStorage.getItem('splashShown');
@@ -2297,7 +2337,9 @@
 
             // ===== REFRESH LOCATION =====
             if (refreshLocationBtn) {
-                refreshLocationBtn.addEventListener('click', function() {
+                refreshLocationBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     const btn = this;
                     btn.classList.add('loading');
                     
@@ -2389,6 +2431,7 @@
             if (searchIconBtn) {
                 searchIconBtn.addEventListener('click', (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const taskValue = mainSearchInput.value.trim();
                     if (taskValue) taskInput.value = taskValue;
                     if (canUserPost()) createTaskContainer.style.display = 'flex';
@@ -2396,20 +2439,25 @@
             }
 
             if (closeCreateTaskBtn) {
-                closeCreateTaskBtn.addEventListener('click', ()=>{
+                closeCreateTaskBtn.addEventListener('click', (e)=>{
+                    e.preventDefault();
+                    e.stopPropagation();
                     createTaskContainer.style.display = 'none';
                 });
             }
 
             // ===== TASK FORM LOGIC =====
-            taskInput.addEventListener('input', function() {
-                if (this.value.length > 50) this.value = this.value.slice(0,50);
-                taskCharCount.textContent = this.value.length + '/50';
-                mainSearchInput.value = this.value;
-                validateForm();
-            });
+            if (taskInput) {
+                taskInput.addEventListener('input', function() {
+                    if (this.value.length > 50) this.value = this.value.slice(0,50);
+                    taskCharCount.textContent = this.value.length + '/50';
+                    mainSearchInput.value = this.value;
+                    validateForm();
+                });
+            }
 
             function validateForm() {
+                if (!taskInput || !streetInput || !locationInput || !budgetAmount || !nextBtn) return;
                 const taskFilled = taskInput.value.trim() !== '';
                 const streetFilled = streetInput.value.trim() !== '';
                 const locationFilled = locationInput.value.trim() !== '';
@@ -2426,15 +2474,17 @@
                     whenValid = dateSelected && timeSelected;
                 }
                 
-                if (nextBtn) nextBtn.disabled = !(taskFilled && streetFilled && locationFilled && budgetValid && whenValid);
+                nextBtn.disabled = !(taskFilled && streetFilled && locationFilled && budgetValid && whenValid);
             }
 
-            streetInput.addEventListener('input', validateForm);
-            budgetAmount.addEventListener('input', validateForm);
-            locationInput.addEventListener('input', validateForm);
+            if (streetInput) streetInput.addEventListener('input', validateForm);
+            if (budgetAmount) budgetAmount.addEventListener('input', validateForm);
+            if (locationInput) locationInput.addEventListener('input', validateForm);
 
             if (moreDetailsBtn) {
-                moreDetailsBtn.addEventListener('click', ()=>{
+                moreDetailsBtn.addEventListener('click', (e)=>{
+                    e.preventDefault();
+                    e.stopPropagation();
                     if (collapsibleSection.style.display === 'none') {
                         collapsibleSection.style.display = 'block';
                         moreDetailsBtn.innerHTML = '<span class="material-symbols-outlined">remove_circle</span> Less details';
@@ -2446,7 +2496,9 @@
             }
 
             if (whenNowBtn) {
-                whenNowBtn.addEventListener('click', ()=>{ 
+                whenNowBtn.addEventListener('click', (e)=>{ 
+                    e.preventDefault();
+                    e.stopPropagation();
                     whenNowBtn.className = 'when-option active'; 
                     whenLaterBtn.className = 'when-option inactive'; 
                     dateTimePickers.style.display = 'none'; 
@@ -2455,7 +2507,9 @@
             }
             
             if (whenLaterBtn) {
-                whenLaterBtn.addEventListener('click', ()=>{ 
+                whenLaterBtn.addEventListener('click', (e)=>{ 
+                    e.preventDefault();
+                    e.stopPropagation();
                     whenLaterBtn.className = 'when-option active'; 
                     whenNowBtn.className = 'when-option inactive'; 
                     dateTimePickers.style.display = 'flex'; 
@@ -2464,29 +2518,43 @@
             }
 
             if (pickDateBtn) {
-                pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
+                pickDateBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (nativeDatePicker) nativeDatePicker.showPicker();
+                });
             }
             if (pickTimeBtn) {
-                pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
+                pickTimeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (nativeTimePicker) nativeTimePicker.showPicker();
+                });
             }
 
-            nativeDatePicker.addEventListener('change', function() {
-                if (this.value) {
-                    const d = new Date(this.value);
-                    dateDisplay.textContent = d.toLocaleDateString('en-GB');
-                    validateForm();
-                }
-            });
+            if (nativeDatePicker) {
+                nativeDatePicker.addEventListener('change', function() {
+                    if (this.value) {
+                        const d = new Date(this.value);
+                        dateDisplay.textContent = d.toLocaleDateString('en-GB');
+                        validateForm();
+                    }
+                });
+            }
             
-            nativeTimePicker.addEventListener('change', function() {
-                if (this.value) {
-                    timeDisplay.textContent = this.value;
-                    validateForm();
-                }
-            });
+            if (nativeTimePicker) {
+                nativeTimePicker.addEventListener('change', function() {
+                    if (this.value) {
+                        timeDisplay.textContent = this.value;
+                        validateForm();
+                    }
+                });
+            }
 
             if (fixedBudgetBtn) {
-                fixedBudgetBtn.addEventListener('click', ()=>{ 
+                fixedBudgetBtn.addEventListener('click', (e)=>{ 
+                    e.preventDefault();
+                    e.stopPropagation();
                     fixedBudgetBtn.className = 'budget-option active'; 
                     openBudgetBtn.className = 'budget-option inactive'; 
                     fixedBudgetInput.style.display = 'block'; 
@@ -2495,7 +2563,9 @@
             }
             
             if (openBudgetBtn) {
-                openBudgetBtn.addEventListener('click', ()=>{ 
+                openBudgetBtn.addEventListener('click', (e)=>{ 
+                    e.preventDefault();
+                    e.stopPropagation();
                     openBudgetBtn.className = 'budget-option active'; 
                     fixedBudgetBtn.className = 'budget-option inactive'; 
                     fixedBudgetInput.style.display = 'none'; 
@@ -2508,57 +2578,6 @@
             let uploadedImages = [];
 
             function isUserLoggedIn() { return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); }
-
-            if (uploadArea) {
-                uploadArea.addEventListener('click', ()=>{
-                    if (!isUserLoggedIn()) { 
-                        showUploadStatus('Please log in', 'warning');
-                        return; 
-                    }
-                    
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.multiple = true;
-                    
-                    input.onchange = (e) => {
-                        const files = Array.from(e.target.files);
-                        files.forEach(file => handleFileUpload(file));
-                    };
-                    
-                    input.click();
-                });
-            }
-
-            function handleFileUpload(file) {
-                if (!file.type.startsWith('image/')) {
-                    showUploadStatus('File must be an image', 'error');
-                    return;
-                }
-                
-                if (file.size > 5 * 1024 * 1024) {
-                    showUploadStatus('File too large (max 5MB)', 'error');
-                    return;
-                }
-                
-                showUploadStatus(`Uploading ${file.name}...`, 'info');
-                showUploadProgress('Upload in progress...');
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    setTimeout(() => {
-                        uploadedImages.push(e.target.result);
-                        displayPreviews();
-                        showUploadStatus('Upload successful!', 'success');
-                        hideUploadProgress();
-                    }, 800);
-                };
-                reader.onerror = () => {
-                    showUploadStatus('Upload failed - file read error', 'error');
-                    hideUploadProgress();
-                };
-                reader.readAsDataURL(file);
-            }
 
             function showUploadStatus(message, type = 'info') {
                 const status = document.getElementById('uploadStatus');
@@ -2605,7 +2624,9 @@
                     const rm = document.createElement('button'); 
                     rm.className = 'remove-image';
                     rm.textContent = '×'; 
-                    rm.onclick = () => { 
+                    rm.onclick = (e) => { 
+                        e.preventDefault();
+                        e.stopPropagation();
                         uploadedImages.splice(idx, 1); 
                         displayPreviews(); 
                         showUploadStatus('Image removed', 'warning');
@@ -2614,6 +2635,59 @@
                     wrapper.appendChild(img); 
                     wrapper.appendChild(rm); 
                     container.appendChild(wrapper);
+                });
+            }
+
+            function handleFileUpload(file) {
+                if (!file.type.startsWith('image/')) {
+                    showUploadStatus('File must be an image', 'error');
+                    return;
+                }
+                
+                if (file.size > 5 * 1024 * 1024) {
+                    showUploadStatus('File too large (max 5MB)', 'error');
+                    return;
+                }
+                
+                showUploadStatus(`Uploading ${file.name}...`, 'info');
+                showUploadProgress('Upload in progress...');
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setTimeout(() => {
+                        uploadedImages.push(e.target.result);
+                        displayPreviews();
+                        showUploadStatus('Upload successful!', 'success');
+                        hideUploadProgress();
+                    }, 800);
+                };
+                reader.onerror = () => {
+                    showUploadStatus('Upload failed - file read error', 'error');
+                    hideUploadProgress();
+                };
+                reader.readAsDataURL(file);
+            }
+
+            if (uploadArea) {
+                uploadArea.addEventListener('click', (e)=>{
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isUserLoggedIn()) { 
+                        showUploadStatus('Please log in', 'warning');
+                        return; 
+                    }
+                    
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.multiple = true;
+                    
+                    input.onchange = (e) => {
+                        const files = Array.from(e.target.files);
+                        files.forEach(file => handleFileUpload(file));
+                    };
+                    
+                    input.click();
                 });
             }
 
@@ -2627,7 +2701,9 @@
             let marker = null;
 
             if (openMapBtn) {
-                openMapBtn.addEventListener('click', ()=> {
+                openMapBtn.addEventListener('click', (e)=> {
+                    e.preventDefault();
+                    e.stopPropagation();
                     mapModal.classList.add('active');
                     
                     setTimeout(() => {
@@ -2666,13 +2742,17 @@
             }
 
             if (closeMapModalBtn) {
-                closeMapModalBtn.addEventListener('click', () => {
+                closeMapModalBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     mapModal.classList.remove('active');
                 });
             }
             
             if (confirmLocationBtn) {
-                confirmLocationBtn.addEventListener('click', () => {
+                confirmLocationBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     if (marker) {
                         const lngLat = marker.getLngLat();
                         currentLat = lngLat.lat;
@@ -2850,10 +2930,10 @@
             };
 
             // ===== POST TASK =====
-            let offersMap = null;
-
             if (nextBtn) {
-                nextBtn.addEventListener('click', async ()=>{
+                nextBtn.addEventListener('click', async (e)=>{
+                    e.preventDefault();
+                    e.stopPropagation();
                     const user = getCurrentUser();
                     
                     const taskData = {
@@ -2947,7 +3027,9 @@
                 });
             }
 
-            document.getElementById('postOfferBtn')?.addEventListener('click', ()=>{
+            document.getElementById('postOfferBtn')?.addEventListener('click', (e)=>{
+                e.preventDefault();
+                e.stopPropagation();
                 offersContainer.classList.remove('active');
             });
 
@@ -2987,24 +3069,6 @@
             checkVerificationStatus();
 
         })();
-    </script>
-
-    <!-- Load profile menu from GitHub -->
-    <script>
-        fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('profile-menu-container').innerHTML = html;
-                const scripts = document.getElementById('profile-menu-container').getElementsByTagName('script');
-                for (let i = 0; i < scripts.length; i++) {
-                    const script = document.createElement('script');
-                    script.textContent = scripts[i].textContent;
-                    document.body.appendChild(script);
-                }
-            })
-            .catch(error => {
-                console.error('Failed to load profile menu:', error);
-            });
     </script>
 </body>
 </html>
