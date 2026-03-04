@@ -153,29 +153,31 @@
             z-index: 1;
         }
 
-        /* Draggable pin - using pin.png */
-        .draggable-pin {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -100%);
-            width: 40px;
-            height: 40px;
-            background: transparent;
-            border: none;
-            z-index: 100;
-            cursor: grab;
-            touch-action: none;
-            pointer-events: auto;
-            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/pin.png');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
+        /* Custom pin - black dot with translucent blue radius */
+        .custom-pin {
+            position: relative;
+            width: 12px;
+            height: 12px;
+            background: #000000;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
-
-        .draggable-pin:active {
-            cursor: grabbing;
-            transform: translate(-50%, -100%) scale(1.05);
+        
+        .custom-pin::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 122, 255, 0.15);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
         }
 
         /* Re-center button with gps-navigation.png */
@@ -230,7 +232,7 @@
             height: 3rem;
         }
 
-        /* Rotating header text - using Manrope-SemiBold with periods */
+        /* Rotating header text - only two phrases now */
         .rotating-text {
             font-family: 'Manrope-SemiBold', 'Manrope', sans-serif;
             font-size: 1.3rem;
@@ -509,26 +511,25 @@
             outline: none;
         }
 
-        /* Edit location button */
+        /* Edit location button - no background, icon slightly smaller */
         .location-icon {
             position: absolute;
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background: #000000;
+            width: 36px; /* slightly smaller */
+            height: 36px; /* slightly smaller */
+            background: transparent;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 5px;
         }
         .location-icon img {
-            width: 22px;
-            height: 22px;
-            filter: brightness(0) invert(1);
+            width: 20px; /* reduced by ~9% from 22px */
+            height: 20px;
         }
 
         .char-count {
@@ -560,10 +561,9 @@
             border-radius: 5px;
         }
 
+        /* No icons in more/less details button */
         .more-details-btn img {
-            width: 18px;
-            height: 18px;
-            filter: brightness(0) invert(1);
+            display: none;
         }
 
         .collapsible-section {
@@ -797,7 +797,7 @@
             height: 25px;
         }
 
-        /* Map modal with pin.png for marker */
+        /* Map modal with custom pin */
         .map-modal {
             position: fixed;
             top:0; left:0; width:100%; height:100%;
@@ -865,9 +865,7 @@
         <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/gps-navigation.png" alt="Recenter">
     </button>
 
-    <!-- Draggable pin with pin.png -->
-    <div class="draggable-pin" id="locationPin"></div>
-
+    <!-- Custom pin - will be added via Mapbox API -->
     <!-- HOME SHEET with rotating text -->
     <div class="home-sheet" id="homeSheet">
         <div class="sheet-header">
@@ -933,6 +931,7 @@
                 <div class="section-label">Your location</div>
                 <div class="location-field-wrapper">
                     <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
+                    <!-- Edit button with transparent background and smaller icon -->
                     <button class="location-icon" id="openMapBtn">
                         <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/edit.png" alt="Edit">
                     </button>
@@ -947,7 +946,6 @@
                 
                 <div class="more-details-btn-container">
                     <button class="more-details-btn" id="moreDetailsBtn">
-                        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/plus.png" alt="Add">
                         More details
                     </button>
                 </div>
@@ -1029,7 +1027,7 @@
         </button>
     </div>
 
-    <!-- Map Modal with pin.png for marker -->
+    <!-- Map Modal -->
     <div class="map-modal" id="mapModal">
         <div class="map-modal-content">
             <div class="map-modal-header">
@@ -1079,11 +1077,10 @@
                 mainSearchInput.addEventListener('blur', () => homeSheet.classList.remove('keyboard-open'));
             }
 
-            // Rotating header with 3-second intervals and periods
+            // Rotating header with 3-second intervals - only two phrases
             const rotatingHeader = document.getElementById('rotatingHeader');
             const texts = [
                 "It starts here.",
-                "Let's make it happen.",
                 "Get it done."
             ];
             let textIndex = 0;
@@ -1152,6 +1149,20 @@
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
                             .then(r => r.json())
                             .then(d => { if (d.features?.[0]) document.getElementById('locationInput').value = d.features[0].place_name; });
+                        
+                        // Add custom pin after location is found
+                        map.on('load', () => {
+                            // Create custom pin element
+                            const pinElement = document.createElement('div');
+                            pinElement.className = 'custom-pin';
+                            
+                            new mapboxgl.Marker({ 
+                                element: pinElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                        });
                     },
                     (err) => console.log('Geolocation error'),
                     { enableHighAccuracy: true, timeout: 10000 }
@@ -1179,7 +1190,6 @@
             const mapEl = document.getElementById('map');
             const homeSheetEl = document.getElementById('homeSheet');
             const recenterBtn = document.querySelector('.map-recenter-btn');
-            const pin = document.querySelector('.draggable-pin');
 
             function setActivePage(page) {
                 [navHome, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
@@ -1190,7 +1200,6 @@
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
                     recenterBtn.style.display = 'flex';
-                    pin.style.display = 'block';
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
                     tasksPage.classList.add('active');
@@ -1198,7 +1207,6 @@
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
-                    pin.style.display = 'none';
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
                     accountPage.classList.add('active');
@@ -1206,7 +1214,6 @@
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
-                    pin.style.display = 'none';
                 }
             }
 
@@ -1311,10 +1318,10 @@
             moreDetailsBtn.addEventListener('click', () => {
                 if (collapsibleSection.style.display === 'none') {
                     collapsibleSection.style.display = 'block';
-                    moreDetailsBtn.innerHTML = '<img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/minus.png" alt="Minus"> Less details';
+                    moreDetailsBtn.textContent = 'Less details';
                 } else {
                     collapsibleSection.style.display = 'none';
-                    moreDetailsBtn.innerHTML = '<img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/plus.png" alt="Plus"> More details';
+                    moreDetailsBtn.textContent = 'More details';
                 }
             });
 
@@ -1421,14 +1428,8 @@
             let mapModalInstance, marker;
             
             // Custom pin element for modal
-            const pinEl = document.createElement('div');
-            pinEl.className = 'draggable-pin';
-            pinEl.style.width = '40px';
-            pinEl.style.height = '40px';
-            pinEl.style.backgroundImage = 'url(https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/pin.png)';
-            pinEl.style.backgroundSize = 'contain';
-            pinEl.style.backgroundRepeat = 'no-repeat';
-            pinEl.style.backgroundPosition = 'center';
+            const pinElement = document.createElement('div');
+            pinElement.className = 'custom-pin';
             
             openMapBtn.addEventListener('click', () => {
                 mapModal.classList.add('active');
@@ -1443,8 +1444,9 @@
                     
                     // Use custom pin element
                     marker = new mapboxgl.Marker({ 
-                        element: pinEl.cloneNode(true),
-                        draggable: true 
+                        element: pinElement.cloneNode(true),
+                        draggable: true,
+                        anchor: 'center'
                     })
                     .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                     .addTo(mapModalInstance);
@@ -1453,9 +1455,23 @@
                         const lngLat = marker.getLngLat();
                         currentLat = lngLat.lat;
                         currentLng = lngLat.lng;
-                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}`)
-                            .then(r=>r.json())
-                            .then(d=>{ if (d.features?.[0]) locationInput.value = d.features[0].place_name; });
+                        
+                        // Reverse geocode to get precise location
+                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.features && data.features[0]) {
+                                    // Get the most precise address
+                                    locationInput.value = data.features[0].place_name;
+                                } else {
+                                    // Fallback to city/area
+                                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            if (d.features?.[0]) locationInput.value = d.features[0].place_name;
+                                        });
+                                }
+                            });
                     });
                 }, 100);
             });
@@ -1466,6 +1482,15 @@
                     const lngLat = marker.getLngLat(); 
                     currentLat = lngLat.lat; 
                     currentLng = lngLat.lng; 
+                    
+                    // Get precise location on confirm
+                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.features && data.features[0]) {
+                                locationInput.value = data.features[0].place_name;
+                            }
+                        });
                 } 
                 mapModal.classList.remove('active'); 
                 validateForm(); 
@@ -1486,17 +1511,11 @@
                         zoom: 15
                     });
                     
-                    // Use custom pin for offers map too
+                    // Use custom pin for offers map
                     const offerPin = document.createElement('div');
-                    offerPin.className = 'draggable-pin';
-                    offerPin.style.width = '40px';
-                    offerPin.style.height = '40px';
-                    offerPin.style.backgroundImage = 'url(https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/pin.png)';
-                    offerPin.style.backgroundSize = 'contain';
-                    offerPin.style.backgroundRepeat = 'no-repeat';
-                    offerPin.style.backgroundPosition = 'center';
+                    offerPin.className = 'custom-pin';
                     
-                    new mapboxgl.Marker({ element: offerPin })
+                    new mapboxgl.Marker({ element: offerPin, anchor: 'center' })
                         .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                         .addTo(offersMap);
                 }, 100);
