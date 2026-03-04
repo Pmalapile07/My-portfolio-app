@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskMart · Home</title>
     
-    <!-- Fonts - include all Material Symbols -->
+    <!-- Fonts - include all Material Symbols as fallback -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
@@ -195,10 +195,11 @@
             border-radius: 50%;
         }
 
-        /* Re-center button on map - moved further up (30% from previous position) */
+        /* --- RECENTER BUTTON --- */
+        /* Position moved down by 8% from previous value (254px). 8% of 254px is about 20px, so new bottom: 234px */
         .map-recenter-btn {
             position: absolute;
-            bottom: 254px; /* previously 182px, increased by 30% (72px) to 254px */
+            bottom: 234px; /* moved down by 20px (approx 8%) */
             right: 16px;
             width: 48px;
             height: 48px;
@@ -225,7 +226,7 @@
         /* === HOME SHEET (main page) === */
         .home-sheet {
             position: absolute;
-            bottom: 70px; /* raised to make room for nav bar */
+            bottom: 70px;
             left: 0;
             width: 100%;
             background: white;
@@ -245,15 +246,22 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 20px;
+            height: 2.5rem; /* Fixed height for smooth transition */
         }
 
-        .home-sheet h2 {
+        /* --- ROTATING HEADER TEXT --- */
+        .rotating-text {
             font-size: 1.3rem;
             font-weight: 700;
             color: #000000;
             line-height: 1.2;
             letter-spacing: -0.02em;
             margin: 0;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .rotating-text.fade-out {
+            opacity: 0;
         }
 
         /* Search container */
@@ -349,7 +357,9 @@
             background-color: #f5f5f5;
         }
 
-        /* === BOTTOM NAVIGATION BAR - shadow instead of border, updated icons === */
+        /* === BOTTOM NAVIGATION BAR === */
+        /* Icons are set as CSS background images. 
+           To replace with your custom PNGs, uncomment the background properties and provide the correct paths. */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -384,6 +394,17 @@
         }
         .nav-item .material-symbols-outlined {
             font-size: 24px !important;
+            /* To use custom PNGs, replace the span with an img tag or set background-image:
+               Example for home:
+               content: '';
+               display: inline-block;
+               width: 24px;
+               height: 24px;
+               background-size: contain;
+               background-repeat: no-repeat;
+               background-position: center;
+               background-image: url('/path/to/home-2.png');
+            */
         }
         .nav-item span:last-child {
             font-size: 0.7rem;
@@ -442,7 +463,7 @@
             width: 100%;
             height: 100%;
             background: white;
-            z-index: 2000000; /* above nav */
+            z-index: 2000000;
             display: none;
             flex-direction: column;
             overflow: hidden;
@@ -526,7 +547,7 @@
             outline: none;
         }
 
-        /* Edit location icon - using "edit" icon (already correct) */
+        /* --- EDIT LOCATION BUTTON (with black background and border-radius) --- */
         .location-icon {
             position: absolute;
             right: 8px;
@@ -534,18 +555,21 @@
             transform: translateY(-50%);
             width: 40px;
             height: 40px;
-            background: transparent;
+            background: #000000; /* Black background */
             border: none;
+            border-radius: 5px; /* Same as input field */
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 5px;
         }
         .location-icon .material-symbols-outlined {
-            color: #000000 !important;
+            color: #ffffff !important; /* White icon for contrast */
             font-size: 22px !important;
         }
+        /* To use custom edit.png, replace the span with an img tag:
+           <img src="/path/to/edit.png" alt="Edit" style="width: 22px; height: 22px;"> 
+        */
 
         .char-count {
             text-align: right;
@@ -657,7 +681,6 @@
             -moz-appearance: textfield;
         }
 
-        /* red border for budget input error - thinner, only when actively invalid */
         .budget-input.error {
             border: 1px solid #dc3545 !important;
             background-color: #fff0f0 !important;
@@ -758,7 +781,7 @@
             background: #666;
         }
 
-        /* OFFERS PAGE */
+        /* OFFERS PAGE (simplified) */
         .offers-container {
             position: fixed;
             top: 0;
@@ -848,10 +871,10 @@
     <!-- Profile Menu Container (loads from GitHub) -->
     <div id="profile-menu-container"></div>
 
-    <!-- MAP - DARK STYLE (visible on home) -->
+    <!-- MAP -->
     <div id="map"></div>
 
-    <!-- Re-center button (moved further up - 30% from previous) -->
+    <!-- Re-center button (moved down by ~8%) -->
     <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
         <span class="material-symbols-outlined">navigation</span>
     </button>
@@ -859,10 +882,10 @@
     <!-- Draggable pin -->
     <div class="draggable-pin" id="locationPin"></div>
 
-    <!-- HOME SHEET (main page) -->
+    <!-- HOME SHEET with rotating text -->
     <div class="home-sheet" id="homeSheet">
         <div class="sheet-header">
-            <h2>Find trusted help nearby.</h2>
+            <h2 class="rotating-text" id="rotatingHeader">It starts here</h2>
         </div>
         
         <div class="search-container">
@@ -878,14 +901,14 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION with updated icons: home=home_2, tasks=clipboard, account=account_circle (7?) but using "account_circle" as per standard -->
+    <!-- BOTTOM NAVIGATION (icons are Material Symbols, replace with custom PNGs using instructions in comments) -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
-            <span class="material-symbols-outlined">home_2</span>
+            <span class="material-symbols-outlined">home</span>
             <span>Home</span>
         </button>
         <button class="nav-item" id="navTasks" data-page="tasks">
-            <span class="material-symbols-outlined">clipboard</span>
+            <span class="material-symbols-outlined">task</span>
             <span>Tasks</span>
         </button>
         <button class="nav-item" id="navAccount" data-page="account">
@@ -894,7 +917,7 @@
         </button>
     </div>
 
-    <!-- TASKS PAGE (hidden initially) -->
+    <!-- TASKS PAGE -->
     <div class="page-container" id="tasksPage">
         <div class="tasks-header">My Tasks</div>
         <div class="no-tasks-message">
@@ -904,7 +927,7 @@
         </div>
     </div>
 
-    <!-- ACCOUNT PAGE (hidden initially, blank white) -->
+    <!-- ACCOUNT PAGE -->
     <div class="page-container" id="accountPage">
         <div class="account-header">Account</div>
         <p style="color: #777; text-align: center; margin-top: 40%;">Account details coming soon</p>
@@ -925,6 +948,7 @@
                 <div class="section-label">Your location</div>
                 <div class="location-field-wrapper">
                     <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
+                    <!-- Edit button with black background and border-radius -->
                     <button class="location-icon" id="openMapBtn">
                         <span class="material-symbols-outlined">edit</span>
                     </button>
@@ -1037,7 +1061,7 @@
         </div>
     </div>
 
-    <!-- Loading overlay (simple) -->
+    <!-- Loading overlay -->
     <div class="loading-overlay" id="loadingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000000; display:none; align-items:center; justify-content:center;"><div style="background:white; padding:2rem; border-radius:5px;">Processing...</div></div>
     <div class="success-toast" id="successToast" style="position:fixed; top:20px; right:20px; padding:1rem; background:#28a745; color:white; border-radius:5px; display:none; z-index:4000000;"></div>
 
@@ -1072,6 +1096,21 @@
                 mainSearchInput.addEventListener('focus', () => homeSheet.classList.add('keyboard-open'));
                 mainSearchInput.addEventListener('blur', () => homeSheet.classList.remove('keyboard-open'));
             }
+
+            // --- ROTATING HEADER TEXT ---
+            const rotatingHeader = document.getElementById('rotatingHeader');
+            const texts = ["It starts here", "Let's make it happen"];
+            let textIndex = 0;
+            setInterval(() => {
+                // Fade out
+                rotatingHeader.classList.add('fade-out');
+                setTimeout(() => {
+                    // Change text and fade in
+                    textIndex = (textIndex + 1) % texts.length;
+                    rotatingHeader.textContent = texts[textIndex];
+                    rotatingHeader.classList.remove('fade-out');
+                }, 500); // Match transition duration
+            }, 3000); // Change every 3 seconds
 
             // Splash screen
             const splashScreen = document.getElementById('splashScreen');
@@ -1186,11 +1225,9 @@
             navHome.addEventListener('click', () => setActivePage('home'));
             navTasks.addEventListener('click', () => setActivePage('tasks'));
             navAccount.addEventListener('click', () => setActivePage('account'));
-
-            // Initialize home as active
             setActivePage('home');
 
-            // Suggestions & search
+            // Suggestions & search (simplified)
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
             const searchIconBtn = document.getElementById('searchIconBtn');
             const createTaskContainer = document.getElementById('createTaskContainer');
@@ -1308,13 +1345,32 @@
 
             pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
             pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
+
+            // --- DATE VALIDATION: Disable past dates ---
+            const today = new Date().toISOString().split('T')[0];
+            nativeDatePicker.setAttribute('min', today);
+
             nativeDatePicker.addEventListener('change', function() {
-                if (this.value) dateDisplay.textContent = new Date(this.value).toLocaleDateString('en-GB');
-                validateForm();
+                if (this.value) {
+                    const selectedDate = new Date(this.value);
+                    const todayDate = new Date();
+                    todayDate.setHours(0,0,0,0);
+                    if (selectedDate < todayDate) {
+                        alert('Please select a future date.');
+                        this.value = '';
+                        dateDisplay.textContent = 'Pick date';
+                    } else {
+                        dateDisplay.textContent = selectedDate.toLocaleDateString('en-GB');
+                    }
+                    validateForm();
+                }
             });
+            
             nativeTimePicker.addEventListener('change', function() {
-                if (this.value) timeDisplay.textContent = this.value;
-                validateForm();
+                if (this.value) {
+                    timeDisplay.textContent = this.value;
+                    validateForm();
+                }
             });
 
             fixedBudgetBtn.addEventListener('click', () => {
