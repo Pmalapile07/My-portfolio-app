@@ -197,10 +197,10 @@
             border-radius: 50%;
         }
 
-        /* Re-center button on map - REVERTED POSITION (bottom right, above home sheet) */
+        /* Re-center button on map - repositioned 30% higher */
         .map-recenter-btn {
             position: absolute;
-            bottom: 140px; /* above home sheet */
+            bottom: 182px; /* previously 140px, increased by 30% (42px) to 182px */
             right: 16px;
             width: 48px;
             height: 48px;
@@ -214,6 +214,7 @@
             z-index: 200;
             color: #000;
             transition: transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .map-recenter-btn:active {
             transform: scale(0.9);
@@ -234,6 +235,7 @@
             padding: 24px 20px 28px;
             transition: padding-bottom 0.3s ease;
             border-radius: 5px 5px 0 0;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
         }
 
         .home-sheet.keyboard-open {
@@ -349,7 +351,7 @@
             background-color: #f5f5f5;
         }
 
-        /* === BOTTOM NAVIGATION BAR - fixed at bottom === */
+        /* === BOTTOM NAVIGATION BAR - fixed at bottom, shadow instead of border === */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -361,7 +363,8 @@
             justify-content: space-around;
             align-items: center;
             z-index: 100000;
-            border-top: 1px solid #e0e0e0;
+            /* border-top removed, shadow added */
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
         .nav-item {
@@ -657,9 +660,9 @@
             -moz-appearance: textfield;
         }
 
-        /* red border for budget input error - thinner */
+        /* red border for budget input error - thinner, only when actively invalid */
         .budget-input.error {
-            border: 1px solid #dc3545 !important; /* thinner */
+            border: 1px solid #dc3545 !important;
             background-color: #fff0f0 !important;
         }
 
@@ -758,7 +761,7 @@
             background: #666;
         }
 
-        /* OFFERS PAGE (keep as is) */
+        /* OFFERS PAGE */
         .offers-container {
             position: fixed;
             top: 0;
@@ -785,6 +788,7 @@
             cursor: pointer;
             border: none;
             border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         /* Map modal */
@@ -803,6 +807,30 @@
             background: white;
             width: 90%;
             max-width: 500px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .map-modal-header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        #mapModalContainer {
+            height: 300px;
+            width: 100%;
+        }
+        .confirm-button {
+            margin: 1rem;
+            padding: 0.7rem 2rem;
+            background: #000000;
+            color: white;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            float: right;
             border-radius: 5px;
         }
     </style>
@@ -826,7 +854,7 @@
     <!-- MAP - DARK STYLE (visible on home) -->
     <div id="map"></div>
 
-    <!-- Re-center button (position reverted) -->
+    <!-- Re-center button (repositioned 30% higher) -->
     <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
         <span class="material-symbols-outlined">navigation</span>
     </button>
@@ -853,7 +881,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- BOTTOM NAVIGATION (shadow instead of border) -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <span class="material-symbols-outlined">home</span>
@@ -877,16 +905,11 @@
             <p>No upcoming tasks</p>
             <small>Your posted tasks will appear here</small>
         </div>
-        <!-- example of past tasks (commented out for now)
-        <div class="task-card"><h4>Fix leaky faucet</h4><p>Status: In progress</p></div>
-        <div class="task-card"><h4>Grocery shopping</h4><p>Status: Completed</p></div>
-        -->
     </div>
 
     <!-- ACCOUNT PAGE (hidden initially, blank white) -->
     <div class="page-container" id="accountPage">
         <div class="account-header">Account</div>
-        <!-- blank white page, just a placeholder -->
         <p style="color: #777; text-align: center; margin-top: 40%;">Account details coming soon</p>
     </div>
 
@@ -990,7 +1013,7 @@
         <div class="offers-map-section">
             <div id="offersMap"></div>
         </div>
-        <div class="offers-sheet">
+        <div class="offers-sheet" style="background:white; padding:20px; border-radius:5px 5px 0 0;">
             <div class="no-offers-message">
                 <span class="material-symbols-outlined">info</span>
                 <p>No offers at this time</p>
@@ -1017,10 +1040,9 @@
         </div>
     </div>
 
-    <!-- Loading, toasts -->
-    <div class="loading-overlay" id="loadingOverlay"><div class="loading-content">Processing...</div></div>
-    <div class="success-toast" id="successToast"></div>
-    <div class="error-toast" id="errorToast"></div>
+    <!-- Loading overlay (simple) -->
+    <div class="loading-overlay" id="loadingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000000; display:none; align-items:center; justify-content:center;"><div style="background:white; padding:2rem; border-radius:5px;">Processing...</div></div>
+    <div class="success-toast" id="successToast" style="position:fixed; top:20px; right:20px; padding:1rem; background:#28a745; color:white; border-radius:5px; display:none; z-index:4000000;"></div>
 
     <script>
         (function() {
@@ -1246,9 +1268,15 @@
                     const amount = budgetAmount.value.trim();
                     const amountNum = parseInt(amount);
                     budgetValid = amount !== '' && amountNum > 0;
-                    if (!budgetValid) budgetAmount.classList.add('error');
-                    else budgetAmount.classList.remove('error');
-                } else budgetAmount.classList.remove('error');
+                    // error class added only when invalid and field is not empty? we keep as is per request
+                    if (!budgetValid && amount !== '') {
+                        budgetAmount.classList.add('error');
+                    } else {
+                        budgetAmount.classList.remove('error');
+                    }
+                } else {
+                    budgetAmount.classList.remove('error');
+                }
                 let whenValid = true;
                 if (whenLaterBtn.classList.contains('active')) {
                     whenValid = dateDisplay.textContent !== 'Pick date' && timeDisplay.textContent !== 'Pick time';
@@ -1385,9 +1413,9 @@
                 createTaskContainer.style.display = 'flex';
             });
             document.getElementById('postOfferBtn').addEventListener('click', () => {
-                document.getElementById('loadingOverlay').classList.add('active');
+                document.getElementById('loadingOverlay').style.display = 'flex';
                 setTimeout(() => {
-                    document.getElementById('loadingOverlay').classList.remove('active');
+                    document.getElementById('loadingOverlay').style.display = 'none';
                     showUploadStatus('Task posted!', 'success');
                     offersContainer.classList.remove('active');
                     taskInput.value = ''; mainSearchInput.value = ''; streetInput.value = ''; budgetAmount.value = ''; taskCharCount.textContent = '0/50';
