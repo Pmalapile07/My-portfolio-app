@@ -233,7 +233,7 @@
         /* === HOME SHEET === */
         .home-sheet {
             position: absolute;
-            bottom: 70px;
+            bottom: 56px; /* Adjusted to match new nav height */
             left: 0;
             width: 100%;
             background: white;
@@ -357,13 +357,13 @@
             background-color: #f5f5f5;
         }
 
-        /* === BOTTOM NAVIGATION BAR === */
+        /* === BOTTOM NAVIGATION BAR - moved up by 20% (reduced from 70px to 56px) === */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 70px;
+            height: 56px; /* Reduced by 20% from 70px */
             background: white;
             display: flex;
             justify-content: space-around;
@@ -378,11 +378,11 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 2px; /* Reduced gap slightly */
             cursor: pointer;
             color: #999;
             transition: color 0.2s;
-            font-size: 0.75rem;
+            font-size: 0.7rem; /* Slightly smaller font */
             background: transparent;
             border: none;
             font-family: 'Manrope', sans-serif;
@@ -391,8 +391,8 @@
             color: #000;
         }
         .nav-item img {
-            width: 20px;
-            height: 20px;
+            width: 18px; /* Slightly smaller icons */
+            height: 18px;
             opacity: 0.6;
             transition: opacity 0.2s;
         }
@@ -400,7 +400,7 @@
             opacity: 1;
         }
         .nav-item span:last-child {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 500;
         }
 
@@ -415,7 +415,7 @@
             overflow-y: auto;
             display: none;
             padding: 20px;
-            padding-bottom: 90px;
+            padding-bottom: 76px; /* Adjusted for new nav height */
         }
         .page-container.active {
             display: block;
@@ -535,14 +535,14 @@
             text-overflow: ellipsis;
         }
 
-        /* Pin icon for location field - using edit 2.png as requested */
+        /* Pin icon for location field - using edit 2.png, reduced by 5% (from 30px to 28.5px) */
         .location-pin-icon {
             position: absolute;
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
+            width: 28.5px; /* Reduced by 5% from 30px */
+            height: 28.5px; /* Reduced by 5% from 30px */
             cursor: pointer;
             z-index: 5;
             background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/edit%202.png');
@@ -661,7 +661,7 @@
             background-color: #fff0f0 !important;
         }
 
-        /* Upload area with image-.png - using the exact filename with hyphen */
+        /* Upload area with image- 2.png - CORRECT FILENAME with space and hyphen */
         .upload-area {
             background: #f0f0f0;
             padding: 2rem 1rem;
@@ -900,7 +900,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- BOTTOM NAVIGATION - moved up by 20% (reduced height) -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/home%202.png" alt="Home">
@@ -946,7 +946,7 @@
                 <div class="section-label">Your location</div>
                 <div class="location-field-wrapper">
                     <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
-                    <!-- Pin icon for location selection - using edit 2.png as requested -->
+                    <!-- Pin icon for location selection - using edit 2.png, reduced by 5% -->
                     <div class="location-pin-icon" id="pinIconBtn"></div>
                 </div>
                 <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
@@ -996,9 +996,9 @@
 
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
-                        <!-- CORRECT UPLOAD ICON - image-.png from GitHub (with hyphen) -->
+                        <!-- CORRECT UPLOAD ICON - image- 2.png from GitHub (with space and hyphen) -->
                         <div class="upload-area" id="uploadArea">
-                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/image-.png" alt="Upload">
+                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/image-%202.png" alt="Upload">
                             <p>Tap to upload photos</p>
                             <div class="upload-hint">JPG, PNG up to 5MB</div>
                         </div>
@@ -1135,6 +1135,7 @@
             let originalLat = null, originalLng = null; // Store original location
             let isManualMove = false; // Flag to track if pin was manually moved
             const recenterBtn = document.getElementById('mapRecenterBtn');
+            const locationInput = document.getElementById('locationInput');
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -1151,12 +1152,12 @@
                             .then(r => r.json())
                             .then(data => {
                                 if (data.features && data.features[0]) {
-                                    document.getElementById('locationInput').value = data.features[0].place_name;
+                                    locationInput.value = data.features[0].place_name;
                                 } else {
                                     fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
                                         .then(r => r.json())
                                         .then(d => {
-                                            if (d.features?.[0]) document.getElementById('locationInput').value = d.features[0].place_name;
+                                            if (d.features?.[0]) locationInput.value = d.features[0].place_name;
                                         });
                                 }
                             });
@@ -1191,6 +1192,9 @@
                         })
                         .setLngLat([currentLng, currentLat])
                         .addTo(map);
+                        
+                        // Set default location in input
+                        locationInput.value = 'Johannesburg, South Africa';
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
@@ -1210,6 +1214,8 @@
                     })
                     .setLngLat([currentLng, currentLat])
                     .addTo(map);
+                    
+                    locationInput.value = 'Johannesburg, South Africa';
                 });
             }
 
@@ -1255,6 +1261,15 @@
                     isManualMove = false;
                     
                     recenterBtn.classList.remove('visible');
+                    
+                    // Update location input
+                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${originalLng},${originalLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.features && data.features[0]) {
+                                locationInput.value = data.features[0].place_name;
+                            }
+                        });
                 }
             });
 
@@ -1499,7 +1514,6 @@
             const pinIconBtn = document.getElementById('pinIconBtn');
             const closeMapModalBtn = document.getElementById('closeMapModalBtn');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
-            const locationInput = document.getElementById('locationInput');
             let mapModalInstance, marker;
             
             pinIconBtn.addEventListener('click', () => {
