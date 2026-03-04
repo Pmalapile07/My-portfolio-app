@@ -194,6 +194,33 @@
             border-radius: 50%;
         }
 
+        /* Re-center button on map (outside container, bottom right) */
+        .map-recenter-btn {
+            position: absolute;
+            bottom: 140px; /* above the home sheet */
+            right: 16px;
+            width: 48px;
+            height: 48px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            color: #000;
+            transition: transform 0.2s;
+        }
+        .map-recenter-btn:active {
+            transform: scale(0.9);
+        }
+        .map-recenter-btn .material-symbols-outlined {
+            color: #000 !important;
+            font-size: 28px !important;
+        }
+
         /* === WHITE CONTAINER - NO BORDER RADIUS === */
         .home-sheet {
             position: absolute;
@@ -286,7 +313,8 @@
         }
         .search-input {
             width: 100%;
-            padding: 1.2rem 2.2rem;
+            /* height adjusted to match fields (1rem padding top/bottom = ~2.2rem total) */
+            padding: 1rem 2.2rem; /* changed from 1.2rem to 1rem to match location inputs */
             border: none !important;
             border-radius: 5px !important;
             background-color: #f0f0f0 !important;
@@ -469,7 +497,7 @@
             font-weight: 200 !important;
         }
 
-        /* Edit location icon - black background */
+        /* Edit location icon - black background (icon kept for function) */
         .location-icon {
             position: absolute;
             right: 8px;
@@ -551,6 +579,8 @@
             text-align: center;
             border: none;
             font-family: 'Manrope', sans-serif;
+            /* set same font size as less details button (0.9rem) — less details is 0.9rem */
+            font-size: 0.9rem;
         }
 
         .when-option.active, .budget-option.active {
@@ -581,10 +611,13 @@
             position: relative;
             font-family: 'Manrope', sans-serif;
             font-weight: 300;
+            /* match less details font size */
+            font-size: 0.9rem;
         }
 
+        /* icons removed from date/time boxes as requested */
         .date-time-box .material-symbols-outlined {
-            color: #000000 !important;
+            display: none !important;
         }
 
         .budget-field-wrapper {
@@ -744,6 +777,12 @@
         .extra-notes {
             resize: vertical;
             min-height: 80px;
+        }
+
+        /* red border for budget input error */
+        .budget-input.error {
+            border: 2px solid #dc3545 !important;
+            background-color: #fff0f0 !important;
         }
 
         /* Next button - black */
@@ -980,6 +1019,11 @@
     <!-- MAP - DARK STYLE -->
     <div id="map"></div>
 
+    <!-- Re-center button on map (bottom right, outside container) -->
+    <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
+        <span class="material-symbols-outlined">my_location</span>
+    </button>
+
     <!-- Draggable pin - REDUCED SIZE -->
     <div class="draggable-pin" id="locationPin"></div>
 
@@ -1018,10 +1062,10 @@
         </div>
 
         <div class="create-task-content">
-            <!-- Location Section -->
+            <!-- Location Section (icons removed from section label as requested) -->
             <div class="section">
                 <div class="section-label">
-                    <span class="material-symbols-outlined">location_on</span>
+                    <!-- icon removed -->
                     Your location
                 </div>
                 <div class="location-field-wrapper">
@@ -1033,10 +1077,10 @@
                 <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
             </div>
 
-            <!-- Task Description -->
+            <!-- Task Description (icon removed) -->
             <div class="section">
                 <div class="section-label">
-                    <span class="material-symbols-outlined">description</span>
+                    <!-- icon removed -->
                     I need help with
                 </div>
                 <input type="text" class="task-input" id="taskInput" placeholder="Laundry, cleaning, plumbing..." maxlength="50">
@@ -1059,12 +1103,12 @@
                         </div>
                         <div class="date-time-pickers" id="dateTimePickers" style="display: none;">
                             <div class="date-time-box" id="pickDateBtn">
-                                <span class="material-symbols-outlined">calendar_today</span>
+                                <!-- icon removed -->
                                 <span id="dateDisplay">Pick date</span>
                                 <input type="date" id="nativeDatePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
                             </div>
                             <div class="date-time-box" id="pickTimeBtn">
-                                <span class="material-symbols-outlined">schedule</span>
+                                <!-- icon removed -->
                                 <span id="timeDisplay">Pick time</span>
                                 <input type="time" id="nativeTimePicker" style="opacity:0; position:absolute; width:100%; height:100%;">
                             </div>
@@ -1189,7 +1233,6 @@
             const homeSheet = document.getElementById('homeSheet');
             const mainSearchInput = document.getElementById('mainSearchInput');
             
-            // Detect keyboard open on mobile
             if (mainSearchInput) {
                 mainSearchInput.addEventListener('focus', function() {
                     homeSheet.classList.add('keyboard-open');
@@ -1307,6 +1350,21 @@
                 }
             });
 
+            // ===== NEW RE-CENTER BUTTON (Google navigation icon) =====
+            document.getElementById('mapRecenterBtn').addEventListener('click', function() {
+                if (currentLat && currentLng) {
+                    map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                } else if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                        }
+                    );
+                }
+            });
+
             // ===== ELEMENTS =====
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
             const searchIconBtn = document.getElementById('searchIconBtn');
@@ -1371,7 +1429,6 @@
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
                             
-                            // Open create task container
                             if (canUserPost()) {
                                 createTaskContainer.style.display = 'flex';
                             }
@@ -1415,14 +1472,25 @@
                 validateForm();
             });
 
-            // ===== VALIDATION =====
+            // ===== VALIDATION with red border for amount =====
             function validateForm() {
                 const taskFilled = taskInput.value.trim() !== '';
                 const streetFilled = streetInput.value.trim() !== '';
                 
                 let budgetValid = true;
                 if (fixedBudgetBtn.classList.contains('active')) {
-                    budgetValid = budgetAmount.value.trim() !== '' && parseInt(budgetAmount.value) > 0;
+                    const amount = budgetAmount.value.trim();
+                    const amountNum = parseInt(amount);
+                    budgetValid = amount !== '' && amountNum > 0;
+                    
+                    // Apply red border if invalid
+                    if (!budgetValid) {
+                        budgetAmount.classList.add('error');
+                    } else {
+                        budgetAmount.classList.remove('error');
+                    }
+                } else {
+                    budgetAmount.classList.remove('error');
                 }
                 
                 let whenValid = true;
@@ -1495,6 +1563,7 @@
                 openBudgetBtn.className = 'budget-option active'; 
                 fixedBudgetBtn.className = 'budget-option inactive'; 
                 fixedBudgetInput.style.display = 'none'; 
+                budgetAmount.classList.remove('error');
                 validateForm();
             });
 
