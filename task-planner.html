@@ -658,6 +658,13 @@
             border-radius: 5px;
             padding: 1rem;
             border-left: 4px solid #000;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
         .task-card-header {
@@ -682,10 +689,15 @@
             font-weight: 500;
         }
         
+        .task-status.closed {
+            background: #666;
+        }
+        
         .task-details {
             font-size: 0.9rem;
             color: #333;
             margin-bottom: 0.75rem;
+            line-height: 1.4;
         }
         
         .task-meta {
@@ -693,6 +705,7 @@
             gap: 1rem;
             font-size: 0.8rem;
             color: #666;
+            flex-wrap: wrap;
         }
         
         .task-meta span {
@@ -713,6 +726,33 @@
             color: #777;
             font-size: 1.1rem;
             font-weight: 400;
+        }
+        
+        .task-error {
+            text-align: center;
+            margin-top: 40%;
+            color: #dc3545;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+        
+        .task-loading {
+            text-align: center;
+            margin-top: 40%;
+            color: #777;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+        
+        .task-loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
         }
 
         /* === CREATE TASK CONTAINER === */
@@ -1315,6 +1355,7 @@
         <div class="tasks-header">My Posted Tasks</div>
         <div id="tasksList" class="task-list">
             <!-- Tasks will be loaded here from Firebase -->
+            <div class="task-empty">Loading your tasks...</div>
         </div>
     </div>
 
@@ -1525,10 +1566,11 @@
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
-                    console.log('Firebase initialized');
+                    console.log('Firebase initialized successfully');
                 }
                 
                 window.database = firebase.database();
+                console.log('Database reference created');
                 
             } catch (error) {
                 console.error('Firebase init error:', error);
@@ -1579,7 +1621,8 @@
 
             function getCurrentUser() {
                 try { 
-                    return JSON.parse(localStorage.getItem('taskmart_user'));
+                    const user = localStorage.getItem('taskmart_user');
+                    return user ? JSON.parse(user) : null;
                 } catch { 
                     return null; 
                 }
@@ -1655,6 +1698,7 @@
                         recenterBtn.classList.remove('visible');
                     },
                     (err) => {
+                        console.log('Geolocation error:', err);
                         currentLat = -26.195246;
                         currentLng = 28.034088;
                         originalLat = currentLat;
@@ -1788,58 +1832,102 @@
                 const user = getCurrentUser();
                 const tasksList = document.getElementById('tasksList');
                 
+                console.log('Loading tasks for user:', user);
+                
                 if (!user) {
                     tasksList.innerHTML = '<div class="task-empty">Please log in to see your tasks</div>';
                     return;
                 }
                 
-                const posterId = user.uid || user.id || user.email || 'user_' + Date.now();
+                // Get the user ID - try different possible ID fields
+                const currentUserId = user.uid || user.id || user.email || user.userId;
+                
+                if (!currentUserId) {
+                    console.error('No user ID found in user object:', user);
+                    tasksList.innerHTML = '<div class="task-error">Unable to identify user. Please log in again.</div>';
+                    return;
+                }
+                
+                console.log('Fetching tasks for user ID:', currentUserId);
                 
                 // Show loading state
-                tasksList.innerHTML = '<div class="task-empty">Loading your tasks...</div>';
+                tasksList.innerHTML = '<div class="task-loading">Loading your tasks</div>';
                 
-                // Query tasks from Firebase where posterId matches
-                database.ref('tasks').orderByChild('posterId').equalTo(posterId).once('value')
+                // Reference to the tasks node in Firebase
+                const tasksRef = database.ref('tasks');
+                
+                // Create a query to find tasks where posterId equals the current user's ID
+                // Using orderByChild and equalTo to filter by posterId
+                tasksRef.orderByChild('posterId').equalTo(currentUserId).once('value')
                     .then((snapshot) => {
-                        const tasks = snapshot.val();
+                        console.log('Firebase query completed');
                         
-                        if (!tasks) {
+                        if (!snapshot.exists()) {
+                            console.log('No tasks found for user');
                             tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
                             return;
                         }
                         
-                        // Convert tasks object to array and sort by date (newest first)
-                        const tasksArray = Object.values(tasks).sort((a, b) => {
-                            return (b.createdAt || 0) - (a.createdAt || 0);
+                        // Get the tasks data
+                        const tasksData = snapshot.val();
+                        console.log('Tasks found:', tasksData);
+                        
+                        // Convert tasks object to array
+                        const tasksArray = [];
+                        
+                        // snapshot.forEach is the correct way to iterate over Firebase DataSnapshot
+                        snapshot.forEach((childSnapshot) => {
+                            const task = childSnapshot.val();
+                            tasksArray.push(task);
                         });
+                        
+                        console.log('Tasks array:', tasksArray);
                         
                         if (tasksArray.length === 0) {
                             tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
                             return;
                         }
                         
+                        // Sort tasks by createdAt (newest first)
+                        tasksArray.sort((a, b) => {
+                            return (b.createdAt || 0) - (a.createdAt || 0);
+                        });
+                        
                         // Build HTML for tasks
                         let tasksHtml = '';
                         tasksArray.forEach(task => {
-                            const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'Date unknown';
+                            // Format date
+                            let dateStr = 'Date unknown';
+                            if (task.createdAt) {
+                                const date = new Date(task.createdAt);
+                                dateStr = date.toLocaleDateString('en-GB', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                });
+                            }
+                            
                             const budget = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
                             const status = task.status || 'open';
+                            const location = task.address ? 
+                                (task.address.length > 30 ? task.address.substring(0, 30) + '...' : task.address) : 
+                                'Location set';
                             
                             tasksHtml += `
-                                <div class="task-card" data-task-id="${task.taskId}">
+                                <div class="task-card" data-task-id="${task.taskId || ''}">
                                     <div class="task-card-header">
                                         <span class="task-category">${task.category || 'Task'}</span>
-                                        <span class="task-status">${status}</span>
+                                        <span class="task-status ${status !== 'open' ? 'closed' : ''}">${status}</span>
                                     </div>
                                     <div class="task-details">${task.description || 'No description'}</div>
                                     <div class="task-meta">
                                         <span>
                                             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/map-pin%201.png" alt="Location">
-                                            ${task.address ? task.address.substring(0, 30) + '...' : 'Location set'}
+                                            ${location}
                                         </span>
                                         <span>
                                             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/calendar%201.png" alt="Date">
-                                            ${task.date === 'now' ? 'Now' : task.date}
+                                            ${task.date === 'now' ? 'Now' : task.date || dateStr}
                                         </span>
                                         <span>
                                             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/coin%201.png" alt="Budget">
@@ -1858,21 +1946,17 @@
                                 const taskId = card.dataset.taskId;
                                 const task = tasksArray.find(t => t.taskId === taskId);
                                 if (task) {
-                                    showTaskDetails(task);
+                                    // Show task details - you can expand this
+                                    const budgetDisplay = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
+                                    alert(`Task: ${task.category}\n\nDescription: ${task.description || 'No description'}\n\nBudget: ${budgetDisplay}\n\nStatus: ${task.status}\n\nLocation: ${task.address || 'Not specified'}`);
                                 }
                             });
                         });
                     })
                     .catch((error) => {
-                        console.error('Error loading tasks:', error);
-                        tasksList.innerHTML = '<div class="task-empty">Error loading tasks. Please try again.</div>';
+                        console.error('Error loading tasks from Firebase:', error);
+                        tasksList.innerHTML = '<div class="task-error">Error loading tasks. Please try again.</div>';
                     });
-            }
-            
-            // Function to show task details (you can implement this to view full task details)
-            function showTaskDetails(task) {
-                alert(`Task: ${task.category}\nDescription: ${task.description || 'No description'}\nBudget: ${task.budget === 'open' ? 'Open to offers' : 'R' + task.budget}\nStatus: ${task.status}`);
-                // You can expand this to show a detailed view of the task
             }
 
             // Search suggestions
