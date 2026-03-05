@@ -1425,39 +1425,8 @@
                 const database = firebase.database();
                 window.database = database;
                 
-                // Test connection using .info/connected (read-only)
-                debugLog('🔄 Testing Firebase connection...', 'info');
-                
-                const connectedRef = database.ref('.info/connected');
-                
-                // Set up the connection listener
-                connectedRef.on('value', (snap) => {
-                    if (snap.val() === true) {
-                        debugLog('✅ Connected to Firebase Realtime Database', 'success');
-                    } else {
-                        debugLog('⚠️ Disconnected from Firebase - will retry automatically', 'warning');
-                    }
-                });
-                
-                // Force an immediate connection check
-                setTimeout(() => {
-                    connectedRef.once('value')
-                        .then((snap) => {
-                            if (snap.val() === true) {
-                                debugLog('✅ Immediate connection check: Connected', 'success');
-                            } else {
-                                debugLog('❌ Immediate connection check: Not connected', 'error');
-                                debugLog('💡 This could mean:', 'info');
-                                debugLog('   1. Firebase project not properly configured', 'info');
-                                debugLog('   2. Database URL is incorrect', 'info');
-                                debugLog('   3. Network is blocking Firebase (ports 443?)', 'info');
-                                debugLog('   4. Firebase project may be in a different region', 'info');
-                            }
-                        })
-                        .catch((error) => {
-                            debugLog(`❌ Connection check error: ${error.message}`, 'error');
-                        });
-                }, 2000);
+                // We'll skip the connection test since tasks are actually saving
+                debugLog('ℹ️ Skipping connection test - tasks are being saved to Firebase', 'info');
                 
             } catch (error) {
                 debugLog(`❌ Firebase init error: ${error.message}`, 'error');
@@ -2094,7 +2063,7 @@
                 debugLog('✏️ Returning to edit task', 'info');
             });
 
-            // ===== FIXED FIREBASE SAVE FUNCTION WITH PROPER ERROR HANDLING =====
+            // ===== SIMPLIFIED FIREBASE SAVE FUNCTION - NO CONNECTION CHECK =====
             async function saveTaskToFirebase() {
                 const user = getCurrentUser();
                 
@@ -2119,114 +2088,83 @@
                 return new Promise((resolve) => {
                     // Set a timeout to prevent infinite loading
                     const timeout = setTimeout(() => {
-                        debugLog('❌ STEP 5: Save timeout - Firebase not responding', 'error');
+                        debugLog('❌ Save timeout - Firebase not responding', 'error');
                         document.getElementById('loadingOverlay').style.display = 'none';
                         previewConfirmBtn.disabled = false;
                         alert('Connection timeout. Please check your internet and try again.');
                         resolve(false);
                     }, 20000); // 20 second timeout
                     
-                    // STEP 2: Check Firebase connection
-                    debugLog('🔍 STEP 2: Checking Firebase connection...', 'info');
+                    // STEP 2: Generate task ID and prepare data
+                    debugLog('🔍 STEP 2: Preparing task data...', 'info');
+                    const taskId = database.ref().child('tasks').push().key;
+                    debugLog(`📋 Generated task ID: ${taskId}`, 'info');
                     
-                    const connectedRef = database.ref('.info/connected');
+                    const taskData = {
+                        taskId: taskId,
+                        posterId: posterId,
+                        category: taskInput.value.trim(),
+                        description: document.getElementById('extraNotes').value.trim() || '',
+                        location: {
+                            lat: currentLat || -26.195246,
+                            lng: currentLng || 28.034088
+                        },
+                        address: streetInput.value.trim() + ', ' + locationInput.value,
+                        budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
+                        date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
+                        time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
+                        images: uploadedImages,
+                        status: 'open',
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+
+                    debugLog('📦 Task data prepared:', 'info');
+                    debugLog(JSON.stringify(taskData, null, 2), 'info');
+
+                    // STEP 3: Save to Firebase directly - no connection check
+                    debugLog('🔍 STEP 3: Saving to Firebase...', 'info');
                     
-                    // Use once() to check connection
-                    connectedRef.once('value')
-                        .then((snap) => {
-                            if (snap.val() === true) {
-                                debugLog('✅ Firebase connection confirmed', 'success');
-                                
-                                // STEP 3: Generate task ID and prepare data
-                                debugLog('🔍 STEP 3: Preparing task data...', 'info');
-                                const taskId = database.ref().child('tasks').push().key;
-                                debugLog(`📋 Generated task ID: ${taskId}`, 'info');
-                                
-                                const taskData = {
-                                    taskId: taskId,
-                                    posterId: posterId,
-                                    category: taskInput.value.trim(),
-                                    description: document.getElementById('extraNotes').value.trim() || '',
-                                    location: {
-                                        lat: currentLat || -26.195246,
-                                        lng: currentLng || 28.034088
-                                    },
-                                    address: streetInput.value.trim() + ', ' + locationInput.value,
-                                    budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
-                                    date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
-                                    time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
-                                    images: uploadedImages,
-                                    status: 'open',
-                                    createdAt: firebase.database.ServerValue.TIMESTAMP
-                                };
-
-                                debugLog('📦 Task data prepared:', 'info');
-                                debugLog(JSON.stringify(taskData, null, 2), 'info');
-
-                                // STEP 4: Save to Firebase using .then()/.catch()
-                                debugLog('🔍 STEP 4: Saving to Firebase...', 'info');
-                                
-                                database.ref(`tasks/${taskId}`).set(taskData)
-                                    .then(() => {
-                                        // Success!
-                                        clearTimeout(timeout);
-                                        debugLog('✅ STEP 5: Task saved successfully!', 'success');
-                                        
-                                        // Hide loading
-                                        document.getElementById('loadingOverlay').style.display = 'none';
-                                        previewConfirmBtn.disabled = false;
-                                        
-                                        // Show success message
-                                        const toast = document.getElementById('successToast');
-                                        toast.textContent = 'Task posted successfully!';
-                                        toast.style.display = 'block';
-                                        setTimeout(() => {
-                                            toast.style.display = 'none';
-                                        }, 3000);
-                                        
-                                        resolve(taskId);
-                                    })
-                                    .catch((error) => {
-                                        // Error!
-                                        clearTimeout(timeout);
-                                        debugLog(`❌ Firebase save error: ${error.message}`, 'error');
-                                        debugLog(`❌ Error code: ${error.code || 'none'}`, 'error');
-                                        
-                                        // Check common Firebase errors
-                                        if (error.code === 'PERMISSION_DENIED') {
-                                            debugLog('❌ PERMISSION DENIED - Check Firebase Rules', 'error');
-                                            debugLog('💡 Go to Firebase Console → Realtime Database → Rules and set temporary test rules', 'warning');
-                                            alert('Permission denied. Your Firebase database rules are blocking writes.');
-                                        } else if (error.code === 'NETWORK_ERROR') {
-                                            debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
-                                            alert('Network error. Please check your internet connection.');
-                                        } else {
-                                            alert('Error posting task: ' + error.message);
-                                        }
-                                        
-                                        // ALWAYS hide loading and re-enable button
-                                        document.getElementById('loadingOverlay').style.display = 'none';
-                                        previewConfirmBtn.disabled = false;
-                                        
-                                        resolve(false);
-                                    });
-                            } else {
-                                // Not connected to Firebase
-                                clearTimeout(timeout);
-                                debugLog('❌ Not connected to Firebase', 'error');
-                                document.getElementById('loadingOverlay').style.display = 'none';
-                                previewConfirmBtn.disabled = false;
-                                alert('Not connected to Firebase. Please check your internet connection.');
-                                resolve(false);
-                            }
-                        })
-                        .catch((error) => {
-                            // Error checking connection
+                    database.ref(`tasks/${taskId}`).set(taskData)
+                        .then(() => {
+                            // Success!
                             clearTimeout(timeout);
-                            debugLog(`❌ Connection check error: ${error.message}`, 'error');
+                            debugLog('✅ Task saved successfully!', 'success');
+                            
+                            // Hide loading
                             document.getElementById('loadingOverlay').style.display = 'none';
                             previewConfirmBtn.disabled = false;
-                            alert('Error connecting to Firebase: ' + error.message);
+                            
+                            // Show success message
+                            const toast = document.getElementById('successToast');
+                            toast.textContent = 'Task posted successfully!';
+                            toast.style.display = 'block';
+                            setTimeout(() => {
+                                toast.style.display = 'none';
+                            }, 3000);
+                            
+                            resolve(taskId);
+                        })
+                        .catch((error) => {
+                            // Error!
+                            clearTimeout(timeout);
+                            debugLog(`❌ Firebase save error: ${error.message}`, 'error');
+                            debugLog(`❌ Error code: ${error.code || 'none'}`, 'error');
+                            
+                            // Check common Firebase errors
+                            if (error.code === 'PERMISSION_DENIED') {
+                                debugLog('❌ PERMISSION DENIED - Check Firebase Rules', 'error');
+                                alert('Permission denied. Your Firebase database rules are blocking writes.');
+                            } else if (error.code === 'NETWORK_ERROR') {
+                                debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
+                                alert('Network error. Please check your internet connection.');
+                            } else {
+                                alert('Error posting task: ' + error.message);
+                            }
+                            
+                            // ALWAYS hide loading and re-enable button
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            previewConfirmBtn.disabled = false;
+                            
                             resolve(false);
                         });
                 });
