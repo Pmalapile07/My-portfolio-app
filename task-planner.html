@@ -645,7 +645,69 @@
             margin-bottom: 1.5rem;
             margin-top: 1rem;
         }
-        .no-tasks-message {
+        
+        /* Task list styling */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .task-card {
+            background: #f5f5f5;
+            border-radius: 5px;
+            padding: 1rem;
+            border-left: 4px solid #000;
+        }
+        
+        .task-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .task-category {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #000;
+        }
+        
+        .task-status {
+            background: #000;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .task-details {
+            font-size: 0.9rem;
+            color: #333;
+            margin-bottom: 0.75rem;
+        }
+        
+        .task-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .task-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .task-meta img {
+            width: 14px;
+            height: 14px;
+            opacity: 0.6;
+        }
+        
+        .task-empty {
             text-align: center;
             margin-top: 40%;
             color: #777;
@@ -1250,10 +1312,9 @@
 
     <!-- TASKS PAGE -->
     <div class="page-container" id="tasksPage">
-        <div class="tasks-header">Tasks</div>
-        <div class="no-tasks-message">
-            <p>No upcoming tasks</p>
-            <small>Your posted tasks will appear here</small>
+        <div class="tasks-header">My Posted Tasks</div>
+        <div id="tasksList" class="task-list">
+            <!-- Tasks will be loaded here from Firebase -->
         </div>
     </div>
 
@@ -1704,6 +1765,9 @@
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
+                    
+                    // Load user's tasks when tasks page is opened
+                    loadUserTasks();
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
                     accountPage.classList.add('active');
@@ -1718,6 +1782,98 @@
             navTasks.addEventListener('click', () => setActivePage('tasks'));
             navAccount.addEventListener('click', () => setActivePage('account'));
             setActivePage('home');
+
+            // ===== LOAD USER TASKS FROM FIREBASE =====
+            function loadUserTasks() {
+                const user = getCurrentUser();
+                const tasksList = document.getElementById('tasksList');
+                
+                if (!user) {
+                    tasksList.innerHTML = '<div class="task-empty">Please log in to see your tasks</div>';
+                    return;
+                }
+                
+                const posterId = user.uid || user.id || user.email || 'user_' + Date.now();
+                
+                // Show loading state
+                tasksList.innerHTML = '<div class="task-empty">Loading your tasks...</div>';
+                
+                // Query tasks from Firebase where posterId matches
+                database.ref('tasks').orderByChild('posterId').equalTo(posterId).once('value')
+                    .then((snapshot) => {
+                        const tasks = snapshot.val();
+                        
+                        if (!tasks) {
+                            tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
+                            return;
+                        }
+                        
+                        // Convert tasks object to array and sort by date (newest first)
+                        const tasksArray = Object.values(tasks).sort((a, b) => {
+                            return (b.createdAt || 0) - (a.createdAt || 0);
+                        });
+                        
+                        if (tasksArray.length === 0) {
+                            tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
+                            return;
+                        }
+                        
+                        // Build HTML for tasks
+                        let tasksHtml = '';
+                        tasksArray.forEach(task => {
+                            const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString() : 'Date unknown';
+                            const budget = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
+                            const status = task.status || 'open';
+                            
+                            tasksHtml += `
+                                <div class="task-card" data-task-id="${task.taskId}">
+                                    <div class="task-card-header">
+                                        <span class="task-category">${task.category || 'Task'}</span>
+                                        <span class="task-status">${status}</span>
+                                    </div>
+                                    <div class="task-details">${task.description || 'No description'}</div>
+                                    <div class="task-meta">
+                                        <span>
+                                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/map-pin%201.png" alt="Location">
+                                            ${task.address ? task.address.substring(0, 30) + '...' : 'Location set'}
+                                        </span>
+                                        <span>
+                                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/calendar%201.png" alt="Date">
+                                            ${task.date === 'now' ? 'Now' : task.date}
+                                        </span>
+                                        <span>
+                                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/coin%201.png" alt="Budget">
+                                            ${budget}
+                                        </span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        tasksList.innerHTML = tasksHtml;
+                        
+                        // Add click handlers to task cards
+                        document.querySelectorAll('.task-card').forEach(card => {
+                            card.addEventListener('click', () => {
+                                const taskId = card.dataset.taskId;
+                                const task = tasksArray.find(t => t.taskId === taskId);
+                                if (task) {
+                                    showTaskDetails(task);
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('Error loading tasks:', error);
+                        tasksList.innerHTML = '<div class="task-empty">Error loading tasks. Please try again.</div>';
+                    });
+            }
+            
+            // Function to show task details (you can implement this to view full task details)
+            function showTaskDetails(task) {
+                alert(`Task: ${task.category}\nDescription: ${task.description || 'No description'}\nBudget: ${task.budget === 'open' ? 'Open to offers' : 'R' + task.budget}\nStatus: ${task.status}`);
+                // You can expand this to show a detailed view of the task
+            }
 
             // Search suggestions
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
