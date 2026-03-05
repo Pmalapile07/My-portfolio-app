@@ -1408,7 +1408,6 @@
             debugLog('🔧 Initializing Firebase with database URL only...', 'info');
             
             // Only the database URL is needed for client-side database access
-            // All other config values are handled by your backend securely
             const firebaseConfig = {
                 databaseURL: "https://taskmart-app-default-rtdb.firebaseio.com"
             };
@@ -1426,7 +1425,7 @@
                 const database = firebase.database();
                 window.database = database;
                 
-                // Force a connection test with a timeout
+                // Test connection using .info/connected (read-only) - FIXED: removed write test
                 debugLog('🔄 Testing Firebase connection...', 'info');
                 
                 const connectedRef = database.ref('.info/connected');
@@ -1440,21 +1439,19 @@
                     }
                 });
                 
-                // Also try a simple write/read test to a test node
-                const testRef = database.ref('.info/connectionTest');
-                testRef.set({ timestamp: firebase.database.ServerValue.TIMESTAMP })
+                // Also check if we can read from the database (optional)
+                // This just tests if we have any permissions at all
+                const testRef = database.ref('connection_test');
+                testRef.once('value')
                     .then(() => {
-                        debugLog('✅ Firebase write test successful', 'success');
+                        debugLog('✅ Successfully read from database - permissions OK', 'success');
                     })
                     .catch((error) => {
-                        debugLog(`❌ Firebase write test failed: ${error.message}`, 'error');
-                        
-                        // Check for specific error codes
                         if (error.code === 'PERMISSION_DENIED') {
-                            debugLog('❌ PERMISSION DENIED - Database rules may be blocking writes', 'error');
-                            debugLog('💡 Go to Firebase Console → Realtime Database → Rules and set: { "rules": { ".read": true, ".write": true } } for testing', 'warning');
-                        } else if (error.code === 'NETWORK_ERROR') {
-                            debugLog('❌ NETWORK ERROR - Cannot reach Firebase servers', 'error');
+                            debugLog('⚠️ Database is readable only with proper auth', 'warning');
+                            debugLog('💡 Set up Firebase Rules to allow reads/writes', 'info');
+                        } else {
+                            debugLog(`⚠️ Database read test: ${error.message}`, 'warning');
                         }
                     });
                 
@@ -2170,16 +2167,6 @@
                                         // Success!
                                         clearTimeout(timeout);
                                         debugLog('✅ STEP 5: Task saved successfully!', 'success');
-                                        
-                                        // Verify the save
-                                        return database.ref(`tasks/${taskId}`).once('value');
-                                    })
-                                    .then((snapshot) => {
-                                        if (snapshot.exists()) {
-                                            debugLog('✅ Save verified in database', 'success');
-                                        } else {
-                                            debugLog('⚠️ Save could not be verified', 'warning');
-                                        }
                                         
                                         // Hide loading
                                         document.getElementById('loadingOverlay').style.display = 'none';
