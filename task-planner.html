@@ -1856,46 +1856,57 @@
                 // Reference to the tasks node in Firebase
                 const tasksRef = database.ref('tasks');
                 
-                // Create a query to find tasks where posterId equals the current user's ID
-                // Using orderByChild and equalTo to filter by posterId
-                tasksRef.orderByChild('posterId').equalTo(currentUserId).once('value')
+                // First, get all tasks and filter client-side (simpler approach)
+                tasksRef.once('value')
                     .then((snapshot) => {
                         console.log('Firebase query completed');
                         
                         if (!snapshot.exists()) {
-                            console.log('No tasks found for user');
+                            console.log('No tasks found in database');
                             tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
                             return;
                         }
                         
-                        // Get the tasks data
-                        const tasksData = snapshot.val();
-                        console.log('Tasks found:', tasksData);
+                        // Get all tasks
+                        const allTasks = snapshot.val();
+                        console.log('All tasks:', allTasks);
                         
-                        // Convert tasks object to array
-                        const tasksArray = [];
+                        // Filter tasks by posterId
+                        const userTasks = [];
                         
-                        // snapshot.forEach is the correct way to iterate over Firebase DataSnapshot
+                        // Iterate through each task
                         snapshot.forEach((childSnapshot) => {
                             const task = childSnapshot.val();
-                            tasksArray.push(task);
+                            const taskId = childSnapshot.key;
+                            
+                            // Check if this task belongs to the current user
+                            // Compare with different possible ID formats
+                            if (task.posterId === currentUserId || 
+                                task.posterId === user.email ||
+                                task.posterEmail === user.email ||
+                                task.posterId === user.uid) {
+                                
+                                // Add taskId to the task object
+                                task.taskId = taskId;
+                                userTasks.push(task);
+                            }
                         });
                         
-                        console.log('Tasks array:', tasksArray);
+                        console.log('Filtered user tasks:', userTasks);
                         
-                        if (tasksArray.length === 0) {
+                        if (userTasks.length === 0) {
                             tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
                             return;
                         }
                         
                         // Sort tasks by createdAt (newest first)
-                        tasksArray.sort((a, b) => {
+                        userTasks.sort((a, b) => {
                             return (b.createdAt || 0) - (a.createdAt || 0);
                         });
                         
                         // Build HTML for tasks
                         let tasksHtml = '';
-                        tasksArray.forEach(task => {
+                        userTasks.forEach(task => {
                             // Format date
                             let dateStr = 'Date unknown';
                             if (task.createdAt) {
@@ -1944,7 +1955,7 @@
                         document.querySelectorAll('.task-card').forEach(card => {
                             card.addEventListener('click', () => {
                                 const taskId = card.dataset.taskId;
-                                const task = tasksArray.find(t => t.taskId === taskId);
+                                const task = userTasks.find(t => t.taskId === taskId);
                                 if (task) {
                                     // Show task details - you can expand this
                                     const budgetDisplay = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
