@@ -54,27 +54,23 @@
             width: 100%;
         }
 
-        /* === DEBUG CONSOLE === */
+        /* === PERSISTENT DEBUG CONSOLE - ALWAYS VISIBLE ON MOBILE === */
         .debug-console {
             position: fixed;
             bottom: 70px;
             left: 10px;
             right: 10px;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             color: #00ff00;
             font-family: monospace;
-            font-size: 12px;
-            padding: 10px;
+            font-size: 11px;
+            padding: 8px;
             border-radius: 5px;
             z-index: 10000000;
-            max-height: 200px;
+            max-height: 150px;
             overflow-y: auto;
-            display: none;
-            border: 1px solid #00ff00;
-        }
-        
-        .debug-console.visible {
-            display: block;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 10px rgba(0,255,0,0.3);
         }
         
         .debug-header {
@@ -84,11 +80,15 @@
             margin-bottom: 5px;
             padding-bottom: 5px;
             border-bottom: 1px solid #00ff00;
+            position: sticky;
+            top: 0;
+            background: rgba(0,0,0,0.95);
         }
         
         .debug-title {
             font-weight: bold;
             color: #00ff00;
+            font-size: 12px;
         }
         
         .debug-clear {
@@ -109,6 +109,7 @@
         .debug-log {
             margin: 2px 0;
             word-break: break-all;
+            line-height: 1.3;
         }
         
         .debug-log.error {
@@ -182,27 +183,36 @@
             margin-bottom: 1.5rem;
         }
         
-        .preview-detail-row {
-            display: flex;
-            margin-bottom: 1rem;
+        /* Matching the create task hierarchy */
+        .preview-section {
+            margin-bottom: 1.5rem;
         }
         
-        .preview-detail-label {
-            width: 100px;
-            font-weight: 600;
-            color: #666;
+        .preview-section-label {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 0.5rem;
+            font-family: 'Manrope', sans-serif;
         }
         
-        .preview-detail-value {
-            flex: 1;
-            color: #000;
+        .preview-section-value {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: white;
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 300;
+            font-size: 1rem;
+            color: rgba(0,0,0,0.8);
+            border: 1px solid #e0e0e0;
         }
         
         .preview-images {
             display: flex;
             flex-wrap: wrap;
             gap: 0.75rem;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
         
         .preview-image {
@@ -221,6 +231,7 @@
             background: white;
         }
         
+        /* Consistent button styling - only first word capitalized */
         .preview-edit-btn {
             flex: 1;
             background: #e0e0e0;
@@ -232,6 +243,11 @@
             cursor: pointer;
             border-radius: 5px;
             font-family: 'Manrope', sans-serif;
+            text-transform: lowercase;
+        }
+        
+        .preview-edit-btn::first-letter {
+            text-transform: uppercase;
         }
         
         .preview-confirm-btn {
@@ -245,11 +261,30 @@
             cursor: pointer;
             border-radius: 5px;
             font-family: 'Manrope', sans-serif;
+            text-transform: lowercase;
+        }
+        
+        .preview-confirm-btn::first-letter {
+            text-transform: uppercase;
         }
         
         .preview-confirm-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        /* Make all buttons consistent - only first word capitalized */
+        .next-button, .more-details-btn, .close-btn, .search-circle-btn, 
+        .nav-item span, .when-option, .budget-option, .accept-offer-btn,
+        .offers-back-btn, .confirm-button, .preview-edit-btn, .preview-confirm-btn {
+            text-transform: lowercase;
+        }
+        
+        .next-button::first-letter, .more-details-btn::first-letter, 
+        .when-option::first-letter, .budget-option::first-letter,
+        .accept-offer-btn::first-letter, .confirm-button::first-letter,
+        .preview-edit-btn::first-letter, .preview-confirm-btn::first-letter {
+            text-transform: uppercase;
         }
 
         /* Splash Screen */
@@ -403,7 +438,7 @@
             }
         }
 
-        /* Re-center button - moved further down to 70% from top */
+        /* Re-center button */
         .map-recenter-btn {
             position: absolute;
             top: 58vh;
@@ -1058,7 +1093,7 @@
     </style>
 </head>
 <body>
-    <!-- Debug Console -->
+    <!-- Persistent Debug Console - Always Visible on Mobile -->
     <div class="debug-console" id="debugConsole">
         <div class="debug-header">
             <span class="debug-title">🔍 Debug Console</span>
@@ -1244,33 +1279,53 @@
             </div>
             
             <div class="preview-details">
-                <div class="preview-detail-row">
-                    <div class="preview-detail-label">Task:</div>
-                    <div class="preview-detail-value" id="previewTask"></div>
+                <!-- Your location section - matching create task hierarchy -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Your location</div>
+                    <div class="preview-section-value" id="previewLocation"></div>
                 </div>
-                <div class="preview-detail-row">
-                    <div class="preview-detail-label">Description:</div>
-                    <div class="preview-detail-value" id="previewDescription"></div>
+                
+                <!-- Street address section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Street address</div>
+                    <div class="preview-section-value" id="previewStreet"></div>
                 </div>
-                <div class="preview-detail-row">
-                    <div class="preview-detail-label">Budget:</div>
-                    <div class="preview-detail-value" id="previewBudget"></div>
+                
+                <!-- I need help with section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">I need help with</div>
+                    <div class="preview-section-value" id="previewTask"></div>
                 </div>
-                <div class="preview-detail-row">
-                    <div class="preview-detail-label">Address:</div>
-                    <div class="preview-detail-value" id="previewAddress"></div>
+                
+                <!-- Description section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Description</div>
+                    <div class="preview-section-value" id="previewDescription"></div>
                 </div>
-                <div class="preview-detail-row">
-                    <div class="preview-detail-label">When:</div>
-                    <div class="preview-detail-value" id="previewWhen"></div>
+                
+                <!-- When section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">When</div>
+                    <div class="preview-section-value" id="previewWhen"></div>
                 </div>
-                <div id="previewImagesContainer" class="preview-images"></div>
+                
+                <!-- Budget section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Budget</div>
+                    <div class="preview-section-value" id="previewBudget"></div>
+                </div>
+                
+                <!-- Images section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Images</div>
+                    <div id="previewImagesContainer" class="preview-images"></div>
+                </div>
             </div>
         </div>
         
         <div class="preview-actions">
-            <button class="preview-edit-btn" id="previewEditBtn">Edit Task</button>
-            <button class="preview-confirm-btn" id="previewConfirmBtn">Confirm & Post Task</button>
+            <button class="preview-edit-btn" id="previewEditBtn">Edit task</button>
+            <button class="preview-confirm-btn" id="previewConfirmBtn">Post task</button>
         </div>
     </div>
 
@@ -1316,24 +1371,29 @@
         (function() {
             'use strict';
             
-            // ===== DEBUG CONSOLE SETUP =====
+            // ===== PERSISTENT DEBUG CONSOLE =====
             const debugConsole = document.getElementById('debugConsole');
             const debugLogs = document.getElementById('debugLogs');
             const debugClear = document.getElementById('debugClear');
             
-            // Show debug console (can be toggled with double tap)
-            let debugVisible = false;
-            document.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'd') {
-                    debugVisible = !debugVisible;
-                    debugConsole.classList.toggle('visible', debugVisible);
-                }
-            });
+            // Always visible on mobile
+            debugConsole.classList.add('visible');
             
             window.debugLog = function(message, type = 'info') {
                 const logEntry = document.createElement('div');
                 logEntry.className = `debug-log ${type}`;
-                logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                
+                // Format the message
+                let displayMessage = message;
+                if (typeof message === 'object') {
+                    try {
+                        displayMessage = JSON.stringify(message);
+                    } catch (e) {
+                        displayMessage = String(message);
+                    }
+                }
+                
+                logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${displayMessage}`;
                 debugLogs.appendChild(logEntry);
                 debugLogs.scrollTop = debugLogs.scrollHeight;
                 console.log(`[${type}]`, message);
@@ -1341,6 +1401,7 @@
             
             debugClear.addEventListener('click', () => {
                 debugLogs.innerHTML = '';
+                debugLog('Console cleared');
             });
             
             // ===== FIREBASE INITIALIZATION =====
@@ -1360,7 +1421,7 @@
             try {
                 firebase.initializeApp(firebaseConfig);
                 const database = firebase.database();
-                window.database = database; // Make available globally
+                window.database = database;
                 debugLog('Firebase initialized successfully', 'success');
                 
                 // Test connection
@@ -1934,19 +1995,11 @@
             function showTaskPreview() {
                 debugLog('Showing task preview');
                 
-                // Populate preview data
-                document.getElementById('previewTask').textContent = taskInput.value.trim();
+                // Populate preview data in the same hierarchy as create task
+                document.getElementById('previewLocation').textContent = locationInput.value || 'Location not set';
+                document.getElementById('previewStreet').textContent = streetInput.value.trim() || 'Street address not set';
+                document.getElementById('previewTask').textContent = taskInput.value.trim() || 'Task not specified';
                 document.getElementById('previewDescription').textContent = document.getElementById('extraNotes').value.trim() || 'No description';
-                
-                let budgetText = '';
-                if (fixedBudgetBtn.classList.contains('active')) {
-                    budgetText = `R${budgetAmount.value}`;
-                } else {
-                    budgetText = 'Open to offers';
-                }
-                document.getElementById('previewBudget').textContent = budgetText;
-                
-                document.getElementById('previewAddress').textContent = streetInput.value.trim() + ', ' + locationInput.value;
                 
                 let whenText = '';
                 if (whenLaterBtn.classList.contains('active')) {
@@ -1956,15 +2009,27 @@
                 }
                 document.getElementById('previewWhen').textContent = whenText;
                 
+                let budgetText = '';
+                if (fixedBudgetBtn.classList.contains('active')) {
+                    budgetText = `R${budgetAmount.value}`;
+                } else {
+                    budgetText = 'Open to offers';
+                }
+                document.getElementById('previewBudget').textContent = budgetText;
+                
                 // Show image previews
                 const previewImagesContainer = document.getElementById('previewImagesContainer');
                 previewImagesContainer.innerHTML = '';
-                uploadedImages.forEach(url => {
-                    const img = document.createElement('img');
-                    img.className = 'preview-image';
-                    img.src = url;
-                    previewImagesContainer.appendChild(img);
-                });
+                if (uploadedImages.length === 0) {
+                    previewImagesContainer.innerHTML = '<div class="preview-section-value">No images uploaded</div>';
+                } else {
+                    uploadedImages.forEach(url => {
+                        const img = document.createElement('img');
+                        img.className = 'preview-image';
+                        img.src = url;
+                        previewImagesContainer.appendChild(img);
+                    });
+                }
                 
                 // Initialize preview map
                 createTaskContainer.style.display = 'none';
@@ -1985,6 +2050,8 @@
                     new mapboxgl.Marker({ element: previewPin, anchor: 'center' })
                         .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                         .addTo(previewMap);
+                        
+                    debugLog('Preview map loaded');
                 }, 100);
             }
 
@@ -2004,6 +2071,7 @@
                     previewMap.remove();
                     previewMap = null;
                 }
+                debugLog('Returning to edit task');
             });
 
             // ===== FIREBASE SAVE FUNCTION =====
@@ -2038,12 +2106,12 @@
                         budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
                         date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
                         time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
-                        images: uploadedImages, // Base64 images
+                        images: uploadedImages,
                         status: 'open',
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     };
 
-                    debugLog('Task data prepared:', 'info');
+                    debugLog('Task data prepared:');
                     debugLog(JSON.stringify(taskData, null, 2));
 
                     // Save to Firebase under 'tasks' node
@@ -2087,7 +2155,7 @@
             previewConfirmBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                debugLog('Confirm button clicked, saving to Firebase...');
+                debugLog('Post task button clicked, saving to Firebase...');
                 
                 const taskId = await saveTaskToFirebase();
                 
@@ -2104,7 +2172,7 @@
                     // Show offers screen
                     offersContainer.classList.add('active');
                     
-                    // Initialize offers map
+                    // Initialize offers map with task location
                     setTimeout(() => {
                         if (offersMap) offersMap.remove();
                         offersMap = new mapboxgl.Map({
@@ -2114,13 +2182,31 @@
                             zoom: 15
                         });
                         
-                        const offerPin = document.createElement('div');
-                        offerPin.className = 'pulsing-pin';
+                        // Add task location marker
+                        const taskPin = document.createElement('div');
+                        taskPin.className = 'pulsing-pin';
                         
-                        new mapboxgl.Marker({ element: offerPin, anchor: 'center' })
+                        new mapboxgl.Marker({ element: taskPin, anchor: 'center' })
                             .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                             .addTo(offersMap);
+                            
+                        debugLog('Offers map initialized - waiting for helpers');
                     }, 100);
+                    
+                    // Reset form
+                    taskInput.value = ''; 
+                    mainSearchInput.value = ''; 
+                    streetInput.value = ''; 
+                    budgetAmount.value = ''; 
+                    taskCharCount.textContent = '0/50';
+                    uploadedImages = []; 
+                    displayPreviews(); 
+                    whenNowBtn.click(); 
+                    fixedBudgetBtn.click(); 
+                    dateDisplay.textContent = 'Pick date'; 
+                    timeDisplay.textContent = 'Pick time';
+                    validateForm();
+                    
                 } else {
                     debugLog('Save failed, staying on preview', 'error');
                 }
@@ -2133,6 +2219,10 @@
             document.getElementById('offersBackBtn').addEventListener('click', () => {
                 offersContainer.classList.remove('active');
                 createTaskContainer.style.display = 'flex';
+                if (offersMap) {
+                    offersMap.remove();
+                    offersMap = null;
+                }
             });
             
             document.getElementById('postOfferBtn').addEventListener('click', () => {
@@ -2141,17 +2231,21 @@
                     document.getElementById('loadingOverlay').style.display = 'none';
                     showUploadStatus('Task posted!', 'success');
                     offersContainer.classList.remove('active');
-                    taskInput.value = ''; mainSearchInput.value = ''; streetInput.value = ''; budgetAmount.value = ''; taskCharCount.textContent = '0/50';
-                    uploadedImages = []; displayPreviews(); whenNowBtn.click(); fixedBudgetBtn.click(); dateDisplay.textContent = 'Pick date'; timeDisplay.textContent = 'Pick time';
-                    validateForm();
-                    if (typeof confetti === 'function') confetti({ particleCount:100, spread:70, origin:{y:0.6}, colors:['#000','#333'] });
+                    if (typeof confetti === 'function') {
+                        confetti({ 
+                            particleCount: 100, 
+                            spread: 70, 
+                            origin: { y: 0.6 }, 
+                            colors: ['#000', '#333'] 
+                        });
+                    }
                 }, 1500);
             });
 
             validateForm();
             checkVerificationStatus();
             
-            debugLog('Application initialized', 'success');
+            debugLog('Application initialized - ready to post tasks', 'success');
         })();
     </script>
 
