@@ -1387,7 +1387,7 @@
                 let displayMessage = message;
                 if (typeof message === 'object') {
                     try {
-                        displayMessage = JSON.stringify(message);
+                        displayMessage = JSON.stringify(message, null, 2);
                     } catch (e) {
                         displayMessage = String(message);
                     }
@@ -1401,11 +1401,11 @@
             
             debugClear.addEventListener('click', () => {
                 debugLogs.innerHTML = '';
-                debugLog('Console cleared');
+                debugLog('Console cleared', 'info');
             });
             
             // ===== FIREBASE INITIALIZATION =====
-            debugLog('Initializing Firebase...');
+            debugLog('🔧 Initializing Firebase...', 'info');
             
             const firebaseConfig = {
                 apiKey: "AIzaSyB5pFQG8IkhMdpVpM3W5SDywE3kAofOZJQ",
@@ -1422,26 +1422,26 @@
                 firebase.initializeApp(firebaseConfig);
                 const database = firebase.database();
                 window.database = database;
-                debugLog('Firebase initialized successfully', 'success');
+                debugLog('✅ Firebase initialized successfully', 'success');
                 
                 // Test connection
                 database.ref('.info/connected').on('value', (snap) => {
                     if (snap.val() === true) {
-                        debugLog('Connected to Firebase Realtime Database', 'success');
+                        debugLog('✅ Connected to Firebase Realtime Database', 'success');
                     } else {
-                        debugLog('Disconnected from Firebase', 'warning');
+                        debugLog('⚠️ Disconnected from Firebase', 'warning');
                     }
                 });
             } catch (error) {
-                debugLog(`Firebase init error: ${error.message}`, 'error');
+                debugLog(`❌ Firebase init error: ${error.message}`, 'error');
             }
 
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
-                debugLog('Mapbox token loaded', 'success');
+                debugLog('✅ Mapbox token loaded', 'success');
             } else {
-                debugLog('Mapbox token not found', 'warning');
+                debugLog('⚠️ Mapbox token not found', 'warning');
             }
 
             const taskSuggestions = [
@@ -1485,18 +1485,14 @@
             function getCurrentUser() {
                 try { 
                     const user = JSON.parse(localStorage.getItem('taskmart_user'));
-                    debugLog(`Current user: ${user ? user.email || 'guest' : 'none'}`);
                     return user; 
                 } catch { 
-                    debugLog('No user found, using guest', 'warning');
                     return null; 
                 }
             }
             
             function isUserLoggedIn() { 
-                const loggedIn = !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
-                debugLog(`User logged in: ${loggedIn}`);
-                return loggedIn;
+                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
             }
 
             function checkVerificationStatus() {
@@ -1504,26 +1500,23 @@
                 const banner = document.getElementById('verificationBanner');
                 const isActive = user && (!user.profileImage || !user.email);
                 banner.classList.toggle('active', isActive);
-                if (isActive) debugLog('Verification required', 'warning');
             }
 
             function canUserPost() {
                 const user = getCurrentUser();
                 if (!user) { 
-                    debugLog('User not logged in, redirecting', 'warning');
                     window.location.href = '/login.html'; 
                     return false; 
                 }
                 if (!user.profileImage || !user.email) {
                     document.getElementById('verificationBanner').classList.add('active');
-                    debugLog('Profile incomplete - cannot post', 'warning');
                     return false;
                 }
                 return true;
             }
 
             // Map init
-            debugLog('Initializing main map...');
+            debugLog('🗺️ Initializing main map...', 'info');
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/dark-v11',
@@ -1532,7 +1525,7 @@
             });
 
             map.on('load', () => {
-                debugLog('Main map loaded', 'success');
+                debugLog('✅ Main map loaded', 'success');
             });
 
             let currentLat = null, currentLng = null, uploadedImages = [];
@@ -1543,14 +1536,14 @@
             const locationInput = document.getElementById('locationInput');
 
             if (navigator.geolocation) {
-                debugLog('Requesting geolocation...');
+                debugLog('📍 Requesting geolocation...', 'info');
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         currentLat = pos.coords.latitude;
                         currentLng = pos.coords.longitude;
                         originalLat = currentLat;
                         originalLng = currentLng;
-                        debugLog(`Location obtained: ${currentLat}, ${currentLng}`, 'success');
+                        debugLog(`✅ Location obtained: ${currentLat}, ${currentLng}`, 'success');
                         
                         map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
                         
@@ -1560,7 +1553,7 @@
                             .then(data => {
                                 if (data.features && data.features[0]) {
                                     locationInput.value = data.features[0].place_name;
-                                    debugLog(`Address found: ${data.features[0].place_name}`);
+                                    debugLog(`📍 Address found: ${data.features[0].place_name}`, 'success');
                                 }
                             });
                         
@@ -1577,7 +1570,7 @@
                         recenterBtn.classList.remove('visible');
                     },
                     (err) => {
-                        debugLog(`Geolocation error: ${err.message}`, 'error');
+                        debugLog(`❌ Geolocation error: ${err.message}`, 'error');
                         currentLat = -26.195246;
                         currentLng = 28.034088;
                         originalLat = currentLat;
@@ -1598,7 +1591,7 @@
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             } else {
-                debugLog('Geolocation not supported', 'error');
+                debugLog('❌ Geolocation not supported', 'error');
                 currentLat = -26.195246;
                 currentLng = 28.034088;
                 originalLat = currentLat;
@@ -1879,7 +1872,7 @@
                             uploadedImages.push(ev.target.result); 
                             displayPreviews(); 
                             showUploadStatus('Uploaded', 'success'); 
-                            debugLog(`Image uploaded: ${file.name}`);
+                            debugLog(`📸 Image uploaded: ${file.name}`, 'success');
                         };
                         reader.readAsDataURL(file);
                     });
@@ -1905,7 +1898,7 @@
                     w.querySelector('.remove-image').onclick = () => { 
                         uploadedImages.splice(idx,1); 
                         displayPreviews();
-                        debugLog('Image removed');
+                        debugLog('🗑️ Image removed', 'info');
                     };
                     container.appendChild(w);
                 });
@@ -1919,7 +1912,7 @@
             let mapModalInstance, marker;
             
             pinIconBtn.addEventListener('click', () => {
-                debugLog('Opening map modal');
+                debugLog('🗺️ Opening map modal', 'info');
                 mapModal.classList.add('active');
                 setTimeout(() => {
                     if (mapModalInstance) mapModalInstance.remove();
@@ -1944,7 +1937,7 @@
                     marker.on('dragend', () => {
                         const lngLat = marker.getLngLat();
                         isManualMove = true;
-                        debugLog(`Marker dragged to: ${lngLat.lat}, ${lngLat.lng}`);
+                        debugLog(`📍 Marker dragged to: ${lngLat.lat}, ${lngLat.lng}`, 'info');
                         
                         fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${mapboxgl.accessToken}&types=address`)
                             .then(r => r.json())
@@ -1965,7 +1958,7 @@
                     currentLat = lngLat.lat;
                     currentLng = lngLat.lng;
                     isManualMove = true;
-                    debugLog(`Location confirmed: ${currentLat}, ${currentLng}`);
+                    debugLog(`✅ Location confirmed: ${currentLat}, ${currentLng}`, 'success');
                     
                     if (mainMapPin) {
                         mainMapPin.setLngLat([currentLng, currentLat]);
@@ -1993,7 +1986,7 @@
             let previewMap = null;
 
             function showTaskPreview() {
-                debugLog('Showing task preview');
+                debugLog('👁️ Showing task preview', 'info');
                 
                 // Populate preview data in the same hierarchy as create task
                 document.getElementById('previewLocation').textContent = locationInput.value || 'Location not set';
@@ -2051,7 +2044,7 @@
                         .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                         .addTo(previewMap);
                         
-                    debugLog('Preview map loaded');
+                    debugLog('🗺️ Preview map loaded', 'success');
                 }, 100);
             }
 
@@ -2071,83 +2064,159 @@
                     previewMap.remove();
                     previewMap = null;
                 }
-                debugLog('Returning to edit task');
+                debugLog('✏️ Returning to edit task', 'info');
             });
 
-            // ===== FIREBASE SAVE FUNCTION =====
+            // ===== FIXED FIREBASE SAVE FUNCTION WITH PROPER ERROR HANDLING =====
             async function saveTaskToFirebase() {
                 const user = getCurrentUser();
+                
+                // STEP 1: User check
+                debugLog('🔍 STEP 1: Checking user authentication...', 'info');
+                let posterId;
+                
                 if (!user) {
-                    debugLog('No user found for task save', 'error');
-                    alert('Please log in to post a task');
-                    return false;
+                    debugLog('⚠️ No user found - using guest mode with anonymous ID', 'warning');
+                    posterId = 'anonymous_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+                } else {
+                    debugLog(`✅ User found: ${user.email || 'guest user'}`, 'success');
+                    posterId = user.uid || user.id || 'user_' + Date.now();
                 }
 
-                debugLog('Starting Firebase save operation...');
+                // Show loading overlay
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 previewConfirmBtn.disabled = true;
+                debugLog('⏳ Loading overlay shown', 'info');
 
-                try {
-                    // Generate task ID using Firebase
-                    const taskId = database.ref().child('tasks').push().key;
-                    debugLog(`Generated task ID: ${taskId}`);
+                // Create a promise that will always resolve (never hang)
+                return new Promise((resolve) => {
+                    // STEP 2: Check Firebase connection
+                    debugLog('🔍 STEP 2: Checking Firebase connection...', 'info');
                     
-                    // Prepare task data with all required fields
-                    const taskData = {
-                        taskId: taskId,
-                        posterId: user.uid || user.id || 'guest-' + Date.now(),
-                        category: taskInput.value.trim(),
-                        description: document.getElementById('extraNotes').value.trim() || '',
-                        location: {
-                            lat: currentLat || -26.195246,
-                            lng: currentLng || 28.034088
-                        },
-                        address: streetInput.value.trim() + ', ' + locationInput.value,
-                        budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
-                        date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
-                        time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
-                        images: uploadedImages,
-                        status: 'open',
-                        createdAt: firebase.database.ServerValue.TIMESTAMP
-                    };
+                    // Set a timeout to prevent infinite loading
+                    const timeout = setTimeout(() => {
+                        debugLog('❌ STEP 5: Save timeout - Firebase not responding', 'error');
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        previewConfirmBtn.disabled = false;
+                        alert('Connection timeout. Please check your internet and try again.');
+                        resolve(false);
+                    }, 15000); // 15 second timeout
+                    
+                    const connectedRef = database.ref('.info/connected');
+                    connectedRef.once('value')
+                        .then((snap) => {
+                            if (snap.val() === true) {
+                                debugLog('✅ Firebase connection confirmed', 'success');
+                                
+                                // STEP 3: Generate task ID and prepare data
+                                debugLog('🔍 STEP 3: Preparing task data...', 'info');
+                                const taskId = database.ref().child('tasks').push().key;
+                                debugLog(`📋 Generated task ID: ${taskId}`, 'info');
+                                
+                                const taskData = {
+                                    taskId: taskId,
+                                    posterId: posterId,
+                                    category: taskInput.value.trim(),
+                                    description: document.getElementById('extraNotes').value.trim() || '',
+                                    location: {
+                                        lat: currentLat || -26.195246,
+                                        lng: currentLng || 28.034088
+                                    },
+                                    address: streetInput.value.trim() + ', ' + locationInput.value,
+                                    budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
+                                    date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
+                                    time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
+                                    images: uploadedImages,
+                                    status: 'open',
+                                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                                };
 
-                    debugLog('Task data prepared:');
-                    debugLog(JSON.stringify(taskData, null, 2));
+                                debugLog('📦 Task data prepared:', 'info');
+                                debugLog(JSON.stringify(taskData, null, 2), 'info');
 
-                    // Save to Firebase under 'tasks' node
-                    debugLog('Saving to Firebase...');
-                    await database.ref(`tasks/${taskId}`).set(taskData);
-                    
-                    debugLog('Task saved successfully!', 'success');
-                    
-                    // Hide loading
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    
-                    // Show success message
-                    const toast = document.getElementById('successToast');
-                    toast.textContent = 'Task posted successfully!';
-                    toast.style.display = 'block';
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 3000);
-                    
-                    return taskId;
-                } catch (error) {
-                    debugLog(`Firebase save error: ${error.message}`, 'error');
-                    console.error('Detailed error:', error);
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    alert('Error posting task. Check debug console for details.');
-                    return false;
-                } finally {
-                    previewConfirmBtn.disabled = false;
-                }
+                                // STEP 4: Save to Firebase using .then()/.catch()
+                                debugLog('🔍 STEP 4: Saving to Firebase...', 'info');
+                                
+                                database.ref(`tasks/${taskId}`).set(taskData)
+                                    .then(() => {
+                                        // Success!
+                                        clearTimeout(timeout);
+                                        debugLog('✅ STEP 5: Task saved successfully!', 'success');
+                                        
+                                        // Verify the save
+                                        return database.ref(`tasks/${taskId}`).once('value');
+                                    })
+                                    .then((snapshot) => {
+                                        if (snapshot.exists()) {
+                                            debugLog('✅ Save verified in database', 'success');
+                                        } else {
+                                            debugLog('⚠️ Save could not be verified', 'warning');
+                                        }
+                                        
+                                        // Hide loading
+                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        previewConfirmBtn.disabled = false;
+                                        
+                                        // Show success message
+                                        const toast = document.getElementById('successToast');
+                                        toast.textContent = 'Task posted successfully!';
+                                        toast.style.display = 'block';
+                                        setTimeout(() => {
+                                            toast.style.display = 'none';
+                                        }, 3000);
+                                        
+                                        resolve(taskId);
+                                    })
+                                    .catch((error) => {
+                                        // Error!
+                                        clearTimeout(timeout);
+                                        debugLog(`❌ Firebase save error: ${error.message}`, 'error');
+                                        debugLog(`❌ Error code: ${error.code || 'none'}`, 'error');
+                                        
+                                        // Check common Firebase errors
+                                        if (error.code === 'PERMISSION_DENIED') {
+                                            debugLog('❌ PERMISSION DENIED - Check Firebase Rules', 'error');
+                                            alert('Permission denied. Please check Firebase database rules.');
+                                        } else if (error.code === 'NETWORK_ERROR') {
+                                            debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
+                                            alert('Network error. Please check your internet connection.');
+                                        } else {
+                                            alert('Error posting task: ' + error.message);
+                                        }
+                                        
+                                        // ALWAYS hide loading and re-enable button
+                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        previewConfirmBtn.disabled = false;
+                                        
+                                        resolve(false);
+                                    });
+                            } else {
+                                // Not connected to Firebase
+                                clearTimeout(timeout);
+                                debugLog('❌ Not connected to Firebase', 'error');
+                                document.getElementById('loadingOverlay').style.display = 'none';
+                                previewConfirmBtn.disabled = false;
+                                alert('Not connected to Firebase. Please check your internet connection.');
+                                resolve(false);
+                            }
+                        })
+                        .catch((error) => {
+                            // Error checking connection
+                            clearTimeout(timeout);
+                            debugLog(`❌ Connection check error: ${error.message}`, 'error');
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            previewConfirmBtn.disabled = false;
+                            alert('Error connecting to Firebase: ' + error.message);
+                            resolve(false);
+                        });
+                });
             }
 
             // ===== MODIFIED NEXT BUTTON HANDLER =====
             nextBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                debugLog('Next button clicked, showing preview');
+                debugLog('👆 Next button clicked, showing preview', 'info');
                 showTaskPreview();
             });
 
@@ -2155,12 +2224,12 @@
             previewConfirmBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                debugLog('Post task button clicked, saving to Firebase...');
+                debugLog('👆 Post task button clicked, saving to Firebase...', 'info');
                 
                 const taskId = await saveTaskToFirebase();
                 
                 if (taskId) {
-                    debugLog('Save successful, transitioning to offers screen', 'success');
+                    debugLog('✅ Save successful, transitioning to offers screen', 'success');
                     
                     // Close preview
                     taskPreviewContainer.classList.remove('active');
@@ -2190,7 +2259,7 @@
                             .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                             .addTo(offersMap);
                             
-                        debugLog('Offers map initialized - waiting for helpers');
+                        debugLog('🗺️ Offers map initialized - waiting for helpers', 'success');
                     }, 100);
                     
                     // Reset form
@@ -2208,7 +2277,7 @@
                     validateForm();
                     
                 } else {
-                    debugLog('Save failed, staying on preview', 'error');
+                    debugLog('❌ Save failed, staying on preview', 'error');
                 }
             });
 
@@ -2245,7 +2314,7 @@
             validateForm();
             checkVerificationStatus();
             
-            debugLog('Application initialized - ready to post tasks', 'success');
+            debugLog('✅ Application initialized - ready to post tasks', 'success');
         })();
     </script>
 
