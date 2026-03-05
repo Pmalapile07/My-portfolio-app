@@ -54,23 +54,29 @@
             width: 100%;
         }
 
-        /* Debug Console - Make it visible by default */
+        /* Minimalist Debug Console - Small and unobtrusive */
         .debug-console {
             position: fixed;
-            top: 50px;
+            bottom: 70px;
             left: 10px;
             right: 10px;
-            background: rgba(30, 30, 30, 0.95);
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 12px;
-            padding: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            color: #0f0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            padding: 8px;
             z-index: 10000000;
-            max-height: 300px;
+            max-height: 150px;
             overflow-y: auto;
-            border: 2px solid #ff9900;
-            border-radius: 5px;
-            display: block; /* Changed to block to be visible */
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            display: none;
+        }
+        
+        .debug-console.visible {
+            display: block;
         }
         
         .debug-header {
@@ -80,6 +86,11 @@
             margin-bottom: 5px;
             color: #ff9900;
             font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 3px;
         }
         
         .debug-close {
@@ -88,46 +99,60 @@
             color: #fff;
             background: #ff9900;
             border-radius: 3px;
+            font-size: 10px;
         }
         
         .debug-content {
             white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 250px;
+            word-break: break-word;
+            max-height: 100px;
             overflow-y: auto;
+            font-size: 10px;
+            line-height: 1.4;
         }
         
         .debug-log {
-            border-bottom: 1px solid #333;
-            padding: 3px 0;
+            border-bottom: 1px dotted #333;
+            padding: 2px 0;
+            color: #0f0;
+        }
+        
+        .debug-log.error {
+            color: #ff5555;
+        }
+        
+        .debug-log.warning {
+            color: #ffaa00;
+        }
+        
+        .debug-log .truncate {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
         }
 
-        /* Toggle Debug Button */
+        /* Toggle Debug Button - Small pill */
         .toggle-debug {
             position: fixed;
-            top: 10px;
+            bottom: 120px;
             right: 10px;
             background: #ff9900;
             color: black;
             border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
             z-index: 10000001;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 10px;
             font-weight: bold;
+            opacity: 0.7;
+            transition: opacity 0.2s;
         }
-
-        /* Test visibility */
-        .test-message {
-            position: fixed;
-            top: 100px;
-            left: 10px;
-            background: red;
-            color: white;
-            padding: 10px;
-            z-index: 10000002;
-            display: block;
+        
+        .toggle-debug:hover {
+            opacity: 1;
         }
 
         /* === TASK PREVIEW SCREEN === */
@@ -1369,23 +1394,16 @@
     </style>
 </head>
 <body>
-    <!-- Debug Console - Now visible by default -->
+    <!-- Minimalist Debug Console - Hidden by default -->
     <div class="debug-console" id="debugConsole">
         <div class="debug-header">
-            <span>🔍 Debug Console - Loading...</span>
-            <span class="debug-close" onclick="this.parentElement.parentElement.style.display='none'">✕ Close</span>
+            <span>🐞 DEBUG</span>
+            <span class="debug-close" onclick="document.getElementById('debugConsole').classList.remove('visible')">✕</span>
         </div>
-        <div class="debug-content" id="debugContent">
-            <div class="debug-log">Initializing...</div>
-        </div>
+        <div class="debug-content" id="debugContent"></div>
     </div>
     
-    <button class="toggle-debug" onclick="document.getElementById('debugConsole').style.display='block'">Show Debug</button>
-
-    <!-- Test visibility message -->
-    <div class="test-message" id="testMessage">
-        ⚡ If you can see this, the page is loading! Click "Show Debug" above.
-    </div>
+    <button class="toggle-debug" onclick="document.getElementById('debugConsole').classList.toggle('visible')">🐛</button>
 
     <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
@@ -1651,15 +1669,36 @@
         (function() {
             'use strict';
             
-            // Debug logging function
-            function debugLog(message, data = null) {
+            // Debug logging function - now with truncation for long strings
+            function debugLog(message, data = null, type = 'info') {
                 const debugContent = document.getElementById('debugContent');
                 const timestamp = new Date().toLocaleTimeString();
                 const logEntry = document.createElement('div');
-                logEntry.className = 'debug-log';
+                logEntry.className = `debug-log ${type}`;
                 
+                let displayData = '';
                 if (data) {
-                    logEntry.innerHTML = `[${timestamp}] ${message}<br><pre style="color: #ff9900; margin-left: 20px;">${JSON.stringify(data, null, 2)}</pre>`;
+                    // Truncate long strings, especially image URLs
+                    if (typeof data === 'string' && data.length > 50) {
+                        displayData = data.substring(0, 50) + '...';
+                    } else if (typeof data === 'object') {
+                        // Create a truncated copy without long strings
+                        const truncated = {};
+                        for (let key in data) {
+                            if (typeof data[key] === 'string' && data[key].length > 50) {
+                                truncated[key] = data[key].substring(0, 30) + '...';
+                            } else if (key === 'profileImage' && typeof data[key] === 'string') {
+                                truncated[key] = '[image url truncated]';
+                            } else {
+                                truncated[key] = data[key];
+                            }
+                        }
+                        displayData = JSON.stringify(truncated);
+                    } else {
+                        displayData = JSON.stringify(data);
+                    }
+                    
+                    logEntry.innerHTML = `[${timestamp}] ${message}<br><span style="color: #ff9900; font-size:9px;">↳ ${displayData}</span>`;
                 } else {
                     logEntry.textContent = `[${timestamp}] ${message}`;
                 }
@@ -1674,7 +1713,6 @@
                 document.getElementById('debugContent').innerHTML = '';
             }
             
-            // Show test message
             debugLog('Page loaded, initializing...');
             
             // ===== FIREBASE INITIALIZATION =====
@@ -1686,15 +1724,14 @@
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
-                    debugLog('Firebase initialized successfully');
+                    debugLog('Firebase initialized');
                 }
                 
                 window.database = firebase.database();
                 debugLog('Database reference created');
                 
             } catch (error) {
-                console.error('Firebase init error:', error);
-                debugLog('Firebase init error:', error.message);
+                debugLog('Firebase init error:', error.message, 'error');
             }
 
             const API_BASE_URL = 'https://taskmartapp.onrender.com';
@@ -1743,17 +1780,25 @@
             function getCurrentUser() {
                 try { 
                     const user = localStorage.getItem('taskmart_user');
-                    debugLog('Raw user from localStorage:', localStorage.getItem('taskmart_user'));
-                    return user ? JSON.parse(user) : null;
+                    if (user) {
+                        const parsed = JSON.parse(user);
+                        // Show only email and name, truncate long fields
+                        debugLog('User loaded:', {
+                            name: parsed.name,
+                            email: parsed.email,
+                            role: parsed.role
+                        });
+                        return parsed;
+                    }
+                    return null;
                 } catch (e) { 
-                    debugLog('Error parsing user:', e.message);
+                    debugLog('Error parsing user:', e.message, 'error');
                     return null; 
                 }
             }
             
             function isUserLoggedIn() { 
                 const loggedIn = !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
-                debugLog('User logged in check:', loggedIn);
                 return loggedIn;
             }
 
@@ -1927,7 +1972,6 @@
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
                     recenterBtn.style.display = 'flex';
-                    debugLog('Home page active');
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
                     tasksPage.classList.add('active');
@@ -1936,9 +1980,8 @@
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
                     
-                    // Clear debug and load user's tasks when tasks page is opened
                     clearDebug();
-                    debugLog('Tasks page opened, loading user tasks...');
+                    debugLog('📋 Loading tasks...');
                     loadUserTasks();
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
@@ -1947,7 +1990,6 @@
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
-                    debugLog('Account page active');
                 }
             }
 
@@ -1955,7 +1997,6 @@
             navTasks.addEventListener('click', () => setActivePage('tasks'));
             navAccount.addEventListener('click', () => setActivePage('account'));
             
-            // Set home as default active page
             setActivePage('home');
 
             // ===== LOAD USER TASKS FROM FIREBASE =====
@@ -1963,145 +2004,114 @@
                 const user = getCurrentUser();
                 const tasksList = document.getElementById('tasksList');
                 
-                debugLog('Loading tasks for user:', user);
-                
                 if (!user) {
-                    debugLog('No user found');
+                    debugLog('❌ No user found', null, 'error');
                     tasksList.innerHTML = '<div class="task-empty">Please log in to see your tasks</div>';
                     return;
                 }
                 
-                // Get the user email (from your Firebase data, tasks use posterEmail)
                 const userEmail = user.email;
                 
                 if (!userEmail) {
-                    debugLog('No user email found in user object:', user);
+                    debugLog('❌ No user email', null, 'error');
                     tasksList.innerHTML = '<div class="task-error">Unable to identify user. Please log in again.</div>';
                     return;
                 }
                 
-                debugLog('Fetching tasks for user email:', userEmail);
+                debugLog(`🔍 Fetching tasks for: ${userEmail}`);
                 
-                // Show loading state
                 tasksList.innerHTML = '<div class="task-loading">Loading your tasks</div>';
                 
-                // Reference to the tasks node in Firebase
                 const tasksRef = database.ref('tasks');
                 
-                // Get all tasks and filter by posterEmail
                 tasksRef.once('value')
                     .then((snapshot) => {
-                        debugLog('Firebase query completed');
-                        
                         if (!snapshot.exists()) {
-                            debugLog('No tasks found in database');
+                            debugLog('📭 No tasks in database');
                             tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
                             return;
                         }
                         
-                        // Log all tasks for debugging
-                        const allTasks = snapshot.val();
-                        debugLog('All tasks in database:', allTasks);
-                        
-                        // Filter tasks by posterEmail matching user email
                         const userTasks = [];
+                        let taskCount = 0;
                         
-                        // Iterate through each task
                         snapshot.forEach((childSnapshot) => {
+                            taskCount++;
                             const task = childSnapshot.val();
                             const taskId = childSnapshot.key;
                             
-                            debugLog(`Checking task ${taskId}:`, task);
-                            
-                            // Check if this task belongs to the current user by matching email
                             if (task.posterEmail === userEmail) {
-                                debugLog(`✅ Task ${taskId} matches user email`);
-                                // Add taskId to the task object
                                 task.taskId = taskId;
                                 userTasks.push(task);
-                            } else {
-                                debugLog(`❌ Task ${taskId} does not match. Task email: ${task.posterEmail}, User email: ${userEmail}`);
+                                debugLog(`✅ Task matched: ${task.category || 'Task'} (${taskId.substring(0,8)}...)`, {
+                                    category: task.category,
+                                    budget: task.budget,
+                                    date: task.date
+                                });
                             }
                         });
                         
-                        debugLog(`Found ${userTasks.length} tasks for user:`, userTasks);
+                        debugLog(`📊 Found ${userTasks.length} tasks out of ${taskCount} total`);
                         
                         if (userTasks.length === 0) {
                             tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
                             return;
                         }
                         
-                        // Sort tasks by createdAt (newest first)
-                        userTasks.sort((a, b) => {
-                            return (b.createdAt || 0) - (a.createdAt || 0);
-                        });
+                        userTasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                         
-                        // Build HTML for tasks
                         let tasksHtml = '';
                         userTasks.forEach(task => {
-                            // Format date
                             let dateStr = 'Date unknown';
                             if (task.createdAt) {
                                 const date = new Date(task.createdAt);
                                 dateStr = date.toLocaleDateString('en-GB', {
                                     day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric'
+                                    month: 'short'
                                 });
                             }
                             
-                            const budget = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
+                            const budget = task.budget === 'open' ? 'Open' : `R${task.budget}`;
                             const status = task.status || 'open';
                             const location = task.address ? 
-                                (task.address.length > 30 ? task.address.substring(0, 30) + '...' : task.address) : 
+                                (task.address.length > 25 ? task.address.substring(0, 25) + '...' : task.address) : 
                                 'Location set';
                             
                             tasksHtml += `
                                 <div class="task-card" data-task-id="${task.taskId || ''}">
                                     <div class="task-card-header">
                                         <span class="task-category">${task.category || 'Task'}</span>
-                                        <span class="task-status ${status !== 'open' ? 'closed' : ''}">${status}</span>
+                                        <span class="task-status">${status}</span>
                                     </div>
                                     <div class="task-details">${task.description || 'No description'}</div>
                                     <div class="task-meta">
-                                        <span>
-                                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/map-pin%201.png" alt="Location">
-                                            ${location}
-                                        </span>
-                                        <span>
-                                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/calendar%201.png" alt="Date">
-                                            ${task.date === 'now' ? 'Now' : task.date || dateStr}
-                                        </span>
-                                        <span>
-                                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/coin%201.png" alt="Budget">
-                                            ${budget}
-                                        </span>
+                                        <span>📍 ${location}</span>
+                                        <span>📅 ${task.date === 'now' ? 'Now' : task.date || dateStr}</span>
+                                        <span>💰 ${budget}</span>
                                     </div>
                                 </div>
                             `;
                         });
                         
                         tasksList.innerHTML = tasksHtml;
-                        debugLog('Tasks HTML rendered');
+                        debugLog('✅ Tasks displayed successfully');
                         
-                        // Add click handlers to task cards
                         document.querySelectorAll('.task-card').forEach(card => {
                             card.addEventListener('click', () => {
                                 const taskId = card.dataset.taskId;
                                 const task = userTasks.find(t => t.taskId === taskId);
                                 if (task) {
-                                    debugLog('Task clicked:', task);
-                                    // Show task details
-                                    const budgetDisplay = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
-                                    alert(`Task: ${task.category}\n\nDescription: ${task.description || 'No description'}\n\nBudget: ${budgetDisplay}\n\nStatus: ${task.status}\n\nLocation: ${task.address || 'Not specified'}`);
+                                    alert(`Task: ${task.category}\nBudget: ${task.budget === 'open' ? 'Open' : 'R' + task.budget}\nStatus: ${task.status}`);
                                 }
                             });
                         });
                     })
                     .catch((error) => {
-                        console.error('Error loading tasks from Firebase:', error);
-                        debugLog('Error loading tasks:', error.message);
-                        tasksList.innerHTML = '<div class="task-error">Error loading tasks. Please try again.</div>';
+                        console.error('Firebase error:', error);
+                        debugLog('❌ Firebase error: ' + error.message, null, 'error');
+                        
+                        // Show user-friendly message about permissions
+                        tasksList.innerHTML = '<div class="task-error">Unable to load tasks. Please check Firebase database rules.</div>';
                     });
             }
 
@@ -2462,9 +2472,7 @@
 
             // ===== FIND MATCHING HELPERS BASED ON TASK CATEGORY =====
             function findMatchingHelpers(taskCategory) {
-                // In a real app, this would query Firebase for helpers with matching skills
-                // For demo purposes, we'll create mock helpers with skill matching
-                
+                // Mock helpers for demo
                 const mockHelpers = [
                     {
                         id: 'helper1',
@@ -2485,77 +2493,24 @@
                         lng: currentLng + 0.002,
                         rating: 4.9,
                         jobsCompleted: 89
-                    },
-                    {
-                        id: 'helper3',
-                        name: 'Sipho Khumalo',
-                        profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-                        skills: ['plumbing', 'electrical', 'handyman'],
-                        lat: currentLat + 0.003,
-                        lng: currentLng + 0.001,
-                        rating: 4.7,
-                        jobsCompleted: 203
-                    },
-                    {
-                        id: 'helper4',
-                        name: 'Lerato Mokoena',
-                        profileImage: 'https://randomuser.me/api/portraits/women/4.jpg',
-                        skills: ['graphic design', 'social media', 'website'],
-                        lat: currentLat - 0.002,
-                        lng: currentLng - 0.002,
-                        rating: 5.0,
-                        jobsCompleted: 56
-                    },
-                    {
-                        id: 'helper5',
-                        name: 'Kagiso Molefe',
-                        profileImage: 'https://randomuser.me/api/portraits/men/5.jpg',
-                        skills: ['delivery', 'shopping', 'errands'],
-                        lat: currentLat + 0.001,
-                        lng: currentLng - 0.0025,
-                        rating: 4.6,
-                        jobsCompleted: 178
-                    },
-                    {
-                        id: 'helper6',
-                        name: 'Zanele Nkosi',
-                        profileImage: 'https://randomuser.me/api/portraits/women/6.jpg',
-                        skills: ['tutoring', 'lessons', 'babysitting'],
-                        lat: currentLat - 0.0028,
-                        lng: currentLng + 0.0015,
-                        rating: 4.9,
-                        jobsCompleted: 92
-                    },
-                    {
-                        id: 'helper7',
-                        name: 'Themba Mkhize',
-                        profileImage: 'https://randomuser.me/api/portraits/men/7.jpg',
-                        skills: ['pet care', 'dog walking', 'house sitting'],
-                        lat: currentLat + 0.0022,
-                        lng: currentLng + 0.0028,
-                        rating: 4.8,
-                        jobsCompleted: 115
                     }
                 ];
                 
-                // Calculate match score based on skills
+                // Calculate match score
                 const taskWords = taskCategory.toLowerCase().split(' ');
                 
                 return mockHelpers.map(helper => {
-                    // Calculate match score (0-100)
                     let matchScore = 0;
                     helper.skills.forEach(skill => {
                         taskWords.forEach(word => {
                             if (skill.includes(word) || word.includes(skill)) {
-                                matchScore += 33; // Each matching skill adds 33%
+                                matchScore += 33;
                             }
                         });
                     });
                     
-                    // Cap at 100
                     matchScore = Math.min(100, matchScore);
                     
-                    // Calculate distance
                     const distance = calculateDistance(
                         currentLat, currentLng,
                         helper.lat, helper.lng
@@ -2566,11 +2521,11 @@
                         matchScore,
                         distance: distance.toFixed(1)
                     };
-                }).sort((a, b) => b.matchScore - a.matchScore); // Sort by match score descending
+                }).sort((a, b) => b.matchScore - a.matchScore);
             }
             
             function calculateDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371; // Radius of the earth in km
+                const R = 6371;
                 const dLat = deg2rad(lat2 - lat1);
                 const dLon = deg2rad(lon2 - lon1);
                 const a = 
@@ -2578,8 +2533,7 @@
                     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
                     Math.sin(dLon/2) * Math.sin(dLon/2); 
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-                const distance = R * c; // Distance in km
-                return distance;
+                return R * c;
             }
             
             function deg2rad(deg) {
@@ -2667,16 +2621,11 @@
                 taskPreviewContainer.classList.remove('active');
                 taskPostedContainer.classList.add('active');
                 
-                // Hide bottom navigation
                 document.getElementById('bottomNav').style.display = 'none';
                 
-                // Find matching helpers
                 const matchingHelpers = findMatchingHelpers(taskCategory);
-                
-                // Update helpers list
                 updateHelpersList(matchingHelpers);
                 
-                // Initialize map with task location and helper markers
                 setTimeout(() => {
                     if (taskPostedMap) taskPostedMap.remove();
                     
@@ -2688,35 +2637,24 @@
                     });
                     
                     taskPostedMap.on('load', () => {
-                        // Add task location marker
                         const taskMarkerElement = document.createElement('div');
                         taskMarkerElement.className = 'task-marker';
                         taskMarkerElement.innerHTML = '<span>📍</span>';
                         
-                        new mapboxgl.Marker({ 
-                            element: taskMarkerElement,
-                            anchor: 'center'
-                        })
-                        .setLngLat([currentLng||28.034088, currentLat||-26.195246])
-                        .addTo(taskPostedMap);
+                        new mapboxgl.Marker({ element: taskMarkerElement, anchor: 'center' })
+                            .setLngLat([currentLng||28.034088, currentLat||-26.195246])
+                            .addTo(taskPostedMap);
                         
-                        // Add helper markers with profile pictures
                         matchingHelpers.forEach(helper => {
                             const helperMarkerElement = document.createElement('div');
                             helperMarkerElement.className = 'helper-marker';
                             helperMarkerElement.style.backgroundImage = `url('${helper.profileImage}')`;
-                            
-                            // Add tooltip with helper info
                             helperMarkerElement.title = `${helper.name} - ${helper.matchScore}% match`;
                             
-                            const marker = new mapboxgl.Marker({ 
-                                element: helperMarkerElement,
-                                anchor: 'center'
-                            })
-                            .setLngLat([helper.lng, helper.lat])
-                            .addTo(taskPostedMap);
+                            const marker = new mapboxgl.Marker({ element: helperMarkerElement, anchor: 'center' })
+                                .setLngLat([helper.lng, helper.lat])
+                                .addTo(taskPostedMap);
                             
-                            // Add click handler
                             helperMarkerElement.addEventListener('click', () => {
                                 alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%\nDistance: ${helper.distance}km`);
                             });
@@ -2724,7 +2662,6 @@
                             helperMarkers.push(marker);
                         });
                         
-                        // Fit bounds to show all markers
                         const bounds = new mapboxgl.LngLatBounds();
                         bounds.extend([currentLng||28.034088, currentLat||-26.195246]);
                         matchingHelpers.forEach(helper => {
@@ -2740,13 +2677,13 @@
                 const helpersList = document.getElementById('helpersList');
                 
                 if (helpers.length === 0) {
-                    helpersCount.textContent = 'No helpers available nearby';
-                    helpersList.innerHTML = '<p>Check back soon for helpers in your area</p>';
+                    helpersCount.textContent = 'No helpers available';
+                    helpersList.innerHTML = '<p>Check back soon</p>';
                     return;
                 }
                 
                 const matchedHelpers = helpers.filter(h => h.matchScore > 0);
-                helpersCount.textContent = `${matchedHelpers.length} helpers available nearby (matched to your task)`;
+                helpersCount.textContent = `${matchedHelpers.length} helpers available`;
                 
                 helpersList.innerHTML = '';
                 helpers.forEach(helper => {
@@ -2757,16 +2694,16 @@
                         <img src="${helper.profileImage}" class="helper-avatar" alt="${helper.name}">
                         <div class="helper-info">
                             <div class="helper-name">${helper.name}</div>
-                            <div class="helper-skills">${helper.skills.slice(0, 3).join(' • ')}</div>
+                            <div class="helper-skills">${helper.skills.slice(0, 2).join(' • ')}</div>
                         </div>
                         <div>
                             <div class="helper-distance">${helper.distance}km</div>
-                            ${helper.matchScore > 0 ? `<div class="match-badge">${helper.matchScore}% match</div>` : ''}
+                            ${helper.matchScore > 0 ? `<div class="match-badge">${helper.matchScore}%</div>` : ''}
                         </div>
                     `;
                     
                     listItem.addEventListener('click', () => {
-                        alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%\nDistance: ${helper.distance}km\nJobs completed: ${helper.jobsCompleted}`);
+                        alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%`);
                     });
                     
                     helpersList.appendChild(listItem);
@@ -2779,14 +2716,12 @@
                 createTaskContainer.style.display = 'none';
                 setActivePage('home');
                 
-                // Clean up map
                 if (taskPostedMap) {
                     taskPostedMap.remove();
                     taskPostedMap = null;
                 }
                 helperMarkers = [];
                 
-                // Reset form
                 taskInput.value = ''; 
                 mainSearchInput.value = ''; 
                 streetInput.value = ''; 
@@ -2823,7 +2758,7 @@
             validateForm();
             checkVerificationStatus();
             
-            debugLog('Initialization complete');
+            debugLog('✅ Ready');
             
         })();
     </script>
