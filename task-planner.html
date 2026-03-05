@@ -1404,34 +1404,60 @@
                 debugLog('Console cleared', 'info');
             });
             
-            // ===== FIREBASE INITIALIZATION =====
-            debugLog('🔧 Initializing Firebase...', 'info');
+            // ===== SECURE FIREBASE INITIALIZATION - ONLY DATABASE URL =====
+            debugLog('🔧 Initializing Firebase with database URL only...', 'info');
             
+            // Only the database URL is needed for client-side database access
+            // All other config values are handled by your backend securely
             const firebaseConfig = {
-                apiKey: "AIzaSyB5pFQG8IkhMdpVpM3W5SDywE3kAofOZJQ",
-                authDomain: "taskmart-app.firebaseapp.com",
-                databaseURL: "https://taskmart-app-default-rtdb.firebaseio.com",
-                projectId: "taskmart-app",
-                storageBucket: "taskmart-app.appspot.com",
-                messagingSenderId: "707174781834",
-                appId: "1:707174781834:web:1f8e9f3e3a3e3a3e3a3e3a"
+                databaseURL: "https://taskmart-app-default-rtdb.firebaseio.com"
             };
 
             // Initialize Firebase
             try {
-                firebase.initializeApp(firebaseConfig);
+                // Check if Firebase is already initialized
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    debugLog('✅ Firebase initialized successfully with database URL', 'success');
+                } else {
+                    debugLog('✅ Firebase already initialized', 'success');
+                }
+                
                 const database = firebase.database();
                 window.database = database;
-                debugLog('✅ Firebase initialized successfully', 'success');
                 
-                // Test connection
-                database.ref('.info/connected').on('value', (snap) => {
+                // Force a connection test with a timeout
+                debugLog('🔄 Testing Firebase connection...', 'info');
+                
+                const connectedRef = database.ref('.info/connected');
+                
+                // Set up the connection listener
+                connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
                         debugLog('✅ Connected to Firebase Realtime Database', 'success');
                     } else {
-                        debugLog('⚠️ Disconnected from Firebase', 'warning');
+                        debugLog('⚠️ Disconnected from Firebase - will retry automatically', 'warning');
                     }
                 });
+                
+                // Also try a simple write/read test to a test node
+                const testRef = database.ref('.info/connectionTest');
+                testRef.set({ timestamp: firebase.database.ServerValue.TIMESTAMP })
+                    .then(() => {
+                        debugLog('✅ Firebase write test successful', 'success');
+                    })
+                    .catch((error) => {
+                        debugLog(`❌ Firebase write test failed: ${error.message}`, 'error');
+                        
+                        // Check for specific error codes
+                        if (error.code === 'PERMISSION_DENIED') {
+                            debugLog('❌ PERMISSION DENIED - Database rules may be blocking writes', 'error');
+                            debugLog('💡 Go to Firebase Console → Realtime Database → Rules and set: { "rules": { ".read": true, ".write": true } } for testing', 'warning');
+                        } else if (error.code === 'NETWORK_ERROR') {
+                            debugLog('❌ NETWORK ERROR - Cannot reach Firebase servers', 'error');
+                        }
+                    });
+                
             } catch (error) {
                 debugLog(`❌ Firebase init error: ${error.message}`, 'error');
             }
@@ -2090,9 +2116,6 @@
 
                 // Create a promise that will always resolve (never hang)
                 return new Promise((resolve) => {
-                    // STEP 2: Check Firebase connection
-                    debugLog('🔍 STEP 2: Checking Firebase connection...', 'info');
-                    
                     // Set a timeout to prevent infinite loading
                     const timeout = setTimeout(() => {
                         debugLog('❌ STEP 5: Save timeout - Firebase not responding', 'error');
@@ -2100,9 +2123,14 @@
                         previewConfirmBtn.disabled = false;
                         alert('Connection timeout. Please check your internet and try again.');
                         resolve(false);
-                    }, 15000); // 15 second timeout
+                    }, 20000); // 20 second timeout
+                    
+                    // STEP 2: Check Firebase connection
+                    debugLog('🔍 STEP 2: Checking Firebase connection...', 'info');
                     
                     const connectedRef = database.ref('.info/connected');
+                    
+                    // Use once() to check connection
                     connectedRef.once('value')
                         .then((snap) => {
                             if (snap.val() === true) {
@@ -2176,7 +2204,8 @@
                                         // Check common Firebase errors
                                         if (error.code === 'PERMISSION_DENIED') {
                                             debugLog('❌ PERMISSION DENIED - Check Firebase Rules', 'error');
-                                            alert('Permission denied. Please check Firebase database rules.');
+                                            debugLog('💡 Go to Firebase Console → Realtime Database → Rules and set temporary test rules', 'warning');
+                                            alert('Permission denied. Your Firebase database rules are blocking writes.');
                                         } else if (error.code === 'NETWORK_ERROR') {
                                             debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
                                             alert('Network error. Please check your internet connection.');
