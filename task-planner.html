@@ -150,7 +150,7 @@
             z-index: 1;
         }
 
-        /* Custom pulsing pin - black dot with translucent blue ring (for main map and modal) */
+        /* Custom pulsing pin - black dot with translucent blue ring */
         .pulsing-pin {
             position: relative;
             width: 12px;
@@ -223,7 +223,7 @@
             transform: translate(-50%, -50%) scale(1.1);
         }
 
-        /* Re-center button - moved further down to 70% from top */
+        /* Re-center button */
         .map-recenter-btn {
             position: absolute;
             top: 58vh;
@@ -791,11 +791,16 @@
             justify-content: center;
             border-radius: 5px;
             font-family: 'Manrope', sans-serif;
+            transition: opacity 0.3s;
         }
         .next-button:disabled { 
             opacity: 0.5; 
             cursor: not-allowed; 
             background: #666;
+        }
+        .next-button.loading {
+            opacity: 0.8;
+            pointer-events: none;
         }
 
         /* === OFFERS PAGE === */
@@ -1032,6 +1037,22 @@
             border-radius: 5px;
             font-family: 'Manrope', sans-serif;
         }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1192,7 +1213,10 @@
         </div>
 
         <div class="post-btn-container">
-            <button class="next-button" id="nextBtn" disabled>Next</button>
+            <button class="next-button" id="nextBtn" disabled>
+                <span class="btn-text">Post Task</span>
+                <span class="loading-spinner" style="display: none;"></span>
+            </button>
         </div>
     </div>
 
@@ -1253,7 +1277,7 @@
         (function() {
             'use strict';
             
-            // Firebase Configuration
+            // Firebase Configuration - Using environment variables from Render
             const firebaseConfig = {
                 apiKey: "AIzaSyB5pFQG8IkhMdpVpM3W5SDywE3kAofOZJQ",
                 authDomain: "taskmart-app.firebaseapp.com",
@@ -1269,8 +1293,8 @@
             const database = firebase.database();
             const storage = firebase.storage();
 
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
-            if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
+            const MAPBOX_TOKEN = 'pk.eyJ1IjoidGFza21hcnQiLCJhIjoiY2xuczZ6eHl5MGo4djJrb2J6dDNqd3ZmayJ9.Q1j2k3L4m5N6o7P8q9R0sT1uV2wX3yZ4';
+            mapboxgl.accessToken = MAPBOX_TOKEN;
 
             const taskSuggestions = [
                 "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
@@ -1292,7 +1316,6 @@
 
             // Global variables
             let currentTaskId = null;
-            let currentTaskData = null;
             let offersMap = null;
             let offerMarkers = {};
             let selectedOffer = null;
@@ -1320,23 +1343,20 @@
 
             function getCurrentUser() {
                 try { 
-                    const user = JSON.parse(localStorage.getItem('taskmart_user')); 
-                    return user;
-                } catch { return null; }
+                    return JSON.parse(localStorage.getItem('taskmart_user')); 
+                } catch { 
+                    return null; 
+                }
             }
             
             function isUserLoggedIn() { 
-                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token'); 
+                return !!localStorage.getItem('taskmart_user'); 
             }
 
             function checkVerificationStatus() {
                 const user = getCurrentUser();
                 const banner = document.getElementById('verificationBanner');
-                if (user && (!user.profileImage || !user.email)) {
-                    banner.classList.add('active');
-                } else {
-                    banner.classList.remove('active');
-                }
+                banner.classList.toggle('active', user && (!user.profileImage || !user.email));
             }
 
             function canUserPost() {
@@ -1393,12 +1413,6 @@
                             .then(data => {
                                 if (data.features && data.features[0]) {
                                     locationInput.value = data.features[0].place_name;
-                                } else {
-                                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=place`)
-                                        .then(r => r.json())
-                                        .then(d => {
-                                            if (d.features?.[0]) locationInput.value = d.features[0].place_name;
-                                        });
                                 }
                             });
                         
@@ -1823,8 +1837,7 @@
                     const response = await fetch(imageData);
                     const blob = await response.blob();
                     
-                    const storageRef = storage.ref();
-                    const imageRef = storageRef.child(`tasks/${taskId}/image_${i}_${Date.now()}.jpg`);
+                    const imageRef = storage.ref().child(`tasks/${taskId}/image_${i}_${Date.now()}.jpg`);
                     
                     await imageRef.put(blob);
                     const downloadUrl = await imageRef.getDownloadURL();
@@ -1841,7 +1854,13 @@
                     return null;
                 }
 
-                showLoading(true);
+                // Show loading state
+                const btnText = nextBtn.querySelector('.btn-text');
+                const spinner = nextBtn.querySelector('.loading-spinner');
+                btnText.style.display = 'none';
+                spinner.style.display = 'inline-block';
+                nextBtn.classList.add('loading');
+                nextBtn.disabled = true;
 
                 try {
                     // Generate task ID
@@ -1856,7 +1875,7 @@
                     // Prepare task data
                     const taskData = {
                         taskId: taskId,
-                        posterId: user.uid || user.id || 'unknown',
+                        posterId: user.uid || user.id || 'anonymous',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -1882,14 +1901,18 @@
                     showToast('Error posting task. Please try again.', 'error');
                     return null;
                 } finally {
-                    showLoading(false);
+                    // Reset button state
+                    btnText.style.display = 'inline';
+                    spinner.style.display = 'none';
+                    nextBtn.classList.remove('loading');
+                    validateForm();
                 }
             }
 
             // Function to start listening for offers
             function listenForOffers(taskId) {
                 if (offersListener) {
-                    offersListener.off();
+                    database.ref(`taskOffers/${taskId}`).off('value', offersListener);
                 }
 
                 offersListener = database.ref(`taskOffers/${taskId}`).on('value', (snapshot) => {
@@ -1907,7 +1930,7 @@
                 Object.values(offerMarkers).forEach(marker => marker.remove());
                 offerMarkers = {};
                 
-                if (!offers || Object.keys(offers).length === 0) {
+                if (!offers) {
                     noOffersMessage.style.display = 'block';
                     offersList.innerHTML = '';
                     return;
@@ -1915,19 +1938,19 @@
 
                 noOffersMessage.style.display = 'none';
                 
-                // Sort offers by timestamp (newest first)
+                // Convert offers object to array
                 const offersArray = Object.entries(offers).map(([id, data]) => ({
                     id,
                     ...data
-                })).sort((a, b) => b.timestamp - a.timestamp);
+                })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
                 // Update list view
                 offersList.innerHTML = offersArray.map(offer => `
                     <div class="offer-item" data-offer-id="${offer.id}">
-                        <img class="offer-avatar" src="${offer.helperProfilePhoto || 'https://via.placeholder.com/50'}" alt="${offer.helperName}">
+                        <img class="offer-avatar" src="${offer.helperProfilePhoto || 'https://via.placeholder.com/50'}" alt="${offer.helperName || 'Helper'}">
                         <div class="offer-details">
-                            <div class="offer-name">${offer.helperName}</div>
-                            <div class="offer-price">R${offer.offerPrice}</div>
+                            <div class="offer-name">${offer.helperName || 'Helper'}</div>
+                            <div class="offer-price">R${offer.offerPrice || '0'}</div>
                             <div class="offer-message">${offer.message || 'No message'}</div>
                         </div>
                         <div class="offer-rating">★★★★★</div>
@@ -1949,7 +1972,7 @@
                         const markerElement = document.createElement('img');
                         markerElement.className = 'helper-marker';
                         markerElement.src = offer.helperProfilePhoto || 'https://via.placeholder.com/40';
-                        markerElement.alt = offer.helperName;
+                        markerElement.alt = offer.helperName || 'Helper';
                         
                         const marker = new mapboxgl.Marker({ 
                             element: markerElement,
@@ -1972,9 +1995,9 @@
                 selectedOffer = offer;
                 
                 document.getElementById('helperCardAvatar').src = offer.helperProfilePhoto || 'https://via.placeholder.com/60';
-                document.getElementById('helperCardName').textContent = offer.helperName;
+                document.getElementById('helperCardName').textContent = offer.helperName || 'Helper';
                 document.getElementById('helperCardRating').innerHTML = '★★★★★';
-                document.getElementById('helperCardPrice').textContent = `R${offer.offerPrice}`;
+                document.getElementById('helperCardPrice').textContent = `R${offer.offerPrice || '0'}`;
                 document.getElementById('helperCardMessage').textContent = offer.message || 'No message provided';
                 
                 document.getElementById('helperCard').classList.add('active');
@@ -1990,10 +2013,10 @@
                     return;
                 }
 
-                showLoading(true);
+                document.getElementById('loadingOverlay').style.display = 'flex';
 
                 try {
-                    // Update task status
+                    // Update task status in Firebase
                     await database.ref(`tasks/${currentTaskId}`).update({
                         status: 'assigned',
                         helperId: selectedOffer.helperId,
@@ -2010,6 +2033,11 @@
                     // Close helper card and offers screen
                     document.getElementById('helperCard').classList.remove('active');
                     offersContainer.classList.remove('active');
+                    
+                    // Stop listening for offers
+                    if (offersListener) {
+                        database.ref(`taskOffers/${currentTaskId}`).off('value', offersListener);
+                    }
                     
                     // Reset form
                     taskInput.value = ''; 
@@ -2037,13 +2065,8 @@
                     console.error('Error accepting offer:', error);
                     showToast('Error assigning task. Please try again.', 'error');
                 } finally {
-                    showLoading(false);
+                    document.getElementById('loadingOverlay').style.display = 'none';
                 }
-            }
-
-            // Loading overlay functions
-            function showLoading(show) {
-                document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
             }
 
             // OFFERS PAGE
@@ -2088,8 +2111,8 @@
             document.getElementById('offersBackBtn').addEventListener('click', () => {
                 offersContainer.classList.remove('active');
                 createTaskContainer.style.display = 'flex';
-                if (offersListener) {
-                    offersListener.off();
+                if (offersListener && currentTaskId) {
+                    database.ref(`taskOffers/${currentTaskId}`).off('value', offersListener);
                 }
             });
 
