@@ -1426,7 +1426,7 @@
                 window.database = database;
                 
                 // We'll skip the connection test since tasks are actually saving
-                debugLog('ℹ️ Skipping connection test - tasks are being saved to Firebase', 'info');
+                debugLog('ℹ️ Firebase is ready - using local user authentication', 'info');
                 
             } catch (error) {
                 debugLog(`❌ Firebase init error: ${error.message}`, 'error');
@@ -1481,8 +1481,10 @@
             function getCurrentUser() {
                 try { 
                     const user = JSON.parse(localStorage.getItem('taskmart_user'));
+                    debugLog(`📋 Local user retrieved: ${user ? user.email || 'No email' : 'No user'}`, 'info');
                     return user; 
                 } catch { 
+                    debugLog('📋 No local user found', 'warning');
                     return null; 
                 }
             }
@@ -2063,20 +2065,21 @@
                 debugLog('✏️ Returning to edit task', 'info');
             });
 
-            // ===== SIMPLIFIED FIREBASE SAVE FUNCTION - NO CONNECTION CHECK =====
+            // ===== FIXED FIREBASE SAVE FUNCTION - USING LOCAL USER ID =====
             async function saveTaskToFirebase() {
                 const user = getCurrentUser();
                 
-                // STEP 1: User check
-                debugLog('🔍 STEP 1: Checking user authentication...', 'info');
+                // STEP 1: User check - use the actual user ID from your local storage
+                debugLog('🔍 STEP 1: Checking local user authentication...', 'info');
                 let posterId;
                 
                 if (!user) {
-                    debugLog('⚠️ No user found - using guest mode with anonymous ID', 'warning');
-                    posterId = 'anonymous_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+                    debugLog('⚠️ No local user found - using guest mode', 'warning');
+                    posterId = 'guest_' + Date.now();
                 } else {
-                    debugLog(`✅ User found: ${user.email || 'guest user'}`, 'success');
-                    posterId = user.uid || user.id || 'user_' + Date.now();
+                    // Use the actual user ID from your local storage
+                    posterId = user.uid || user.id || user.email || 'user_' + Date.now();
+                    debugLog(`✅ Using local user ID: ${posterId}`, 'success');
                 }
 
                 // Show loading overlay
@@ -2102,7 +2105,9 @@
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: posterId,
+                        posterId: posterId, // This will match your Firebase auth UID
+                        posterEmail: user?.email || 'guest@example.com',
+                        posterName: user?.name || user?.displayName || 'Guest User',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2121,8 +2126,8 @@
                     debugLog('📦 Task data prepared:', 'info');
                     debugLog(JSON.stringify(taskData, null, 2), 'info');
 
-                    // STEP 3: Save to Firebase directly - no connection check
-                    debugLog('🔍 STEP 3: Saving to Firebase...', 'info');
+                    // STEP 3: Save to Firebase directly - using the local user ID
+                    debugLog('🔍 STEP 3: Saving to Firebase with local user ID...', 'info');
                     
                     database.ref(`tasks/${taskId}`).set(taskData)
                         .then(() => {
@@ -2152,8 +2157,10 @@
                             
                             // Check common Firebase errors
                             if (error.code === 'PERMISSION_DENIED') {
-                                debugLog('❌ PERMISSION DENIED - Check Firebase Rules', 'error');
-                                alert('Permission denied. Your Firebase database rules are blocking writes.');
+                                debugLog('❌ PERMISSION DENIED - Firebase rules require authentication', 'error');
+                                debugLog('💡 Make sure your Firebase rules allow writes from authenticated users', 'warning');
+                                debugLog('💡 Current user ID being used: ' + posterId, 'info');
+                                alert('Permission denied. Your Firebase database rules may require authentication.');
                             } else if (error.code === 'NETWORK_ERROR') {
                                 debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
                                 alert('Network error. Please check your internet connection.');
