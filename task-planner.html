@@ -1404,12 +1404,12 @@
                 debugLog('Console cleared', 'info');
             });
             
-            // ===== SECURE FIREBASE INITIALIZATION - ONLY DATABASE URL =====
-            debugLog('🔧 Initializing Firebase with database URL only...', 'info');
+            // ===== SECURE FIREBASE INITIALIZATION - CORRECT DATABASE URL =====
+            debugLog('🔧 Initializing Firebase with correct database URL...', 'info');
             
-            // Only the database URL is needed for client-side database access
+            // CORRECT DATABASE URL for your project
             const firebaseConfig = {
-                databaseURL: "https://taskmart-app-default-rtdb.firebaseio.com"
+                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com"
             };
 
             // Initialize Firebase
@@ -1417,7 +1417,7 @@
                 // Check if Firebase is already initialized
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
-                    debugLog('✅ Firebase initialized successfully with database URL', 'success');
+                    debugLog('✅ Firebase initialized successfully with correct URL', 'success');
                 } else {
                     debugLog('✅ Firebase already initialized', 'success');
                 }
@@ -1425,8 +1425,21 @@
                 const database = firebase.database();
                 window.database = database;
                 
-                // We'll skip the connection test since tasks are actually saving
-                debugLog('ℹ️ Firebase is ready - using local user authentication', 'info');
+                // Test connection
+                debugLog('🔄 Testing Firebase connection...', 'info');
+                
+                const connectedRef = database.ref('.info/connected');
+                connectedRef.once('value')
+                    .then((snap) => {
+                        if (snap.val() === true) {
+                            debugLog('✅ Connected to Firebase!', 'success');
+                        } else {
+                            debugLog('⚠️ Connection check returned false', 'warning');
+                        }
+                    })
+                    .catch((error) => {
+                        debugLog(`❌ Connection test error: ${error.message}`, 'error');
+                    });
                 
             } catch (error) {
                 debugLog(`❌ Firebase init error: ${error.message}`, 'error');
@@ -2065,13 +2078,15 @@
                 debugLog('✏️ Returning to edit task', 'info');
             });
 
-            // ===== FIXED FIREBASE SAVE FUNCTION - USING LOCAL USER ID =====
+            // ===== FIXED FIREBASE SAVE FUNCTION - USING CORRECT URL =====
             async function saveTaskToFirebase() {
                 const user = getCurrentUser();
                 
-                // STEP 1: User check - use the actual user ID from your local storage
+                // STEP 1: User check
                 debugLog('🔍 STEP 1: Checking local user authentication...', 'info');
                 let posterId;
+                let posterEmail = 'guest@example.com';
+                let posterName = 'Guest User';
                 
                 if (!user) {
                     debugLog('⚠️ No local user found - using guest mode', 'warning');
@@ -2079,7 +2094,10 @@
                 } else {
                     // Use the actual user ID from your local storage
                     posterId = user.uid || user.id || user.email || 'user_' + Date.now();
+                    posterEmail = user.email || posterEmail;
+                    posterName = user.name || user.displayName || posterName;
                     debugLog(`✅ Using local user ID: ${posterId}`, 'success');
+                    debugLog(`✅ User email: ${posterEmail}`, 'success');
                 }
 
                 // Show loading overlay
@@ -2096,7 +2114,7 @@
                         previewConfirmBtn.disabled = false;
                         alert('Connection timeout. Please check your internet and try again.');
                         resolve(false);
-                    }, 20000); // 20 second timeout
+                    }, 20000);
                     
                     // STEP 2: Generate task ID and prepare data
                     debugLog('🔍 STEP 2: Preparing task data...', 'info');
@@ -2105,9 +2123,9 @@
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: posterId, // This will match your Firebase auth UID
-                        posterEmail: user?.email || 'guest@example.com',
-                        posterName: user?.name || user?.displayName || 'Guest User',
+                        posterId: posterId,
+                        posterEmail: posterEmail,
+                        posterName: posterName,
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2126,8 +2144,8 @@
                     debugLog('📦 Task data prepared:', 'info');
                     debugLog(JSON.stringify(taskData, null, 2), 'info');
 
-                    // STEP 3: Save to Firebase directly - using the local user ID
-                    debugLog('🔍 STEP 3: Saving to Firebase with local user ID...', 'info');
+                    // STEP 3: Save to Firebase directly
+                    debugLog('🔍 STEP 3: Saving to Firebase...', 'info');
                     
                     database.ref(`tasks/${taskId}`).set(taskData)
                         .then(() => {
@@ -2160,6 +2178,7 @@
                                 debugLog('❌ PERMISSION DENIED - Firebase rules require authentication', 'error');
                                 debugLog('💡 Make sure your Firebase rules allow writes from authenticated users', 'warning');
                                 debugLog('💡 Current user ID being used: ' + posterId, 'info');
+                                debugLog('💡 Current database URL: https://taskmartapp-74d6b-default-rtdb.firebaseio.com', 'info');
                                 alert('Permission denied. Your Firebase database rules may require authentication.');
                             } else if (error.code === 'NETWORK_ERROR') {
                                 debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
