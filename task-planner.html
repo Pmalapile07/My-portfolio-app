@@ -1425,7 +1425,7 @@
                 const database = firebase.database();
                 window.database = database;
                 
-                // Test connection using .info/connected (read-only) - FIXED: removed write test
+                // Test connection using .info/connected (read-only)
                 debugLog('🔄 Testing Firebase connection...', 'info');
                 
                 const connectedRef = database.ref('.info/connected');
@@ -1439,21 +1439,25 @@
                     }
                 });
                 
-                // Also check if we can read from the database (optional)
-                // This just tests if we have any permissions at all
-                const testRef = database.ref('connection_test');
-                testRef.once('value')
-                    .then(() => {
-                        debugLog('✅ Successfully read from database - permissions OK', 'success');
-                    })
-                    .catch((error) => {
-                        if (error.code === 'PERMISSION_DENIED') {
-                            debugLog('⚠️ Database is readable only with proper auth', 'warning');
-                            debugLog('💡 Set up Firebase Rules to allow reads/writes', 'info');
-                        } else {
-                            debugLog(`⚠️ Database read test: ${error.message}`, 'warning');
-                        }
-                    });
+                // Force an immediate connection check
+                setTimeout(() => {
+                    connectedRef.once('value')
+                        .then((snap) => {
+                            if (snap.val() === true) {
+                                debugLog('✅ Immediate connection check: Connected', 'success');
+                            } else {
+                                debugLog('❌ Immediate connection check: Not connected', 'error');
+                                debugLog('💡 This could mean:', 'info');
+                                debugLog('   1. Firebase project not properly configured', 'info');
+                                debugLog('   2. Database URL is incorrect', 'info');
+                                debugLog('   3. Network is blocking Firebase (ports 443?)', 'info');
+                                debugLog('   4. Firebase project may be in a different region', 'info');
+                            }
+                        })
+                        .catch((error) => {
+                            debugLog(`❌ Connection check error: ${error.message}`, 'error');
+                        });
+                }, 2000);
                 
             } catch (error) {
                 debugLog(`❌ Firebase init error: ${error.message}`, 'error');
