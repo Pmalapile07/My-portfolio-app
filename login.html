@@ -152,6 +152,18 @@
 
         .error.show { display: block; }
 
+        .success {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success.show { display: block; }
+
         .switch-text {
             text-align: center;
             color: #6b7280;
@@ -192,6 +204,7 @@
         </div>
 
         <div id="errorMessage" class="error"></div>
+        <div id="successMessage" class="success"></div>
 
         <!-- Login Form -->
         <form id="loginForm">
@@ -218,7 +231,7 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="signupPassword" class="form-input" required>
+                <input type="password" id="signupPassword" class="form-input" required minlength="6">
             </div>
             <div class="form-group">
                 <label>I want to</label>
@@ -237,18 +250,27 @@
 
     <script>
         // ===== FIREBASE CONFIGURATION =====
+        // REPLACE THESE WITH YOUR ACTUAL FIREBASE CONSOLE VALUES
         const firebaseConfig = {
-            apiKey: "AIzaSyB...", // Replace with your Firebase Console values
+            apiKey: "AIzaSyB...", // Get this from Firebase Console
             authDomain: "taskmartapp-74d6b.firebaseapp.com",
             databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
             projectId: "taskmartapp-74d6b",
             storageBucket: "taskmartapp-74d6b.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abc123"
+            messagingSenderId: "1234567890", // Get from Firebase Console
+            appId: "1:1234567890:web:abc123" // Get from Firebase Console
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase init error:', error);
+            document.getElementById('errorMessage').textContent = 'Firebase configuration error';
+            document.getElementById('errorMessage').classList.add('show');
+        }
+
         const auth = firebase.auth();
         const database = firebase.database();
 
@@ -261,6 +283,13 @@
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
             setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            setTimeout(() => successDiv.classList.remove('show'), 3000);
         }
 
         function switchTab(tab) {
@@ -300,58 +329,98 @@
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const name = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
             const btn = document.getElementById('signupBtn');
             
+            // Basic validation
+            if (!name || !email || !password) {
+                showError('All fields are required');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters');
+                return;
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span> Creating account...';
 
             try {
+                console.log('Creating user with email:', email);
+                
                 // 1. Create user in Firebase Auth
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
+                console.log('User created:', user.uid);
 
                 // 2. Update profile with display name
                 await user.updateProfile({ displayName: name });
+                console.log('Profile updated with name:', name);
 
                 // 3. Create user profile in Realtime Database
+                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
                 const userData = {
                     uid: user.uid,
                     name: name,
                     email: email,
                     role: selectedRole,
                     isAdmin: false,
+                    initials: initials,
                     createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    lastLogin: firebase.database.ServerValue.TIMESTAMP,
-                    initials: name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                    lastLogin: firebase.database.ServerValue.TIMESTAMP
                 };
 
                 await database.ref(`users/${user.uid}`).set(userData);
+                console.log('User data saved to database');
 
-                // 4. Store minimal user info in localStorage for persistence
+                // 4. Store user info in localStorage
                 localStorage.setItem('taskmart_user', JSON.stringify({
                     uid: user.uid,
                     name: name,
                     email: email,
                     role: selectedRole,
-                    isAdmin: false
+                    isAdmin: false,
+                    initials: initials
                 }));
 
-                // 5. Redirect based on role
-                window.location.href = selectedRole === 'helper' ? '/helper' : '/';
+                showSuccess('Account created successfully! Redirecting...');
+
+                // 5. Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = selectedRole === 'helper' ? '/helper' : '/';
+                }, 1500);
 
             } catch (error) {
-                console.error(error);
-                let errorMessage = 'Signup failed';
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'Email already in use';
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Password should be at least 6 characters';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Invalid email address';
+                console.error('Signup error details:', error.code, error.message);
+                
+                // Clear any partial data
+                localStorage.removeItem('taskmart_user');
+                
+                let errorMessage = 'Signup failed. ';
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage += 'This email is already registered.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'Please enter a valid email address.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage += 'Password should be at least 6 characters.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage += 'Email/password signup is not enabled. Please check Firebase Console.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage += 'Network error. Please check your connection.';
+                        break;
+                    default:
+                        errorMessage += error.message;
                 }
+                
                 showError(errorMessage);
                 btn.disabled = false;
                 btn.innerHTML = 'Create account';
@@ -362,24 +431,32 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = document.getElementById('loginEmail').value;
+            const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             const btn = document.getElementById('loginBtn');
             
+            if (!email || !password) {
+                showError('Email and password are required');
+                return;
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span> Signing in...';
 
             try {
+                console.log('Signing in with email:', email);
+                
                 // 1. Sign in with Firebase
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
+                console.log('User signed in:', user.uid);
 
                 // 2. Get user data from Realtime Database
                 const snapshot = await database.ref(`users/${user.uid}`).once('value');
                 const userData = snapshot.val();
 
                 if (!userData) {
-                    throw new Error('User profile not found');
+                    throw new Error('User profile not found in database');
                 }
 
                 // 3. Update last login
@@ -391,24 +468,44 @@
                     name: userData.name,
                     email: userData.email,
                     role: userData.role,
-                    isAdmin: userData.isAdmin || false
+                    isAdmin: userData.isAdmin || false,
+                    initials: userData.initials
                 }));
 
+                showSuccess('Login successful! Redirecting...');
+
                 // 5. Redirect
-                window.location.href = userData.role === 'helper' ? '/helper' : '/';
+                setTimeout(() => {
+                    window.location.href = userData.role === 'helper' ? '/helper' : '/';
+                }, 1500);
 
             } catch (error) {
-                console.error(error);
-                let errorMessage = 'Login failed';
-                if (error.code === 'auth/user-not-found') {
-                    errorMessage = 'No account found with this email';
-                } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = 'Incorrect password';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Invalid email address';
-                } else if (error.code === 'auth/too-many-requests') {
-                    errorMessage = 'Too many failed attempts. Try again later';
+                console.error('Login error details:', error.code, error.message);
+                
+                let errorMessage = 'Login failed. ';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage += 'No account found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage += 'Incorrect password.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'Please enter a valid email address.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage += 'Too many failed attempts. Please try again later.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage += 'This account has been disabled.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage += 'Network error. Please check your connection.';
+                        break;
+                    default:
+                        errorMessage += error.message;
                 }
+                
                 showError(errorMessage);
                 btn.disabled = false;
                 btn.innerHTML = 'Sign in';
@@ -416,21 +513,25 @@
         });
 
         // ===== CHECK EXISTING SESSION =====
-        auth.onAuthStateChanged(async (user) => {
+        auth.onAuthStateChanged((user) => {
             if (user) {
-                // User is signed in
+                console.log('Auth state changed: user signed in', user.uid);
+                // Verify localStorage matches
                 const localUser = localStorage.getItem('taskmart_user');
                 if (localUser) {
                     const userData = JSON.parse(localUser);
-                    // Only redirect if we're on login page
+                    // Only redirect if we're on the login/signup page
                     if (window.location.pathname.includes('login') || window.location.pathname === '/') {
+                        console.log('Redirecting to dashboard based on role:', userData.role);
                         window.location.href = userData.role === 'helper' ? '/helper' : '/';
                     }
                 }
+            } else {
+                console.log('Auth state changed: user signed out');
             }
         });
 
-        // Check if already logged in via localStorage
+        // Check if already logged in
         const localUser = localStorage.getItem('taskmart_user');
         if (localUser) {
             const userData = JSON.parse(localUser);
@@ -439,6 +540,9 @@
                 window.location.href = userData.role === 'helper' ? '/helper' : '/';
             }
         }
+
+        // Add debug info to console
+        console.log('Firebase Auth State:', auth.currentUser ? 'Logged in' : 'Logged out');
     </script>
 </body>
 </html>
