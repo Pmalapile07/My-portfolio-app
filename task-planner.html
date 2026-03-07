@@ -1936,7 +1936,7 @@
             navAccount.addEventListener('click', () => setActivePage('account'));
             setActivePage('home');
 
-            // ===== LOAD USER'S TASKS FROM FIREBASE (by UID) =====
+            // ===== FIXED: LOAD USER'S TASKS FROM FIREBASE using UID path =====
             function loadUserTasks() {
                 const tasksList = document.getElementById('tasksList');
                 const tasksCount = document.getElementById('tasksCount');
@@ -1950,22 +1950,18 @@
                 
                 tasksList.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
                 
-                debugLog(`Loading tasks for user UID: ${currentUser.uid}`, 'info');
+                debugLog(`Loading tasks for user UID: ${currentUser.uid} from path: tasks/${currentUser.uid}`, 'info');
                 
-                // Query using UID (posterId)
-                database.ref('tasks').orderByChild('posterId').equalTo(currentUser.uid).once('value')
+                // ✅ FIXED: Read directly from /tasks/[UID] instead of querying
+                database.ref('tasks/' + currentUser.uid).once('value')
                     .then((snapshot) => {
-                        const tasks = [];
-                        let taskCount = 0;
+                        const tasksData = snapshot.val() || {};
                         
-                        snapshot.forEach((childSnapshot) => {
-                            taskCount++;
-                            const task = childSnapshot.val();
-                            tasks.push({
-                                id: childSnapshot.key,
-                                ...task
-                            });
-                        });
+                        // Convert object to array
+                        const tasks = Object.entries(tasksData).map(([id, data]) => ({
+                            id: id,
+                            ...data
+                        }));
                         
                         debugLog(`Found ${tasks.length} tasks for user`, tasks.length > 0 ? 'success' : 'info');
                         
@@ -2426,7 +2422,8 @@
                         resolve(false);
                     }, 20000);
                     
-                    const taskRef = database.ref('tasks').push();
+                    // ✅ FIXED: Save task under /tasks/[UID]/[taskId]
+                    const taskRef = database.ref('tasks/' + currentUser.uid).push();
                     const taskId = taskRef.key;
                     currentTaskId = taskId;
                     
@@ -2450,7 +2447,7 @@
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     };
 
-                    debugLog(`Saving task for user ${currentUser.uid}`, 'info');
+                    debugLog(`Saving task for user ${currentUser.uid} under path: tasks/${currentUser.uid}`, 'info');
 
                     taskRef.set(taskData)
                         .then(() => {
