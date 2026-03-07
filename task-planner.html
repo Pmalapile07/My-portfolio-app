@@ -21,17 +21,20 @@
         }
     </style>
     
-    <!-- Mapbox GL JS -->
+    <!-- Mapbox GL JS - Using your backend proxy -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Firebase SDK (v10.8.0) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    
+    <!-- Config - Your backend handles the token -->
+    <script src="/config.js"></script>
 
     <style>
         * {
@@ -50,6 +53,63 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
+        }
+
+        /* Profile Menu Button - Top Left */
+        .profile-menu-btn {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .profile-menu-btn img {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: absolute;
+            top: 80px;
+            left: 16px;
+            right: 16px;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            padding: 12px;
+            border-radius: 5px;
+            z-index: 10000;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .debug-panel.visible {
+            display: block;
+        }
+        
+        .debug-panel .error {
+            color: #f00;
+        }
+        
+        .debug-panel .success {
+            color: #0f0;
+        }
+        
+        .debug-panel .info {
+            color: #ff0;
         }
 
         /* === TASK PREVIEW SCREEN === */
@@ -199,69 +259,6 @@
             cursor: not-allowed;
         }
 
-        .next-button, .more-details-btn, .close-btn, .search-circle-btn, 
-        .nav-item span, .when-option, .budget-option, .accept-offer-btn,
-        .offers-back-btn, .confirm-button, .preview-edit-btn, .preview-confirm-btn {
-            text-transform: lowercase;
-        }
-        
-        .next-button::first-letter, .more-details-btn::first-letter, 
-        .when-option::first-letter, .budget-option::first-letter,
-        .accept-offer-btn::first-letter, .confirm-button::first-letter,
-        .preview-edit-btn::first-letter, .preview-confirm-btn::first-letter {
-            text-transform: uppercase;
-        }
-
-        /* Splash Screen */
-        .splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: #000;
-            z-index: 9999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.8s ease;
-            pointer-events: none;
-        }
-
-        .splash-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .splash-logo {
-            font-family: 'Codec Cold News', sans-serif;
-            font-size: 1.5rem;
-            text-transform: lowercase !important;
-            color: white;
-            letter-spacing: 4px;
-            opacity: 0;
-            transform: scale(0.8);
-            animation: logoAppear 1.5s ease forwards;
-        }
-
-        @keyframes logoAppear {
-            0% {
-                opacity: 0;
-                transform: scale(0.8);
-                letter-spacing: 4px;
-            }
-            50% {
-                opacity: 0.8;
-                transform: scale(1.1);
-                letter-spacing: 8px;
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-                letter-spacing: 4px;
-            }
-        }
-
         /* === FULLSCREEN MAP - DARK STYLE === */
         #map {
             position: absolute;
@@ -272,7 +269,7 @@
             z-index: 1;
         }
 
-        /* Custom pulsing pin - black dot with translucent blue ring */
+        /* Custom pulsing pin */
         .pulsing-pin {
             position: relative;
             width: 12px;
@@ -301,7 +298,7 @@
             animation: pulse-ring 2s infinite ease-in-out;
         }
         
-        /* Helper marker with profile picture */
+        /* Helper marker */
         .helper-marker {
             width: 48px;
             height: 48px;
@@ -320,7 +317,7 @@
             transform: translate(-50%, -50%) scale(1.1);
         }
         
-        /* Task location marker - larger and more prominent */
+        /* Task marker */
         .task-marker {
             width: 56px;
             height: 56px;
@@ -585,7 +582,7 @@
             font-weight: 500;
         }
 
-        /* === TASKS PAGE - DISPLAYS USER'S POSTED TASKS === */
+        /* === TASKS PAGE === */
         .page-container {
             position: fixed;
             top: 0;
@@ -1027,17 +1024,6 @@
             margin-top: -0.25rem;
         }
 
-        .upload-status {
-            margin-top: 0.5rem;
-            padding: 0.75rem;
-            font-size: 0.9rem;
-            font-weight: 300;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            border-radius: 5px;
-        }
-
         .image-preview-container {
             margin-top: 1rem;
             display: flex;
@@ -1305,31 +1291,26 @@
             padding: 2rem;
             color: #666;
         }
-
-        /* Auto-login styles */
-        .auto-login-message {
-            text-align: center;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .auto-login-message button {
-            background: #000;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            margin-left: 0.5rem;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
+    <!-- Profile Menu Button (Top Left) -->
+    <button class="profile-menu-btn" id="profileMenuBtn">
+        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/user%207.png" alt="Menu">
+    </button>
+
+    <!-- Debug Panel -->
+    <div class="debug-panel" id="debugPanel">
+        <div id="debugContent"></div>
+    </div>
+
     <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">TASKMART</div>
     </div>
+
+    <!-- Profile Menu Container -->
+    <div id="profile-menu-container"></div>
 
     <!-- MAP -->
     <div id="map"></div>
@@ -1356,10 +1337,6 @@
                 </button>
             </div>
         </div>
-        <div class="auto-login-message" id="autoLoginMessage" style="display: none;">
-            <span>Demo mode active</span>
-            <button onclick="createTestUser()">Create test tasks</button>
-        </div>
     </div>
 
     <!-- BOTTOM NAVIGATION BAR -->
@@ -1378,7 +1355,7 @@
         </button>
     </div>
 
-    <!-- TASKS PAGE - DISPLAYS USER'S POSTED TASKS -->
+    <!-- TASKS PAGE -->
     <div class="page-container" id="tasksPage">
         <div class="tasks-header">
             <h2>Your tasks</h2>
@@ -1392,12 +1369,11 @@
     <!-- ACCOUNT PAGE -->
     <div class="page-container" id="accountPage">
         <div class="account-header">Account</div>
-        <div style="padding: 1rem;">
+        <div style="padding: 1rem;" id="accountInfo">
             <div style="background: #f8f8f8; border-radius: 5px; padding: 1.5rem; text-align: center;">
                 <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/user%207.png" style="width: 60px; height: 60px; opacity: 0.5; margin-bottom: 1rem;">
-                <h3 style="margin-bottom: 0.5rem;" id="accountName">Guest User</h3>
-                <p style="color: #666; margin-bottom: 1rem;" id="accountEmail">demo@taskmart.app</p>
-                <button onclick="createTestUser()" style="background: #000; color: white; border: none; padding: 0.75rem 2rem; border-radius: 5px; cursor: pointer;">Create Test Account</button>
+                <h3 style="margin-bottom: 0.5rem;" id="accountName">Loading...</h3>
+                <p style="color: #666; margin-bottom: 1rem;" id="accountEmail">Loading...</p>
             </div>
         </div>
     </div>
@@ -1470,9 +1446,6 @@
                             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/image-%202.png" alt="Upload">
                             <p>Tap to upload photos</p>
                             <div class="upload-hint">JPG, PNG up to 5MB</div>
-                        </div>
-                        <div id="uploadStatus" class="upload-status info" style="display: none;">
-                            <span id="uploadStatusText">Ready to upload</span>
                         </div>
                         <div id="imagePreviewContainer" class="image-preview-container"></div>
                     </div>
@@ -1606,6 +1579,27 @@
                 measurementId: "G-Z8SPLR0HSL"
             };
 
+            // Debug logging
+            function debugLog(message, type = 'info') {
+                const debugPanel = document.getElementById('debugPanel');
+                const debugContent = document.getElementById('debugContent');
+                
+                debugPanel.classList.add('visible');
+                
+                const timestamp = new Date().toLocaleTimeString();
+                const logLine = `[${timestamp}] ${message}`;
+                
+                const line = document.createElement('div');
+                line.className = type;
+                line.textContent = logLine;
+                debugContent.appendChild(line);
+                
+                // Auto-scroll
+                debugPanel.scrollTop = debugPanel.scrollHeight;
+                
+                console.log(logLine);
+            }
+
             // Initialize Firebase
             let database;
             let currentUser = null;
@@ -1613,43 +1607,37 @@
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
-                    console.log('Firebase initialized with full config');
+                    debugLog('Firebase initialized successfully', 'success');
                 }
                 
                 database = firebase.database();
                 
-                // Set up auth state observer
-                firebase.auth().onAuthStateChanged((user) => {
-                    if (user) {
-                        console.log('User signed in:', user.uid);
-                        currentUser = user;
-                        localStorage.setItem('taskmart_user', JSON.stringify({
-                            uid: user.uid,
-                            email: user.email,
-                            displayName: user.displayName
-                        }));
-                        // Reload tasks if tasks page is active
-                        if (document.getElementById('tasksPage').classList.contains('active')) {
-                            loadUserTasks();
-                        }
-                    } else {
-                        console.log('No user signed in, using demo mode');
-                        currentUser = null;
-                        // Show demo message
-                        document.getElementById('autoLoginMessage').style.display = 'block';
-                        // Load demo tasks
-                        loadDemoTasks();
+                // Check for existing user in localStorage
+                const savedUser = localStorage.getItem('taskmart_user');
+                if (savedUser) {
+                    try {
+                        currentUser = JSON.parse(savedUser);
+                        debugLog(`Loaded user from localStorage: ${currentUser.email || currentUser.uid}`, 'success');
+                    } catch (e) {
+                        debugLog('Error parsing saved user', 'error');
                     }
-                });
+                } else {
+                    debugLog('No user found in localStorage', 'info');
+                }
                 
             } catch (error) {
-                console.error('Firebase init error:', error);
-                // Fallback to demo mode
-                showDemoMode();
+                debugLog(`Firebase init error: ${error.message}`, 'error');
             }
 
-            // Mapbox token
-            mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
+            // Mapbox - Using your backend proxy
+            if (window.MAPBOX_TOKEN) {
+                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                debugLog('Mapbox token loaded from config', 'success');
+            } else {
+                // Fallback for testing - but your backend should provide this
+                mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
+                debugLog('Using fallback Mapbox token', 'info');
+            }
 
             const taskSuggestions = [
                 "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
@@ -1668,122 +1656,6 @@
                 "inventory check / organizing", "pet training / basic commands", "tech device troubleshooting",
                 "gift wrapping / decoration", "small handyman tasks"
             ];
-
-            // Demo mode functions
-            function showDemoMode() {
-                console.log('Running in demo mode');
-                document.getElementById('autoLoginMessage').style.display = 'block';
-                loadDemoTasks();
-            }
-
-            // Create test user function
-            window.createTestUser = function() {
-                firebase.auth().signInAnonymously()
-                    .then((userCredential) => {
-                        console.log('Signed in anonymously:', userCredential.user.uid);
-                        // Create some test tasks
-                        createTestTasks(userCredential.user.uid);
-                    })
-                    .catch((error) => {
-                        console.error('Anonymous sign-in error:', error);
-                        // Fallback to demo mode
-                        loadDemoTasks();
-                    });
-            };
-
-            function createTestTasks(userId) {
-                const testTasks = [
-                    {
-                        category: "cleaning",
-                        description: "Need help cleaning my apartment, 2 bedrooms",
-                        budget: 350,
-                        date: "now",
-                        status: "open",
-                        address: "12 Main St, Johannesburg",
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        posterId: userId
-                    },
-                    {
-                        category: "plumbing",
-                        description: "Leaky faucet in kitchen",
-                        budget: 450,
-                        date: "2024-03-15",
-                        time: "14:00",
-                        status: "open",
-                        address: "45 Oak Ave, Johannesburg",
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        posterId: userId
-                    },
-                    {
-                        category: "delivery",
-                        description: "Need package picked up and delivered",
-                        budget: "open",
-                        date: "now",
-                        status: "open",
-                        address: "78 Pine Rd, Johannesburg",
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        posterId: userId
-                    }
-                ];
-
-                testTasks.forEach(task => {
-                    const taskId = database.ref().child('tasks').push().key;
-                    database.ref(`tasks/${taskId}`).set({
-                        taskId: taskId,
-                        ...task
-                    });
-                });
-
-                // Show success message
-                const toast = document.getElementById('successToast');
-                toast.textContent = 'Test tasks created!';
-                toast.style.display = 'block';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 3000);
-
-                // Reload tasks
-                loadUserTasks();
-            }
-
-            function loadDemoTasks() {
-                const tasksList = document.getElementById('tasksList');
-                const tasksCount = document.getElementById('tasksCount');
-                
-                const demoTasks = [
-                    {
-                        id: 'demo1',
-                        category: 'cleaning',
-                        date: 'now',
-                        budget: 350,
-                        address: '12 Main St, Johannesburg',
-                        createdAt: Date.now() - 86400000,
-                        status: 'open'
-                    },
-                    {
-                        id: 'demo2',
-                        category: 'plumbing',
-                        date: '2024-03-15',
-                        time: '14:00',
-                        budget: 450,
-                        address: '45 Oak Ave, Johannesburg',
-                        createdAt: Date.now() - 172800000,
-                        status: 'open'
-                    },
-                    {
-                        id: 'demo3',
-                        category: 'delivery',
-                        date: 'now',
-                        budget: 'open',
-                        address: '78 Pine Rd, Johannesburg',
-                        createdAt: Date.now() - 259200000,
-                        status: 'completed'
-                    }
-                ];
-
-                displayUserTasks(demoTasks);
-                tasksCount.textContent = demoTasks.length.toString();
-            }
 
             // Keyboard detection
             const homeSheet = document.getElementById('homeSheet');
@@ -1809,12 +1681,33 @@
                 return currentUser;
             }
 
+            // Profile menu button
+            document.getElementById('profileMenuBtn').addEventListener('click', () => {
+                // Load profile menu
+                fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                    .then(r => r.text())
+                    .then(html => {
+                        document.getElementById('profile-menu-container').innerHTML = html;
+                        const menu = document.getElementById('profile-menu-container').firstElementChild;
+                        if (menu) menu.style.display = 'block';
+                    })
+                    .catch(err => debugLog(`Error loading profile menu: ${err.message}`, 'error'));
+            });
+
             // Map init
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/dark-v11',
                 center: [28.034088, -26.195246],
                 zoom: 15
+            });
+
+            map.on('load', () => {
+                debugLog('Map loaded successfully', 'success');
+            });
+
+            map.on('error', (e) => {
+                debugLog(`Map error: ${e.error}`, 'error');
             });
 
             let currentLat = null, currentLng = null, uploadedImages = [], currentTaskId = null;
@@ -1853,6 +1746,8 @@
                         .addTo(map);
                         
                         recenterBtn.classList.remove('visible');
+                        
+                        debugLog('Geolocation successful', 'success');
                     },
                     (err) => {
                         currentLat = -26.195246;
@@ -1871,6 +1766,8 @@
                         .addTo(map);
                         
                         locationInput.value = 'Johannesburg, South Africa';
+                        
+                        debugLog(`Geolocation error: ${err.message}`, 'error');
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
@@ -1959,7 +1856,6 @@
                     homeSheetEl.style.display = 'block';
                     recenterBtn.style.display = 'flex';
                     
-                    // Refresh map size when returning to home
                     setTimeout(() => map.resize(), 100);
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
@@ -1969,7 +1865,6 @@
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
                     
-                    // Load user's tasks when navigating to tasks page
                     loadUserTasks();
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
@@ -1979,11 +1874,7 @@
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
                     
-                    // Update account info
-                    if (currentUser) {
-                        document.getElementById('accountName').textContent = currentUser.displayName || 'User';
-                        document.getElementById('accountEmail').textContent = currentUser.email || 'No email';
-                    }
+                    updateAccountInfo();
                 }
             }
 
@@ -1992,42 +1883,75 @@
             navAccount.addEventListener('click', () => setActivePage('account'));
             setActivePage('home');
 
+            function updateAccountInfo() {
+                if (currentUser) {
+                    document.getElementById('accountName').textContent = currentUser.name || currentUser.displayName || 'User';
+                    document.getElementById('accountEmail').textContent = currentUser.email || 'No email';
+                } else {
+                    document.getElementById('accountName').textContent = 'Guest User';
+                    document.getElementById('accountEmail').textContent = 'Not logged in';
+                }
+            }
+
             // ===== LOAD USER'S TASKS FROM FIREBASE =====
             function loadUserTasks() {
-                const user = currentUser;
                 const tasksList = document.getElementById('tasksList');
                 const tasksCount = document.getElementById('tasksCount');
                 
-                if (!user) {
-                    console.log('No user logged in, showing demo tasks');
-                    loadDemoTasks();
+                if (!currentUser) {
+                    debugLog('No user logged in', 'info');
+                    tasksList.innerHTML = '<div class="empty-tasks"><p>Please log in to see your tasks</p></div>';
+                    tasksCount.textContent = '0';
                     return;
                 }
                 
-                // Show loading state
                 tasksList.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
                 
-                console.log('Loading tasks for user:', user.uid);
+                debugLog(`Loading tasks for user: ${currentUser.email || currentUser.uid}`, 'info');
                 
-                // Query Firebase for tasks where posterId matches user.uid
-                database.ref('tasks').orderByChild('posterId').equalTo(user.uid).once('value')
+                // Try to get tasks by userId first, then fallback to email
+                const userId = currentUser.uid || currentUser.id;
+                const userEmail = currentUser.email;
+                
+                database.ref('tasks').once('value')
                     .then((snapshot) => {
                         const tasks = [];
+                        let taskCount = 0;
+                        
                         snapshot.forEach((childSnapshot) => {
+                            taskCount++;
                             const task = childSnapshot.val();
-                            tasks.push({
-                                id: childSnapshot.key,
-                                ...task
-                            });
+                            
+                            // Check if task belongs to current user
+                            const taskPosterId = task.posterId || task.userId;
+                            const taskPosterEmail = task.posterEmail || task.email;
+                            
+                            const belongsToUser = 
+                                (userId && taskPosterId === userId) ||
+                                (userEmail && taskPosterEmail === userEmail) ||
+                                (task.posterId === 'demo_' + userId);
+                            
+                            if (belongsToUser) {
+                                tasks.push({
+                                    id: childSnapshot.key,
+                                    ...task
+                                });
+                            }
                         });
                         
-                        console.log(`Found ${tasks.length} tasks for user`);
+                        debugLog(`Total tasks in DB: ${taskCount}`, 'info');
+                        debugLog(`Tasks found for user: ${tasks.length}`, tasks.length > 0 ? 'success' : 'info');
+                        
+                        if (tasks.length > 0) {
+                            debugLog(`First task: ${JSON.stringify(tasks[0])}`, 'info');
+                        }
+                        
                         displayUserTasks(tasks);
                         tasksCount.textContent = tasks.length.toString();
                     })
                     .catch((error) => {
-                        console.error('Error loading tasks:', error);
-                        tasksList.innerHTML = '<div class="empty-tasks"><p>Error loading tasks</p><button onclick="loadUserTasks()">Try again</button></div>';
+                        debugLog(`Error loading tasks: ${error.message}`, 'error');
+                        tasksList.innerHTML = '<div class="empty-tasks"><p>Error loading tasks</p><button onclick="location.reload()">Try again</button></div>';
                         tasksCount.textContent = '0';
                     });
             }
@@ -2045,7 +1969,6 @@
                     return;
                 }
                 
-                // Sort tasks by createdAt (newest first)
                 tasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 
                 let html = '';
@@ -2084,11 +2007,10 @@
                 
                 tasksList.innerHTML = html;
                 
-                // Add click handlers to task cards
                 document.querySelectorAll('.task-card').forEach(card => {
                     card.addEventListener('click', () => {
                         const taskId = card.dataset.taskId;
-                        alert(`Task details view coming soon for task: ${taskId}`);
+                        alert(`Task details for: ${taskId}`);
                     });
                 });
             }
@@ -2114,8 +2036,6 @@
             const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
             const openBudgetBtn = document.getElementById('openBudgetBtn');
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
-            const pickDateBtn = document.getElementById('pickDateBtn');
-            const pickTimeBtn = document.getElementById('pickTimeBtn');
             const taskCharCount = document.getElementById('taskCharCount');
 
             function capitalizeFirstLetter(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
@@ -2362,7 +2282,7 @@
                 validateForm(); 
             });
 
-            // ===== TASK PREVIEW FUNCTIONALITY =====
+            // ===== TASK PREVIEW =====
             const taskPreviewContainer = document.getElementById('taskPreviewContainer');
             const closePreviewBtn = document.getElementById('closePreviewBtn');
             const previewEditBtn = document.getElementById('previewEditBtn');
@@ -2370,7 +2290,6 @@
             let previewMap = null;
 
             function showTaskPreview() {
-                // Populate preview data
                 document.getElementById('previewLocation').textContent = locationInput.value || 'Location not set';
                 document.getElementById('previewStreet').textContent = streetInput.value.trim() || 'Street address not set';
                 document.getElementById('previewTask').textContent = taskInput.value.trim() || 'Task not specified';
@@ -2444,111 +2363,23 @@
                 }
             });
 
-            // ===== FIND MATCHING HELPERS BASED ON TASK CATEGORY =====
+            // ===== FIND MATCHING HELPERS (ONLY 1 DEMO HELPER) =====
             function findMatchingHelpers(taskCategory) {
-                // Mock helpers data
-                const mockHelpers = [
+                // Just 1 demo helper as requested
+                return [
                     {
                         id: 'helper1',
                         name: 'Thabo Ndlovu',
                         profileImage: 'https://randomuser.me/api/portraits/men/1.jpg',
-                        skills: ['cleaning', 'gardening', 'moving'],
-                        lat: currentLat + 0.002,
-                        lng: currentLng - 0.001,
-                        rating: 4.8,
-                        jobsCompleted: 127
-                    },
-                    {
-                        id: 'helper2',
-                        name: 'Nosipho Dlamini',
-                        profileImage: 'https://randomuser.me/api/portraits/women/2.jpg',
-                        skills: ['babysitting', 'elderly care', 'cooking'],
-                        lat: currentLat - 0.0015,
-                        lng: currentLng + 0.002,
-                        rating: 4.9,
-                        jobsCompleted: 89
-                    },
-                    {
-                        id: 'helper3',
-                        name: 'Sipho Khumalo',
-                        profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-                        skills: ['plumbing', 'electrical', 'handyman'],
-                        lat: currentLat + 0.003,
-                        lng: currentLng + 0.001,
-                        rating: 4.7,
-                        jobsCompleted: 203
-                    },
-                    {
-                        id: 'helper4',
-                        name: 'Lerato Mokoena',
-                        profileImage: 'https://randomuser.me/api/portraits/women/4.jpg',
-                        skills: ['graphic design', 'social media', 'website'],
-                        lat: currentLat - 0.002,
-                        lng: currentLng - 0.002,
-                        rating: 5.0,
-                        jobsCompleted: 56
-                    },
-                    {
-                        id: 'helper5',
-                        name: 'Kagiso Molefe',
-                        profileImage: 'https://randomuser.me/api/portraits/men/5.jpg',
-                        skills: ['delivery', 'shopping', 'errands'],
+                        skills: ['cleaning', 'gardening', 'moving', 'handyman'],
                         lat: currentLat + 0.001,
-                        lng: currentLng - 0.0025,
-                        rating: 4.6,
-                        jobsCompleted: 178
-                    },
-                    {
-                        id: 'helper6',
-                        name: 'Zanele Nkosi',
-                        profileImage: 'https://randomuser.me/api/portraits/women/6.jpg',
-                        skills: ['tutoring', 'lessons', 'babysitting'],
-                        lat: currentLat - 0.0028,
-                        lng: currentLng + 0.0015,
-                        rating: 4.9,
-                        jobsCompleted: 92
-                    },
-                    {
-                        id: 'helper7',
-                        name: 'Themba Mkhize',
-                        profileImage: 'https://randomuser.me/api/portraits/men/7.jpg',
-                        skills: ['pet care', 'dog walking', 'house sitting'],
-                        lat: currentLat + 0.0022,
-                        lng: currentLng + 0.0028,
+                        lng: currentLng - 0.0005,
                         rating: 4.8,
-                        jobsCompleted: 115
+                        jobsCompleted: 127,
+                        matchScore: 95,
+                        distance: '0.3'
                     }
                 ];
-                
-                // Calculate match score based on skills
-                const taskWords = taskCategory.toLowerCase().split(' ');
-                
-                return mockHelpers.map(helper => {
-                    // Calculate match score (0-100)
-                    let matchScore = 0;
-                    helper.skills.forEach(skill => {
-                        taskWords.forEach(word => {
-                            if (skill.includes(word) || word.includes(skill)) {
-                                matchScore += 33; // Each matching skill adds 33%
-                            }
-                        });
-                    });
-                    
-                    // Cap at 100
-                    matchScore = Math.min(100, matchScore);
-                    
-                    // Calculate distance
-                    const distance = calculateDistance(
-                        currentLat, currentLng,
-                        helper.lat, helper.lng
-                    );
-                    
-                    return {
-                        ...helper,
-                        matchScore,
-                        distance: distance.toFixed(1)
-                    };
-                }).sort((a, b) => b.matchScore - a.matchScore);
             }
             
             function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -2560,8 +2391,7 @@
                     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
                     Math.sin(dLon/2) * Math.sin(dLon/2); 
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-                const distance = R * c;
-                return distance;
+                return R * c;
             }
             
             function deg2rad(deg) {
@@ -2570,13 +2400,9 @@
 
             // ===== SAVE TASK TO FIREBASE =====
             async function saveTaskToFirebase() {
-                const user = currentUser;
-                
-                let posterId;
-                if (!user) {
-                    posterId = 'demo_' + Date.now();
-                } else {
-                    posterId = user.uid;
+                if (!currentUser) {
+                    alert('Please log in to post a task');
+                    return false;
                 }
 
                 document.getElementById('loadingOverlay').style.display = 'flex';
@@ -2595,9 +2421,9 @@
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: posterId,
-                        posterEmail: user?.email || 'demo@taskmart.app',
-                        posterName: user?.displayName || 'Demo User',
+                        posterId: currentUser.uid || currentUser.id || 'user_' + Date.now(),
+                        posterEmail: currentUser.email || 'user@example.com',
+                        posterName: currentUser.name || currentUser.displayName || 'User',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2613,6 +2439,8 @@
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     };
 
+                    debugLog(`Saving task: ${JSON.stringify(taskData)}`, 'info');
+
                     database.ref(`tasks/${taskId}`).set(taskData)
                         .then(() => {
                             clearTimeout(timeout);
@@ -2626,6 +2454,7 @@
                                 toast.style.display = 'none';
                             }, 3000);
                             
+                            debugLog('Task saved successfully', 'success');
                             resolve(taskId);
                         })
                         .catch((error) => {
@@ -2633,13 +2462,14 @@
                             document.getElementById('loadingOverlay').style.display = 'none';
                             previewConfirmBtn.disabled = false;
                             
+                            debugLog(`Error saving task: ${error.message}`, 'error');
                             alert('Error posting task: ' + error.message);
                             resolve(false);
                         });
                 });
             }
 
-            // ===== SHOW TASK POSTED SCREEN WITH HELPERS =====
+            // ===== SHOW TASK POSTED SCREEN =====
             const taskPostedContainer = document.getElementById('taskPostedContainer');
             const closeTaskPostedBtn = document.getElementById('closeTaskPostedBtn');
             let taskPostedMap = null;
@@ -2649,16 +2479,11 @@
                 taskPreviewContainer.classList.remove('active');
                 taskPostedContainer.classList.add('active');
                 
-                // Hide bottom navigation
                 document.getElementById('bottomNav').style.display = 'none';
                 
-                // Find matching helpers
                 const matchingHelpers = findMatchingHelpers(taskCategory);
-                
-                // Update helpers list
                 updateHelpersList(matchingHelpers);
                 
-                // Initialize map with task location and helper markers
                 setTimeout(() => {
                     if (taskPostedMap) taskPostedMap.remove();
                     
@@ -2670,7 +2495,6 @@
                     });
                     
                     taskPostedMap.on('load', () => {
-                        // Add task location marker
                         const taskMarkerElement = document.createElement('div');
                         taskMarkerElement.className = 'task-marker';
                         taskMarkerElement.innerHTML = '<span>📍</span>';
@@ -2682,13 +2506,10 @@
                         .setLngLat([currentLng||28.034088, currentLat||-26.195246])
                         .addTo(taskPostedMap);
                         
-                        // Add helper markers with profile pictures
                         matchingHelpers.forEach(helper => {
                             const helperMarkerElement = document.createElement('div');
                             helperMarkerElement.className = 'helper-marker';
                             helperMarkerElement.style.backgroundImage = `url('${helper.profileImage}')`;
-                            
-                            // Add tooltip with helper info
                             helperMarkerElement.title = `${helper.name} - ${helper.matchScore}% match`;
                             
                             const marker = new mapboxgl.Marker({ 
@@ -2698,21 +2519,12 @@
                             .setLngLat([helper.lng, helper.lat])
                             .addTo(taskPostedMap);
                             
-                            // Add click handler
                             helperMarkerElement.addEventListener('click', () => {
                                 alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%\nDistance: ${helper.distance}km`);
                             });
                             
                             helperMarkers.push(marker);
                         });
-                        
-                        // Fit bounds to show all markers
-                        const bounds = new mapboxgl.LngLatBounds();
-                        bounds.extend([currentLng||28.034088, currentLat||-26.195246]);
-                        matchingHelpers.forEach(helper => {
-                            bounds.extend([helper.lng, helper.lat]);
-                        });
-                        taskPostedMap.fitBounds(bounds, { padding: 50, maxZoom: 15 });
                     });
                 }, 100);
             }
@@ -2727,8 +2539,7 @@
                     return;
                 }
                 
-                const matchedHelpers = helpers.filter(h => h.matchScore > 0);
-                helpersCount.textContent = `${matchedHelpers.length} helpers available nearby (matched to your task)`;
+                helpersCount.textContent = `${helpers.length} helper available nearby`;
                 
                 helpersList.innerHTML = '';
                 helpers.forEach(helper => {
@@ -2743,12 +2554,12 @@
                         </div>
                         <div>
                             <div class="helper-distance">${helper.distance}km</div>
-                            ${helper.matchScore > 0 ? `<div class="match-badge">${helper.matchScore}% match</div>` : ''}
+                            <div class="match-badge">${helper.matchScore}% match</div>
                         </div>
                     `;
                     
                     listItem.addEventListener('click', () => {
-                        alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%\nDistance: ${helper.distance}km\nJobs completed: ${helper.jobsCompleted}`);
+                        alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nJobs completed: ${helper.jobsCompleted}`);
                     });
                     
                     helpersList.appendChild(listItem);
@@ -2761,14 +2572,12 @@
                 createTaskContainer.style.display = 'none';
                 setActivePage('home');
                 
-                // Clean up map
                 if (taskPostedMap) {
                     taskPostedMap.remove();
                     taskPostedMap = null;
                 }
                 helperMarkers = [];
                 
-                // Reset form
                 taskInput.value = ''; 
                 mainSearchInput.value = ''; 
                 streetInput.value = ''; 
@@ -2783,14 +2592,12 @@
                 validateForm();
             });
 
-            // ===== NEXT BUTTON HANDLER =====
             nextBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 showTaskPreview();
             });
 
-            // ===== CONFIRM BUTTON HANDLER =====
             previewConfirmBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2803,6 +2610,15 @@
             });
 
             validateForm();
+            
+            // Load profile menu
+            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('profile-menu-container').innerHTML = html;
+                    debugLog('Profile menu loaded', 'success');
+                })
+                .catch(err => debugLog(`Error loading profile menu: ${err.message}`, 'error'));
             
         })();
     </script>
