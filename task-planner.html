@@ -55,12 +55,12 @@
             width: 100%;
         }
 
-        /* Profile Menu Container - Top Left (correct one) */
+        /* Profile Menu Container - Top Left */
         #profile-menu-container {
             position: absolute;
             top: 16px;
             left: 16px;
-            z-index: 100000;
+            z-index: 500; /* lowered so it doesn't sit above everything */
         }
         
         .profile-menu-btn {
@@ -68,7 +68,7 @@
             height: 40px;
             background: white;
             border: none;
-            border-radius: 0 !important; /* Square as per your design */
+            border-radius: 0 !important; /* Square */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -549,7 +549,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 1000000; /* increased and always present */
+            z-index: 2000000; /* high enough to stay above sheets but below modals */
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
@@ -597,7 +597,7 @@
             overflow-y: auto;
             display: none;
             padding: 20px;
-            padding-bottom: 76px; /* leave space for bottom nav */
+            padding-bottom: 76px;
         }
         .page-container.active {
             display: block;
@@ -777,7 +777,7 @@
             flex-direction: column;
             overflow: hidden;
             border-radius: 5px;
-            padding-bottom: 56px; /* ensure bottom nav not overlapped */
+            padding-bottom: 56px;
         }
 
         .create-task-header {
@@ -822,12 +822,6 @@
             overflow-y: auto;
             padding: 1.5rem 1.25rem 2rem;
             -webkit-overflow-scrolling: touch;
-        }
-
-        /* Ensure task preview and posted containers also have bottom padding */
-        .task-preview-container,
-        .task-posted-container {
-            padding-bottom: 56px;
         }
 
         .section {
@@ -1113,6 +1107,7 @@
             display: none;
             flex-direction: column;
             overflow: hidden;
+            padding-bottom: 56px;
         }
         
         .task-posted-container.active {
@@ -1304,7 +1299,7 @@
     </style>
 </head>
 <body>
-    <!-- Profile Menu Container (Square button - correct one) -->
+    <!-- Profile Menu Container (Square button) -->
     <div id="profile-menu-container"></div>
 
     <!-- Debug Panel -->
@@ -1616,23 +1611,24 @@
                 
                 database = firebase.database();
                 
-                // Set up Firebase Auth state listener (NO localStorage)
+                // Set up Firebase Auth state listener
                 firebase.auth().onAuthStateChanged((user) => {
                     if (user) {
-                        // User is signed in
+                        // User is signed in (either email or anonymous)
                         currentUser = {
                             uid: user.uid,
                             email: user.email,
                             displayName: user.displayName,
                             photoURL: user.photoURL,
-                            emailVerified: user.emailVerified
+                            emailVerified: user.emailVerified,
+                            isAnonymous: user.isAnonymous
                         };
                         
-                        debugLog(`User signed in: ${user.email} (${user.uid})`, 'success');
+                        debugLog(`User signed in: ${user.email || 'anonymous'} (${user.uid})`, 'success');
                         
                         // Update account info
-                        document.getElementById('accountName').textContent = user.displayName || 'User';
-                        document.getElementById('accountEmail').textContent = user.email || 'No email';
+                        document.getElementById('accountName').textContent = user.displayName || (user.isAnonymous ? 'Anonymous User' : 'User');
+                        document.getElementById('accountEmail').textContent = user.email || 'No email (anonymous)';
                         document.getElementById('accountUid').textContent = `UID: ${user.uid}`;
                         
                         // If tasks page is active, load tasks
@@ -1640,31 +1636,19 @@
                             loadUserTasks();
                         }
                     } else {
-                        // User is signed out
+                        // No user signed in - now we sign in anonymously
                         currentUser = null;
-                        debugLog('No user signed in', 'info');
+                        debugLog('No user signed in, signing in anonymously...', 'info');
                         
-                        document.getElementById('accountName').textContent = 'Not signed in';
-                        document.getElementById('accountEmail').textContent = 'Please log in';
-                        document.getElementById('accountUid').textContent = '';
-                        
-                        // Show login prompt on tasks page
-                        if (document.getElementById('tasksPage').classList.contains('active')) {
-                            document.getElementById('tasksList').innerHTML = 
-                                '<div class="empty-tasks"><p>Please log in to see your tasks</p></div>';
-                            document.getElementById('tasksCount').textContent = '0';
-                        }
+                        firebase.auth().signInAnonymously()
+                            .then(() => {
+                                debugLog('Anonymous sign in successful', 'success');
+                            })
+                            .catch((error) => {
+                                debugLog(`Anonymous sign in error: ${error.message}`, 'error');
+                            });
                     }
                 });
-                
-                // Sign in anonymously for demo (remove this in production)
-                firebase.auth().signInAnonymously()
-                    .then(() => {
-                        debugLog('Signed in anonymously', 'success');
-                    })
-                    .catch((error) => {
-                        debugLog(`Anonymous sign in error: ${error.message}`, 'error');
-                    });
                 
             } catch (error) {
                 debugLog(`Firebase init error: ${error.message}`, 'error');
@@ -1898,8 +1882,8 @@
                     recenterBtn.style.display = 'none';
                     
                     if (currentUser) {
-                        document.getElementById('accountName').textContent = currentUser.displayName || 'User';
-                        document.getElementById('accountEmail').textContent = currentUser.email || 'No email';
+                        document.getElementById('accountName').textContent = currentUser.displayName || (currentUser.isAnonymous ? 'Anonymous User' : 'User');
+                        document.getElementById('accountEmail').textContent = currentUser.email || 'No email (anonymous)';
                         document.getElementById('accountUid').textContent = `UID: ${currentUser.uid}`;
                     }
                 }
@@ -2406,8 +2390,8 @@
                     const taskData = {
                         taskId: taskId,
                         posterId: currentUser.uid,          // <-- using UID
-                        posterEmail: currentUser.email,
-                        posterName: currentUser.displayName || 'User',
+                        posterEmail: currentUser.email || 'anonymous@taskmart.app',
+                        posterName: currentUser.displayName || (currentUser.isAnonymous ? 'Anonymous' : 'User'),
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2463,7 +2447,7 @@
                 taskPreviewContainer.classList.remove('active');
                 taskPostedContainer.classList.add('active');
                 
-                // bottom nav remains visible (we don't hide it)
+                // bottom nav remains visible
                 
                 const matchingHelpers = findMatchingHelpers(taskCategory);
                 updateHelpersList(matchingHelpers);
