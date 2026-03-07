@@ -21,15 +21,13 @@
         }
     </style>
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-    
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
@@ -38,7 +36,6 @@
     <script src="/config.js"></script>
 
     <style>
-        /* Your existing styles - completely unchanged */
         * {
             margin: 0;
             padding: 0;
@@ -55,107 +52,6 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
-        }
-
-        /* Minimalist Debug Console - Small and unobtrusive */
-        .debug-console {
-            position: fixed;
-            bottom: 70px;
-            left: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(5px);
-            color: #0f0;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 11px;
-            padding: 8px;
-            z-index: 10000000;
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            display: none;
-        }
-        
-        .debug-console.visible {
-            display: block;
-        }
-        
-        .debug-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-            color: #ff9900;
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 3px;
-        }
-        
-        .debug-close {
-            cursor: pointer;
-            padding: 0 5px;
-            color: #fff;
-            background: #ff9900;
-            border-radius: 3px;
-            font-size: 10px;
-        }
-        
-        .debug-content {
-            white-space: pre-wrap;
-            word-break: break-word;
-            max-height: 100px;
-            overflow-y: auto;
-            font-size: 10px;
-            line-height: 1.4;
-        }
-        
-        .debug-log {
-            border-bottom: 1px dotted #333;
-            padding: 2px 0;
-            color: #0f0;
-        }
-        
-        .debug-log.error {
-            color: #ff5555;
-        }
-        
-        .debug-log.warning {
-            color: #ffaa00;
-        }
-        
-        .debug-log .truncate {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: inline-block;
-        }
-
-        /* Toggle Debug Button - Small pill */
-        .toggle-debug {
-            position: fixed;
-            bottom: 120px;
-            right: 10px;
-            background: #ff9900;
-            color: black;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 20px;
-            z-index: 10000001;
-            cursor: pointer;
-            font-size: 10px;
-            font-weight: bold;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        
-        .toggle-debug:hover {
-            opacity: 1;
         }
 
         /* === TASK PREVIEW SCREEN === */
@@ -726,6 +622,7 @@
             font-weight: 500;
         }
 
+        /* === TASKS PAGE - UPDATED TO SHOW USER'S POSTED TASKS === */
         .page-container {
             position: fixed;
             top: 0;
@@ -742,7 +639,28 @@
         .page-container.active {
             display: block;
         }
-        .tasks-header, .account-header {
+        
+        .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tasks-header h2 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: #000000;
+        }
+        
+        .tasks-header span {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .account-header {
             font-family: 'Manrope', sans-serif;
             font-weight: 600;
             font-size: 1.5rem;
@@ -750,81 +668,116 @@
             margin-top: 1rem;
         }
         
-        /* Task list styling */
-        .task-list {
+        /* Task card styling */
+        .tasks-list {
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
         
         .task-card {
-            background: #f5f5f5;
+            background: #f8f8f8;
             border-radius: 5px;
-            padding: 1rem;
+            padding: 1.25rem;
             border-left: 4px solid #000;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
         }
         
-        .task-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .task-card:active {
+            transform: scale(0.98);
         }
         
         .task-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
         }
         
         .task-category {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1.1rem;
             color: #000;
+            text-transform: lowercase;
+        }
+        
+        .task-category::first-letter {
+            text-transform: uppercase;
         }
         
         .task-status {
-            background: #000;
-            color: white;
-            padding: 0.2rem 0.6rem;
-            border-radius: 5px;
             font-size: 0.75rem;
-            font-weight: 500;
+            padding: 0.25rem 0.75rem;
+            border-radius: 5px;
+            background: #e0e0e0;
+            color: #000;
+            font-weight: 600;
+            text-transform: uppercase;
         }
         
-        .task-status.closed {
-            background: #666;
+        .task-status.open {
+            background: #000;
+            color: white;
+        }
+        
+        .task-status.completed {
+            background: #28a745;
+            color: white;
+        }
+        
+        .task-status.cancelled {
+            background: #dc3545;
+            color: white;
         }
         
         .task-details {
-            font-size: 0.9rem;
-            color: #333;
             margin-bottom: 0.75rem;
-            line-height: 1.4;
         }
         
-        .task-meta {
+        .task-detail-row {
             display: flex;
-            gap: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .task-detail-label {
+            width: 80px;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .task-detail-value {
+            flex: 1;
+            color: #000;
+            font-weight: 500;
+        }
+        
+        .task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e0e0e0;
             font-size: 0.8rem;
             color: #666;
-            flex-wrap: wrap;
         }
         
-        .task-meta span {
+        .task-date {
             display: flex;
             align-items: center;
             gap: 0.25rem;
         }
         
-        .task-meta img {
-            width: 14px;
-            height: 14px;
-            opacity: 0.6;
+        .task-offers {
+            background: #000;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 5px;
+            font-weight: 600;
         }
         
-        .task-empty {
+        .empty-tasks {
             text-align: center;
             margin-top: 40%;
             color: #777;
@@ -832,31 +785,19 @@
             font-weight: 400;
         }
         
-        .task-error {
-            text-align: center;
-            margin-top: 40%;
-            color: #dc3545;
+        .empty-tasks p {
+            margin-bottom: 1rem;
+        }
+        
+        .empty-tasks button {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
             font-size: 1rem;
-            font-weight: 400;
-        }
-        
-        .task-loading {
-            text-align: center;
-            margin-top: 40%;
-            color: #777;
-            font-size: 1rem;
-            font-weight: 400;
-        }
-        
-        .task-loading::after {
-            content: '...';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-        
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
         }
 
         /* === CREATE TASK CONTAINER === */
@@ -1200,7 +1141,7 @@
             background: #666;
         }
 
-        /* TASK POSTED CONTAINER - NEW VERSION WITHOUT NAV BAR */
+        /* TASK POSTED CONTAINER */
         .task-posted-container {
             position: fixed;
             top: 0;
@@ -1394,20 +1335,15 @@
             display: none;
             z-index: 4000000;
         }
+        
+        .loading-tasks {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-    <!-- Minimalist Debug Console - Hidden by default -->
-    <div class="debug-console" id="debugConsole">
-        <div class="debug-header">
-            <span>🐞 DEBUG</span>
-            <span class="debug-close" onclick="document.getElementById('debugConsole').classList.remove('visible')">✕</span>
-        </div>
-        <div class="debug-content" id="debugContent"></div>
-    </div>
-    
-    <button class="toggle-debug" onclick="document.getElementById('debugConsole').classList.toggle('visible')">🐛</button>
-
     <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">TASKMART</div>
@@ -1465,12 +1401,14 @@
         </button>
     </div>
 
-    <!-- TASKS PAGE -->
+    <!-- TASKS PAGE - DISPLAYS USER'S POSTED TASKS -->
     <div class="page-container" id="tasksPage">
-        <div class="tasks-header">My Posted Tasks</div>
-        <div id="tasksList" class="task-list">
-            <!-- Tasks will be loaded here from Firebase -->
-            <div class="task-empty">Loading your tasks...</div>
+        <div class="tasks-header">
+            <h2>Your tasks</h2>
+            <span id="tasksCount">0</span>
+        </div>
+        <div class="tasks-list" id="tasksList">
+            <div class="loading-tasks">Loading your tasks...</div>
         </div>
     </div>
 
@@ -1627,7 +1565,7 @@
         </div>
     </div>
 
-    <!-- TASK POSTED CONTAINER - NO NAVIGATION BAR -->
+    <!-- TASK POSTED CONTAINER -->
     <div class="task-posted-container" id="taskPostedContainer">
         <div class="task-posted-header">
             <div></div>
@@ -1672,59 +1610,28 @@
         (function() {
             'use strict';
             
-            // ===== FIREBASE CONFIGURATION =====
+            // ===== FIREBASE INITIALIZATION =====
             const firebaseConfig = {
-                apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
-                authDomain: "taskmartapp-74d6b.firebaseapp.com",
-                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
-                projectId: "taskmartapp-74d6b",
-                storageBucket: "taskmartapp-74d6b.firebasestorage.app",
-                messagingSenderId: "52910279328",
-                appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
+                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com"
             };
 
             // Initialize Firebase
-            firebase.initializeApp(firebaseConfig);
-            const auth = firebase.auth();
-            const database = firebase.database();
-            const storage = firebase.storage();
-
-            // ===== DEBUG LOGGING =====
-            function debugLog(message, data = null, type = 'info') {
-                const debugContent = document.getElementById('debugContent');
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = document.createElement('div');
-                logEntry.className = `debug-log ${type}`;
-                
-                let displayData = '';
-                if (data) {
-                    if (typeof data === 'string' && data.length > 50) {
-                        displayData = data.substring(0, 50) + '...';
-                    } else if (typeof data === 'object') {
-                        const truncated = {};
-                        for (let key in data) {
-                            if (typeof data[key] === 'string' && data[key].length > 50) {
-                                truncated[key] = data[key].substring(0, 30) + '...';
-                            } else {
-                                truncated[key] = data[key];
-                            }
-                        }
-                        displayData = JSON.stringify(truncated);
-                    } else {
-                        displayData = JSON.stringify(data);
-                    }
-                    
-                    logEntry.innerHTML = `[${timestamp}] ${message}<br><span style="color: #ff9900; font-size:9px;">↳ ${displayData}</span>`;
-                } else {
-                    logEntry.textContent = `[${timestamp}] ${message}`;
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    console.log('Firebase initialized');
                 }
                 
-                debugContent.appendChild(logEntry);
-                debugContent.scrollTop = debugContent.scrollHeight;
-                console.log(message, data || '');
+                window.database = firebase.database();
+                
+            } catch (error) {
+                console.error('Firebase init error:', error);
             }
-            
-            debugLog('Firebase initialized successfully');
+
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
+            if (window.MAPBOX_TOKEN) {
+                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+            }
 
             const taskSuggestions = [
                 "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
@@ -1766,26 +1673,14 @@
 
             function getCurrentUser() {
                 try { 
-                    const user = localStorage.getItem('taskmart_user');
-                    if (user) {
-                        const parsed = JSON.parse(user);
-                        debugLog('User loaded:', {
-                            name: parsed.name,
-                            email: parsed.email,
-                            role: parsed.role
-                        });
-                        return parsed;
-                    }
-                    return null;
-                } catch (e) { 
-                    debugLog('Error parsing user:', e.message, 'error');
+                    return JSON.parse(localStorage.getItem('taskmart_user'));
+                } catch { 
                     return null; 
                 }
             }
             
             function isUserLoggedIn() { 
-                const loggedIn = !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
-                return loggedIn;
+                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
             }
 
             function checkVerificationStatus() {
@@ -1854,7 +1749,6 @@
                         recenterBtn.classList.remove('visible');
                     },
                     (err) => {
-                        console.log('Geolocation error:', err);
                         currentLat = -26.195246;
                         currentLng = 28.034088;
                         originalLat = currentLat;
@@ -1958,6 +1852,9 @@
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
                     recenterBtn.style.display = 'flex';
+                    
+                    // Refresh map size when returning to home
+                    setTimeout(() => map.resize(), 100);
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
                     tasksPage.classList.add('active');
@@ -1966,7 +1863,7 @@
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
                     
-                    debugLog('📋 Loading tasks from Firebase...');
+                    // Load user's tasks when navigating to tasks page
                     loadUserTasks();
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
@@ -1981,127 +1878,120 @@
             navHome.addEventListener('click', () => setActivePage('home'));
             navTasks.addEventListener('click', () => setActivePage('tasks'));
             navAccount.addEventListener('click', () => setActivePage('account'));
-            
             setActivePage('home');
 
-            // ===== LOAD USER TASKS FROM FIREBASE =====
-            async function loadUserTasks() {
+            // ===== LOAD USER'S TASKS FROM FIREBASE =====
+            function loadUserTasks() {
                 const user = getCurrentUser();
                 const tasksList = document.getElementById('tasksList');
+                const tasksCount = document.getElementById('tasksCount');
                 
                 if (!user) {
-                    debugLog('❌ No user found', null, 'error');
-                    tasksList.innerHTML = '<div class="task-empty">Please log in to see your tasks</div>';
+                    tasksList.innerHTML = '<div class="empty-tasks"><p>Please log in to see your tasks</p><button onclick="window.location.href=\'/login.html\'">Log in</button></div>';
+                    tasksCount.textContent = '0';
                     return;
                 }
                 
-                const userId = user.uid || user.id || user.email;
+                // Show loading state
+                tasksList.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
+                
+                // Get user identifier (email or uid)
+                const userId = user.email || user.uid || user.id;
                 
                 if (!userId) {
-                    debugLog('❌ No user identifier', null, 'error');
-                    tasksList.innerHTML = '<div class="task-error">Unable to identify user. Please log in again.</div>';
+                    tasksList.innerHTML = '<div class="empty-tasks"><p>Unable to identify user</p></div>';
+                    tasksCount.textContent = '0';
                     return;
                 }
                 
-                debugLog(`🔍 Fetching tasks for user: ${userId}`);
+                console.log('Loading tasks for user:', userId);
                 
-                tasksList.innerHTML = '<div class="task-loading">Loading your tasks</div>';
-                
-                try {
-                    // Get tasks from Firebase Realtime Database
-                    const tasksRef = database.ref('tasks');
-                    const snapshot = await tasksRef.once('value');
-                    const allTasks = snapshot.val();
-                    
-                    if (!allTasks) {
-                        tasksList.innerHTML = '<div class="task-empty">No tasks found</div>';
-                        return;
-                    }
-                    
-                    // Convert Firebase object to array
-                    const tasksArray = Object.keys(allTasks).map(key => ({
-                        id: key,
-                        ...allTasks[key]
-                    }));
-                    
-                    debugLog(`📊 Total tasks in database: ${tasksArray.length}`);
-                    
-                    // Filter tasks by user ID
-                    const userTasks = tasksArray.filter(task => 
-                        task.posterId === userId || 
-                        task.posterEmail === user.email ||
-                        task.userId === userId
-                    );
-                    
-                    debugLog(`✅ Found ${userTasks.length} tasks for current user`);
-                    
-                    if (userTasks.length === 0) {
-                        tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
-                        return;
-                    }
-                    
-                    // Sort by date (newest first)
-                    userTasks.sort((a, b) => {
-                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-                        return dateB - dateA;
-                    });
-                    
-                    let tasksHtml = '';
-                    userTasks.forEach(task => {
-                        let dateStr = 'Date unknown';
-                        if (task.createdAt) {
-                            const date = new Date(task.createdAt);
-                            dateStr = date.toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                            });
-                        }
-                        
-                        const budget = task.budget === 'open' ? 'Open' : `R${task.budget}`;
-                        const status = task.status || 'open';
-                        const location = task.address ? 
-                            (task.address.length > 30 ? task.address.substring(0, 30) + '...' : task.address) : 
-                            'Location set';
-                        const category = task.category || task.taskDescription || 'Task';
-                        
-                        tasksHtml += `
-                            <div class="task-card" data-task-id="${task.id}">
-                                <div class="task-card-header">
-                                    <span class="task-category">${category}</span>
-                                    <span class="task-status ${status === 'completed' || status === 'cancelled' ? 'closed' : ''}">${status}</span>
-                                </div>
-                                <div class="task-details">${task.description || task.moreDetails || 'No description'}</div>
-                                <div class="task-meta">
-                                    <span>📍 ${location}</span>
-                                    <span>📅 ${task.date === 'now' ? 'Now' : task.date || dateStr}</span>
-                                    <span>💰 ${budget}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    tasksList.innerHTML = tasksHtml;
-                    debugLog('✅ Tasks displayed successfully');
-                    
-                    // Add click handlers for task cards
-                    document.querySelectorAll('.task-card').forEach(card => {
-                        card.addEventListener('click', () => {
-                            const taskId = card.dataset.taskId;
-                            const task = userTasks.find(t => t.id === taskId);
-                            if (task) {
-                                alert(`Task: ${task.category || task.taskDescription}\nBudget: ${task.budget === 'open' ? 'Open' : 'R' + task.budget}\nStatus: ${task.status}`);
+                // Query Firebase for tasks where posterId or posterEmail matches
+                database.ref('tasks').orderByKey().once('value')
+                    .then((snapshot) => {
+                        const tasks = [];
+                        snapshot.forEach((childSnapshot) => {
+                            const task = childSnapshot.val();
+                            // Check if task belongs to current user
+                            if (task.posterId === userId || task.posterEmail === userId || task.posterEmail === user.email) {
+                                tasks.push({
+                                    id: childSnapshot.key,
+                                    ...task
+                                });
                             }
                         });
+                        
+                        console.log(`Found ${tasks.length} tasks for user`);
+                        displayUserTasks(tasks);
+                        tasksCount.textContent = tasks.length.toString();
+                    })
+                    .catch((error) => {
+                        console.error('Error loading tasks:', error);
+                        tasksList.innerHTML = '<div class="empty-tasks"><p>Error loading tasks</p><button onclick="loadUserTasks()">Try again</button></div>';
+                        tasksCount.textContent = '0';
                     });
-                    
-                } catch (error) {
-                    console.error('Firebase error:', error);
-                    debugLog('❌ Error loading tasks: ' + error.message, null, 'error');
-                    
-                    tasksList.innerHTML = '<div class="task-error">Unable to load tasks. Please try again.</div>';
+            }
+            
+            function displayUserTasks(tasks) {
+                const tasksList = document.getElementById('tasksList');
+                
+                if (tasks.length === 0) {
+                    tasksList.innerHTML = `
+                        <div class="empty-tasks">
+                            <p>You haven't posted any tasks yet</p>
+                            <button onclick="document.getElementById('navHome').click()">Post your first task</button>
+                        </div>
+                    `;
+                    return;
                 }
+                
+                // Sort tasks by createdAt (newest first)
+                tasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
+                let html = '';
+                tasks.forEach(task => {
+                    const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-GB') : 'Unknown date';
+                    const budgetDisplay = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
+                    const statusClass = task.status || 'open';
+                    
+                    html += `
+                        <div class="task-card" data-task-id="${task.taskId || task.id}">
+                            <div class="task-card-header">
+                                <span class="task-category">${task.category || 'Task'}</span>
+                                <span class="task-status ${statusClass}">${statusClass}</span>
+                            </div>
+                            <div class="task-details">
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">When:</span>
+                                    <span class="task-detail-value">${task.date === 'now' ? 'Now' : (task.date + ' at ' + task.time)}</span>
+                                </div>
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">Budget:</span>
+                                    <span class="task-detail-value">${budgetDisplay}</span>
+                                </div>
+                                <div class="task-detail-row">
+                                    <span class="task-detail-label">Location:</span>
+                                    <span class="task-detail-value">${task.address ? task.address.substring(0, 30) + '...' : 'Location set'}</span>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <span class="task-date">📅 ${date}</span>
+                                <span class="task-offers">0 offers</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                tasksList.innerHTML = html;
+                
+                // Add click handlers to task cards
+                document.querySelectorAll('.task-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const taskId = card.dataset.taskId;
+                        alert(`Task details view coming soon for task: ${taskId}`);
+                        // You can navigate to a task detail page here
+                    });
+                });
             }
 
             // Search suggestions
@@ -2461,7 +2351,7 @@
 
             // ===== FIND MATCHING HELPERS BASED ON TASK CATEGORY =====
             function findMatchingHelpers(taskCategory) {
-                // Mock helpers for demo
+                // Mock helpers data (in production, this would come from Firebase)
                 const mockHelpers = [
                     {
                         id: 'helper1',
@@ -2489,27 +2379,70 @@
                         profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
                         skills: ['plumbing', 'electrical', 'handyman'],
                         lat: currentLat + 0.003,
-                        lng: currentLng - 0.002,
+                        lng: currentLng + 0.001,
                         rating: 4.7,
                         jobsCompleted: 203
+                    },
+                    {
+                        id: 'helper4',
+                        name: 'Lerato Mokoena',
+                        profileImage: 'https://randomuser.me/api/portraits/women/4.jpg',
+                        skills: ['graphic design', 'social media', 'website'],
+                        lat: currentLat - 0.002,
+                        lng: currentLng - 0.002,
+                        rating: 5.0,
+                        jobsCompleted: 56
+                    },
+                    {
+                        id: 'helper5',
+                        name: 'Kagiso Molefe',
+                        profileImage: 'https://randomuser.me/api/portraits/men/5.jpg',
+                        skills: ['delivery', 'shopping', 'errands'],
+                        lat: currentLat + 0.001,
+                        lng: currentLng - 0.0025,
+                        rating: 4.6,
+                        jobsCompleted: 178
+                    },
+                    {
+                        id: 'helper6',
+                        name: 'Zanele Nkosi',
+                        profileImage: 'https://randomuser.me/api/portraits/women/6.jpg',
+                        skills: ['tutoring', 'lessons', 'babysitting'],
+                        lat: currentLat - 0.0028,
+                        lng: currentLng + 0.0015,
+                        rating: 4.9,
+                        jobsCompleted: 92
+                    },
+                    {
+                        id: 'helper7',
+                        name: 'Themba Mkhize',
+                        profileImage: 'https://randomuser.me/api/portraits/men/7.jpg',
+                        skills: ['pet care', 'dog walking', 'house sitting'],
+                        lat: currentLat + 0.0022,
+                        lng: currentLng + 0.0028,
+                        rating: 4.8,
+                        jobsCompleted: 115
                     }
                 ];
                 
-                // Calculate match score
+                // Calculate match score based on skills
                 const taskWords = taskCategory.toLowerCase().split(' ');
                 
                 return mockHelpers.map(helper => {
+                    // Calculate match score (0-100)
                     let matchScore = 0;
                     helper.skills.forEach(skill => {
                         taskWords.forEach(word => {
                             if (skill.includes(word) || word.includes(skill)) {
-                                matchScore += 33;
+                                matchScore += 33; // Each matching skill adds 33%
                             }
                         });
                     });
                     
+                    // Cap at 100
                     matchScore = Math.min(100, matchScore);
                     
+                    // Calculate distance
                     const distance = calculateDistance(
                         currentLat, currentLng,
                         helper.lat, helper.lng
@@ -2520,11 +2453,11 @@
                         matchScore,
                         distance: distance.toFixed(1)
                     };
-                }).sort((a, b) => b.matchScore - a.matchScore);
+                }).sort((a, b) => b.matchScore - a.matchScore); // Sort by match score descending
             }
             
             function calculateDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371;
+                const R = 6371; // Radius of the earth in km
                 const dLat = deg2rad(lat2 - lat1);
                 const dLon = deg2rad(lon2 - lon1);
                 const a = 
@@ -2532,7 +2465,8 @@
                     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
                     Math.sin(dLon/2) * Math.sin(dLon/2); 
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-                return R * c;
+                const distance = R * c; // Distance in km
+                return distance;
             }
             
             function deg2rad(deg) {
@@ -2543,19 +2477,32 @@
             async function saveTaskToFirebase() {
                 const user = getCurrentUser();
                 
+                let posterId;
                 if (!user) {
-                    alert('Please log in to post a task');
-                    return false;
+                    posterId = 'guest_' + Date.now();
+                } else {
+                    posterId = user.uid || user.id || user.email || 'user_' + Date.now();
                 }
 
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 previewConfirmBtn.disabled = true;
 
-                try {
+                return new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        previewConfirmBtn.disabled = false;
+                        alert('Connection timeout. Please try again.');
+                        resolve(false);
+                    }, 20000);
+                    
+                    const taskId = database.ref().child('tasks').push().key;
+                    currentTaskId = taskId;
+                    
                     const taskData = {
-                        posterId: user.uid || user.id || user.email,
-                        posterEmail: user.email,
-                        posterName: user.name || user.displayName || 'User',
+                        taskId: taskId,
+                        posterId: posterId,
+                        posterEmail: user?.email || 'guest@example.com',
+                        posterName: user?.name || user?.displayName || 'Guest User',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2568,37 +2515,33 @@
                         time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
                         images: uploadedImages,
                         status: 'open',
-                        createdAt: new Date().toISOString()
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
                     };
 
-                    debugLog('Saving task to Firebase:', taskData);
-
-                    // Save to Firebase Realtime Database
-                    const newTaskRef = database.ref('tasks').push();
-                    await newTaskRef.set(taskData);
-                    
-                    const taskId = newTaskRef.key;
-                    debugLog(`✅ Task saved with ID: ${taskId}`);
-                    
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    previewConfirmBtn.disabled = false;
-                    
-                    const toast = document.getElementById('successToast');
-                    toast.textContent = 'Task posted successfully!';
-                    toast.style.display = 'block';
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 3000);
-                    
-                    return taskId;
-                    
-                } catch (error) {
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    previewConfirmBtn.disabled = false;
-                    
-                    alert('Error posting task: ' + error.message);
-                    return false;
-                }
+                    database.ref(`tasks/${taskId}`).set(taskData)
+                        .then(() => {
+                            clearTimeout(timeout);
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            previewConfirmBtn.disabled = false;
+                            
+                            const toast = document.getElementById('successToast');
+                            toast.textContent = 'Task posted successfully!';
+                            toast.style.display = 'block';
+                            setTimeout(() => {
+                                toast.style.display = 'none';
+                            }, 3000);
+                            
+                            resolve(taskId);
+                        })
+                        .catch((error) => {
+                            clearTimeout(timeout);
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            previewConfirmBtn.disabled = false;
+                            
+                            alert('Error posting task: ' + error.message);
+                            resolve(false);
+                        });
+                });
             }
 
             // ===== SHOW TASK POSTED SCREEN WITH HELPERS =====
@@ -2611,11 +2554,16 @@
                 taskPreviewContainer.classList.remove('active');
                 taskPostedContainer.classList.add('active');
                 
+                // Hide bottom navigation
                 document.getElementById('bottomNav').style.display = 'none';
                 
+                // Find matching helpers
                 const matchingHelpers = findMatchingHelpers(taskCategory);
+                
+                // Update helpers list
                 updateHelpersList(matchingHelpers);
                 
+                // Initialize map with task location and helper markers
                 setTimeout(() => {
                     if (taskPostedMap) taskPostedMap.remove();
                     
@@ -2627,24 +2575,35 @@
                     });
                     
                     taskPostedMap.on('load', () => {
+                        // Add task location marker
                         const taskMarkerElement = document.createElement('div');
                         taskMarkerElement.className = 'task-marker';
                         taskMarkerElement.innerHTML = '<span>📍</span>';
                         
-                        new mapboxgl.Marker({ element: taskMarkerElement, anchor: 'center' })
-                            .setLngLat([currentLng||28.034088, currentLat||-26.195246])
-                            .addTo(taskPostedMap);
+                        new mapboxgl.Marker({ 
+                            element: taskMarkerElement,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng||28.034088, currentLat||-26.195246])
+                        .addTo(taskPostedMap);
                         
+                        // Add helper markers with profile pictures
                         matchingHelpers.forEach(helper => {
                             const helperMarkerElement = document.createElement('div');
                             helperMarkerElement.className = 'helper-marker';
                             helperMarkerElement.style.backgroundImage = `url('${helper.profileImage}')`;
+                            
+                            // Add tooltip with helper info
                             helperMarkerElement.title = `${helper.name} - ${helper.matchScore}% match`;
                             
-                            const marker = new mapboxgl.Marker({ element: helperMarkerElement, anchor: 'center' })
-                                .setLngLat([helper.lng, helper.lat])
-                                .addTo(taskPostedMap);
+                            const marker = new mapboxgl.Marker({ 
+                                element: helperMarkerElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([helper.lng, helper.lat])
+                            .addTo(taskPostedMap);
                             
+                            // Add click handler
                             helperMarkerElement.addEventListener('click', () => {
                                 alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%\nDistance: ${helper.distance}km`);
                             });
@@ -2652,6 +2611,7 @@
                             helperMarkers.push(marker);
                         });
                         
+                        // Fit bounds to show all markers
                         const bounds = new mapboxgl.LngLatBounds();
                         bounds.extend([currentLng||28.034088, currentLat||-26.195246]);
                         matchingHelpers.forEach(helper => {
@@ -2667,13 +2627,13 @@
                 const helpersList = document.getElementById('helpersList');
                 
                 if (helpers.length === 0) {
-                    helpersCount.textContent = 'No helpers available';
-                    helpersList.innerHTML = '<p>Check back soon</p>';
+                    helpersCount.textContent = 'No helpers available nearby';
+                    helpersList.innerHTML = '<p>Check back soon for helpers in your area</p>';
                     return;
                 }
                 
                 const matchedHelpers = helpers.filter(h => h.matchScore > 0);
-                helpersCount.textContent = `${matchedHelpers.length} helpers available nearby`;
+                helpersCount.textContent = `${matchedHelpers.length} helpers available nearby (matched to your task)`;
                 
                 helpersList.innerHTML = '';
                 helpers.forEach(helper => {
@@ -2684,16 +2644,16 @@
                         <img src="${helper.profileImage}" class="helper-avatar" alt="${helper.name}">
                         <div class="helper-info">
                             <div class="helper-name">${helper.name}</div>
-                            <div class="helper-skills">${helper.skills.slice(0, 2).join(' • ')}</div>
+                            <div class="helper-skills">${helper.skills.slice(0, 3).join(' • ')}</div>
                         </div>
                         <div>
                             <div class="helper-distance">${helper.distance}km</div>
-                            ${helper.matchScore > 0 ? `<div class="match-badge">${helper.matchScore}%</div>` : ''}
+                            ${helper.matchScore > 0 ? `<div class="match-badge">${helper.matchScore}% match</div>` : ''}
                         </div>
                     `;
                     
                     listItem.addEventListener('click', () => {
-                        alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%`);
+                        alert(`${helper.name}\nSkills: ${helper.skills.join(', ')}\nMatch: ${helper.matchScore}%\nDistance: ${helper.distance}km\nJobs completed: ${helper.jobsCompleted}`);
                     });
                     
                     helpersList.appendChild(listItem);
@@ -2706,12 +2666,14 @@
                 createTaskContainer.style.display = 'none';
                 setActivePage('home');
                 
+                // Clean up map
                 if (taskPostedMap) {
                     taskPostedMap.remove();
                     taskPostedMap = null;
                 }
                 helperMarkers = [];
                 
+                // Reset form
                 taskInput.value = ''; 
                 mainSearchInput.value = ''; 
                 streetInput.value = ''; 
@@ -2747,8 +2709,6 @@
 
             validateForm();
             checkVerificationStatus();
-            
-            debugLog('✅ Ready with Firebase');
             
         })();
     </script>
