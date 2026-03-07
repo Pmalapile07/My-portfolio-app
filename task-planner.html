@@ -55,30 +55,44 @@
             width: 100%;
         }
 
-        /* Profile Menu Container - Top Left */
-        #profile-menu-container {
+        /* === NEW PROFILE MENU (top right, shows user + logout) === */
+        .user-profile-menu {
             position: absolute;
             top: 16px;
-            left: 16px;
-            z-index: 500; /* lowered so it doesn't sit above everything */
-        }
-        
-        .profile-menu-btn {
-            width: 40px;
-            height: 40px;
-            background: white;
-            border: none;
-            border-radius: 0 !important; /* Square */
+            right: 16px;
+            z-index: 2000000;
             display: flex;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            gap: 12px;
+            background: white;
+            padding: 6px 12px 6px 16px;
+            border-radius: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-family: 'Manrope', sans-serif;
         }
-        
-        .profile-menu-btn img {
-            width: 20px;
-            height: 20px;
+        .user-greeting {
+            font-weight: 500;
+            color: #000;
+            font-size: 0.9rem;
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .logout-btn {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover {
+            background: #333;
         }
 
         /* Debug Panel */
@@ -549,7 +563,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 2000000; /* high enough to stay above sheets but below modals */
+            z-index: 2000000; 
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
@@ -1299,8 +1313,11 @@
     </style>
 </head>
 <body>
-    <!-- Profile Menu Container (Square button) -->
-    <div id="profile-menu-container"></div>
+    <!-- NEW USER PROFILE MENU (top right, shows user + logout) -->
+    <div id="userProfileMenu" class="user-profile-menu" style="display: none;">
+        <span class="user-greeting" id="userGreeting"></span>
+        <button class="logout-btn" id="logoutBtn">Log out</button>
+    </div>
 
     <!-- Debug Panel -->
     <div class="debug-panel" id="debugPanel">
@@ -1339,7 +1356,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR (always present) -->
+    <!-- BOTTOM NAVIGATION BAR (always present on all pages) -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/home%202.png" alt="Home">
@@ -1631,6 +1648,18 @@
                         document.getElementById('accountEmail').textContent = user.email || 'No email (anonymous)';
                         document.getElementById('accountUid').textContent = `UID: ${user.uid}`;
                         
+                        // Show user profile menu with greeting
+                        const menu = document.getElementById('userProfileMenu');
+                        const greeting = document.getElementById('userGreeting');
+                        if (user.displayName) {
+                            greeting.textContent = `Hi, ${user.displayName.split(' ')[0]}`;
+                        } else if (user.email) {
+                            greeting.textContent = `Hi, ${user.email.split('@')[0]}`;
+                        } else {
+                            greeting.textContent = 'Hi, User';
+                        }
+                        menu.style.display = 'flex';
+                        
                         // If tasks page is active, load tasks
                         if (document.getElementById('tasksPage').classList.contains('active')) {
                             loadUserTasks();
@@ -1639,6 +1668,9 @@
                         // No user signed in - now we sign in anonymously
                         currentUser = null;
                         debugLog('No user signed in, signing in anonymously...', 'info');
+                        
+                        // Hide profile menu
+                        document.getElementById('userProfileMenu').style.display = 'none';
                         
                         firebase.auth().signInAnonymously()
                             .then(() => {
@@ -1653,6 +1685,16 @@
             } catch (error) {
                 debugLog(`Firebase init error: ${error.message}`, 'error');
             }
+
+            // Logout handler
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                firebase.auth().signOut().then(() => {
+                    debugLog('User signed out', 'info');
+                    // After sign out, onAuthStateChanged will trigger anonymous sign in
+                }).catch((error) => {
+                    debugLog(`Logout error: ${error.message}`, 'error');
+                });
+            });
 
             // Mapbox token
             if (window.MAPBOX_TOKEN) {
@@ -2384,12 +2426,13 @@
                         resolve(false);
                     }, 20000);
                     
-                    const taskId = database.ref().child('tasks').push().key;
+                    const taskRef = database.ref('tasks').push();
+                    const taskId = taskRef.key;
                     currentTaskId = taskId;
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: currentUser.uid,          // <-- using UID
+                        posterId: currentUser.uid,          // <-- using UID (exactly as requested)
                         posterEmail: currentUser.email || 'anonymous@taskmart.app',
                         posterName: currentUser.displayName || (currentUser.isAnonymous ? 'Anonymous' : 'User'),
                         category: taskInput.value.trim(),
@@ -2409,7 +2452,7 @@
 
                     debugLog(`Saving task for user ${currentUser.uid}`, 'info');
 
-                    database.ref(`tasks/${taskId}`).set(taskData)
+                    taskRef.set(taskData)
                         .then(() => {
                             clearTimeout(timeout);
                             document.getElementById('loadingOverlay').style.display = 'none';
@@ -2583,26 +2626,6 @@
 
             validateForm();
 
-            // Load profile menu (square button)
-            fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-                .then(r => r.text())
-                .then(html => {
-                    document.getElementById('profile-menu-container').innerHTML = html;
-                    debugLog('Profile menu loaded', 'success');
-                    
-                    // Add click handler to the menu button
-                    const menuBtn = document.querySelector('#profile-menu-container .profile-menu-btn');
-                    if (menuBtn) {
-                        menuBtn.addEventListener('click', () => {
-                            const menu = document.querySelector('#profile-menu-container .profile-menu');
-                            if (menu) {
-                                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-                            }
-                        });
-                    }
-                })
-                .catch(err => debugLog(`Error loading profile menu: ${err.message}`, 'error'));
-            
         })();
     </script>
 </body>
