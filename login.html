@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     
     <style>
-        /* Clean, modern aesthetic */
+        /* Your existing styles here - unchanged */
         * {
             margin: 0;
             padding: 0;
@@ -481,11 +481,11 @@
     </div>
 
     <script>
-        // ===== JSON FILE STORAGE =====
-        const JSON_FILES = {
-            users: 'users.json',
-            helpers: 'helpers.json'
-        };
+        // ===== API CONFIGURATION =====
+        // For local development
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001/api' 
+            : 'https://your-json-server.onrender.com/api'; // Change this to your Render URL
 
         // ===== STATE =====
         let selectedRole = 'poster';
@@ -614,42 +614,33 @@
             updateSelectedSkills();
         };
 
-        // ===== JSON FILE HELPERS =====
-        async function readJSONFile(filename) {
-            try {
-                const response = await fetch(filename);
-                if (!response.ok) {
-                    // If file doesn't exist, return empty array/object
-                    if (filename.includes('users')) return { users: [] };
-                    if (filename.includes('helpers')) return { helpers: [] };
-                    return {};
-                }
-                return await response.json();
-            } catch (error) {
-                console.error('Error reading JSON file:', error);
-                // Return default structure
-                if (filename.includes('users')) return { users: [] };
-                if (filename.includes('helpers')) return { helpers: [] };
-                return {};
+        // ===== API CALLS =====
+        async function apiCall(endpoint, method = 'GET', data = null, token = null) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
             }
-        }
-
-        async function writeJSONFile(filename, data) {
-            // In a real app, you'd need a backend endpoint to handle file writes
-            // For demo purposes, we'll use localStorage as a fallback
-            localStorage.setItem(filename, JSON.stringify(data));
-            return data;
-        }
-
-        // ===== HASH PASSWORD (SIMPLE - IN PRODUCTION USE BCRYPT ON BACKEND) =====
-        async function hashPassword(password) {
-            // Simple hash for demo - in production, this should be done on backend
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hash = await crypto.subtle.digest('SHA-256', data);
-            return Array.from(new Uint8Array(hash))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
+            
+            const options = {
+                method,
+                headers
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            const response = await fetch(`${API_URL}${endpoint}`, options);
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'API call failed');
+            }
+            
+            return result;
         }
 
         // ===== SIGNUP =====
@@ -679,63 +670,25 @@
             successDiv.classList.remove('show');
 
             try {
-                // Read existing users
-                const usersData = await readJSONFile('users.json');
-                const users = usersData.users || [];
-
-                // Check if email already exists
-                if (users.some(u => u.email === email)) {
-                    throw new Error('Email already registered');
-                }
-
-                // Hash password
-                const hashedPassword = await hashPassword(password);
-
-                // Create new user
-                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                const newUser = {
-                    id: Date.now().toString(),
+                // Register user
+                const result = await apiCall('/auth/register', 'POST', {
                     name,
                     email,
-                    password: hashedPassword,
+                    password,
                     role: selectedRole,
                     phone: `+27${phone.replace(/\s/g, '')}`,
-                    initials,
-                    createdAt: new Date().toISOString()
-                };
-
-                // Add to users array
-                users.push(newUser);
-                await writeJSONFile('users.json', { users });
-
-                // If helper, add to helpers file with skills
-                if (selectedRole === 'helper') {
-                    const helpersData = await readJSONFile('helpers.json');
-                    const helpers = helpersData.helpers || [];
-                    
-                    const newHelper = {
-                        userId: newUser.id,
-                        skills: selectedSkills,
-                        rating: 0,
-                        completedTasks: 0,
-                        verified: false,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    helpers.push(newHelper);
-                    await writeJSONFile('helpers.json', { helpers });
-                }
-
-                // Store in localStorage for session
-                const { password: _, ...userWithoutPassword } = newUser;
-                localStorage.setItem('taskmart_user', JSON.stringify(userWithoutPassword));
-                localStorage.setItem('taskmart_session', Date.now().toString());
+                    skills: selectedSkills
+                });
+                
+                // Store in localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify(result.user));
+                localStorage.setItem('taskmart_token', result.token);
 
                 successDiv.textContent = 'Account created! Redirecting...';
                 successDiv.classList.add('show');
 
                 setTimeout(() => {
-                    window.location.href = selectedRole === 'helper' ? '/helper-dashboard.html' : '/dashboard.html';
+                    window.location.href = selectedRole === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
                 }, 1000);
 
             } catch (error) {
@@ -764,35 +717,21 @@
             successDiv.classList.remove('show');
 
             try {
-                // Read users
-                const usersData = await readJSONFile('users.json');
-                const users = usersData.users || [];
-
-                // Find user by email
-                const user = users.find(u => u.email === email);
-                
-                if (!user) {
-                    throw new Error('Invalid email or password');
-                }
-
-                // Hash input password and compare
-                const hashedInput = await hashPassword(password);
-                if (hashedInput !== user.password) {
-                    throw new Error('Invalid email or password');
-                }
-
-                // Remove password from user object before storing
-                const { password: _, ...userWithoutPassword } = user;
+                // Login
+                const result = await apiCall('/auth/login', 'POST', {
+                    email,
+                    password
+                });
                 
                 // Store in localStorage
-                localStorage.setItem('taskmart_user', JSON.stringify(userWithoutPassword));
-                localStorage.setItem('taskmart_session', Date.now().toString());
+                localStorage.setItem('taskmart_user', JSON.stringify(result.user));
+                localStorage.setItem('taskmart_token', result.token);
 
                 successDiv.textContent = 'Welcome back! Redirecting...';
                 successDiv.classList.add('show');
 
                 setTimeout(() => {
-                    window.location.href = user.role === 'helper' ? '/helper-dashboard.html' : '/dashboard.html';
+                    window.location.href = result.user.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
                 }, 1000);
 
             } catch (error) {
@@ -807,14 +746,14 @@
         // ===== CHECK EXISTING SESSION =====
         function checkSession() {
             const user = localStorage.getItem('taskmart_user');
-            const session = localStorage.getItem('taskmart_session');
+            const token = localStorage.getItem('taskmart_token');
             
-            if (user && session) {
+            if (user && token) {
                 const userData = JSON.parse(user);
-                // Don't redirect if we're already on the dashboard pages
-                if (!window.location.pathname.includes('dashboard') && 
-                    !window.location.pathname.includes('helper-dashboard')) {
-                    window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/dashboard.html';
+                // Don't redirect if we're already on the auth page
+                if (!window.location.pathname.includes('signin') && 
+                    !window.location.pathname.includes('login')) {
+                    window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
                 }
             }
         }
