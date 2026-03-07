@@ -21,19 +21,19 @@
         }
     </style>
     
-    <!-- Mapbox GL JS - Using your backend proxy -->
+    <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (v9.22.0) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     
-    <!-- Config - Your backend handles the token -->
+    <!-- Config -->
     <script src="/config.js"></script>
 
     <style>
@@ -55,17 +55,20 @@
             width: 100%;
         }
 
-        /* Profile Menu Button - Top Left */
-        .profile-menu-btn {
+        /* Profile Menu Container - Top Left (correct one) */
+        #profile-menu-container {
             position: absolute;
             top: 16px;
             left: 16px;
+            z-index: 100000;
+        }
+        
+        .profile-menu-btn {
             width: 40px;
             height: 40px;
-            border-radius: 50%;
             background: white;
             border: none;
-            z-index: 1000;
+            border-radius: 0 !important; /* Square as per your design */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1294,23 +1297,18 @@
     </style>
 </head>
 <body>
-    <!-- Profile Menu Button (Top Left) -->
-    <button class="profile-menu-btn" id="profileMenuBtn">
-        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/user%207.png" alt="Menu">
-    </button>
+    <!-- Profile Menu Container (Square button - correct one) -->
+    <div id="profile-menu-container"></div>
 
     <!-- Debug Panel -->
     <div class="debug-panel" id="debugPanel">
-        <div id="debugContent"></div>
+        <div id="debugContent">Waiting for Firebase auth...</div>
     </div>
 
     <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">TASKMART</div>
     </div>
-
-    <!-- Profile Menu Container -->
-    <div id="profile-menu-container"></div>
 
     <!-- MAP -->
     <div id="map"></div>
@@ -1374,6 +1372,7 @@
                 <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/user%207.png" style="width: 60px; height: 60px; opacity: 0.5; margin-bottom: 1rem;">
                 <h3 style="margin-bottom: 0.5rem;" id="accountName">Loading...</h3>
                 <p style="color: #666; margin-bottom: 1rem;" id="accountEmail">Loading...</p>
+                <p style="color: #666; margin-bottom: 1rem;" id="accountUid"></p>
             </div>
         </div>
     </div>
@@ -1594,9 +1593,7 @@
                 line.textContent = logLine;
                 debugContent.appendChild(line);
                 
-                // Auto-scroll
                 debugPanel.scrollTop = debugPanel.scrollHeight;
-                
                 console.log(logLine);
             }
 
@@ -1612,29 +1609,65 @@
                 
                 database = firebase.database();
                 
-                // Check for existing user in localStorage
-                const savedUser = localStorage.getItem('taskmart_user');
-                if (savedUser) {
-                    try {
-                        currentUser = JSON.parse(savedUser);
-                        debugLog(`Loaded user from localStorage: ${currentUser.email || currentUser.uid}`, 'success');
-                    } catch (e) {
-                        debugLog('Error parsing saved user', 'error');
+                // Set up Firebase Auth state listener (NO localStorage)
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        // User is signed in
+                        currentUser = {
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: user.displayName,
+                            photoURL: user.photoURL,
+                            emailVerified: user.emailVerified
+                        };
+                        
+                        debugLog(`User signed in: ${user.email} (${user.uid})`, 'success');
+                        
+                        // Update account info
+                        document.getElementById('accountName').textContent = user.displayName || 'User';
+                        document.getElementById('accountEmail').textContent = user.email || 'No email';
+                        document.getElementById('accountUid').textContent = `UID: ${user.uid}`;
+                        
+                        // If tasks page is active, load tasks
+                        if (document.getElementById('tasksPage').classList.contains('active')) {
+                            loadUserTasks();
+                        }
+                    } else {
+                        // User is signed out
+                        currentUser = null;
+                        debugLog('No user signed in', 'info');
+                        
+                        document.getElementById('accountName').textContent = 'Not signed in';
+                        document.getElementById('accountEmail').textContent = 'Please log in';
+                        document.getElementById('accountUid').textContent = '';
+                        
+                        // Show login prompt on tasks page
+                        if (document.getElementById('tasksPage').classList.contains('active')) {
+                            document.getElementById('tasksList').innerHTML = 
+                                '<div class="empty-tasks"><p>Please log in to see your tasks</p></div>';
+                            document.getElementById('tasksCount').textContent = '0';
+                        }
                     }
-                } else {
-                    debugLog('No user found in localStorage', 'info');
-                }
+                });
+                
+                // Sign in anonymously for demo (remove this in production)
+                firebase.auth().signInAnonymously()
+                    .then(() => {
+                        debugLog('Signed in anonymously', 'success');
+                    })
+                    .catch((error) => {
+                        debugLog(`Anonymous sign in error: ${error.message}`, 'error');
+                    });
                 
             } catch (error) {
                 debugLog(`Firebase init error: ${error.message}`, 'error');
             }
 
-            // Mapbox - Using your backend proxy
+            // Mapbox token
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
                 debugLog('Mapbox token loaded from config', 'success');
             } else {
-                // Fallback for testing - but your backend should provide this
                 mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
                 debugLog('Using fallback Mapbox token', 'info');
             }
@@ -1676,23 +1709,6 @@
             } else {
                 splashScreen.style.display = 'none';
             }
-
-            function getCurrentUser() {
-                return currentUser;
-            }
-
-            // Profile menu button
-            document.getElementById('profileMenuBtn').addEventListener('click', () => {
-                // Load profile menu
-                fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
-                    .then(r => r.text())
-                    .then(html => {
-                        document.getElementById('profile-menu-container').innerHTML = html;
-                        const menu = document.getElementById('profile-menu-container').firstElementChild;
-                        if (menu) menu.style.display = 'block';
-                    })
-                    .catch(err => debugLog(`Error loading profile menu: ${err.message}`, 'error'));
-            });
 
             // Map init
             const map = new mapboxgl.Map({
@@ -1874,7 +1890,11 @@
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
                     
-                    updateAccountInfo();
+                    if (currentUser) {
+                        document.getElementById('accountName').textContent = currentUser.displayName || 'User';
+                        document.getElementById('accountEmail').textContent = currentUser.email || 'No email';
+                        document.getElementById('accountUid').textContent = `UID: ${currentUser.uid}`;
+                    }
                 }
             }
 
@@ -1882,16 +1902,6 @@
             navTasks.addEventListener('click', () => setActivePage('tasks'));
             navAccount.addEventListener('click', () => setActivePage('account'));
             setActivePage('home');
-
-            function updateAccountInfo() {
-                if (currentUser) {
-                    document.getElementById('accountName').textContent = currentUser.name || currentUser.displayName || 'User';
-                    document.getElementById('accountEmail').textContent = currentUser.email || 'No email';
-                } else {
-                    document.getElementById('accountName').textContent = 'Guest User';
-                    document.getElementById('accountEmail').textContent = 'Not logged in';
-                }
-            }
 
             // ===== LOAD USER'S TASKS FROM FIREBASE =====
             function loadUserTasks() {
@@ -1907,13 +1917,10 @@
                 
                 tasksList.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
                 
-                debugLog(`Loading tasks for user: ${currentUser.email || currentUser.uid}`, 'info');
+                debugLog(`Loading tasks for user: ${currentUser.email} (${currentUser.uid})`, 'info');
                 
-                // Try to get tasks by userId first, then fallback to email
-                const userId = currentUser.uid || currentUser.id;
-                const userEmail = currentUser.email;
-                
-                database.ref('tasks').once('value')
+                // Query Firebase for tasks where posterId matches currentUser.uid
+                database.ref('tasks').orderByChild('posterId').equalTo(currentUser.uid).once('value')
                     .then((snapshot) => {
                         const tasks = [];
                         let taskCount = 0;
@@ -1921,29 +1928,16 @@
                         snapshot.forEach((childSnapshot) => {
                             taskCount++;
                             const task = childSnapshot.val();
-                            
-                            // Check if task belongs to current user
-                            const taskPosterId = task.posterId || task.userId;
-                            const taskPosterEmail = task.posterEmail || task.email;
-                            
-                            const belongsToUser = 
-                                (userId && taskPosterId === userId) ||
-                                (userEmail && taskPosterEmail === userEmail) ||
-                                (task.posterId === 'demo_' + userId);
-                            
-                            if (belongsToUser) {
-                                tasks.push({
-                                    id: childSnapshot.key,
-                                    ...task
-                                });
-                            }
+                            tasks.push({
+                                id: childSnapshot.key,
+                                ...task
+                            });
                         });
                         
-                        debugLog(`Total tasks in DB: ${taskCount}`, 'info');
-                        debugLog(`Tasks found for user: ${tasks.length}`, tasks.length > 0 ? 'success' : 'info');
+                        debugLog(`Found ${tasks.length} tasks for user`, tasks.length > 0 ? 'success' : 'info');
                         
                         if (tasks.length > 0) {
-                            debugLog(`First task: ${JSON.stringify(tasks[0])}`, 'info');
+                            debugLog(`Sample task: ${JSON.stringify(tasks[0]).substring(0, 100)}...`, 'info');
                         }
                         
                         displayUserTasks(tasks);
@@ -2067,6 +2061,10 @@
 
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                if (!currentUser) {
+                    alert('Please log in to create a task');
+                    return;
+                }
                 if (mainSearchInput.value.trim()) taskInput.value = mainSearchInput.value.trim();
                 createTaskContainer.style.display = 'flex';
             });
@@ -2363,9 +2361,8 @@
                 }
             });
 
-            // ===== FIND MATCHING HELPERS (ONLY 1 DEMO HELPER) =====
+            // ===== FIND MATCHING HELPERS (ONLY 1) =====
             function findMatchingHelpers(taskCategory) {
-                // Just 1 demo helper as requested
                 return [
                     {
                         id: 'helper1',
@@ -2380,22 +2377,6 @@
                         distance: '0.3'
                     }
                 ];
-            }
-            
-            function calculateDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371;
-                const dLat = deg2rad(lat2 - lat1);
-                const dLon = deg2rad(lon2 - lon1);
-                const a = 
-                    Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-                    Math.sin(dLon/2) * Math.sin(dLon/2); 
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-                return R * c;
-            }
-            
-            function deg2rad(deg) {
-                return deg * (Math.PI/180);
             }
 
             // ===== SAVE TASK TO FIREBASE =====
@@ -2421,9 +2402,9 @@
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: currentUser.uid || currentUser.id || 'user_' + Date.now(),
-                        posterEmail: currentUser.email || 'user@example.com',
-                        posterName: currentUser.name || currentUser.displayName || 'User',
+                        posterId: currentUser.uid,
+                        posterEmail: currentUser.email,
+                        posterName: currentUser.displayName || 'User',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2439,7 +2420,7 @@
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     };
 
-                    debugLog(`Saving task: ${JSON.stringify(taskData)}`, 'info');
+                    debugLog(`Saving task for user ${currentUser.uid}`, 'info');
 
                     database.ref(`tasks/${taskId}`).set(taskData)
                         .then(() => {
@@ -2595,6 +2576,10 @@
             nextBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                if (!currentUser) {
+                    alert('Please log in to create a task');
+                    return;
+                }
                 showTaskPreview();
             });
 
@@ -2610,13 +2595,24 @@
             });
 
             validateForm();
-            
-            // Load profile menu
+
+            // Load profile menu (square button)
             fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
                 .then(r => r.text())
                 .then(html => {
                     document.getElementById('profile-menu-container').innerHTML = html;
                     debugLog('Profile menu loaded', 'success');
+                    
+                    // Add click handler to the menu button
+                    const menuBtn = document.querySelector('#profile-menu-container .profile-menu-btn');
+                    if (menuBtn) {
+                        menuBtn.addEventListener('click', () => {
+                            const menu = document.querySelector('#profile-menu-container .profile-menu');
+                            if (menu) {
+                                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                            }
+                        });
+                    }
                 })
                 .catch(err => debugLog(`Error loading profile menu: ${err.message}`, 'error'));
             
