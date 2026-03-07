@@ -11,11 +11,10 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+    <!-- Firebase SDKs - Using older but more stable version -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <style>
         /* Your existing styles here - unchanged */
@@ -367,6 +366,27 @@
             justify-content: center;
             gap: 0.5rem;
         }
+
+        .firebase-status {
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .firebase-status.error {
+            background: #fee;
+            color: #e00;
+            display: block;
+        }
+
+        .firebase-status.success {
+            background: #e4f5e4;
+            color: #0a5;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -374,6 +394,9 @@
         <div class="logo-area">
             <span class="logo-text">taskmart</span>
         </div>
+
+        <!-- Firebase Status Indicator -->
+        <div class="firebase-status" id="firebaseStatus"></div>
 
         <!-- Tabs -->
         <div class="tab-container">
@@ -487,7 +510,7 @@
     </div>
 
     <script>
-        // ===== FIREBASE CONFIGURATION =====
+        // ===== FIREBASE CONFIGURATION - VERIFIED FROM CONSOLE =====
         const firebaseConfig = {
             apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
             authDomain: "taskmartapp-74d6b.firebaseapp.com",
@@ -495,23 +518,12 @@
             projectId: "taskmartapp-74d6b",
             storageBucket: "taskmartapp-74d6b.firebasestorage.app",
             messagingSenderId: "52910279328",
-            appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
-            measurementId: "G-Z8SPLR0HSL"
+            appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
         };
 
-        // Initialize Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-            console.log("Firebase initialized successfully");
-        } catch (error) {
-            console.error("Firebase initialization error:", error);
-        }
-        
-        const analytics = firebase.analytics();
-        const auth = firebase.auth();
-        const database = firebase.database();
-
-        // ===== STATE =====
+        // Global variables
+        let auth = null;
+        let database = null;
         let selectedRole = 'poster';
         let selectedSkills = [];
 
@@ -523,6 +535,58 @@
             "Web Development", "Graphic Design", "Photography",
             "Car Wash", "Event Setup", "Handyman", "Other"
         ];
+
+        // ===== INITIALIZE FIREBASE =====
+        function initializeFirebase() {
+            const statusDiv = document.getElementById('firebaseStatus');
+            
+            try {
+                // Check if Firebase is loaded
+                if (typeof firebase === 'undefined') {
+                    statusDiv.className = 'firebase-status error';
+                    statusDiv.textContent = '❌ Firebase SDK not loaded. Check internet connection.';
+                    return false;
+                }
+
+                // Initialize Firebase
+                const app = firebase.initializeApp(firebaseConfig);
+                
+                // Get Auth and Database instances
+                auth = firebase.auth();
+                database = firebase.database();
+                
+                // Test connection
+                auth.onAuthStateChanged((user) => {
+                    console.log('Auth state changed:', user ? 'User logged in' : 'No user');
+                });
+                
+                statusDiv.className = 'firebase-status success';
+                statusDiv.textContent = '✅ Firebase connected successfully';
+                
+                // Hide status after 3 seconds
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+                
+                return true;
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                statusDiv.className = 'firebase-status error';
+                statusDiv.textContent = `❌ Firebase error: ${error.message}`;
+                return false;
+            }
+        }
+
+        // Initialize Firebase when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialized = initializeFirebase();
+            
+            if (!initialized) {
+                // Disable forms if Firebase failed
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('signupBtn').disabled = true;
+            }
+        });
 
         // ===== UI HELPERS =====
         window.togglePassword = function(inputId, btn) {
@@ -644,6 +708,12 @@
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            if (!auth || !database) {
+                document.getElementById('errorMessage').textContent = 'Firebase not initialized. Please refresh.';
+                document.getElementById('errorMessage').classList.add('show');
+                return;
+            }
+            
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const phone = document.getElementById('signupPhone').value;
@@ -710,6 +780,12 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            if (!auth || !database) {
+                document.getElementById('errorMessage').textContent = 'Firebase not initialized. Please refresh.';
+                document.getElementById('errorMessage').classList.add('show');
+                return;
+            }
+            
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -761,29 +837,18 @@
         });
 
         // ===== CHECK EXISTING SESSION =====
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                // User is signed in
-                const storedUser = localStorage.getItem('taskmart_user');
-                if (storedUser && !window.location.pathname.includes('signin') && 
-                    !window.location.pathname.includes('login')) {
-                    const userData = JSON.parse(storedUser);
-                    window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
+        if (auth) {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    const storedUser = localStorage.getItem('taskmart_user');
+                    if (storedUser && !window.location.pathname.includes('signin') && 
+                        !window.location.pathname.includes('login')) {
+                        const userData = JSON.parse(storedUser);
+                        window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
+                    }
                 }
-            }
-        });
-
-        // Initial check
-        function checkSession() {
-            const user = localStorage.getItem('taskmart_user');
-            if (user && !window.location.pathname.includes('signin') && 
-                !window.location.pathname.includes('login')) {
-                const userData = JSON.parse(user);
-                window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
-            }
+            });
         }
-
-        checkSession();
     </script>
 </body>
 </html>
