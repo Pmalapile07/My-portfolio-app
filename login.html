@@ -11,8 +11,13 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+    
     <style>
-        /* Your existing styles here - unchanged */
         * {
             margin: 0;
             padding: 0;
@@ -481,11 +486,23 @@
     </div>
 
     <script>
-        // ===== API CONFIGURATION =====
-        // For local development
-        const API_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3001/api' 
-            : 'https://your-json-server.onrender.com/api'; // Change this to your Render URL
+        // ===== FIREBASE CONFIGURATION =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+            authDomain: "taskmartapp-74d6b.firebaseapp.com",
+            databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+            projectId: "taskmartapp-74d6b",
+            storageBucket: "taskmartapp-74d6b.firebasestorage.app",
+            messagingSenderId: "52910279328",
+            appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
+            measurementId: "G-Z8SPLR0HSL"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics();
+        const auth = firebase.auth();
+        const database = firebase.database();
 
         // ===== STATE =====
         let selectedRole = 'poster';
@@ -501,7 +518,7 @@
         ];
 
         // ===== UI HELPERS =====
-        function togglePassword(inputId, btn) {
+        window.togglePassword = function(inputId, btn) {
             const input = document.getElementById(inputId);
             const icon = btn.querySelector('.material-symbols-outlined');
             if (input.type === 'password') {
@@ -511,7 +528,7 @@
                 input.type = 'password';
                 icon.textContent = 'visibility';
             }
-        }
+        };
 
         // ===== TAB SWITCHING =====
         document.getElementById('loginTab').addEventListener('click', () => switchTab('login'));
@@ -614,36 +631,9 @@
             updateSelectedSkills();
         };
 
-        // ===== API CALLS =====
-        async function apiCall(endpoint, method = 'GET', data = null, token = null) {
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
-            const options = {
-                method,
-                headers
-            };
-            
-            if (data) {
-                options.body = JSON.stringify(data);
-            }
-            
-            const response = await fetch(`${API_URL}${endpoint}`, options);
-            const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.error || 'API call failed');
-            }
-            
-            return result;
-        }
-
-        // ===== SIGNUP =====
+        // ===== FIREBASE AUTH FUNCTIONS =====
+        
+        // Sign Up
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -670,22 +660,31 @@
             successDiv.classList.remove('show');
 
             try {
-                // Register user
-                const result = await apiCall('/auth/register', 'POST', {
-                    name,
-                    email,
-                    password,
-                    role: selectedRole,
+                // Create user with Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Save additional user data to Realtime Database
+                await database.ref('users/' + user.uid).set({
+                    name: name,
+                    email: email,
                     phone: `+27${phone.replace(/\s/g, '')}`,
-                    skills: selectedSkills
+                    role: selectedRole,
+                    skills: selectedSkills,
+                    createdAt: new Date().toISOString()
                 });
-                
-                // Store in localStorage
-                localStorage.setItem('taskmart_user', JSON.stringify(result.user));
-                localStorage.setItem('taskmart_token', result.token);
 
                 successDiv.textContent = 'Account created! Redirecting...';
                 successDiv.classList.add('show');
+
+                // Store in localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify({
+                    uid: user.uid,
+                    name: name,
+                    email: email,
+                    role: selectedRole,
+                    skills: selectedSkills
+                }));
 
                 setTimeout(() => {
                     window.location.href = selectedRole === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
@@ -700,7 +699,7 @@
             }
         });
 
-        // ===== LOGIN =====
+        // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -717,21 +716,32 @@
             successDiv.classList.remove('show');
 
             try {
-                // Login
-                const result = await apiCall('/auth/login', 'POST', {
-                    email,
-                    password
-                });
-                
-                // Store in localStorage
-                localStorage.setItem('taskmart_user', JSON.stringify(result.user));
-                localStorage.setItem('taskmart_token', result.token);
+                // Sign in with Firebase Auth
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Get additional user data from Realtime Database
+                const snapshot = await database.ref('users/' + user.uid).once('value');
+                const userData = snapshot.val();
+
+                if (!userData) {
+                    throw new Error('User data not found');
+                }
 
                 successDiv.textContent = 'Welcome back! Redirecting...';
                 successDiv.classList.add('show');
 
+                // Store in localStorage
+                localStorage.setItem('taskmart_user', JSON.stringify({
+                    uid: user.uid,
+                    name: userData.name,
+                    email: userData.email,
+                    role: userData.role,
+                    skills: userData.skills
+                }));
+
                 setTimeout(() => {
-                    window.location.href = result.user.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
+                    window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
                 }, 1000);
 
             } catch (error) {
@@ -744,21 +754,28 @@
         });
 
         // ===== CHECK EXISTING SESSION =====
-        function checkSession() {
-            const user = localStorage.getItem('taskmart_user');
-            const token = localStorage.getItem('taskmart_token');
-            
-            if (user && token) {
-                const userData = JSON.parse(user);
-                // Don't redirect if we're already on the auth page
-                if (!window.location.pathname.includes('signin') && 
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in
+                const storedUser = localStorage.getItem('taskmart_user');
+                if (storedUser && !window.location.pathname.includes('signin') && 
                     !window.location.pathname.includes('login')) {
+                    const userData = JSON.parse(storedUser);
                     window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
                 }
             }
+        });
+
+        // Initial check
+        function checkSession() {
+            const user = localStorage.getItem('taskmart_user');
+            if (user && !window.location.pathname.includes('signin') && 
+                !window.location.pathname.includes('login')) {
+                const userData = JSON.parse(user);
+                window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/poster-dashboard.html';
+            }
         }
 
-        // Check session on load
         checkSession();
     </script>
 </body>
