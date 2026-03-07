@@ -538,7 +538,7 @@
             background-color: #f5f5f5;
         }
 
-        /* === BOTTOM NAVIGATION BAR === */
+        /* === BOTTOM NAVIGATION BAR - fixed & always on top === */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -549,7 +549,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 100000;
+            z-index: 1000000; /* increased and always present */
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
@@ -597,7 +597,7 @@
             overflow-y: auto;
             display: none;
             padding: 20px;
-            padding-bottom: 76px;
+            padding-bottom: 76px; /* leave space for bottom nav */
         }
         .page-container.active {
             display: block;
@@ -764,7 +764,7 @@
             font-family: 'Manrope', sans-serif;
         }
 
-        /* === CREATE TASK CONTAINER === */
+        /* === CREATE TASK CONTAINER (leave space for bottom nav) === */
         .create-task-container {
             position: fixed;
             top: 0;
@@ -777,6 +777,7 @@
             flex-direction: column;
             overflow: hidden;
             border-radius: 5px;
+            padding-bottom: 56px; /* ensure bottom nav not overlapped */
         }
 
         .create-task-header {
@@ -821,6 +822,12 @@
             overflow-y: auto;
             padding: 1.5rem 1.25rem 2rem;
             -webkit-overflow-scrolling: touch;
+        }
+
+        /* Ensure task preview and posted containers also have bottom padding */
+        .task-preview-container,
+        .task-posted-container {
+            padding-bottom: 56px;
         }
 
         .section {
@@ -1337,7 +1344,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR -->
+    <!-- BOTTOM NAVIGATION BAR (always present) -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/home%202.png" alt="Home">
@@ -1903,7 +1910,7 @@
             navAccount.addEventListener('click', () => setActivePage('account'));
             setActivePage('home');
 
-            // ===== LOAD USER'S TASKS FROM FIREBASE =====
+            // ===== LOAD USER'S TASKS FROM FIREBASE (by UID) =====
             function loadUserTasks() {
                 const tasksList = document.getElementById('tasksList');
                 const tasksCount = document.getElementById('tasksCount');
@@ -1917,9 +1924,9 @@
                 
                 tasksList.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
                 
-                debugLog(`Loading tasks for user: ${currentUser.email} (${currentUser.uid})`, 'info');
+                debugLog(`Loading tasks for user UID: ${currentUser.uid}`, 'info');
                 
-                // Query Firebase for tasks where posterId matches currentUser.uid
+                // Query using UID (posterId)
                 database.ref('tasks').orderByChild('posterId').equalTo(currentUser.uid).once('value')
                     .then((snapshot) => {
                         const tasks = [];
@@ -1935,10 +1942,6 @@
                         });
                         
                         debugLog(`Found ${tasks.length} tasks for user`, tasks.length > 0 ? 'success' : 'info');
-                        
-                        if (tasks.length > 0) {
-                            debugLog(`Sample task: ${JSON.stringify(tasks[0]).substring(0, 100)}...`, 'info');
-                        }
                         
                         displayUserTasks(tasks);
                         tasksCount.textContent = tasks.length.toString();
@@ -2379,7 +2382,7 @@
                 ];
             }
 
-            // ===== SAVE TASK TO FIREBASE =====
+            // ===== SAVE TASK TO FIREBASE (using UID) =====
             async function saveTaskToFirebase() {
                 if (!currentUser) {
                     alert('Please log in to post a task');
@@ -2402,7 +2405,7 @@
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: currentUser.uid,
+                        posterId: currentUser.uid,          // <-- using UID
                         posterEmail: currentUser.email,
                         posterName: currentUser.displayName || 'User',
                         category: taskInput.value.trim(),
@@ -2460,7 +2463,7 @@
                 taskPreviewContainer.classList.remove('active');
                 taskPostedContainer.classList.add('active');
                 
-                document.getElementById('bottomNav').style.display = 'none';
+                // bottom nav remains visible (we don't hide it)
                 
                 const matchingHelpers = findMatchingHelpers(taskCategory);
                 updateHelpersList(matchingHelpers);
@@ -2549,7 +2552,7 @@
 
             closeTaskPostedBtn.addEventListener('click', () => {
                 taskPostedContainer.classList.remove('active');
-                document.getElementById('bottomNav').style.display = 'flex';
+                // bottom nav remains visible
                 createTaskContainer.style.display = 'none';
                 setActivePage('home');
                 
