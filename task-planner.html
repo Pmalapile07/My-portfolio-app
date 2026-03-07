@@ -25,10 +25,6 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     
@@ -1466,7 +1462,7 @@
     <div class="page-container" id="tasksPage">
         <div class="tasks-header">My Posted Tasks</div>
         <div id="tasksList" class="task-list">
-            <!-- Tasks will be loaded here from Firebase -->
+            <!-- Tasks will be loaded here from JSON Server -->
             <div class="task-empty">Loading your tasks...</div>
         </div>
     </div>
@@ -1669,7 +1665,13 @@
         (function() {
             'use strict';
             
-            // Debug logging function - now with truncation for long strings
+            // ===== JSON SERVER CONFIGURATION =====
+            // Update this with your Render URL after deployment
+            const JSON_API_URL = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3001/api' 
+                : 'https://your-taskmart-json.onrender.com/api'; // Change this to your Render URL
+            
+            // Debug logging function
             function debugLog(message, data = null, type = 'info') {
                 const debugContent = document.getElementById('debugContent');
                 const timestamp = new Date().toLocaleTimeString();
@@ -1678,17 +1680,13 @@
                 
                 let displayData = '';
                 if (data) {
-                    // Truncate long strings, especially image URLs
                     if (typeof data === 'string' && data.length > 50) {
                         displayData = data.substring(0, 50) + '...';
                     } else if (typeof data === 'object') {
-                        // Create a truncated copy without long strings
                         const truncated = {};
                         for (let key in data) {
                             if (typeof data[key] === 'string' && data[key].length > 50) {
                                 truncated[key] = data[key].substring(0, 30) + '...';
-                            } else if (key === 'profileImage' && typeof data[key] === 'string') {
-                                truncated[key] = '[image url truncated]';
                             } else {
                                 truncated[key] = data[key];
                             }
@@ -1713,30 +1711,44 @@
                 document.getElementById('debugContent').innerHTML = '';
             }
             
-            debugLog('Page loaded, initializing...');
-            
-            // ===== FIREBASE INITIALIZATION =====
-            const firebaseConfig = {
-                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com"
-            };
+            debugLog('Page loaded, initializing with JSON Server...');
+            debugLog(`JSON API URL: ${JSON_API_URL}`);
 
-            // Initialize Firebase
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                    debugLog('Firebase initialized');
+            // ===== API HELPER FUNCTIONS =====
+            async function apiCall(endpoint, method = 'GET', data = null, token = null) {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
                 
-                window.database = firebase.database();
-                debugLog('Database reference created');
+                const options = {
+                    method,
+                    headers
+                };
                 
-            } catch (error) {
-                debugLog('Firebase init error:', error.message, 'error');
-            }
-
-            const API_BASE_URL = 'https://taskmartapp.onrender.com';
-            if (window.MAPBOX_TOKEN) {
-                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const url = `${JSON_API_URL}${endpoint}`;
+                debugLog(`API ${method}: ${url}`, data);
+                
+                try {
+                    const response = await fetch(url, options);
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.error || 'API call failed');
+                    }
+                    
+                    return result;
+                } catch (error) {
+                    debugLog(`API Error: ${error.message}`, null, 'error');
+                    throw error;
+                }
             }
 
             const taskSuggestions = [
@@ -1782,7 +1794,6 @@
                     const user = localStorage.getItem('taskmart_user');
                     if (user) {
                         const parsed = JSON.parse(user);
-                        // Show only email and name, truncate long fields
                         debugLog('User loaded:', {
                             name: parsed.name,
                             email: parsed.email,
@@ -1981,7 +1992,7 @@
                     recenterBtn.style.display = 'none';
                     
                     clearDebug();
-                    debugLog('📋 Loading tasks...');
+                    debugLog('📋 Loading tasks from JSON Server...');
                     loadUserTasks();
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
@@ -1999,8 +2010,8 @@
             
             setActivePage('home');
 
-            // ===== LOAD USER TASKS FROM FIREBASE =====
-            function loadUserTasks() {
+            // ===== LOAD USER TASKS FROM JSON SERVER =====
+            async function loadUserTasks() {
                 const user = getCurrentUser();
                 const tasksList = document.getElementById('tasksList');
                 
@@ -2011,108 +2022,100 @@
                 }
                 
                 const userEmail = user.email;
+                const userId = user.id || user.uid;
                 
-                if (!userEmail) {
-                    debugLog('❌ No user email', null, 'error');
+                if (!userEmail && !userId) {
+                    debugLog('❌ No user identifier', null, 'error');
                     tasksList.innerHTML = '<div class="task-error">Unable to identify user. Please log in again.</div>';
                     return;
                 }
                 
-                debugLog(`🔍 Fetching tasks for: ${userEmail}`);
+                debugLog(`🔍 Fetching tasks for: ${userEmail || userId}`);
                 
                 tasksList.innerHTML = '<div class="task-loading">Loading your tasks</div>';
                 
-                const tasksRef = database.ref('tasks');
-                
-                tasksRef.once('value')
-                    .then((snapshot) => {
-                        if (!snapshot.exists()) {
-                            debugLog('📭 No tasks in database');
-                            tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
-                            return;
-                        }
-                        
-                        const userTasks = [];
-                        let taskCount = 0;
-                        
-                        snapshot.forEach((childSnapshot) => {
-                            taskCount++;
-                            const task = childSnapshot.val();
-                            const taskId = childSnapshot.key;
-                            
-                            if (task.posterEmail === userEmail) {
-                                task.taskId = taskId;
-                                userTasks.push(task);
-                                debugLog(`✅ Task matched: ${task.category || 'Task'} (${taskId.substring(0,8)}...)`, {
-                                    category: task.category,
-                                    budget: task.budget,
-                                    date: task.date
-                                });
-                            }
-                        });
-                        
-                        debugLog(`📊 Found ${userTasks.length} tasks out of ${taskCount} total`);
-                        
-                        if (userTasks.length === 0) {
-                            tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
-                            return;
-                        }
-                        
-                        userTasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                        
-                        let tasksHtml = '';
-                        userTasks.forEach(task => {
-                            let dateStr = 'Date unknown';
-                            if (task.createdAt) {
-                                const date = new Date(task.createdAt);
-                                dateStr = date.toLocaleDateString('en-GB', {
-                                    day: 'numeric',
-                                    month: 'short'
-                                });
-                            }
-                            
-                            const budget = task.budget === 'open' ? 'Open' : `R${task.budget}`;
-                            const status = task.status || 'open';
-                            const location = task.address ? 
-                                (task.address.length > 25 ? task.address.substring(0, 25) + '...' : task.address) : 
-                                'Location set';
-                            
-                            tasksHtml += `
-                                <div class="task-card" data-task-id="${task.taskId || ''}">
-                                    <div class="task-card-header">
-                                        <span class="task-category">${task.category || 'Task'}</span>
-                                        <span class="task-status">${status}</span>
-                                    </div>
-                                    <div class="task-details">${task.description || 'No description'}</div>
-                                    <div class="task-meta">
-                                        <span>📍 ${location}</span>
-                                        <span>📅 ${task.date === 'now' ? 'Now' : task.date || dateStr}</span>
-                                        <span>💰 ${budget}</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        
-                        tasksList.innerHTML = tasksHtml;
-                        debugLog('✅ Tasks displayed successfully');
-                        
-                        document.querySelectorAll('.task-card').forEach(card => {
-                            card.addEventListener('click', () => {
-                                const taskId = card.dataset.taskId;
-                                const task = userTasks.find(t => t.taskId === taskId);
-                                if (task) {
-                                    alert(`Task: ${task.category}\nBudget: ${task.budget === 'open' ? 'Open' : 'R' + task.budget}\nStatus: ${task.status}`);
-                                }
-                            });
-                        });
-                    })
-                    .catch((error) => {
-                        console.error('Firebase error:', error);
-                        debugLog('❌ Firebase error: ' + error.message, null, 'error');
-                        
-                        // Show user-friendly message about permissions
-                        tasksList.innerHTML = '<div class="task-error">Unable to load tasks. Please check Firebase database rules.</div>';
+                try {
+                    // Get all tasks from JSON Server
+                    const tasks = await apiCall('/tasks');
+                    
+                    debugLog(`📊 Total tasks in database: ${tasks.length}`);
+                    
+                    // Filter tasks by user email or ID
+                    const userTasks = tasks.filter(task => 
+                        task.posterEmail === userEmail || 
+                        task.posterId === userId ||
+                        task.posterId === userEmail
+                    );
+                    
+                    debugLog(`✅ Found ${userTasks.length} tasks for current user`);
+                    
+                    if (userTasks.length === 0) {
+                        tasksList.innerHTML = '<div class="task-empty">No tasks posted yet</div>';
+                        return;
+                    }
+                    
+                    // Sort by date (newest first)
+                    userTasks.sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                        return dateB - dateA;
                     });
+                    
+                    let tasksHtml = '';
+                    userTasks.forEach(task => {
+                        let dateStr = 'Date unknown';
+                        if (task.createdAt) {
+                            const date = new Date(task.createdAt);
+                            dateStr = date.toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                            });
+                        }
+                        
+                        const budget = task.budget === 'open' ? 'Open' : `R${task.budget}`;
+                        const status = task.status || 'open';
+                        const location = task.address ? 
+                            (task.address.length > 30 ? task.address.substring(0, 30) + '...' : task.address) : 
+                            'Location set';
+                        const category = task.category || task.taskDescription || 'Task';
+                        
+                        tasksHtml += `
+                            <div class="task-card" data-task-id="${task.id || task.taskId || ''}">
+                                <div class="task-card-header">
+                                    <span class="task-category">${category}</span>
+                                    <span class="task-status ${status === 'completed' || status === 'cancelled' ? 'closed' : ''}">${status}</span>
+                                </div>
+                                <div class="task-details">${task.description || task.moreDetails || 'No description'}</div>
+                                <div class="task-meta">
+                                    <span>📍 ${location}</span>
+                                    <span>📅 ${task.date === 'now' ? 'Now' : task.date || dateStr}</span>
+                                    <span>💰 ${budget}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    tasksList.innerHTML = tasksHtml;
+                    debugLog('✅ Tasks displayed successfully');
+                    
+                    // Add click handlers for task cards
+                    document.querySelectorAll('.task-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const taskId = card.dataset.taskId;
+                            const task = userTasks.find(t => t.id === taskId || t.taskId === taskId);
+                            if (task) {
+                                alert(`Task: ${task.category || task.taskDescription}\nBudget: ${task.budget === 'open' ? 'Open' : 'R' + task.budget}\nStatus: ${task.status}`);
+                            }
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('JSON Server error:', error);
+                    debugLog('❌ Error loading tasks: ' + error.message, null, 'error');
+                    
+                    tasksList.innerHTML = '<div class="task-error">Unable to load tasks. Please check if JSON Server is running.</div>';
+                }
             }
 
             // Search suggestions
@@ -2493,6 +2496,16 @@
                         lng: currentLng + 0.002,
                         rating: 4.9,
                         jobsCompleted: 89
+                    },
+                    {
+                        id: 'helper3',
+                        name: 'Sipho Khumalo',
+                        profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
+                        skills: ['plumbing', 'electrical', 'handyman'],
+                        lat: currentLat + 0.003,
+                        lng: currentLng - 0.002,
+                        rating: 4.7,
+                        jobsCompleted: 203
                     }
                 ];
                 
@@ -2540,36 +2553,23 @@
                 return deg * (Math.PI/180);
             }
 
-            // ===== SAVE TASK TO FIREBASE =====
-            async function saveTaskToFirebase() {
+            // ===== SAVE TASK TO JSON SERVER =====
+            async function saveTaskToJSONServer() {
                 const user = getCurrentUser();
                 
-                let posterId;
                 if (!user) {
-                    posterId = 'guest_' + Date.now();
-                } else {
-                    posterId = user.uid || user.id || user.email || 'user_' + Date.now();
+                    alert('Please log in to post a task');
+                    return false;
                 }
 
                 document.getElementById('loadingOverlay').style.display = 'flex';
                 previewConfirmBtn.disabled = true;
 
-                return new Promise((resolve) => {
-                    const timeout = setTimeout(() => {
-                        document.getElementById('loadingOverlay').style.display = 'none';
-                        previewConfirmBtn.disabled = false;
-                        alert('Connection timeout. Please try again.');
-                        resolve(false);
-                    }, 20000);
-                    
-                    const taskId = database.ref().child('tasks').push().key;
-                    currentTaskId = taskId;
-                    
+                try {
                     const taskData = {
-                        taskId: taskId,
-                        posterId: posterId,
-                        posterEmail: user?.email || 'guest@example.com',
-                        posterName: user?.name || user?.displayName || 'Guest User',
+                        posterId: user.id || user.uid || user.email,
+                        posterEmail: user.email,
+                        posterName: user.name || user.displayName || 'User',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2582,33 +2582,33 @@
                         time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
                         images: uploadedImages,
                         status: 'open',
-                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                        createdAt: new Date().toISOString()
                     };
 
-                    database.ref(`tasks/${taskId}`).set(taskData)
-                        .then(() => {
-                            clearTimeout(timeout);
-                            document.getElementById('loadingOverlay').style.display = 'none';
-                            previewConfirmBtn.disabled = false;
-                            
-                            const toast = document.getElementById('successToast');
-                            toast.textContent = 'Task posted successfully!';
-                            toast.style.display = 'block';
-                            setTimeout(() => {
-                                toast.style.display = 'none';
-                            }, 3000);
-                            
-                            resolve(taskId);
-                        })
-                        .catch((error) => {
-                            clearTimeout(timeout);
-                            document.getElementById('loadingOverlay').style.display = 'none';
-                            previewConfirmBtn.disabled = false;
-                            
-                            alert('Error posting task: ' + error.message);
-                            resolve(false);
-                        });
-                });
+                    debugLog('Saving task to JSON Server:', taskData);
+
+                    // POST to JSON Server
+                    const result = await apiCall('/tasks', 'POST', taskData);
+                    
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    previewConfirmBtn.disabled = false;
+                    
+                    const toast = document.getElementById('successToast');
+                    toast.textContent = 'Task posted successfully!';
+                    toast.style.display = 'block';
+                    setTimeout(() => {
+                        toast.style.display = 'none';
+                    }, 3000);
+                    
+                    return result.id || result.taskId || true;
+                    
+                } catch (error) {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    previewConfirmBtn.disabled = false;
+                    
+                    alert('Error posting task: ' + error.message);
+                    return false;
+                }
             }
 
             // ===== SHOW TASK POSTED SCREEN WITH HELPERS =====
@@ -2683,7 +2683,7 @@
                 }
                 
                 const matchedHelpers = helpers.filter(h => h.matchScore > 0);
-                helpersCount.textContent = `${matchedHelpers.length} helpers available`;
+                helpersCount.textContent = `${matchedHelpers.length} helpers available nearby`;
                 
                 helpersList.innerHTML = '';
                 helpers.forEach(helper => {
@@ -2748,7 +2748,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const taskId = await saveTaskToFirebase();
+                const taskId = await saveTaskToJSONServer();
                 
                 if (taskId) {
                     showTaskPostedScreen(taskId, taskInput.value.trim());
@@ -2758,7 +2758,7 @@
             validateForm();
             checkVerificationStatus();
             
-            debugLog('✅ Ready');
+            debugLog('✅ Ready with JSON Server');
             
         })();
     </script>
