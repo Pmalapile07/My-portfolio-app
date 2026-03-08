@@ -359,7 +359,7 @@
             background-color: #f5f5f5;
         }
 
-        /* RECENTER BUTTON - INVISIBLE AT CURRENT LOCATION */
+        /* RECENTER BUTTON - ONLY ICON (NO BACKGROUND/BLUR) */
         .map-recenter-btn {
             position: absolute;
             top: -28px;
@@ -372,9 +372,13 @@
             cursor: pointer;
             z-index: 200;
             transition: transform 0.2s, opacity 0.3s;
-            backdrop-filter: blur(4px);
+            /* background and backdrop removed – only icon remains */
+            background: transparent !important;
+            backdrop-filter: none !important;
+            border: none;
             opacity: 0;
             pointer-events: none;
+            padding: 0;
         }
         .map-recenter-btn.visible {
             display: flex;
@@ -385,12 +389,12 @@
             transform: scale(0.9);
         }
         .map-recenter-btn i {
-            font-size: 1.6rem;
+            font-size: 1.9rem; /* slightly larger to match flaticon style */
             color: black;
             background: transparent !important;
         }
 
-        /* === BOTTOM NAVIGATION BAR WITH NOTIFICATION DOT === */
+        /* === BOTTOM NAVIGATION BAR WITH NOTIFICATION DOT ON ICON === */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -425,10 +429,11 @@
             color: #000;
         }
         .nav-item img {
-            width: 18px;
-            height: 18px;
+            width: 20px; /* slightly larger to accommodate dot */
+            height: 20px;
             opacity: 0.6;
             transition: opacity 0.2s;
+            display: block;
         }
         .nav-item.active img {
             opacity: 1;
@@ -438,16 +443,19 @@
             font-weight: 500;
         }
         
-        /* Notification Dot */
+        /* Notification Dot - positioned on top-right of the icon */
         .notification-dot {
             position: absolute;
-            top: 2px;
-            right: 25px;
-            width: 8px;
-            height: 8px;
+            top: 2px;       /* adjust to sit on icon */
+            right: 50%;      /* center horizontally relative to icon */
+            transform: translateX(12px); /* shift right to sit on corner */
+            width: 10px;
+            height: 10px;
             background: #A6CBE3;
             border-radius: 50%;
             display: none;
+            border: 2px solid white; /* creates separation from icon */
+            z-index: 2;
         }
         
         .notification-dot.visible {
@@ -1310,7 +1318,7 @@
 
     <!-- HOME SHEET WITH RECENTER BUTTON INSIDE -->
     <div class="home-sheet" id="homeSheet">
-        <!-- RECENTER BUTTON -->
+        <!-- RECENTER BUTTON - CLEAN, NO BACKGROUND -->
         <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
             <i class="fi fi-sr-navigation"></i>
         </button>
@@ -1332,16 +1340,18 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR WITH NOTIFICATION DOT -->
+    <!-- BOTTOM NAVIGATION BAR WITH NOTIFICATION DOT ON ICON (POSITION ADJUSTED) -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/home%202.png" alt="Home">
             <span>Home</span>
         </button>
         <button class="nav-item" id="navTasks" data-page="tasks">
-            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Tasks">
+            <div style="position: relative; display: inline-block;"> <!-- wrapper for precise dot placement -->
+                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Tasks">
+                <span class="notification-dot" id="taskNotificationDot"></span>
+            </div>
             <span>Tasks</span>
-            <span class="notification-dot" id="taskNotificationDot"></span>
         </button>
         <button class="nav-item" id="navAccount" data-page="account">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/user%207.png" alt="Account">
@@ -2124,12 +2134,13 @@
                 });
             }
             
+            // MODIFIED: Removed "Searching nearby..." text from progress step
             function getTaskProgressHTML(status, createdAt) {
                 const timeAgo = formatTimeFromTimestamp(createdAt);
                 
                 const steps = [
                     { name: 'Task posted', time: timeAgo, completed: true },
-                    { name: 'Finding helpers', time: 'Searching nearby...', completed: false, active: status === 'open' },
+                    { name: 'Finding helpers', time: '', completed: false, active: status === 'open' },
                     { name: 'Helper assigned', time: 'Waiting for helper', completed: false },
                     { name: 'Task completed', time: 'Not started', completed: false }
                 ];
@@ -2149,7 +2160,7 @@
                             <div class="step-info-vertical">
                                 <div class="step-title-vertical">${step.name}</div>
                                 <div class="step-time-vertical">${step.time}</div>
-                                ${step.name === 'Finding helpers' && status === 'open' ? '<div class="step-description-vertical">Finding helpers near you...</div>' : ''}
+                                <!-- "Searching nearby..." text removed -->
                             </div>
                         </div>
                     `;
