@@ -55,7 +55,7 @@
             width: 100%;
         }
 
-        /* === NEW PROFILE MENU (top right, shows user + logout) === */
+        /* === NEW PROFILE MENU (top right, shows user + logout/login) === */
         .user-profile-menu {
             position: absolute;
             top: 16px;
@@ -276,7 +276,7 @@
             cursor: not-allowed;
         }
 
-        /* === FULLSCREEN MAP - DARK STYLE === */
+        /* === FULLSCREEN MAP - UPDATED WITH NEW STYLE === */
         #map {
             position: absolute;
             top: 0;
@@ -1313,7 +1313,7 @@
     </style>
 </head>
 <body>
-    <!-- NEW USER PROFILE MENU (top right, shows user + logout) -->
+    <!-- NEW USER PROFILE MENU (top right, shows user + logout/login) -->
     <div id="userProfileMenu" class="user-profile-menu" style="display: none;">
         <span class="user-greeting" id="userGreeting"></span>
         <button class="logout-btn" id="logoutBtn">Log out</button>
@@ -1329,7 +1329,7 @@
         <div class="splash-logo">TASKMART</div>
     </div>
 
-    <!-- MAP -->
+    <!-- MAP - UPDATED WITH NEW STYLE -->
     <div id="map"></div>
 
     <!-- Re-center button -->
@@ -1392,6 +1392,7 @@
                 <h3 style="margin-bottom: 0.5rem;" id="accountName">Loading...</h3>
                 <p style="color: #666; margin-bottom: 1rem;" id="accountEmail">Loading...</p>
                 <p style="color: #666; margin-bottom: 1rem;" id="accountUid"></p>
+                <button id="accountLoginBtn" style="background: #000; color: white; border: none; padding: 0.75rem 2rem; border-radius: 5px; cursor: pointer; display: none;">Log in</button>
             </div>
         </div>
     </div>
@@ -1630,27 +1631,30 @@
                 
                 // Set up Firebase Auth state listener
                 firebase.auth().onAuthStateChanged((user) => {
-                    if (user) {
-                        // User is signed in (either email or anonymous)
+                    const menu = document.getElementById('userProfileMenu');
+                    const greeting = document.getElementById('userGreeting');
+                    const logoutBtn = document.getElementById('logoutBtn');
+                    const accountLoginBtn = document.getElementById('accountLoginBtn');
+                    
+                    if (user && !user.isAnonymous) {
+                        // User is signed in with email (not anonymous)
                         currentUser = {
                             uid: user.uid,
                             email: user.email,
                             displayName: user.displayName,
                             photoURL: user.photoURL,
                             emailVerified: user.emailVerified,
-                            isAnonymous: user.isAnonymous
+                            isAnonymous: false
                         };
                         
-                        debugLog(`User signed in: ${user.email || 'anonymous'} (${user.uid})`, 'success');
+                        debugLog(`User signed in: ${user.email} (${user.uid})`, 'success');
                         
                         // Update account info
-                        document.getElementById('accountName').textContent = user.displayName || (user.isAnonymous ? 'Anonymous User' : 'User');
-                        document.getElementById('accountEmail').textContent = user.email || 'No email (anonymous)';
+                        document.getElementById('accountName').textContent = user.displayName || 'User';
+                        document.getElementById('accountEmail').textContent = user.email || 'No email';
                         document.getElementById('accountUid').textContent = `UID: ${user.uid}`;
                         
                         // Show user profile menu with greeting
-                        const menu = document.getElementById('userProfileMenu');
-                        const greeting = document.getElementById('userGreeting');
                         if (user.displayName) {
                             greeting.textContent = `Hi, ${user.displayName.split(' ')[0]}`;
                         } else if (user.email) {
@@ -1659,26 +1663,34 @@
                             greeting.textContent = 'Hi, User';
                         }
                         menu.style.display = 'flex';
+                        logoutBtn.textContent = 'Log out';
+                        if (accountLoginBtn) accountLoginBtn.style.display = 'none';
                         
                         // If tasks page is active, load tasks
                         if (document.getElementById('tasksPage').classList.contains('active')) {
                             loadUserTasks();
                         }
-                    } else {
-                        // No user signed in - now we sign in anonymously
+                    } else if (user && user.isAnonymous) {
+                        // User is signed in anonymously - show login button
                         currentUser = null;
-                        debugLog('No user signed in, signing in anonymously...', 'info');
-                        
-                        // Hide profile menu
-                        document.getElementById('userProfileMenu').style.display = 'none';
-                        
-                        firebase.auth().signInAnonymously()
-                            .then(() => {
-                                debugLog('Anonymous sign in successful', 'success');
-                            })
-                            .catch((error) => {
-                                debugLog(`Anonymous sign in error: ${error.message}`, 'error');
-                            });
+                        menu.style.display = 'flex';
+                        greeting.textContent = 'Guest';
+                        logoutBtn.textContent = 'Log in';
+                        document.getElementById('accountName').textContent = 'Guest User';
+                        document.getElementById('accountEmail').textContent = 'Not signed in';
+                        document.getElementById('accountUid').textContent = '';
+                        if (accountLoginBtn) {
+                            accountLoginBtn.style.display = 'block';
+                            accountLoginBtn.onclick = () => window.location.href = 'login.html';
+                        }
+                        debugLog('Anonymous user - showing login button', 'info');
+                    } else {
+                        // No user - sign in anonymously
+                        currentUser = null;
+                        debugLog('No user, signing in anonymously...', 'info');
+                        firebase.auth().signInAnonymously().catch(error => {
+                            debugLog(`Anonymous sign in error: ${error.message}`, 'error');
+                        });
                     }
                 });
                 
@@ -1686,14 +1698,20 @@
                 debugLog(`Firebase init error: ${error.message}`, 'error');
             }
 
-            // Logout handler
+            // Logout/Login handler
             document.getElementById('logoutBtn').addEventListener('click', () => {
-                firebase.auth().signOut().then(() => {
-                    debugLog('User signed out', 'info');
-                    // After sign out, onAuthStateChanged will trigger anonymous sign in
-                }).catch((error) => {
-                    debugLog(`Logout error: ${error.message}`, 'error');
-                });
+                if (currentUser) {
+                    // User is logged in with email - log out
+                    firebase.auth().signOut().then(() => {
+                        debugLog('User signed out', 'info');
+                        // After sign out, onAuthStateChanged will trigger anonymous sign in
+                    }).catch((error) => {
+                        debugLog(`Logout error: ${error.message}`, 'error');
+                    });
+                } else {
+                    // User is anonymous/guest - redirect to login
+                    window.location.href = 'login.html';
+                }
             });
 
             // Mapbox token
@@ -1743,16 +1761,16 @@
                 splashScreen.style.display = 'none';
             }
 
-            // Map init
+            // Map init - UPDATED WITH NEW STYLE
             const map = new mapboxgl.Map({
                 container: 'map',
-                style: 'mapbox://styles/mapbox/dark-v11',
+                style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l', // Updated style
                 center: [28.034088, -26.195246],
                 zoom: 15
             });
 
             map.on('load', () => {
-                debugLog('Map loaded successfully', 'success');
+                debugLog('Map loaded successfully with new style', 'success');
             });
 
             map.on('error', (e) => {
@@ -1914,7 +1932,11 @@
                     homeSheetEl.style.display = 'none';
                     recenterBtn.style.display = 'none';
                     
-                    loadUserTasks();
+                    if (currentUser) {
+                        loadUserTasks();
+                    } else {
+                        document.getElementById('tasksList').innerHTML = '<div class="empty-tasks"><p>Please log in to see your tasks</p><button onclick="window.location.href=\'login.html\'">Log in</button></div>';
+                    }
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
                     accountPage.classList.add('active');
@@ -1924,8 +1946,8 @@
                     recenterBtn.style.display = 'none';
                     
                     if (currentUser) {
-                        document.getElementById('accountName').textContent = currentUser.displayName || (currentUser.isAnonymous ? 'Anonymous User' : 'User');
-                        document.getElementById('accountEmail').textContent = currentUser.email || 'No email (anonymous)';
+                        document.getElementById('accountName').textContent = currentUser.displayName || 'User';
+                        document.getElementById('accountEmail').textContent = currentUser.email || 'No email';
                         document.getElementById('accountUid').textContent = `UID: ${currentUser.uid}`;
                     }
                 }
@@ -1936,14 +1958,14 @@
             navAccount.addEventListener('click', () => setActivePage('account'));
             setActivePage('home');
 
-            // ===== FIXED: LOAD USER'S TASKS FROM FIREBASE using UID path =====
+            // ===== LOAD USER'S TASKS FROM FIREBASE using UID path =====
             function loadUserTasks() {
                 const tasksList = document.getElementById('tasksList');
                 const tasksCount = document.getElementById('tasksCount');
                 
                 if (!currentUser) {
                     debugLog('No user logged in', 'info');
-                    tasksList.innerHTML = '<div class="empty-tasks"><p>Please log in to see your tasks</p></div>';
+                    tasksList.innerHTML = '<div class="empty-tasks"><p>Please log in to see your tasks</p><button onclick="window.location.href=\'login.html\'">Log in</button></div>';
                     tasksCount.textContent = '0';
                     return;
                 }
@@ -1952,7 +1974,7 @@
                 
                 debugLog(`Loading tasks for user UID: ${currentUser.uid} from path: tasks/${currentUser.uid}`, 'info');
                 
-                // ✅ FIXED: Read directly from /tasks/[UID] instead of querying
+                // Read directly from /tasks/[UID]
                 database.ref('tasks/' + currentUser.uid).once('value')
                     .then((snapshot) => {
                         const tasksData = snapshot.val() || {};
@@ -2034,7 +2056,7 @@
                 });
             }
 
-            // Search suggestions
+            // Search suggestions - FIXED to work on every keystroke
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
             const searchIconBtn = document.getElementById('searchIconBtn');
             const createTaskContainer = document.getElementById('createTaskContainer');
@@ -2057,16 +2079,38 @@
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
             const taskCharCount = document.getElementById('taskCharCount');
 
-            function capitalizeFirstLetter(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
+            function capitalizeFirstLetter(s) { 
+                if (!s) return '';
+                return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
+            }
 
+            // Fixed search input handler - shows suggestions on every keystroke
             if (mainSearchInput) {
                 mainSearchInput.addEventListener('input', function() {
                     const q = this.value.trim().toLowerCase();
-                    if (q.length < 1) { mainSuggestionsList.classList.remove('active'); return; }
-                    const matches = taskSuggestions.filter(t => t.toLowerCase().includes(q)).slice(0, 8);
-                    if (!matches.length) { mainSuggestionsList.classList.remove('active'); return; }
-                    mainSuggestionsList.innerHTML = matches.map(t => `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`).join('');
+                    if (q.length < 1) { 
+                        mainSuggestionsList.classList.remove('active'); 
+                        return; 
+                    }
+                    
+                    // Filter suggestions based on input
+                    const matches = taskSuggestions.filter(t => 
+                        t.toLowerCase().includes(q)
+                    ).slice(0, 8);
+                    
+                    if (!matches.length) { 
+                        mainSuggestionsList.classList.remove('active'); 
+                        return; 
+                    }
+                    
+                    // Display suggestions
+                    mainSuggestionsList.innerHTML = matches.map(t => 
+                        `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                    ).join('');
+                    
                     mainSuggestionsList.classList.add('active');
+                    
+                    // Add click handlers to suggestions
                     document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
@@ -2074,23 +2118,33 @@
                             taskInput.value = task;
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
-                            createTaskContainer.style.display = 'flex';
+                            // Only open create task if user is logged in with email
+                            if (currentUser) {
+                                createTaskContainer.style.display = 'flex';
+                            } else {
+                                window.location.href = 'login.html';
+                            }
                         });
                     });
                 });
+                
+                // Close suggestions when clicking outside
                 document.addEventListener('click', (e) => {
-                    if (!mainSearchInput.contains(e.target) && !mainSuggestionsList.contains(e.target))
+                    if (!mainSearchInput.contains(e.target) && !mainSuggestionsList.contains(e.target)) {
                         mainSuggestionsList.classList.remove('active');
+                    }
                 });
             }
 
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (!currentUser) {
-                    alert('Please log in to create a task');
+                    window.location.href = 'login.html';
                     return;
                 }
-                if (mainSearchInput.value.trim()) taskInput.value = mainSearchInput.value.trim();
+                if (mainSearchInput.value.trim()) {
+                    taskInput.value = mainSearchInput.value.trim();
+                }
                 createTaskContainer.style.display = 'flex';
             });
 
@@ -2152,8 +2206,8 @@
                 validateForm();
             });
 
-            pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
-            pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
+            document.getElementById('pickDateBtn').addEventListener('click', () => nativeDatePicker.showPicker());
+            document.getElementById('pickTimeBtn').addEventListener('click', () => nativeTimePicker.showPicker());
 
             const today = new Date().toISOString().split('T')[0];
             nativeDatePicker.setAttribute('min', today);
@@ -2247,7 +2301,7 @@
                     if (mapModalInstance) mapModalInstance.remove();
                     mapModalInstance = new mapboxgl.Map({
                         container: 'mapModalContainer',
-                        style: 'mapbox://styles/mapbox/dark-v11',
+                        style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l', // Updated style
                         center: [currentLng||28.034088, currentLat||-26.195246],
                         zoom: 15
                     });
@@ -2354,7 +2408,7 @@
                     if (previewMap) previewMap.remove();
                     previewMap = new mapboxgl.Map({
                         container: 'previewMap',
-                        style: 'mapbox://styles/mapbox/dark-v11',
+                        style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l', // Updated style
                         center: [currentLng||28.034088, currentLat||-26.195246],
                         zoom: 15
                     });
@@ -2407,7 +2461,7 @@
             // ===== SAVE TASK TO FIREBASE (using UID) =====
             async function saveTaskToFirebase() {
                 if (!currentUser) {
-                    alert('Please log in to post a task');
+                    window.location.href = 'login.html';
                     return false;
                 }
 
@@ -2422,16 +2476,16 @@
                         resolve(false);
                     }, 20000);
                     
-                    // ✅ FIXED: Save task under /tasks/[UID]/[taskId]
+                    // Save task under /tasks/[UID]/[taskId]
                     const taskRef = database.ref('tasks/' + currentUser.uid).push();
                     const taskId = taskRef.key;
                     currentTaskId = taskId;
                     
                     const taskData = {
                         taskId: taskId,
-                        posterId: currentUser.uid,          // <-- using UID (exactly as requested)
-                        posterEmail: currentUser.email || 'anonymous@taskmart.app',
-                        posterName: currentUser.displayName || (currentUser.isAnonymous ? 'Anonymous' : 'User'),
+                        posterId: currentUser.uid,
+                        posterEmail: currentUser.email || 'email@taskmart.app',
+                        posterName: currentUser.displayName || 'User',
                         category: taskInput.value.trim(),
                         description: document.getElementById('extraNotes').value.trim() || '',
                         location: {
@@ -2487,8 +2541,6 @@
                 taskPreviewContainer.classList.remove('active');
                 taskPostedContainer.classList.add('active');
                 
-                // bottom nav remains visible
-                
                 const matchingHelpers = findMatchingHelpers(taskCategory);
                 updateHelpersList(matchingHelpers);
                 
@@ -2497,7 +2549,7 @@
                     
                     taskPostedMap = new mapboxgl.Map({
                         container: 'taskPostedMap',
-                        style: 'mapbox://styles/mapbox/dark-v11',
+                        style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l', // Updated style
                         center: [currentLng||28.034088, currentLat||-26.195246],
                         zoom: 14
                     });
@@ -2576,7 +2628,6 @@
 
             closeTaskPostedBtn.addEventListener('click', () => {
                 taskPostedContainer.classList.remove('active');
-                // bottom nav remains visible
                 createTaskContainer.style.display = 'none';
                 setActivePage('home');
                 
@@ -2604,7 +2655,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 if (!currentUser) {
-                    alert('Please log in to create a task');
+                    window.location.href = 'login.html';
                     return;
                 }
                 showTaskPreview();
