@@ -359,7 +359,7 @@
             background-color: #f5f5f5;
         }
 
-        /* RECENTER BUTTON */
+        /* RECENTER BUTTON - INVISIBLE AT CURRENT LOCATION */
         .map-recenter-btn {
             position: absolute;
             top: -28px;
@@ -374,11 +374,15 @@
             justify-content: center;
             cursor: pointer;
             z-index: 200;
-            transition: transform 0.2s;
+            transition: transform 0.2s, opacity 0.3s;
             backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
         }
         .map-recenter-btn.visible {
             display: flex;
+            opacity: 1;
+            pointer-events: auto;
         }
         .map-recenter-btn:active {
             transform: scale(0.9);
@@ -388,7 +392,7 @@
             color: white;
         }
 
-        /* === BOTTOM NAVIGATION BAR === */
+        /* === BOTTOM NAVIGATION BAR WITH NOTIFICATION DOT === */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -417,6 +421,7 @@
             background: transparent;
             border: none;
             font-family: 'Manrope', sans-serif;
+            position: relative;
         }
         .nav-item.active {
             color: #000;
@@ -433,6 +438,22 @@
         .nav-item span:last-child {
             font-size: 0.65rem;
             font-weight: 500;
+        }
+        
+        /* Notification Dot */
+        .notification-dot {
+            position: absolute;
+            top: 2px;
+            right: 25px;
+            width: 8px;
+            height: 8px;
+            background: #A6CBE3;
+            border-radius: 50%;
+            display: none;
+        }
+        
+        .notification-dot.visible {
+            display: block;
         }
 
         /* === TASKS PAGE === */
@@ -637,9 +658,10 @@
             font-size: 1rem;
             margin-bottom: 0.25rem;
             color: #000;
+            text-transform: capitalize;
         }
         
-        .task-address {
+        .task-amount {
             font-weight: 500;
             font-size: 0.85rem;
             color: #000;
@@ -694,10 +716,10 @@
             content: '';
             position: absolute;
             left: 11px;
-            top: 30px;
+            top: 28px;
             width: 2px;
-            height: calc(100% + 0.25rem);
-            background: #f0f0f0;
+            height: calc(100% - 8px);
+            background: #e0e0e0;
             transition: background 0.5s ease;
         }
         
@@ -716,7 +738,7 @@
                 opacity: 0;
             }
             100% {
-                height: calc(100% + 0.25rem);
+                height: calc(100% - 8px);
                 opacity: 1;
             }
         }
@@ -729,23 +751,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            font-weight: 600;
             z-index: 2;
             flex-shrink: 0;
             transition: all 0.3s ease;
-            animation: pop-in 0.5s ease;
-        }
-        
-        @keyframes pop-in {
-            0% {
-                transform: scale(0);
-            }
-            80% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
         }
         
         .progress-step-vertical.completed .step-indicator-vertical {
@@ -779,6 +789,7 @@
             font-weight: 500;
             font-size: 0.9rem;
             margin-bottom: 0.25rem;
+            text-transform: lowercase;
         }
         
         .step-title-vertical::first-letter {
@@ -822,6 +833,7 @@
         
         .meta-row-value {
             font-weight: 500;
+            text-transform: capitalize;
         }
         
         /* Empty States */
@@ -964,7 +976,7 @@
             text-overflow: ellipsis;
         }
 
-        /* LOCATION ICON - NEW ICON */
+        /* LOCATION ICON */
         .location-pin-icon {
             position: absolute;
             right: 8px;
@@ -1322,7 +1334,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR -->
+    <!-- BOTTOM NAVIGATION BAR WITH NOTIFICATION DOT -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/home%202.png" alt="Home">
@@ -1331,6 +1343,7 @@
         <button class="nav-item" id="navTasks" data-page="tasks">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Tasks">
             <span>Tasks</span>
+            <span class="notification-dot" id="taskNotificationDot"></span>
         </button>
         <button class="nav-item" id="navAccount" data-page="account">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/user%207.png" alt="Account">
@@ -1645,7 +1658,7 @@
                 splashScreen.style.display = 'none';
             }
 
-            // Map init
+            // Map init - FIXED LOCATION ACCURACY
             const map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
@@ -1661,157 +1674,173 @@
             let isManualMove = false;
             const recenterBtn = document.getElementById('mapRecenterBtn');
             const locationInput = document.getElementById('locationInput');
+            const ZOOM_THRESHOLD = 1.0; // Distance threshold for recenter button
+            const DESIRED_ZOOM = 16;
 
             map.on('load', () => {
                 debugLog('Map loaded successfully', 'success');
                 
-                setTimeout(() => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            (pos) => {
-                                currentLat = pos.coords.latitude;
-                                currentLng = pos.coords.longitude;
-                                originalLat = currentLat;
-                                originalLng = currentLng;
-                                
-                                map.flyTo({
-                                    center: [currentLng, currentLat],
-                                    zoom: 16,
-                                    speed: 2.5,
-                                    curve: 1,
-                                    easing: (t) => t
+                // Get user location immediately with high accuracy
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            originalLat = currentLat;
+                            originalLng = currentLng;
+                            
+                            // Fly to exact location with high speed
+                            map.flyTo({
+                                center: [currentLng, currentLat],
+                                zoom: DESIRED_ZOOM,
+                                speed: 2.5,
+                                curve: 1,
+                                easing: (t) => t
+                            });
+                            
+                            // Add user location marker with radius
+                            if (userLocationMarker) userLocationMarker.remove();
+                            if (userLocationRadius) userLocationRadius.remove();
+                            
+                            const pinElement = document.createElement('div');
+                            pinElement.className = 'pulsing-pin';
+                            
+                            userLocationMarker = new mapboxgl.Marker({ 
+                                element: pinElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            const radiusElement = document.createElement('div');
+                            radiusElement.className = 'user-location-radius';
+                            
+                            userLocationRadius = new mapboxgl.Marker({ 
+                                element: radiusElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            // Get location name
+                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.features && data.features[0]) {
+                                        locationInput.value = data.features[0].place_name;
+                                    }
                                 });
-                                
-                                if (userLocationMarker) userLocationMarker.remove();
-                                if (userLocationRadius) userLocationRadius.remove();
-                                
-                                const pinElement = document.createElement('div');
-                                pinElement.className = 'pulsing-pin';
-                                
-                                userLocationMarker = new mapboxgl.Marker({ 
-                                    element: pinElement,
-                                    anchor: 'center'
-                                })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                                
-                                const radiusElement = document.createElement('div');
-                                radiusElement.className = 'user-location-radius';
-                                
-                                userLocationRadius = new mapboxgl.Marker({ 
-                                    element: radiusElement,
-                                    anchor: 'center'
-                                })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                                
-                                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-                                    .then(r => r.json())
-                                    .then(data => {
-                                        if (data.features && data.features[0]) {
-                                            locationInput.value = data.features[0].place_name;
-                                        }
-                                    });
-                                
-                                recenterBtn.classList.remove('visible');
-                                
-                                debugLog('Geolocation successful, zoomed to location', 'success');
-                            },
-                            (err) => {
-                                currentLat = -26.195246;
-                                currentLng = 28.034088;
-                                originalLat = currentLat;
-                                originalLng = currentLng;
-                                
-                                map.flyTo({
-                                    center: [currentLng, currentLat],
-                                    zoom: 16,
-                                    speed: 2.5,
-                                    curve: 1,
-                                    easing: (t) => t
-                                });
-                                
-                                const pinElement = document.createElement('div');
-                                pinElement.className = 'pulsing-pin';
-                                
-                                userLocationMarker = new mapboxgl.Marker({ 
-                                    element: pinElement,
-                                    anchor: 'center'
-                                })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                                
-                                const radiusElement = document.createElement('div');
-                                radiusElement.className = 'user-location-radius';
-                                
-                                userLocationRadius = new mapboxgl.Marker({ 
-                                    element: radiusElement,
-                                    anchor: 'center'
-                                })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                                
-                                locationInput.value = 'Johannesburg, South Africa';
-                                
-                                debugLog(`Geolocation error: ${err.message}, using default`, 'error');
-                            },
-                            { enableHighAccuracy: true, timeout: 10000 }
-                        );
-                    } else {
-                        currentLat = -26.195246;
-                        currentLng = 28.034088;
-                        originalLat = currentLat;
-                        originalLng = currentLng;
-                        
-                        map.flyTo({
-                            center: [currentLng, currentLat],
-                            zoom: 16,
-                            speed: 2.5,
-                            curve: 1,
-                            easing: (t) => t
-                        });
-                        
-                        const pinElement = document.createElement('div');
-                        pinElement.className = 'pulsing-pin';
-                        
-                        userLocationMarker = new mapboxgl.Marker({ 
-                            element: pinElement,
-                            anchor: 'center'
-                        })
-                        .setLngLat([currentLng, currentLat])
-                        .addTo(map);
-                        
-                        const radiusElement = document.createElement('div');
-                        radiusElement.className = 'user-location-radius';
-                        
-                        userLocationRadius = new mapboxgl.Marker({ 
-                            element: radiusElement,
-                            anchor: 'center'
-                        })
-                        .setLngLat([currentLng, currentLat])
-                        .addTo(map);
-                        
-                        locationInput.value = 'Johannesburg, South Africa';
-                    }
-                }, 1000);
+                            
+                            recenterBtn.classList.remove('visible');
+                            
+                            debugLog(`Geolocation successful: ${currentLat}, ${currentLng}`, 'success');
+                        },
+                        (err) => {
+                            debugLog(`Geolocation error: ${err.message}`, 'error');
+                            // Fallback to default location
+                            currentLat = -26.195246;
+                            currentLng = 28.034088;
+                            originalLat = currentLat;
+                            originalLng = currentLng;
+                            
+                            map.flyTo({
+                                center: [currentLng, currentLat],
+                                zoom: DESIRED_ZOOM,
+                                speed: 2.5
+                            });
+                            
+                            const pinElement = document.createElement('div');
+                            pinElement.className = 'pulsing-pin';
+                            
+                            userLocationMarker = new mapboxgl.Marker({ 
+                                element: pinElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            const radiusElement = document.createElement('div');
+                            radiusElement.className = 'user-location-radius';
+                            
+                            userLocationRadius = new mapboxgl.Marker({ 
+                                element: radiusElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            locationInput.value = 'Johannesburg, South Africa';
+                        },
+                        { 
+                            enableHighAccuracy: true, 
+                            timeout: 10000,
+                            maximumAge: 0 // Force fresh location
+                        }
+                    );
+                } else {
+                    debugLog('Geolocation not supported', 'error');
+                    currentLat = -26.195246;
+                    currentLng = 28.034088;
+                    originalLat = currentLat;
+                    originalLng = currentLng;
+                    
+                    map.flyTo({
+                        center: [currentLng, currentLat],
+                        zoom: DESIRED_ZOOM,
+                        speed: 2.5
+                    });
+                    
+                    const pinElement = document.createElement('div');
+                    pinElement.className = 'pulsing-pin';
+                    
+                    userLocationMarker = new mapboxgl.Marker({ 
+                        element: pinElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([currentLng, currentLat])
+                    .addTo(map);
+                    
+                    const radiusElement = document.createElement('div');
+                    radiusElement.className = 'user-location-radius';
+                    
+                    userLocationRadius = new mapboxgl.Marker({ 
+                        element: radiusElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([currentLng, currentLat])
+                    .addTo(map);
+                    
+                    locationInput.value = 'Johannesburg, South Africa';
+                }
             });
 
             map.on('error', (e) => {
                 debugLog(`Map error: ${e.error}`, 'error');
             });
 
+            // FIXED: Recenter button visibility logic
             function checkMapMovement() {
-                if (!originalLat || !originalLng) return;
+                if (!originalLat || !originalLng || !userLocationMarker) return;
                 
                 const center = map.getCenter();
                 const currentZoom = map.getZoom();
                 
-                const distance = Math.sqrt(
-                    Math.pow(center.lng - originalLng, 2) + 
-                    Math.pow(center.lat - originalLat, 2)
-                );
-                
-                if ((distance > 0.001 || currentZoom < 15.5 || currentZoom > 16.5) && isManualMove) {
+                // Calculate distance from original location
+                const R = 6371e3; // Earth's radius in meters
+                const φ1 = originalLat * Math.PI/180;
+                const φ2 = center.lat * Math.PI/180;
+                const Δφ = (center.lat - originalLat) * Math.PI/180;
+                const Δλ = (center.lng - originalLng) * Math.PI/180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const distance = R * c; // Distance in meters
+
+                // Show recenter button if moved more than 50 meters or zoom changed significantly
+                const zoomDiff = Math.abs(currentZoom - DESIRED_ZOOM);
+                if (distance > 50 || zoomDiff > 0.5) {
                     recenterBtn.classList.add('visible');
                 } else {
                     recenterBtn.classList.remove('visible');
@@ -1823,28 +1852,14 @@
 
             recenterBtn.addEventListener('click', () => {
                 if (originalLat && originalLng) {
-                    map.flyTo({ center: [originalLng, originalLat], zoom: 16, speed: 1.5 });
+                    map.flyTo({ 
+                        center: [originalLng, originalLat], 
+                        zoom: DESIRED_ZOOM, 
+                        speed: 1.5 
+                    });
                     
-                    if (userLocationMarker) {
-                        userLocationMarker.setLngLat([originalLng, originalLat]);
-                    }
-                    if (userLocationRadius) {
-                        userLocationRadius.setLngLat([originalLng, originalLat]);
-                    }
-                    
-                    currentLat = originalLat;
-                    currentLng = originalLng;
                     isManualMove = false;
-                    
                     recenterBtn.classList.remove('visible');
-                    
-                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${originalLng},${originalLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.features && data.features[0]) {
-                                locationInput.value = data.features[0].place_name;
-                            }
-                        });
                 }
             });
 
@@ -1870,7 +1885,6 @@
                     accountPage.classList.remove('active');
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
-                    recenterBtn.style.display = 'flex';
                     
                     setTimeout(() => map.resize(), 100);
                 } else if (page === 'tasks') {
@@ -1879,7 +1893,6 @@
                     accountPage.classList.remove('active');
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
-                    recenterBtn.style.display = 'none';
                     
                     if (currentUser) {
                         loadUserTasks();
@@ -1893,7 +1906,6 @@
                     tasksPage.classList.remove('active');
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
-                    recenterBtn.style.display = 'none';
                 }
             }
 
@@ -1936,6 +1948,15 @@
                         
                         tasksCount.textContent = allTasks.length.toString();
                         displayTasksByCategory();
+                        
+                        // Show notification dot if there are any open tasks
+                        const hasOpenTasks = allTasks.some(task => task.status === 'open');
+                        const dot = document.getElementById('taskNotificationDot');
+                        if (hasOpenTasks) {
+                            dot.classList.add('visible');
+                        } else {
+                            dot.classList.remove('visible');
+                        }
                     })
                     .catch((error) => {
                         debugLog(`Error loading tasks: ${error.message}`, 'error');
@@ -1977,6 +1998,13 @@
                     return task.address.split(',')[0];
                 }
                 return 'Address not set';
+            }
+
+            function getFormattedBudget(task) {
+                if (task.budget === 'open') {
+                    return 'Open to offers';
+                }
+                return `R ${task.budget}`;
             }
 
             function getStatusFromTask(task) {
@@ -2046,6 +2074,7 @@
                         const formattedDate = formatDateWithOrdinal(taskDate);
                         const formattedTime = formatTimeFromTimestamp(task.createdAt);
                         const addressDisplay = getAddressFromTask(task);
+                        const budgetDisplay = getFormattedBudget(task);
                         
                         html += `
                             <div class="task-card" data-task-id="${task.taskId || task.id}" data-task-status="${task.status || 'open'}" data-task-category="${task.category || 'Task'}" data-task-address="${addressDisplay}" data-task-date="${taskDate.toISOString()}">
@@ -2058,7 +2087,7 @@
                                             <span class="task-date">${formattedDate}</span> · <span class="task-time">${formattedTime}</span>
                                         </div>
                                         <div class="task-title">${task.category || 'Task'}</div>
-                                        <div class="task-address">${addressDisplay}</div>
+                                        <div class="task-amount">${budgetDisplay}</div>
                                     </div>
                                     <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')">
                                         <i class="fi fi-sr-arrows-retweet"></i>
