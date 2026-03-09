@@ -1762,7 +1762,7 @@
             
             async function fetchTasks() {
                 try {
-                    // Single skeleton for faster loading
+                    // Show loading state
                     sheetContent.innerHTML = '<div class="skeleton-card"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div></div>';
                     
                     // Get all tasks from all users
@@ -1774,14 +1774,21 @@
                     // Flatten tasks from all users
                     for (let userId in allUsersTasks) {
                         const userTasks = allUsersTasks[userId];
-                        for (let taskId in userTasks) {
-                            tasks.push({
-                                id: taskId,
-                                userId: userId,
-                                ...userTasks[taskId]
-                            });
+                        if (userTasks) {
+                            for (let taskId in userTasks) {
+                                const task = userTasks[taskId];
+                                if (task) {
+                                    tasks.push({
+                                        id: taskId,
+                                        posterId: userId,
+                                        ...task
+                                    });
+                                }
+                            }
                         }
                     }
+
+                    console.log('Fetched tasks:', tasks.length);
 
                     if (currentUser) {
                         // Filter out tasks posted by current user
@@ -1801,6 +1808,10 @@
                             task.status === 'open'
                         );
                     }
+
+                    console.log('Available tasks:', availableTasks.length);
+                    console.log('In progress tasks:', inProgressTasks.length);
+                    console.log('Matching requests:', matchingRequests.length);
 
                     if (availableTasks.length > lastTaskCount && lastTaskCount > 0) {
                         const newTasks = availableTasks.slice(0, availableTasks.length - lastTaskCount);
