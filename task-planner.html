@@ -2181,37 +2181,50 @@
                 return str.toString().toLowerCase().trim();
             }
 
+            // IMPROVED HELPER MATCHING FUNCTION WITH DETAILED LOGGING
             function findAndAssignHelper(taskId, taskCategory) {
-                console.log('searching for helper with skill:', taskCategory);
+                console.log('%c🔍 SEARCHING FOR HELPER', 'background: #blue; color: white; font-size: 16px');
+                console.log('Task ID:', taskId);
+                console.log('Task Category:', taskCategory);
                 
                 const cleanTaskCategory = toLowerCase(taskCategory);
-                console.log('cleaned task category:', cleanTaskCategory);
+                console.log('Cleaned Task Category:', cleanTaskCategory);
                 
                 database.ref('users').once('value')
                     .then((snapshot) => {
                         const users = snapshot.val() || {};
-                        let matchedHelper = null;
+                        console.log('%c📋 ALL USERS IN DATABASE:', 'font-weight: bold');
+                        console.log(users);
                         
-                        console.log('all users in database:', users);
+                        let matchedHelper = null;
+                        let helperCount = 0;
                         
                         for (let uid in users) {
                             const user = users[uid];
                             
+                            // Check if this user is a helper
                             if (user.role === 'helper') {
-                                console.log('checking helper:', user.name || 'unknown', 'skills:', user.skills);
+                                helperCount++;
+                                console.log(`%c👤 CHECKING HELPER ${helperCount}:`, 'color: orange');
+                                console.log('  UID:', uid);
+                                console.log('  Name:', user.name);
+                                console.log('  Email:', user.email);
+                                console.log('  Skills:', user.skills);
                                 
                                 if (Array.isArray(user.skills)) {
+                                    console.log(`  Skills array length: ${user.skills.length}`);
+                                    
                                     for (let i = 0; i < user.skills.length; i++) {
                                         const skill = user.skills[i];
                                         if (skill) {
                                             const cleanSkill = toLowerCase(skill);
-                                            console.log(`comparing task "${cleanTaskCategory}" with skill "${cleanSkill}"`);
+                                            console.log(`  Comparing task "${cleanTaskCategory}" with skill ${i+1}: "${cleanSkill}"`);
                                             
                                             if (cleanSkill === cleanTaskCategory) {
-                                                console.log('exact match found!');
+                                                console.log('%c✅ EXACT MATCH FOUND!', 'color: green; font-weight: bold');
                                                 matchedHelper = {
                                                     uid: uid,
-                                                    name: user.name || 'helper',
+                                                    name: user.name || 'Helper',
                                                     email: user.email || '',
                                                     phone: user.phone || ''
                                                 };
@@ -2219,25 +2232,32 @@
                                             }
                                         }
                                     }
+                                } else {
+                                    console.log('  ⚠️ Skills is not an array:', user.skills);
                                 }
                                 
                                 if (matchedHelper) break;
                             }
                         }
                         
+                        console.log(`Total helpers found: ${helperCount}`);
+                        
                         if (matchedHelper) {
-                            console.log('matched helper:', matchedHelper);
+                            console.log('%c🎉 MATCHED HELPER:', 'color: green; font-size: 14px');
+                            console.log('  UID:', matchedHelper.uid);
+                            console.log('  Name:', matchedHelper.name);
                             
+                            // Update the task with assigned helper
                             database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
                                 assignedHelperId: matchedHelper.uid,
                                 assignedHelperName: matchedHelper.name,
                                 status: 'assigned',
                                 assignedAt: Date.now()
                             }).then(() => {
-                                console.log('helper assigned successfully');
+                                console.log('%c✅ HELPER ASSIGNED SUCCESSFULLY!', 'color: green; font-size: 16px');
                                 
                                 const toast = document.getElementById('successToast');
-                                toast.textContent = `helper ${matchedHelper.name} assigned to your task!`;
+                                toast.textContent = `✅ Helper ${matchedHelper.name} assigned to your task!`;
                                 toast.style.display = 'block';
                                 setTimeout(() => {
                                     toast.style.display = 'none';
@@ -2247,13 +2267,14 @@
                                     loadUserTasks();
                                 }
                             }).catch(error => {
-                                console.error('error assigning helper:', error);
+                                console.error('❌ Error assigning helper:', error);
                             });
                         } else {
-                            console.log('no matching helper found for skill:', cleanTaskCategory);
+                            console.log('%c❌ NO MATCHING HELPER FOUND', 'color: red; font-size: 16px');
+                            console.log('No helper with skill:', cleanTaskCategory);
                             
                             const toast = document.getElementById('successToast');
-                            toast.textContent = 'no helper available right now. we\'ll notify you when one joins!';
+                            toast.textContent = 'No helper available right now. We\'ll notify you when one joins!';
                             toast.style.backgroundColor = '#ff9800';
                             toast.style.display = 'block';
                             setTimeout(() => {
@@ -2263,7 +2284,7 @@
                         }
                     })
                     .catch(error => {
-                        console.error('error searching for helpers:', error);
+                        console.error('❌ Error searching for helpers:', error);
                     });
             }
 
