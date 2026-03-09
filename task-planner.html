@@ -152,8 +152,8 @@
             animation: pulse-ring 2s infinite ease-in-out;
         }
         
-        /* STATIC LOCATION PIN (smaller version) */
-        .static-location-pin-small {
+        /* STATIC LOCATION PIN (smaller version) - same as create task */
+        .static-location-pin-small, .timeline-dot-small {
             width: 16px;
             height: 16px;
             background: #000000;
@@ -791,13 +791,7 @@
             color: #000;
         }
         
-        .task-detail-title {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 600;
-            font-size: 1.2rem;
-            color: #000000;
-        }
-        
+        /* Title removed as requested */
         .task-detail-header-spacer {
             width: 32px;
         }
@@ -870,6 +864,32 @@
             font-size: 1.2rem;
         }
         
+        /* Task state badge in header */
+        .task-state-badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            background: #f0f0f0;
+            color: #333;
+            text-transform: uppercase;
+        }
+        
+        .task-state-badge.current {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .task-state-badge.future {
+            background: #fff3e0;
+            color: #e67e22;
+        }
+        
+        .task-state-badge.past {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
         /* Map container in detail page */
         .detail-map-container {
             width: 100%;
@@ -880,7 +900,7 @@
             border: 1px solid #f0f0f0;
         }
         
-        /* Timeline */
+        /* Timeline - with smaller dots and icons */
         .task-timeline {
             margin: 1.5rem 0;
             padding-left: 8px;
@@ -907,15 +927,32 @@
             background: #e0e0e0;
         }
         
-        .timeline-dot {
-            width: 40px;
-            height: 40px;
+        .timeline-dot-small {
+            width: 16px;
+            height: 16px;
             background: #000000;
-            border: 3px solid white;
+            border: 2px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
             flex-shrink: 0;
             z-index: 2;
+            margin-top: 12px;
+        }
+        
+        .timeline-icon-small {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 12px;
+        }
+        
+        .timeline-icon-small img {
+            width: 16px;
+            height: 16px;
+            opacity: 0.8;
         }
         
         .timeline-content {
@@ -1497,8 +1534,8 @@
     <div class="task-detail-page" id="taskDetailPage">
         <div class="task-detail-header">
             <button class="task-detail-back-btn" id="taskDetailBackBtn">←</button>
-            <div class="task-detail-title">Task details</div>
             <div class="task-detail-header-spacer"></div>
+            <!-- Task state badge will be inserted here dynamically -->
         </div>
         
         <div class="task-detail-content" id="taskDetailContent">
@@ -2217,6 +2254,7 @@
             // Show task detail page
             function showTaskDetail(task) {
                 const detailContent = document.getElementById('taskDetailContent');
+                const headerSpacer = document.querySelector('.task-detail-header-spacer');
                 
                 // Format dates
                 const createdDate = task.createdAt ? new Date(task.createdAt) : new Date();
@@ -2226,6 +2264,16 @@
                 // Helper name (placeholder)
                 const helperName = task.assignedHelperName || 'Not assigned';
                 const helperInitial = helperName.charAt(0).toUpperCase();
+                
+                // Add task state badge to header
+                const taskStateBadge = document.createElement('span');
+                taskStateBadge.className = `task-state-badge ${task.taskState || 'current'}`;
+                taskStateBadge.textContent = (task.taskState || 'current').toUpperCase();
+                
+                // Clear previous badge and add new one
+                const existingBadge = document.querySelector('.task-state-badge');
+                if (existingBadge) existingBadge.remove();
+                headerSpacer.parentNode.insertBefore(taskStateBadge, headerSpacer.nextSibling);
                 
                 // Build detail HTML
                 detailContent.innerHTML = `
@@ -2245,13 +2293,13 @@
                         </div>
                     </div>
                     
-                    <!-- Mini map showing task location -->
+                    <!-- Mini map showing task location - using actual task coordinates -->
                     <div class="detail-map-container" id="taskDetailMap"></div>
                     
-                    <!-- Timeline -->
+                    <!-- Timeline with smaller dots and icons -->
                     <div class="task-timeline">
                         <div class="timeline-item">
-                            <div class="timeline-dot"></div>
+                            <div class="timeline-dot-small"></div>
                             <div class="timeline-content">
                                 <div class="timeline-title">Task location</div>
                                 <div class="timeline-subtitle">${task.address || 'Location set'}</div>
@@ -2260,8 +2308,8 @@
                         </div>
                         
                         <div class="timeline-item">
-                            <div class="timeline-icon">
-                                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" style="width: 40px; height: 40px; opacity: 0.8;">
+                            <div class="timeline-icon-small">
+                                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
                             </div>
                             <div class="timeline-content">
                                 <div class="timeline-title">${task.category || 'Task'}</div>
@@ -2278,14 +2326,17 @@
                     </div>
                 `;
                 
-                // Initialize map in detail view
+                // Initialize map in detail view with actual task coordinates
                 setTimeout(() => {
                     const mapContainer = document.getElementById('taskDetailMap');
                     if (mapContainer && task.location) {
+                        const lat = task.location.lat || currentLat || -26.195246;
+                        const lng = task.location.lng || currentLng || 28.034088;
+                        
                         const detailMap = new mapboxgl.Map({
                             container: 'taskDetailMap',
                             style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [task.location.lng || 28.034088, task.location.lat || -26.195246],
+                            center: [lng, lat],
                             zoom: 14,
                             interactive: false
                         });
@@ -2295,7 +2346,23 @@
                         pinElement.className = 'pulsing-pin';
                         
                         new mapboxgl.Marker({ element: pinElement })
-                            .setLngLat([task.location.lng || 28.034088, task.location.lat || -26.195246])
+                            .setLngLat([lng, lat])
+                            .addTo(detailMap);
+                    } else {
+                        // Fallback to current location
+                        const detailMap = new mapboxgl.Map({
+                            container: 'taskDetailMap',
+                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
+                            center: [currentLng || 28.034088, currentLat || -26.195246],
+                            zoom: 14,
+                            interactive: false
+                        });
+                        
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'pulsing-pin';
+                        
+                        new mapboxgl.Marker({ element: pinElement })
+                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
                             .addTo(detailMap);
                     }
                 }, 100);
@@ -2521,22 +2588,60 @@
                 // Show suggestions when input is focused or user types
                 mainSearchInput.addEventListener('focus', function() {
                     if (!this.value.trim()) {
-                        // Show top suggestions when focused empty
-                        mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
-                            `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                        ).join('');
+                        // Show top suggestions when focused empty with helpful message
+                        mainSuggestionsList.innerHTML = `
+                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
+                            ${taskSuggestions.slice(0, 7).map(t => 
+                                `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                            ).join('')}
+                        `;
                         mainSuggestionsList.classList.add('active');
+                        
+                        // Reattach click handlers
+                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
+                            el.addEventListener('click', function() {
+                                const task = this.dataset.task;
+                                mainSearchInput.value = task;
+                                taskInput.value = capitalizeSentence(task);
+                                mainSuggestionsList.classList.remove('active');
+                                validateForm();
+                                if (currentUser) {
+                                    createTaskContainer.style.display = 'flex';
+                                } else {
+                                    window.location.href = 'login.html';
+                                }
+                            });
+                        });
                     }
                 });
                 
                 mainSearchInput.addEventListener('input', function() {
                     const q = this.value.trim().toLowerCase();
                     if (q.length < 1) { 
-                        // Show top suggestions when empty
-                        mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
-                            `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                        ).join('');
+                        // Show top suggestions when empty with helpful message
+                        mainSuggestionsList.innerHTML = `
+                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
+                            ${taskSuggestions.slice(0, 7).map(t => 
+                                `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                            ).join('')}
+                        `;
                         mainSuggestionsList.classList.add('active');
+                        
+                        // Reattach click handlers
+                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
+                            el.addEventListener('click', function() {
+                                const task = this.dataset.task;
+                                mainSearchInput.value = task;
+                                taskInput.value = capitalizeSentence(task);
+                                mainSuggestionsList.classList.remove('active');
+                                validateForm();
+                                if (currentUser) {
+                                    createTaskContainer.style.display = 'flex';
+                                } else {
+                                    window.location.href = 'login.html';
+                                }
+                            });
+                        });
                         return; 
                     }
                     
