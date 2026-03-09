@@ -42,6 +42,64 @@
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
 
     <style>
+        /* Add debug console styles */
+        .debug-console {
+            position: fixed;
+            bottom: 60px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000000;
+            display: none;
+            border: 2px solid #00ff00;
+        }
+        
+        .debug-console.visible {
+            display: block;
+        }
+        
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .debug-title {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .debug-close {
+            color: #fff;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        
+        .debug-log {
+            color: #0f0;
+            margin: 2px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .debug-error {
+            color: #ff6b6b;
+        }
+        
+        .debug-success {
+            color: #69db7e;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -58,27 +116,6 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
-        }
-
-        .debug-panel {
-            position: absolute;
-            top: 80px;
-            left: 16px;
-            right: 16px;
-            background: rgba(0,0,0,0.9);
-            color: #0f0;
-            padding: 12px;
-            border-radius: 5px;
-            z-index: 10000;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .debug-panel.visible {
-            display: none;
         }
 
         #map {
@@ -156,85 +193,6 @@
             border-radius: 50%;
             box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
             flex-shrink: 0;
-        }
-        
-        .helper-marker {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 3px solid #000000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .helper-marker:hover {
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-        
-        .task-marker {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #000000;
-            border: 4px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
-            cursor: pointer;
-            animation: taskPulse 2s infinite ease-in-out;
-        }
-        
-        .task-marker span {
-            transform: rotate(45deg);
-        }
-        
-        @keyframes taskPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0,0,0,0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 15px rgba(0,0,0,0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0,0,0,0);
-            }
-        }
-        
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
-            }
-        }
-        
-        @keyframes pulse-ring {
-            0% {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0.7;
-            }
-            70% {
-                transform: translate(-50%, -50%) scale(1.2);
-                opacity: 0;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0;
-            }
         }
 
         .home-sheet {
@@ -685,10 +643,6 @@
         
         .task-repost-btn:active i {
             color: #000;
-        }
-        
-        .task-details-expanded {
-            display: none;
         }
         
         .empty-state {
@@ -1444,8 +1398,13 @@
     </style>
 </head>
 <body>
-    <div class="debug-panel" id="debugPanel">
-        <div id="debugContent">Waiting for Firebase auth...</div>
+    <!-- Debug Console -->
+    <div class="debug-console" id="debugConsole">
+        <div class="debug-header">
+            <span class="debug-title">🐛 Debug Console</span>
+            <span class="debug-close" onclick="document.getElementById('debugConsole').classList.remove('visible')">✕</span>
+        </div>
+        <div id="debugLogs"></div>
     </div>
 
     <div class="splash-screen" id="splashScreen">
@@ -1656,9 +1615,35 @@
                 measurementId: "G-Z8SPLR0HSL"
             };
 
-            function debugLog(message, type = 'info') {
-                console.log(`[${type}] ${message}`);
+            // Debug console functions
+            const debugConsole = document.getElementById('debugConsole');
+            const debugLogs = document.getElementById('debugLogs');
+            
+            function addDebugLog(message, type = 'info') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `debug-log ${type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : ''}`;
+                logEntry.textContent = `> ${message}`;
+                debugLogs.appendChild(logEntry);
+                debugLogs.scrollTop = debugLogs.scrollHeight;
+                
+                // Also log to browser console
+                console.log(`[DEBUG] ${message}`);
             }
+            
+            function showDebugConsole() {
+                debugConsole.classList.add('visible');
+            }
+            
+            function clearDebugConsole() {
+                debugLogs.innerHTML = '';
+            }
+
+            // Show debug console on page load
+            window.addEventListener('load', () => {
+                setTimeout(showDebugConsole, 1000);
+                addDebugLog('🔧 Debug console initialized');
+                addDebugLog('Firebase config loaded');
+            });
 
             let database;
             let currentUser = null;
@@ -1667,6 +1652,7 @@
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
+                    addDebugLog('✅ Firebase initialized');
                 }
                 
                 database = firebase.database();
@@ -1684,6 +1670,8 @@
                             emailVerified: user.emailVerified,
                             isAnonymous: false
                         };
+                        
+                        addDebugLog(`👤 User logged in: ${user.email}`);
                         
                         database.ref('users/' + user.uid).once('value')
                             .then((snapshot) => {
@@ -1705,6 +1693,7 @@
                                 document.getElementById('accountEmail').textContent = user.email || 'No email';
                                 document.getElementById('accountUid').textContent = user.uid.substring(0, 8) + '...';
                                 checkNotificationDot();
+                                addDebugLog(`❌ Error loading profile: ${error.message}`, 'error');
                             });
                         
                         accountLogoutBtn.style.display = 'block';
@@ -1722,6 +1711,7 @@
                         accountLoginBtn.onclick = () => window.location.href = 'login.html';
                         
                         document.getElementById('taskNotificationDot').classList.remove('visible');
+                        addDebugLog('👤 Guest user');
                     } else {
                         currentUser = null;
                         userProfile = null;
@@ -1731,7 +1721,7 @@
                 });
                 
             } catch (error) {
-                debugLog(`Firebase init error: ${error.message}`, 'error');
+                addDebugLog(`❌ Firebase init error: ${error.message}`, 'error');
             }
 
             function checkNotificationDot() {
@@ -1758,6 +1748,7 @@
                 if (currentUser) {
                     firebase.auth().signOut().then(() => {
                         document.getElementById('taskNotificationDot').classList.remove('visible');
+                        addDebugLog('👋 User logged out');
                     }).catch((error) => {});
                 }
             });
@@ -2109,6 +2100,7 @@
                         tasksContainer.innerHTML = '<div class="empty-state"><h3>Error loading tasks</h3><p>Please try again</p><button class="post-btn" onclick="location.reload()">Try again</button></div>';
                         tasksCount.textContent = '0';
                         document.getElementById('taskNotificationDot').classList.remove('visible');
+                        addDebugLog(`❌ Error loading tasks: ${error.message}`, 'error');
                     });
             }
             
@@ -2176,20 +2168,24 @@
                 return null;
             }
 
-            // ===== FIXED HELPER MATCHING FUNCTION =====
+            // ===== FIXED HELPER MATCHING FUNCTION WITH DEBUG CONSOLE =====
             function findAndAssignHelper(taskId, taskCategory) {
-                console.log('%c🔍 SEARCHING FOR HELPER', 'background: blue; color: white; font-size: 16px');
-                console.log('Task ID:', taskId);
-                console.log('Task Category:', taskCategory);
+                addDebugLog('🔍 ===== STARTING HELPER SEARCH =====');
+                addDebugLog(`Task ID: ${taskId}`);
+                addDebugLog(`Task Category: "${taskCategory}"`);
+                
+                if (!currentUser) {
+                    addDebugLog('❌ No current user logged in', 'error');
+                    return;
+                }
                 
                 const cleanTaskCategory = taskCategory.toLowerCase().trim();
-                console.log('Cleaned Task Category:', cleanTaskCategory);
+                addDebugLog(`Cleaned category: "${cleanTaskCategory}"`);
                 
                 database.ref('users').once('value')
                     .then((snapshot) => {
                         const users = snapshot.val() || {};
-                        console.log('%c📋 ALL USERS IN DATABASE:', 'font-weight: bold');
-                        console.log(users);
+                        addDebugLog(`📊 Found ${Object.keys(users).length} total users in database`);
                         
                         let matchedHelper = null;
                         let helperCount = 0;
@@ -2199,23 +2195,27 @@
                             
                             if (user.role === 'helper') {
                                 helperCount++;
-                                console.log(`%c👤 CHECKING HELPER ${helperCount}:`, 'color: orange');
-                                console.log('  UID:', uid);
-                                console.log('  Name:', user.name);
-                                console.log('  Skills (raw):', user.skills);
+                                addDebugLog(`\n👤 CHECKING HELPER #${helperCount}:`);
+                                addDebugLog(`  UID: ${uid}`);
+                                addDebugLog(`  Name: ${user.name || 'No name'}`);
+                                addDebugLog(`  Email: ${user.email || 'No email'}`);
+                                addDebugLog(`  Raw skills: ${JSON.stringify(user.skills)}`);
                                 
-                                // ===== FIX: Convert skills object to array =====
+                                // Convert skills object to array
                                 const helperSkills = Object.values(user.skills || {});
-                                console.log('  Skills (converted to array):', helperSkills);
+                                addDebugLog(`  Converted skills array: [${helperSkills.join(', ')}]`);
                                 
                                 for (let i = 0; i < helperSkills.length; i++) {
                                     const skill = helperSkills[i];
                                     if (skill) {
                                         const cleanSkill = skill.toString().toLowerCase().trim();
-                                        console.log(`  Comparing task "${cleanTaskCategory}" with skill ${i+1}: "${cleanSkill}"`);
+                                        addDebugLog(`  Comparing: "${cleanSkill}" vs "${cleanTaskCategory}"`);
                                         
-                                        if (cleanSkill === cleanTaskCategory) {
-                                            console.log('%c✅ EXACT MATCH FOUND!', 'color: green; font-weight: bold');
+                                        // Use includes for partial matching (more flexible)
+                                        if (cleanSkill.includes(cleanTaskCategory) || cleanTaskCategory.includes(cleanSkill)) {
+                                            addDebugLog(`  ✅ MATCH FOUND!`, 'success');
+                                            addDebugLog(`  Skill "${cleanSkill}" matches category "${cleanTaskCategory}"`);
+                                            
                                             matchedHelper = {
                                                 uid: uid,
                                                 name: user.name || 'Helper',
@@ -2231,20 +2231,22 @@
                             }
                         }
                         
-                        console.log(`Total helpers found: ${helperCount}`);
+                        addDebugLog(`\n📊 Total helpers checked: ${helperCount}`);
                         
                         if (matchedHelper) {
-                            console.log('%c🎉 MATCHED HELPER:', 'color: green; font-size: 14px');
-                            console.log('  UID:', matchedHelper.uid);
-                            console.log('  Name:', matchedHelper.name);
+                            addDebugLog(`\n🎉 MATCHED HELPER FOUND:`, 'success');
+                            addDebugLog(`  UID: ${matchedHelper.uid}`);
+                            addDebugLog(`  Name: ${matchedHelper.name}`);
+                            addDebugLog(`  Email: ${matchedHelper.email}`);
                             
+                            // Update the task with assigned helper
                             database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
                                 assignedHelperId: matchedHelper.uid,
                                 assignedHelperName: matchedHelper.name,
                                 status: 'assigned',
                                 assignedAt: Date.now()
                             }).then(() => {
-                                console.log('%c✅ HELPER ASSIGNED SUCCESSFULLY!', 'color: green; font-size: 16px');
+                                addDebugLog(`✅ HELPER ASSIGNED SUCCESSFULLY!`, 'success');
                                 
                                 const toast = document.getElementById('successToast');
                                 toast.textContent = `✅ Helper ${matchedHelper.name} assigned to your task!`;
@@ -2257,11 +2259,11 @@
                                     loadUserTasks();
                                 }
                             }).catch(error => {
-                                console.error('❌ Error assigning helper:', error);
+                                addDebugLog(`❌ Error assigning helper: ${error.message}`, 'error');
                             });
                         } else {
-                            console.log('%c❌ NO MATCHING HELPER FOUND', 'color: red; font-size: 16px');
-                            console.log('No helper with skill:', cleanTaskCategory);
+                            addDebugLog(`\n❌ NO MATCHING HELPER FOUND`, 'error');
+                            addDebugLog(`No helper with skill matching: "${cleanTaskCategory}"`);
                             
                             const toast = document.getElementById('successToast');
                             toast.textContent = 'No helper available right now. We\'ll notify you when one joins!';
@@ -2272,9 +2274,11 @@
                                 toast.style.backgroundColor = '#28a745';
                             }, 4000);
                         }
+                        
+                        addDebugLog('🔍 ===== HELPER SEARCH COMPLETE =====\n');
                     })
                     .catch(error => {
-                        console.error('❌ Error searching for helpers:', error);
+                        addDebugLog(`❌ Error searching for helpers: ${error.message}`, 'error');
                     });
             }
 
@@ -3037,7 +3041,8 @@
 
                 taskRef.set(task)
                     .then(() => {
-                        console.log('task posted successfully:', task);
+                        addDebugLog('✅ Task posted successfully');
+                        addDebugLog(`Task category: "${task.category}"`);
                         
                         const toast = document.getElementById('successToast');
                         toast.textContent = 'task posted! searching for helpers...';
@@ -3071,7 +3076,7 @@
                         }, 1500);
                     })
                     .catch(err => {
-                        console.error('error posting task:', err);
+                        addDebugLog(`❌ Error posting task: ${err.message}`, 'error');
                         alert('error posting task: ' + err.message);
                         nextBtn.textContent = originalText;
                         nextBtn.disabled = false;
