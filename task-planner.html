@@ -80,7 +80,7 @@
         }
         
         .debug-console.visible {
-            display: none;
+            display: none; /* Hidden by default */
         }
 
         #map {
@@ -148,48 +148,6 @@
             pointer-events: none;
             z-index: -1;
             animation: pulse-ring 2s infinite ease-in-out;
-        }
-        
-        /* Helper pin - different color */
-        .helper-pin {
-            position: relative;
-            width: 12px;
-            height: 12px;
-            background: #A6CBE3;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(166, 203, 227, 0.3);
-            transform: translate(-50%, -50%);
-            pointer-events: auto;
-            cursor: pointer;
-            animation: pulse-helper 2s infinite ease-in-out;
-        }
-        
-        .helper-pin::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            background: rgba(166, 203, 227, 0.15);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: -1;
-            animation: pulse-ring 2s infinite ease-in-out;
-        }
-        
-        @keyframes pulse-helper {
-            0% {
-                box-shadow: 0 0 0 0 rgba(166, 203, 227, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(166, 203, 227, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(166, 203, 227, 0);
-            }
         }
         
         .static-location-pin-small, .timeline-dot-small {
@@ -410,6 +368,7 @@
             font-weight: 500;
         }
         
+        /* Notification Dots */
         .notification-dot {
             position: absolute;
             top: 0px;
@@ -427,6 +386,7 @@
             display: block;
         }
 
+        /* Tasks page notification dot */
         .tasks-notification-dot {
             position: absolute;
             top: 20px;
@@ -758,6 +718,7 @@
             padding: 1.5rem;
         }
         
+        /* Helper info row - fixed left alignment */
         .helper-info-row {
             display: flex;
             align-items: center;
@@ -850,27 +811,7 @@
             overflow: hidden;
             margin-bottom: 1.5rem;
             border: 1px solid #f0f0f0;
-            cursor: pointer;
             position: relative;
-            transition: opacity 0.2s;
-        }
-        
-        .detail-map-container:hover {
-            opacity: 0.9;
-        }
-        
-        .detail-map-container::after {
-            content: '🔍 Tap to view full map';
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            pointer-events: none;
         }
         
         .task-timeline {
@@ -991,6 +932,7 @@
             opacity: 0.8;
         }
 
+        /* Helper preview sheet on map */
         .helper-preview-sheet {
             position: absolute;
             bottom: 0;
@@ -1737,9 +1679,6 @@
             let hasTaskUpdates = false;
             let helperMarkers = [];
             let currentTaskForMap = null;
-            let userLocationMarker = null;
-            let userLocationRadius = null;
-            let currentLat = null, currentLng = null, uploadedImages = [], currentTaskId = null;
             
             try {
                 if (!firebase.apps.length) {
@@ -1824,6 +1763,7 @@
             function checkForUpdates(tasks) {
                 if (!currentUser) return;
                 
+                // Check if any task has been updated since last view
                 const lastView = localStorage.getItem('tasksLastView_' + currentUser.uid) || 0;
                 let hasUpdates = false;
                 
@@ -1942,73 +1882,51 @@
                 zoom: 0.5
             });
 
+            let userLocationMarker = null;
+            let userLocationRadius = null;
+            let currentLat = null, currentLng = null, uploadedImages = [], currentTaskId = null;
+            let mainMapPin = null;
             let originalLat = null, originalLng = null;
             let isManualMove = false;
             const recenterBtn = document.getElementById('mapRecenterBtn');
             const locationInput = document.getElementById('locationInput');
             const DESIRED_ZOOM = 16;
 
-            function showFullMapWithTask(task, helper) {
-                setActivePage('home');
-                
-                // Clear existing markers
-                if (userLocationMarker) userLocationMarker.remove();
-                if (userLocationRadius) userLocationRadius.remove();
+            function showHelperOnMap(helper, task) {
+                // Clear existing helper markers
                 helperMarkers.forEach(marker => marker.remove());
                 helperMarkers = [];
                 
-                setTimeout(() => {
-                    // Add user location marker
-                    const userPin = document.createElement('div');
-                    userPin.className = 'pulsing-pin';
-                    
-                    userLocationMarker = new mapboxgl.Marker({ 
-                        element: userPin,
-                        anchor: 'center'
-                    })
-                    .setLngLat([currentLng, currentLat])
-                    .addTo(map);
-                    
-                    const radiusElement = document.createElement('div');
-                    radiusElement.className = 'user-location-radius';
-                    
-                    userLocationRadius = new mapboxgl.Marker({ 
-                        element: radiusElement,
-                        anchor: 'center'
-                    })
-                    .setLngLat([currentLng, currentLat])
-                    .addTo(map);
-                    
-                    // Add helper marker if assigned
-                    if (helper && helper.location) {
-                        const helperPin = document.createElement('div');
-                        helperPin.className = 'helper-pin';
-                        
-                        const helperMarker = new mapboxgl.Marker({ 
-                            element: helperPin,
-                            anchor: 'center'
-                        })
-                        .setLngLat([helper.location.lng, helper.location.lat])
-                        .addTo(map);
-                        
-                        helperMarkers.push(helperMarker);
-                        
-                        // Add click handler to show preview
-                        helperPin.addEventListener('click', () => {
-                            showHelperPreview(helper, task);
-                        });
-                        
-                        // Fit bounds to show both locations
-                        const bounds = new mapboxgl.LngLatBounds();
-                        bounds.extend([currentLng, currentLat]);
-                        bounds.extend([helper.location.lng, helper.location.lat]);
-                        
-                        map.fitBounds(bounds, {
-                            padding: 100,
-                            duration: 1000
-                        });
-                    }
-                }, 100);
+                if (!helper || !helper.location) return;
+                
+                // Create helper marker
+                const helperPin = document.createElement('div');
+                helperPin.className = 'pulsing-pin';
+                helperPin.style.background = '#A6CBE3';
+                
+                const helperMarker = new mapboxgl.Marker({ 
+                    element: helperPin,
+                    anchor: 'center'
+                })
+                .setLngLat([helper.location.lng, helper.location.lat])
+                .addTo(map);
+                
+                helperMarkers.push(helperMarker);
+                
+                // Add click handler to show preview
+                helperPin.addEventListener('click', () => {
+                    showHelperPreview(helper, task);
+                });
+                
+                // Fit bounds to show both user and helper
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend([currentLng, currentLat]);
+                bounds.extend([helper.location.lng, helper.location.lat]);
+                
+                map.fitBounds(bounds, {
+                    padding: 100,
+                    duration: 1000
+                });
             }
 
             function showHelperPreview(helper, task) {
@@ -2047,6 +1965,9 @@
                                 curve: 1,
                                 easing: (t) => t
                             });
+                            
+                            if (userLocationMarker) userLocationMarker.remove();
+                            if (userLocationRadius) userLocationRadius.remove();
                             
                             const pinElement = document.createElement('div');
                             pinElement.className = 'pulsing-pin';
@@ -2445,6 +2366,13 @@
                                         toast.style.display = 'none';
                                     }, 3000);
                                     
+                                    // Load the task to show on map
+                                    database.ref('tasks/' + currentUser.uid + '/' + taskId).once('value')
+                                        .then((taskSnap) => {
+                                            const task = taskSnap.val();
+                                            showHelperOnMap(matchedHelper, task);
+                                        });
+                                    
                                     if (document.getElementById('tasksPage').classList.contains('active')) {
                                         loadUserTasks();
                                     }
@@ -2508,6 +2436,7 @@
                 if (existingState) existingState.remove();
                 headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
                 
+                // Fixed: Removed left avatar, text flush left
                 let helperInfoHtml = '';
                 if (isAssigned) {
                     helperInfoHtml = `
@@ -2544,8 +2473,7 @@
                 detailContent.innerHTML = `
                     ${helperInfoHtml}
                     
-                    <div class="detail-map-container" id="taskDetailMap" onclick="showFullMapWithTask(${JSON.stringify(task).replace(/"/g, '&quot;')}, ${isAssigned ? JSON.stringify({name: task.assignedHelperName, location: task.helperLocation || {lat: currentLat, lng: currentLng}}).replace(/"/g, '&quot;') : null})">
-                    </div>
+                    <div class="detail-map-container" id="taskDetailMap"></div>
                     
                     <div class="task-timeline">
                         <div class="timeline-item">
@@ -2600,10 +2528,6 @@
                 
                 setActivePage('taskDetail');
             }
-
-            window.showFullMapWithTask = function(task, helper) {
-                showFullMapWithTask(task, helper);
-            };
 
             function displayTasksByCategory() {
                 const tasksContainer = document.getElementById('tasksListContainer');
