@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&display=swap">
     
     <!-- Custom Fonts from GitHub -->
     <style>
@@ -25,9 +25,8 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
-    <!-- Firebase SDK (v9.22.0) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <!-- Canvas Confetti -->
@@ -35,11 +34,6 @@
     
     <!-- Config -->
     <script src="/config.js"></script>
-    
-    <!-- Flaticon Icons -->
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
 
     <style>
         * {
@@ -60,27 +54,325 @@
             width: 100%;
         }
 
-        .debug-panel {
-            position: absolute;
-            top: 80px;
-            left: 16px;
-            right: 16px;
-            background: rgba(0,0,0,0.9);
-            color: #0f0;
-            padding: 12px;
-            border-radius: 5px;
-            z-index: 10000;
+        /* === PERSISTENT DEBUG CONSOLE - ALWAYS VISIBLE ON MOBILE === */
+        .debug-console {
+            position: fixed;
+            bottom: 70px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.95);
+            color: #00ff00;
             font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
+            font-size: 11px;
+            padding: 8px;
+            border-radius: 5px;
+            z-index: 10000000;
+            max-height: 150px;
             overflow-y: auto;
-            display: none;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 10px rgba(0,255,0,0.3);
         }
         
-        .debug-panel.visible {
-            display: none;
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #00ff00;
+            position: sticky;
+            top: 0;
+            background: rgba(0,0,0,0.95);
+        }
+        
+        .debug-title {
+            font-weight: bold;
+            color: #00ff00;
+            font-size: 12px;
+        }
+        
+        .debug-clear {
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 2px 8px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        
+        .debug-clear:hover {
+            background: #00ff00;
+            color: black;
+        }
+        
+        .debug-log {
+            margin: 2px 0;
+            word-break: break-all;
+            line-height: 1.3;
+        }
+        
+        .debug-log.error {
+            color: #ff5555;
+        }
+        
+        .debug-log.success {
+            color: #55ff55;
+        }
+        
+        .debug-log.warning {
+            color: #ffff55;
         }
 
+        /* === TASK PREVIEW SCREEN === */
+        .task-preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 2500000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .task-preview-container.active {
+            display: flex;
+        }
+        
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.25rem 0.75rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        
+        .preview-title {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #000000;
+        }
+        
+        .preview-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        
+        .preview-map-section {
+            height: 200px;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #previewMap {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .preview-details {
+            background: #f5f5f5;
+            padding: 1.25rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Matching the create task hierarchy */
+        .preview-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .preview-section-label {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #000000;
+            margin-bottom: 0.5rem;
+            font-family: 'Manrope', sans-serif;
+        }
+        
+        .preview-section-value {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: white;
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 300;
+            font-size: 1rem;
+            color: rgba(0,0,0,0.8);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .preview-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        
+        .preview-image {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border: 2px solid #000;
+            border-radius: 5px;
+        }
+        
+        .preview-actions {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.25rem 1.5rem;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            background: white;
+        }
+        
+        /* Consistent button styling - only first word capitalized */
+        .preview-edit-btn {
+            flex: 1;
+            background: #e0e0e0;
+            color: #000;
+            border: none;
+            padding: 0.9rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            text-transform: lowercase;
+        }
+        
+        .preview-edit-btn::first-letter {
+            text-transform: uppercase;
+        }
+        
+        .preview-confirm-btn {
+            flex: 1;
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            text-transform: lowercase;
+        }
+        
+        .preview-confirm-btn::first-letter {
+            text-transform: uppercase;
+        }
+        
+        .preview-confirm-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Make all buttons consistent - only first word capitalized */
+        .next-button, .more-details-btn, .close-btn, .search-circle-btn, 
+        .nav-item span, .when-option, .budget-option, .accept-offer-btn,
+        .offers-back-btn, .confirm-button, .preview-edit-btn, .preview-confirm-btn {
+            text-transform: lowercase;
+        }
+        
+        .next-button::first-letter, .more-details-btn::first-letter, 
+        .when-option::first-letter, .budget-option::first-letter,
+        .accept-offer-btn::first-letter, .confirm-button::first-letter,
+        .preview-edit-btn::first-letter, .preview-confirm-btn::first-letter {
+            text-transform: uppercase;
+        }
+
+        /* Splash Screen */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            z-index: 9999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            font-family: 'Codec Cold News', sans-serif;
+            font-size: 1.5rem;
+            text-transform: lowercase !important;
+            color: white;
+            letter-spacing: 4px;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: logoAppear 1.5s ease forwards;
+        }
+
+        @keyframes logoAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+                letter-spacing: 4px;
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.1);
+                letter-spacing: 8px;
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                letter-spacing: 4px;
+            }
+        }
+
+        /* === VERIFICATION BANNER === */
+        .verification-banner {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 1rem 2rem;
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(4px);
+            font-family: 'Manrope', sans-serif;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 5px;
+        }
+
+        .verification-banner.active {
+            display: block;
+        }
+
+        .verification-banner button {
+            background: white;
+            color: black;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            margin-top: 0.75rem;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            border-radius: 5px;
+        }
+
+        /* === FULLSCREEN MAP - DARK STYLE === */
         #map {
             position: absolute;
             top: 0;
@@ -90,36 +382,7 @@
             z-index: 1;
         }
 
-        .user-location-radius {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: rgba(0, 122, 255, 0.1);
-            border: 2px solid rgba(0, 122, 255, 0.3);
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            animation: radius-pulse 2s infinite ease-in-out;
-        }
-        
-        @keyframes radius-pulse {
-            0% {
-                width: 100px;
-                height: 100px;
-                opacity: 0.5;
-            }
-            50% {
-                width: 150px;
-                height: 150px;
-                opacity: 0.2;
-            }
-            100% {
-                width: 100px;
-                height: 100px;
-                opacity: 0.5;
-            }
-        }
-
+        /* Custom pulsing pin - black dot with translucent blue ring (for main map and modal) */
         .pulsing-pin {
             position: relative;
             width: 12px;
@@ -146,68 +409,6 @@
             pointer-events: none;
             z-index: -1;
             animation: pulse-ring 2s infinite ease-in-out;
-        }
-        
-        .static-location-pin-small, .timeline-dot-small {
-            width: 16px;
-            height: 16px;
-            background: #000000;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
-            flex-shrink: 0;
-        }
-        
-        .helper-marker {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 3px solid #000000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .helper-marker:hover {
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-        
-        .task-marker {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: #000000;
-            border: 4px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
-            cursor: pointer;
-            animation: taskPulse 2s infinite ease-in-out;
-        }
-        
-        .task-marker span {
-            transform: rotate(45deg);
-        }
-        
-        @keyframes taskPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0,0,0,0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 15px rgba(0,0,0,0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0,0,0,0);
-            }
         }
         
         @keyframes pulse {
@@ -237,6 +438,36 @@
             }
         }
 
+        /* Re-center button */
+        .map-recenter-btn {
+            position: absolute;
+            top: 58vh;
+            right: 16px;
+            width: 48px;
+            height: 45px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .map-recenter-btn.visible {
+            display: flex;
+        }
+        .map-recenter-btn:active {
+            transform: scale(0.9);
+        }
+        .map-recenter-btn img {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* === HOME SHEET === */
         .home-sheet {
             position: absolute;
             bottom: 56px;
@@ -272,6 +503,7 @@
             margin: 0;
         }
 
+        /* Search container */
         .search-container {
             width: 100%;
             border-radius: 5px !important;
@@ -362,41 +594,7 @@
             background-color: #f5f5f5;
         }
 
-        .map-recenter-btn {
-            position: absolute;
-            top: -32px;
-            right: 20px;
-            width: 52px;
-            height: 52px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 200;
-            transition: transform 0.2s, opacity 0.3s;
-            background: transparent !important;
-            backdrop-filter: none !important;
-            border: none;
-            opacity: 0;
-            pointer-events: none;
-            padding: 0;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-        }
-        .map-recenter-btn.visible {
-            display: flex;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .map-recenter-btn:active {
-            transform: scale(0.9);
-        }
-        .map-recenter-btn i {
-            font-size: 1.9rem;
-            color: white;
-            background: transparent !important;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-
+        /* === BOTTOM NAVIGATION BAR === */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -407,7 +605,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 2000000; 
+            z-index: 100000;
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
@@ -425,17 +623,15 @@
             background: transparent;
             border: none;
             font-family: 'Manrope', sans-serif;
-            position: relative;
         }
         .nav-item.active {
             color: #000;
         }
         .nav-item img {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             opacity: 0.6;
             transition: opacity 0.2s;
-            display: block;
         }
         .nav-item.active img {
             opacity: 1;
@@ -443,23 +639,6 @@
         .nav-item span:last-child {
             font-size: 0.65rem;
             font-weight: 500;
-        }
-        
-        .notification-dot {
-            position: absolute;
-            top: 0px;
-            right: 0px;
-            width: 10px;
-            height: 10px;
-            background: #A6CBE3;
-            border-radius: 50%;
-            display: none;
-            border: 2px solid white;
-            z-index: 2;
-        }
-        
-        .notification-dot.visible {
-            display: block;
         }
 
         .page-container {
@@ -478,534 +657,22 @@
         .page-container.active {
             display: block;
         }
-        
-        .tasks-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            margin-top: 1rem;
-        }
-        
-        .tasks-header h2 {
+        .tasks-header, .account-header {
             font-family: 'Manrope', sans-serif;
             font-weight: 600;
             font-size: 1.5rem;
-            color: #000000;
-        }
-        
-        .tasks-header span {
-            font-size: 0.9rem;
-            color: #666;
-            background: #f0f0f0;
-            padding: 0.25rem 0.75rem;
-            border-radius: 5px;
-            font-weight: 500;
-        }
-        
-        .task-categories {
-            display: flex;
             margin-bottom: 1.5rem;
-            border-bottom: 1px solid #f0f0f0;
-            position: relative;
+            margin-top: 1rem;
         }
-        
-        .category-tab {
-            flex: 1;
+        .no-tasks-message {
             text-align: center;
-            padding: 0.75rem 0;
-            font-weight: 500;
-            color: #999;
-            cursor: pointer;
-            transition: color 0.2s;
-            position: relative;
-        }
-        
-        .category-tab.active {
-            color: #000;
-            font-weight: 600;
-        }
-        
-        .category-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: #A6CBE3;
-        }
-        
-        .account-header {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 600;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            margin-top: 1rem;
-        }
-        
-        .account-section {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 5px;
-            margin-top: 1rem;
-        }
-        
-        .account-info-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .account-info-item:last-child {
-            border-bottom: none;
-        }
-        
-        .account-info-label {
-            font-weight: 500;
-            color: #666;
-            width: 80px;
-        }
-        
-        .account-info-value {
-            color: #000;
+            margin-top: 40%;
+            color: #777;
+            font-size: 1.1rem;
             font-weight: 400;
         }
-        
-        .account-logout-btn {
-            width: 100%;
-            background: #000;
-            color: white;
-            border: none;
-            padding: 0.9rem;
-            font-size: 1rem;
-            font-weight: 500;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 1.5rem;
-            font-family: 'Manrope', sans-serif;
-        }
-        
-        .tasks-list-container {
-            margin-top: 1rem;
-        }
-        
-        .task-month-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .month-header {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
-        
-        .task-card {
-            background: white;
-            padding: 1rem 0;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.2s;
-        }
-        
-        .task-card:active {
-            background: #f5f5f5;
-        }
-        
-        .task-card-main {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .task-icon {
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f0f0f0;
-            border-radius: 50%;
-        }
-        
-        .task-icon img {
-            width: 24px;
-            height: 24px;
-            opacity: 0.8;
-        }
-        
-        .task-content {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .task-date-time {
-            font-size: 0.7rem;
-            color: #999;
-            margin-bottom: 0.2rem;
-        }
-        
-        .task-title {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            margin-bottom: 0.15rem;
-            color: #000;
-        }
-        
-        .task-amount {
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: #000;
-        }
-        
-        .task-repost-btn {
-            width: 40px;
-            height: 40px;
-            background: none;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            border-radius: 50%;
-        }
-        
-        .task-repost-btn i {
-            font-size: 1.2rem;
-            color: #666;
-        }
-        
-        .task-repost-btn:active i {
-            color: #000;
-        }
-        
-        .task-details-expanded {
-            display: none;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-        }
-        
-        .empty-state h3 {
-            font-weight: 600;
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .empty-state p {
-            color: #666;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-        }
-        
-        .empty-state .learn-link {
-            color: #A6CBE3;
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-block;
-            margin-bottom: 1.5rem;
-            cursor: pointer;
-        }
-        
-        .empty-state .post-btn {
-            background: #000;
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            font-size: 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 500;
-            width: 100%;
-            max-width: 200px;
-            margin: 0 auto;
-        }
 
-        .task-detail-page {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 3000000;
-            display: none;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-        
-        .task-detail-page.active {
-            display: flex;
-        }
-        
-        .task-detail-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.25rem 1.25rem 0.75rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        }
-        
-        .task-detail-back-btn {
-            background: transparent;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #000;
-        }
-        
-        .task-detail-header-spacer {
-            width: 32px;
-        }
-        
-        .task-detail-content {
-            flex: 1;
-            padding: 1.5rem;
-        }
-        
-        .helper-info-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            background: #f8f8f8;
-            padding: 1rem;
-            border-radius: 12px;
-        }
-        
-        .helper-info-left {
-            display: flex;
-            align-items: center;
-            gap: 0;
-        }
-        
-        .helper-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #A6CBE3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            margin-right: 12px;
-        }
-        
-        .helper-details {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .helper-label {
-            font-size: 0.7rem;
-            color: #999;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
-        
-        .helper-name {
-            font-weight: 600;
-            font-size: 1rem;
-            color: #000;
-        }
-        
-        .helper-info-right {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #A6CBE3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-        
-        .task-state-text {
-            font-size: 0.8rem;
-            font-weight: 500;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            background: #f0f0f0;
-            color: #333;
-        }
-        
-        .task-state-text.scheduled {
-            background: #fff3e0;
-            color: #e67e22;
-        }
-        
-        .task-state-text.searching {
-            background: #e3f2fd;
-            color: #1976d2;
-            animation: pulse-search 1.5s infinite;
-        }
-        
-        .task-state-text.assigned {
-            background: #e8f5e9;
-            color: #388e3c;
-            animation: none;
-        }
-        
-        .task-state-text.completed {
-            background: #e8f5e9;
-            color: #388e3c;
-            animation: none;
-        }
-        
-        @keyframes pulse-search {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; background: #bbdefb; }
-            100% { opacity: 1; }
-        }
-        
-        .detail-map-container {
-            width: 100%;
-            height: 200px;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 1.5rem;
-            border: 1px solid #f0f0f0;
-        }
-        
-        .task-timeline {
-            margin: 1.5rem 0;
-            padding-left: 8px;
-        }
-        
-        .timeline-item {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 1.5rem;
-            position: relative;
-            align-items: flex-start;
-        }
-        
-        .timeline-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .timeline-item:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 24px;
-            width: 2px;
-            height: calc(100% - 16px);
-            background: #e0e0e0;
-            z-index: 1;
-            transform: translateX(-50%);
-        }
-        
-        .timeline-dot-small {
-            width: 16px;
-            height: 16px;
-            background: #000000;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
-            flex-shrink: 0;
-            z-index: 2;
-            margin-top: 4px;
-            position: relative;
-        }
-        
-        .timeline-icon-small {
-            width: 16px;
-            height: 16px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 4px;
-            z-index: 2;
-            background: white;
-            position: relative;
-        }
-        
-        .timeline-icon-small img {
-            width: 16px;
-            height: 16px;
-            opacity: 0.8;
-        }
-        
-        .timeline-content {
-            flex: 1;
-            padding-top: 0;
-        }
-        
-        .timeline-title {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-            color: #000;
-        }
-        
-        .timeline-subtitle {
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 0.25rem;
-        }
-        
-        .timeline-time {
-            font-size: 0.7rem;
-            color: #999;
-        }
-        
-        .task-action-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #f0f0f0;
-        }
-        
-        .action-btn {
-            flex: 1;
-            padding: 1rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-            transition: opacity 0.2s;
-        }
-        
-        .action-btn.primary {
-            background: #000;
-            color: white;
-        }
-        
-        .action-btn.secondary {
-            background: #f0f0f0;
-            color: #000;
-        }
-        
-        .action-btn:active {
-            opacity: 0.8;
-        }
-
+        /* === CREATE TASK CONTAINER === */
         .create-task-container {
             position: fixed;
             top: 0;
@@ -1017,6 +684,7 @@
             display: none;
             flex-direction: column;
             overflow: hidden;
+            border-radius: 5px;
         }
 
         .create-task-header {
@@ -1059,7 +727,7 @@
         .create-task-content {
             flex: 1;
             overflow-y: auto;
-            padding: 1.5rem 1.25rem;
+            padding: 1.5rem 1.25rem 2rem;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -1078,47 +746,12 @@
             font-family: 'Manrope', sans-serif;
         }
 
-        .location-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .location-field-wrapper {
+            position: relative;
             margin-bottom: 1rem;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-            padding: 0 12px;
-            cursor: pointer;
-        }
-        
-        .static-location-pin-small {
-            width: 16px;
-            height: 16px;
-            background: #000000;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
-            flex-shrink: 0;
-        }
-        
-        .location-input-new {
-            flex: 1;
-            padding: 1rem 0;
-            background: transparent !important;
-            border: none !important;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 300 !important;
-            font-size: 1rem !important;
-            color: rgba(0,0,0,0.8);
-            outline: none;
-            text-align: left;
-            cursor: pointer;
-        }
-        
-        .location-input-new::placeholder {
-            color: rgba(0,0,0,0.4);
-            text-align: left;
         }
 
-        .street-input {
+        .location-input, .street-input, .task-input, .budget-input, .extra-notes {
             width: 100%;
             padding: 1rem 1.2rem;
             background-color: #f0f0f0 !important;
@@ -1131,17 +764,27 @@
             outline: none;
         }
 
-        .task-input, .budget-input, .extra-notes {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            background-color: #f0f0f0 !important;
-            border: none !important;
-            border-radius: 5px;
-            font-family: 'Manrope', sans-serif !important;
-            font-weight: 300 !important;
-            font-size: 1rem !important;
-            color: rgba(0,0,0,0.8);
-            outline: none;
+        .location-input {
+            padding-right: 45px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .location-pin-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 26px;
+            cursor: pointer;
+            z-index: 5;
+            background-image: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/search%204.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
 
         .char-count {
@@ -1268,10 +911,13 @@
             border-radius: 5px;
         }
 
-        .upload-area i {
-            font-size: 3rem;
-            color: #000000;
-            background: transparent;
+        .upload-area img {
+            width: 48px;
+            height: 48px;
+            display: block;
+            background: rgba(0,0,0,0.05);
+            padding: 0.5rem;
+            border-radius: 5px;
         }
 
         .upload-area p {
@@ -1287,6 +933,17 @@
             color: rgba(0,0,0,0.5);
             font-weight: 300;
             margin-top: -0.25rem;
+        }
+
+        .upload-status {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-radius: 5px;
         }
 
         .image-preview-container {
@@ -1349,18 +1006,48 @@
             justify-content: center;
             border-radius: 5px;
             font-family: 'Manrope', sans-serif;
-            transition: background 0.3s;
         }
         .next-button:disabled { 
             opacity: 0.5; 
             cursor: not-allowed; 
             background: #666;
         }
-        
-        .next-button.posted {
-            background: #10b981;
+
+        /* OFFERS PAGE */
+        .offers-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3000000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .offers-container.active { display: flex; }
+        .offers-back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            cursor: pointer;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .offers-back-btn img {
+            width: 25px;
+            height: 25px;
         }
 
+        /* Map modal */
         .map-modal {
             position: fixed;
             top:0; left:0; width:100%; height:100%;
@@ -1403,69 +1090,49 @@
             border-radius: 5px;
             font-family: 'Manrope', sans-serif;
         }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 3000000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .loading-spinner {
-            background: white;
-            padding: 2rem;
-            border-radius: 5px;
-            text-align: center;
-        }
-        
-        .success-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem;
-            background: #28a745;
-            color: white;
-            border-radius: 5px;
-            display: none;
-            z-index: 4000000;
-        }
-        
-        .loading-tasks {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
     </style>
 </head>
 <body>
-    <div class="debug-panel" id="debugPanel">
-        <div id="debugContent">Waiting for Firebase auth...</div>
+    <!-- Persistent Debug Console - Always Visible on Mobile -->
+    <div class="debug-console" id="debugConsole">
+        <div class="debug-header">
+            <span class="debug-title">🔍 Debug Console</span>
+            <button class="debug-clear" id="debugClear">Clear</button>
+        </div>
+        <div id="debugLogs"></div>
     </div>
 
+    <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">TASKMART</div>
     </div>
 
+    <!-- Verification Banner -->
+    <div class="verification-banner" id="verificationBanner">
+        <span>Your account is pending verification. You cannot post tasks until verified.</span>
+        <button onclick="window.location.href='/profile-menu.html'">Check Status</button>
+    </div>
+
+    <!-- Profile Menu Container -->
+    <div id="profile-menu-container"></div>
+
+    <!-- MAP -->
     <div id="map"></div>
 
+    <!-- Re-center button -->
+    <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
+        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/gps-navigation.png" alt="Recenter">
+    </button>
+
+    <!-- HOME SHEET -->
     <div class="home-sheet" id="homeSheet">
-        <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
-            <i class="fi fi-sr-navigation"></i>
-        </button>
-        
         <div class="sheet-header">
             <h2 class="static-header">Let's make it happen.</h2>
         </div>
         
         <div class="search-container">
             <div class="search-wrapper">
-                <input type="text" class="search-input" id="mainSearchInput" placeholder="i need help with..." autocomplete="off">
+                <input type="text" class="search-input" id="mainSearchInput" placeholder="I need help with..." autocomplete="off">
                 <div id="mainSuggestionsList" class="suggestions-list"></div>
                 <button class="search-circle-btn" id="searchIconBtn">
                     <svg viewBox="0 0 320 512" class="chevron-svg">
@@ -1476,16 +1143,14 @@
         </div>
     </div>
 
+    <!-- BOTTOM NAVIGATION -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navHome" data-page="home">
             <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/home%202.png" alt="Home">
             <span>Home</span>
         </button>
         <button class="nav-item" id="navTasks" data-page="tasks">
-            <div style="position: relative; display: inline-block;">
-                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Tasks">
-                <span class="notification-dot" id="taskNotificationDot"></span>
-            </div>
+            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Tasks">
             <span>Tasks</span>
         </button>
         <button class="nav-item" id="navAccount" data-page="account">
@@ -1494,50 +1159,22 @@
         </button>
     </div>
 
+    <!-- TASKS PAGE -->
     <div class="page-container" id="tasksPage">
-        <div class="tasks-header">
-            <h2>Your tasks</h2>
-            <span id="tasksCount">0</span>
+        <div class="tasks-header">Tasks</div>
+        <div class="no-tasks-message">
+            <p>No upcoming tasks</p>
+            <small>Your posted tasks will appear here</small>
         </div>
-        
-        <div class="task-categories" id="taskCategories">
-            <div class="category-tab active" data-category="current">Current</div>
-            <div class="category-tab" data-category="future">Future</div>
-            <div class="category-tab" data-category="past">Past</div>
-        </div>
-        
-        <div class="tasks-list-container" id="tasksListContainer"></div>
     </div>
 
-    <div class="task-detail-page" id="taskDetailPage">
-        <div class="task-detail-header">
-            <button class="task-detail-back-btn" id="taskDetailBackBtn">←</button>
-            <div class="task-detail-header-spacer"></div>
-        </div>
-        
-        <div class="task-detail-content" id="taskDetailContent"></div>
-    </div>
-
+    <!-- ACCOUNT PAGE -->
     <div class="page-container" id="accountPage">
         <div class="account-header">Account</div>
-        <div class="account-section" id="accountInfo">
-            <div class="account-info-item">
-                <span class="account-info-label">Name</span>
-                <span class="account-info-value" id="accountName">Loading...</span>
-            </div>
-            <div class="account-info-item">
-                <span class="account-info-label">Email</span>
-                <span class="account-info-value" id="accountEmail">Loading...</span>
-            </div>
-            <div class="account-info-item">
-                <span class="account-info-label">User ID</span>
-                <span class="account-info-value" id="accountUid">Loading...</span>
-            </div>
-            <button class="account-logout-btn" id="accountLogoutBtn">Log out</button>
-            <button class="account-logout-btn" id="accountLoginBtn" style="background: #A6CBE3; color: #000; display: none;">Log in</button>
-        </div>
+        <p style="color: #777; text-align: center; margin-top: 40%;">Account details coming soon</p>
     </div>
 
+    <!-- CREATE TASK FULL SCREEN -->
     <div class="create-task-container" id="createTaskContainer">
         <div class="create-task-header">
             <button class="close-btn" id="closeCreateTaskBtn">
@@ -1550,16 +1187,16 @@
         <div class="create-task-content">
             <div class="section">
                 <div class="section-label">Your location</div>
-                <div class="location-row" id="locationRowTrigger">
-                    <div class="static-location-pin-small"></div>
-                    <input type="text" class="location-input-new" id="locationInput" placeholder="City or area" readonly>
+                <div class="location-field-wrapper">
+                    <input type="text" class="location-input" id="locationInput" placeholder="City or area" readonly>
+                    <div class="location-pin-icon" id="pinIconBtn"></div>
                 </div>
                 <input type="text" class="street-input" id="streetInput" placeholder="Street number or name, landmark">
             </div>
 
             <div class="section">
                 <div class="section-label">I need help with</div>
-                <input type="text" class="task-input" id="taskInput" placeholder="laundry, cleaning, plumbing..." maxlength="50">
+                <input type="text" class="task-input" id="taskInput" placeholder="Laundry, cleaning, plumbing..." maxlength="50">
                 <div class="char-count" id="taskCharCount">0/50</div>
                 
                 <div class="more-details-btn-container">
@@ -1602,10 +1239,14 @@
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
-                            <i class="fi fi-tr-add-image"></i>
+                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/image-%202.png" alt="Upload">
                             <p>Tap to upload photos</p>
                             <div class="upload-hint">JPG, PNG up to 5MB</div>
                         </div>
+                        <div id="uploadStatus" class="upload-status info" style="display: none;">
+                            <span id="uploadStatusText">Ready to upload</span>
+                        </div>
+                        <div id="uploadProgress" class="upload-progress" style="display: none;"></div>
                         <div id="imagePreviewContainer" class="image-preview-container"></div>
                     </div>
 
@@ -1618,10 +1259,94 @@
         </div>
 
         <div class="post-btn-container">
-            <button class="next-button" id="nextBtn" disabled>Post task</button>
+            <button class="next-button" id="nextBtn" disabled>Next</button>
         </div>
     </div>
 
+    <!-- TASK PREVIEW SCREEN -->
+    <div class="task-preview-container" id="taskPreviewContainer">
+        <div class="preview-header">
+            <button class="close-btn" id="closePreviewBtn">
+                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/close%202.png" alt="Close">
+            </button>
+            <div class="preview-title">Review your task</div>
+            <div class="header-spacer"></div>
+        </div>
+        
+        <div class="preview-content">
+            <div class="preview-map-section">
+                <div id="previewMap"></div>
+            </div>
+            
+            <div class="preview-details">
+                <!-- Your location section - matching create task hierarchy -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Your location</div>
+                    <div class="preview-section-value" id="previewLocation"></div>
+                </div>
+                
+                <!-- Street address section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Street address</div>
+                    <div class="preview-section-value" id="previewStreet"></div>
+                </div>
+                
+                <!-- I need help with section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">I need help with</div>
+                    <div class="preview-section-value" id="previewTask"></div>
+                </div>
+                
+                <!-- Description section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Description</div>
+                    <div class="preview-section-value" id="previewDescription"></div>
+                </div>
+                
+                <!-- When section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">When</div>
+                    <div class="preview-section-value" id="previewWhen"></div>
+                </div>
+                
+                <!-- Budget section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Budget</div>
+                    <div class="preview-section-value" id="previewBudget"></div>
+                </div>
+                
+                <!-- Images section -->
+                <div class="preview-section">
+                    <div class="preview-section-label">Images</div>
+                    <div id="previewImagesContainer" class="preview-images"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-actions">
+            <button class="preview-edit-btn" id="previewEditBtn">Edit task</button>
+            <button class="preview-confirm-btn" id="previewConfirmBtn">Post task</button>
+        </div>
+    </div>
+
+    <!-- OFFERS PAGE -->
+    <div class="offers-container" id="offersContainer">
+        <div class="offers-map-section">
+            <div id="offersMap"></div>
+        </div>
+        <div class="offers-sheet" style="background:white; padding:20px; border-radius:5px 5px 0 0;">
+            <div class="no-offers-message">
+                <p>No offers at this time</p>
+                <small>Check back later for helper responses</small>
+            </div>
+            <button class="post-offer-button" id="postOfferBtn">Post</button>
+        </div>
+        <button class="offers-back-btn" id="offersBackBtn">
+            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/arrow_back.png" alt="Back">
+        </button>
+    </div>
+
+    <!-- Map Modal -->
     <div class="map-modal" id="mapModal">
         <div class="map-modal-content">
             <div class="map-modal-header">
@@ -1635,137 +1360,97 @@
         </div>
     </div>
 
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">Processing...</div>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000000; display:none; align-items:center; justify-content:center;">
+        <div style="background:white; padding:2rem; border-radius:5px;">Processing...</div>
     </div>
     
-    <div class="success-toast" id="successToast"></div>
+    <div class="success-toast" id="successToast" style="position:fixed; top:20px; right:20px; padding:1rem; background:#28a745; color:white; border-radius:5px; display:none; z-index:4000000;"></div>
 
     <script>
         (function() {
             'use strict';
             
+            // ===== PERSISTENT DEBUG CONSOLE =====
+            const debugConsole = document.getElementById('debugConsole');
+            const debugLogs = document.getElementById('debugLogs');
+            const debugClear = document.getElementById('debugClear');
+            
+            // Always visible on mobile
+            debugConsole.classList.add('visible');
+            
+            window.debugLog = function(message, type = 'info') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `debug-log ${type}`;
+                
+                // Format the message
+                let displayMessage = message;
+                if (typeof message === 'object') {
+                    try {
+                        displayMessage = JSON.stringify(message, null, 2);
+                    } catch (e) {
+                        displayMessage = String(message);
+                    }
+                }
+                
+                logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${displayMessage}`;
+                debugLogs.appendChild(logEntry);
+                debugLogs.scrollTop = debugLogs.scrollHeight;
+                console.log(`[${type}]`, message);
+            };
+            
+            debugClear.addEventListener('click', () => {
+                debugLogs.innerHTML = '';
+                debugLog('Console cleared', 'info');
+            });
+            
+            // ===== SECURE FIREBASE INITIALIZATION - CORRECT DATABASE URL =====
+            debugLog('🔧 Initializing Firebase with correct database URL...', 'info');
+            
+            // CORRECT DATABASE URL for your project
             const firebaseConfig = {
-                apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
-                authDomain: "taskmartapp-74d6b.firebaseapp.com",
-                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
-                projectId: "taskmartapp-74d6b",
-                storageBucket: "taskmartapp-74d6b.firebasestorage.app",
-                messagingSenderId: "52910279328",
-                appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
-                measurementId: "G-Z8SPLR0HSL"
+                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com"
             };
 
-            function debugLog(message, type = 'info') {
-                console.log(`[${type}] ${message}`);
-            }
-
-            let database;
-            let currentUser = null;
-            let userProfile = null;
-            
+            // Initialize Firebase
             try {
+                // Check if Firebase is already initialized
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
+                    debugLog('✅ Firebase initialized successfully with correct URL', 'success');
+                } else {
+                    debugLog('✅ Firebase already initialized', 'success');
                 }
                 
-                database = firebase.database();
+                const database = firebase.database();
+                window.database = database;
                 
-                firebase.auth().onAuthStateChanged((user) => {
-                    const accountLoginBtn = document.getElementById('accountLoginBtn');
-                    const accountLogoutBtn = document.getElementById('accountLogoutBtn');
-                    
-                    if (user && !user.isAnonymous) {
-                        currentUser = {
-                            uid: user.uid,
-                            email: user.email,
-                            displayName: user.displayName,
-                            photoURL: user.photoURL,
-                            emailVerified: user.emailVerified,
-                            isAnonymous: false
-                        };
-                        
-                        database.ref('users/' + user.uid).once('value')
-                            .then((snapshot) => {
-                                userProfile = snapshot.val() || {};
-                                const displayName = userProfile.name || user.displayName || user.email?.split('@')[0] || 'User';
-                                
-                                document.getElementById('accountName').textContent = displayName;
-                                document.getElementById('accountEmail').textContent = user.email || 'No email';
-                                document.getElementById('accountUid').textContent = user.uid.substring(0, 8) + '...';
-                                
-                                if (document.getElementById('tasksPage').classList.contains('active')) {
-                                    loadUserTasks();
-                                } else {
-                                    checkNotificationDot();
-                                }
-                            })
-                            .catch((error) => {
-                                document.getElementById('accountName').textContent = user.displayName || user.email?.split('@')[0] || 'User';
-                                document.getElementById('accountEmail').textContent = user.email || 'No email';
-                                document.getElementById('accountUid').textContent = user.uid.substring(0, 8) + '...';
-                                checkNotificationDot();
-                            });
-                        
-                        accountLogoutBtn.style.display = 'block';
-                        accountLoginBtn.style.display = 'none';
-                        
-                    } else if (user && user.isAnonymous) {
-                        currentUser = null;
-                        userProfile = null;
-                        document.getElementById('accountName').textContent = 'Guest User';
-                        document.getElementById('accountEmail').textContent = 'Not signed in';
-                        document.getElementById('accountUid').textContent = 'Guest';
-                        
-                        accountLogoutBtn.style.display = 'none';
-                        accountLoginBtn.style.display = 'block';
-                        accountLoginBtn.onclick = () => window.location.href = 'login.html';
-                        
-                        document.getElementById('taskNotificationDot').classList.remove('visible');
-                    } else {
-                        currentUser = null;
-                        userProfile = null;
-                        firebase.auth().signInAnonymously().catch(error => {});
-                        document.getElementById('taskNotificationDot').classList.remove('visible');
-                    }
-                });
+                // Test connection
+                debugLog('🔄 Testing Firebase connection...', 'info');
                 
-            } catch (error) {
-                debugLog(`Firebase init error: ${error.message}`, 'error');
-            }
-
-            function checkNotificationDot() {
-                if (!currentUser) {
-                    document.getElementById('taskNotificationDot').classList.remove('visible');
-                    return;
-                }
-                
-                database.ref('tasks/' + currentUser.uid).once('value')
-                    .then((snapshot) => {
-                        const tasksData = snapshot.val() || {};
-                        const hasOpenTasks = Object.values(tasksData).some(task => task.status === 'open');
-                        const dot = document.getElementById('taskNotificationDot');
-                        if (hasOpenTasks) {
-                            dot.classList.add('visible');
+                const connectedRef = database.ref('.info/connected');
+                connectedRef.once('value')
+                    .then((snap) => {
+                        if (snap.val() === true) {
+                            debugLog('✅ Connected to Firebase!', 'success');
                         } else {
-                            dot.classList.remove('visible');
+                            debugLog('⚠️ Connection check returned false', 'warning');
                         }
                     })
-                    .catch(() => {});
+                    .catch((error) => {
+                        debugLog(`❌ Connection test error: ${error.message}`, 'error');
+                    });
+                
+            } catch (error) {
+                debugLog(`❌ Firebase init error: ${error.message}`, 'error');
             }
 
-            document.getElementById('accountLogoutBtn').addEventListener('click', () => {
-                if (currentUser) {
-                    firebase.auth().signOut().then(() => {
-                        document.getElementById('taskNotificationDot').classList.remove('visible');
-                    }).catch((error) => {});
-                }
-            });
-
+            const API_BASE_URL = 'https://taskmartapp.onrender.com';
             if (window.MAPBOX_TOKEN) {
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                debugLog('✅ Mapbox token loaded', 'success');
             } else {
-                mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
+                debugLog('⚠️ Mapbox token not found', 'warning');
             }
 
             const taskSuggestions = [
@@ -1786,6 +1471,7 @@
                 "gift wrapping / decoration", "small handyman tasks"
             ];
 
+            // Keyboard detection
             const homeSheet = document.getElementById('homeSheet');
             const mainSearchInput = document.getElementById('mainSearchInput');
             if (mainSearchInput) {
@@ -1793,6 +1479,7 @@
                 mainSearchInput.addEventListener('blur', () => homeSheet.classList.remove('keyboard-open'));
             }
 
+            // Splash screen
             const splashScreen = document.getElementById('splashScreen');
             const splashShown = localStorage.getItem('splashShown');
             if (!splashShown) {
@@ -1804,178 +1491,150 @@
                 splashScreen.style.display = 'none';
             }
 
+            function getCurrentUser() {
+                try { 
+                    const user = JSON.parse(localStorage.getItem('taskmart_user'));
+                    debugLog(`📋 Local user retrieved: ${user ? user.email || 'No email' : 'No user'}`, 'info');
+                    return user; 
+                } catch { 
+                    debugLog('📋 No local user found', 'warning');
+                    return null; 
+                }
+            }
+            
+            function isUserLoggedIn() { 
+                return !!localStorage.getItem('taskmart_user') && !!localStorage.getItem('taskmart_token');
+            }
+
+            function checkVerificationStatus() {
+                const user = getCurrentUser();
+                const banner = document.getElementById('verificationBanner');
+                const isActive = user && (!user.profileImage || !user.email);
+                banner.classList.toggle('active', isActive);
+            }
+
+            function canUserPost() {
+                const user = getCurrentUser();
+                if (!user) { 
+                    window.location.href = '/login.html'; 
+                    return false; 
+                }
+                if (!user.profileImage || !user.email) {
+                    document.getElementById('verificationBanner').classList.add('active');
+                    return false;
+                }
+                return true;
+            }
+
+            // Map init
+            debugLog('🗺️ Initializing main map...', 'info');
             const map = new mapboxgl.Map({
                 container: 'map',
-                style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
+                style: 'mapbox://styles/mapbox/dark-v11',
                 center: [28.034088, -26.195246],
-                zoom: 0.5
+                zoom: 15
             });
 
-            let userLocationMarker = null;
-            let userLocationRadius = null;
-            let currentLat = null, currentLng = null, uploadedImages = [], currentTaskId = null;
+            map.on('load', () => {
+                debugLog('✅ Main map loaded', 'success');
+            });
+
+            let currentLat = null, currentLng = null, uploadedImages = [];
             let mainMapPin = null;
             let originalLat = null, originalLng = null;
             let isManualMove = false;
             const recenterBtn = document.getElementById('mapRecenterBtn');
             const locationInput = document.getElementById('locationInput');
-            const DESIRED_ZOOM = 16;
 
-            map.on('load', () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            currentLat = pos.coords.latitude;
-                            currentLng = pos.coords.longitude;
-                            originalLat = currentLat;
-                            originalLng = currentLng;
-                            
-                            map.flyTo({
-                                center: [currentLng, currentLat],
-                                zoom: DESIRED_ZOOM,
-                                speed: 2.5,
-                                curve: 1,
-                                easing: (t) => t
+            if (navigator.geolocation) {
+                debugLog('📍 Requesting geolocation...', 'info');
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        currentLat = pos.coords.latitude;
+                        currentLng = pos.coords.longitude;
+                        originalLat = currentLat;
+                        originalLng = currentLng;
+                        debugLog(`✅ Location obtained: ${currentLat}, ${currentLng}`, 'success');
+                        
+                        map.flyTo({ center: [currentLng, currentLat], zoom: 16 });
+                        
+                        // Reverse geocode
+                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.features && data.features[0]) {
+                                    locationInput.value = data.features[0].place_name;
+                                    debugLog(`📍 Address found: ${data.features[0].place_name}`, 'success');
+                                }
                             });
-                            
-                            if (userLocationMarker) userLocationMarker.remove();
-                            if (userLocationRadius) userLocationRadius.remove();
-                            
-                            const pinElement = document.createElement('div');
-                            pinElement.className = 'pulsing-pin';
-                            
-                            userLocationMarker = new mapboxgl.Marker({ 
-                                element: pinElement,
-                                anchor: 'center'
-                            })
-                            .setLngLat([currentLng, currentLat])
-                            .addTo(map);
-                            
-                            const radiusElement = document.createElement('div');
-                            radiusElement.className = 'user-location-radius';
-                            
-                            userLocationRadius = new mapboxgl.Marker({ 
-                                element: radiusElement,
-                                anchor: 'center'
-                            })
-                            .setLngLat([currentLng, currentLat])
-                            .addTo(map);
-                            
-                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-                                .then(r => r.json())
-                                .then(data => {
-                                    if (data.features && data.features[0]) {
-                                        let fullAddress = data.features[0].place_name;
-                                        let parts = fullAddress.split(', ');
-                                        if (parts.length > 1) {
-                                            parts.pop();
-                                            locationInput.value = parts.join(', ');
-                                        } else {
-                                            locationInput.value = fullAddress;
-                                        }
-                                    }
-                                });
-                            
-                            recenterBtn.classList.remove('visible');
-                        },
-                        (err) => {
-                            currentLat = -26.195246;
-                            currentLng = 28.034088;
-                            originalLat = currentLat;
-                            originalLng = currentLng;
-                            
-                            map.flyTo({
-                                center: [currentLng, currentLat],
-                                zoom: DESIRED_ZOOM,
-                                speed: 2.5
-                            });
-                            
-                            const pinElement = document.createElement('div');
-                            pinElement.className = 'pulsing-pin';
-                            
-                            userLocationMarker = new mapboxgl.Marker({ 
-                                element: pinElement,
-                                anchor: 'center'
-                            })
-                            .setLngLat([currentLng, currentLat])
-                            .addTo(map);
-                            
-                            const radiusElement = document.createElement('div');
-                            radiusElement.className = 'user-location-radius';
-                            
-                            userLocationRadius = new mapboxgl.Marker({ 
-                                element: radiusElement,
-                                anchor: 'center'
-                            })
-                            .setLngLat([currentLng, currentLat])
-                            .addTo(map);
-                            
-                            locationInput.value = 'johannesburg';
-                        },
-                        { 
-                            enableHighAccuracy: true, 
-                            timeout: 10000,
-                            maximumAge: 0
-                        }
-                    );
-                } else {
-                    currentLat = -26.195246;
-                    currentLng = 28.034088;
-                    originalLat = currentLat;
-                    originalLng = currentLng;
-                    
-                    map.flyTo({
-                        center: [currentLng, currentLat],
-                        zoom: DESIRED_ZOOM,
-                        speed: 2.5
-                    });
-                    
+                        
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'pulsing-pin';
+                        
+                        mainMapPin = new mapboxgl.Marker({ 
+                            element: pinElement,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng, currentLat])
+                        .addTo(map);
+                        
+                        recenterBtn.classList.remove('visible');
+                    },
+                    (err) => {
+                        debugLog(`❌ Geolocation error: ${err.message}`, 'error');
+                        currentLat = -26.195246;
+                        currentLng = 28.034088;
+                        originalLat = currentLat;
+                        originalLng = currentLng;
+                        
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'pulsing-pin';
+                        
+                        mainMapPin = new mapboxgl.Marker({ 
+                            element: pinElement,
+                            anchor: 'center'
+                        })
+                        .setLngLat([currentLng, currentLat])
+                        .addTo(map);
+                        
+                        locationInput.value = 'Johannesburg, South Africa';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                debugLog('❌ Geolocation not supported', 'error');
+                currentLat = -26.195246;
+                currentLng = 28.034088;
+                originalLat = currentLat;
+                originalLng = currentLng;
+                
+                map.on('load', () => {
                     const pinElement = document.createElement('div');
                     pinElement.className = 'pulsing-pin';
                     
-                    userLocationMarker = new mapboxgl.Marker({ 
+                    mainMapPin = new mapboxgl.Marker({ 
                         element: pinElement,
                         anchor: 'center'
                     })
                     .setLngLat([currentLng, currentLat])
                     .addTo(map);
                     
-                    const radiusElement = document.createElement('div');
-                    radiusElement.className = 'user-location-radius';
-                    
-                    userLocationRadius = new mapboxgl.Marker({ 
-                        element: radiusElement,
-                        anchor: 'center'
-                    })
-                    .setLngLat([currentLng, currentLat])
-                    .addTo(map);
-                    
-                    locationInput.value = 'johannesburg';
-                }
-            });
-
-            map.on('error', (e) => {});
+                    locationInput.value = 'Johannesburg, South Africa';
+                });
+            }
 
             function checkMapMovement() {
-                if (!originalLat || !originalLng || !userLocationMarker) return;
+                if (!originalLat || !originalLng) return;
                 
                 const center = map.getCenter();
                 const currentZoom = map.getZoom();
                 
-                const R = 6371e3;
-                const φ1 = originalLat * Math.PI/180;
-                const φ2 = center.lat * Math.PI/180;
-                const Δφ = (center.lat - originalLat) * Math.PI/180;
-                const Δλ = (center.lng - originalLng) * Math.PI/180;
-
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const distance = R * c;
-
-                const zoomDiff = Math.abs(currentZoom - DESIRED_ZOOM);
-                if (distance > 50 || zoomDiff > 0.5) {
+                const distance = Math.sqrt(
+                    Math.pow(center.lng - originalLng, 2) + 
+                    Math.pow(center.lat - originalLat, 2)
+                );
+                
+                if ((distance > 0.001 || currentZoom < 15.5 || currentZoom > 16.5) && isManualMove) {
                     recenterBtn.classList.add('visible');
                 } else {
                     recenterBtn.classList.remove('visible');
@@ -1987,610 +1646,69 @@
 
             recenterBtn.addEventListener('click', () => {
                 if (originalLat && originalLng) {
-                    map.flyTo({ 
-                        center: [originalLng, originalLat], 
-                        zoom: DESIRED_ZOOM, 
-                        speed: 1.5 
-                    });
+                    map.flyTo({ center: [originalLng, originalLat], zoom: 16 });
                     
+                    if (mainMapPin) {
+                        mainMapPin.setLngLat([originalLng, originalLat]);
+                    }
+                    
+                    currentLat = originalLat;
+                    currentLng = originalLng;
                     isManualMove = false;
+                    
                     recenterBtn.classList.remove('visible');
+                    
+                    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${originalLng},${originalLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.features && data.features[0]) {
+                                locationInput.value = data.features[0].place_name;
+                            }
+                        });
                 }
             });
 
+            // Navigation
             const navHome = document.getElementById('navHome');
             const navTasks = document.getElementById('navTasks');
             const navAccount = document.getElementById('navAccount');
             const tasksPage = document.getElementById('tasksPage');
             const accountPage = document.getElementById('accountPage');
-            const taskDetailPage = document.getElementById('taskDetailPage');
             const mapEl = document.getElementById('map');
             const homeSheetEl = document.getElementById('homeSheet');
-            
-            let currentCategory = 'current';
-            let allTasks = [];
 
             function setActivePage(page) {
                 [navHome, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
-                
                 if (page === 'home') {
                     navHome.classList.add('active');
                     tasksPage.classList.remove('active');
                     accountPage.classList.remove('active');
-                    taskDetailPage.classList.remove('active');
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
-                    
-                    setTimeout(() => map.resize(), 100);
+                    recenterBtn.style.display = 'flex';
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
                     tasksPage.classList.add('active');
                     accountPage.classList.remove('active');
-                    taskDetailPage.classList.remove('active');
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
-                    
-                    if (currentUser) {
-                        loadUserTasks();
-                    } else {
-                        document.getElementById('tasksListContainer').innerHTML = '<div class="empty-state"><h3>Please log in</h3><p>Log in to see your tasks</p><button class="post-btn" onclick="window.location.href=\'login.html\'">Log in</button></div>';
-                        document.getElementById('tasksCount').textContent = '0';
-                    }
+                    recenterBtn.style.display = 'none';
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
                     accountPage.classList.add('active');
                     tasksPage.classList.remove('active');
-                    taskDetailPage.classList.remove('active');
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
-                } else if (page === 'taskDetail') {
-                    navTasks.classList.add('active');
-                    tasksPage.classList.remove('active');
-                    accountPage.classList.remove('active');
-                    taskDetailPage.classList.add('active');
-                    mapEl.style.display = 'none';
-                    homeSheetEl.style.display = 'none';
+                    recenterBtn.style.display = 'none';
                 }
             }
 
             navHome.addEventListener('click', () => setActivePage('home'));
             navTasks.addEventListener('click', () => setActivePage('tasks'));
             navAccount.addEventListener('click', () => setActivePage('account'));
-
-            document.getElementById('taskDetailBackBtn').addEventListener('click', () => {
-                setActivePage('tasks');
-            });
-
             setActivePage('home');
 
-            document.querySelectorAll('.category-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    currentCategory = this.dataset.category;
-                    displayTasksByCategory();
-                });
-            });
-
-            function loadUserTasks() {
-                const tasksContainer = document.getElementById('tasksListContainer');
-                const tasksCount = document.getElementById('tasksCount');
-                
-                if (!currentUser) {
-                    tasksContainer.innerHTML = '<div class="empty-state"><h3>Please log in</h3><p>Log in to see your tasks</p><button class="post-btn" onclick="window.location.href=\'login.html\'">Log in</button></div>';
-                    tasksCount.textContent = '0';
-                    document.getElementById('taskNotificationDot').classList.remove('visible');
-                    return;
-                }
-                
-                tasksContainer.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
-                
-                database.ref('tasks/' + currentUser.uid).once('value')
-                    .then((snapshot) => {
-                        const tasksData = snapshot.val() || {};
-                        
-                        allTasks = Object.entries(tasksData).map(([id, data]) => ({
-                            id: id,
-                            ...data
-                        }));
-                        
-                        tasksCount.textContent = allTasks.length.toString();
-                        displayTasksByCategory();
-                        
-                        const hasOpenTasks = allTasks.some(task => task.status === 'open');
-                        const dot = document.getElementById('taskNotificationDot');
-                        if (hasOpenTasks) {
-                            dot.classList.add('visible');
-                        } else {
-                            dot.classList.remove('visible');
-                        }
-                    })
-                    .catch((error) => {
-                        tasksContainer.innerHTML = '<div class="empty-state"><h3>Error loading tasks</h3><p>Please try again</p><button class="post-btn" onclick="location.reload()">Try again</button></div>';
-                        tasksCount.textContent = '0';
-                        document.getElementById('taskNotificationDot').classList.remove('visible');
-                    });
-            }
-            
-            function formatDateWithOrdinal(date) {
-                const d = date.getDate();
-                const month = date.toLocaleDateString('en-US', { month: 'long' });
-                const year = date.getFullYear();
-                
-                let ordinal = 'th';
-                if (d === 1 || d === 21 || d === 31) ordinal = 'st';
-                else if (d === 2 || d === 22) ordinal = 'nd';
-                else if (d === 3 || d === 23) ordinal = 'rd';
-                
-                return `${d}${ordinal} ${month} ${year}`;
-            }
-            
-            function formatTimeFromTimestamp(timestamp) {
-                if (!timestamp) return 'Just now';
-                const date = new Date(timestamp);
-                const now = new Date();
-                const diffMs = now - date;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHours = Math.floor(diffMs / 3600000);
-                const diffDays = Math.floor(diffMs / 86400000);
-                
-                if (diffMins < 1) return 'Just now';
-                if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-            }
-
-            function getAddressFromTask(task) {
-                if (task.address) {
-                    return task.address.split(',')[0];
-                }
-                return 'Address not set';
-            }
-
-            function getFormattedBudget(task) {
-                if (task.budget === 'open') {
-                    return 'Open to offers';
-                }
-                return `R ${task.budget}`;
-            }
-
-            function getStatusFromTask(task) {
-                if (task.status) {
-                    return task.status.charAt(0).toUpperCase() + task.status.slice(1).toLowerCase();
-                }
-                return 'Open';
-            }
-
-            function getTaskDateObj(task) {
-                if (task.date === 'now') return new Date();
-                if (task.date) {
-                    try {
-                        const parts = task.date.split('/');
-                        if (parts.length === 3) {
-                            return new Date(parts[2], parts[1]-1, parts[0]);
-                        }
-                    } catch (e) {
-                        return null;
-                    }
-                }
-                return null;
-            }
-
-            function toLowerCase(str) {
-                if (!str) return '';
-                return str.toString().toLowerCase().trim();
-            }
-
-            // IMPROVED HELPER MATCHING FUNCTION WITH DETAILED LOGGING
-            function findAndAssignHelper(taskId, taskCategory) {
-                console.log('%c🔍 SEARCHING FOR HELPER', 'background: #blue; color: white; font-size: 16px');
-                console.log('Task ID:', taskId);
-                console.log('Task Category:', taskCategory);
-                
-                const cleanTaskCategory = toLowerCase(taskCategory);
-                console.log('Cleaned Task Category:', cleanTaskCategory);
-                
-                database.ref('users').once('value')
-                    .then((snapshot) => {
-                        const users = snapshot.val() || {};
-                        console.log('%c📋 ALL USERS IN DATABASE:', 'font-weight: bold');
-                        console.log(users);
-                        
-                        let matchedHelper = null;
-                        let helperCount = 0;
-                        
-                        for (let uid in users) {
-                            const user = users[uid];
-                            
-                            // Check if this user is a helper
-                            if (user.role === 'helper') {
-                                helperCount++;
-                                console.log(`%c👤 CHECKING HELPER ${helperCount}:`, 'color: orange');
-                                console.log('  UID:', uid);
-                                console.log('  Name:', user.name);
-                                console.log('  Email:', user.email);
-                                console.log('  Skills:', user.skills);
-                                
-                                if (Array.isArray(user.skills)) {
-                                    console.log(`  Skills array length: ${user.skills.length}`);
-                                    
-                                    for (let i = 0; i < user.skills.length; i++) {
-                                        const skill = user.skills[i];
-                                        if (skill) {
-                                            const cleanSkill = toLowerCase(skill);
-                                            console.log(`  Comparing task "${cleanTaskCategory}" with skill ${i+1}: "${cleanSkill}"`);
-                                            
-                                            if (cleanSkill === cleanTaskCategory) {
-                                                console.log('%c✅ EXACT MATCH FOUND!', 'color: green; font-weight: bold');
-                                                matchedHelper = {
-                                                    uid: uid,
-                                                    name: user.name || 'Helper',
-                                                    email: user.email || '',
-                                                    phone: user.phone || ''
-                                                };
-                                                break;
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    console.log('  ⚠️ Skills is not an array:', user.skills);
-                                }
-                                
-                                if (matchedHelper) break;
-                            }
-                        }
-                        
-                        console.log(`Total helpers found: ${helperCount}`);
-                        
-                        if (matchedHelper) {
-                            console.log('%c🎉 MATCHED HELPER:', 'color: green; font-size: 14px');
-                            console.log('  UID:', matchedHelper.uid);
-                            console.log('  Name:', matchedHelper.name);
-                            
-                            // Update the task with assigned helper
-                            database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
-                                assignedHelperId: matchedHelper.uid,
-                                assignedHelperName: matchedHelper.name,
-                                status: 'assigned',
-                                assignedAt: Date.now()
-                            }).then(() => {
-                                console.log('%c✅ HELPER ASSIGNED SUCCESSFULLY!', 'color: green; font-size: 16px');
-                                
-                                const toast = document.getElementById('successToast');
-                                toast.textContent = `✅ Helper ${matchedHelper.name} assigned to your task!`;
-                                toast.style.display = 'block';
-                                setTimeout(() => {
-                                    toast.style.display = 'none';
-                                }, 3000);
-                                
-                                if (document.getElementById('tasksPage').classList.contains('active')) {
-                                    loadUserTasks();
-                                }
-                            }).catch(error => {
-                                console.error('❌ Error assigning helper:', error);
-                            });
-                        } else {
-                            console.log('%c❌ NO MATCHING HELPER FOUND', 'color: red; font-size: 16px');
-                            console.log('No helper with skill:', cleanTaskCategory);
-                            
-                            const toast = document.getElementById('successToast');
-                            toast.textContent = 'No helper available right now. We\'ll notify you when one joins!';
-                            toast.style.backgroundColor = '#ff9800';
-                            toast.style.display = 'block';
-                            setTimeout(() => {
-                                toast.style.display = 'none';
-                                toast.style.backgroundColor = '#28a745';
-                            }, 4000);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Error searching for helpers:', error);
-                    });
-            }
-
-            function showTaskDetail(task) {
-                const detailContent = document.getElementById('taskDetailContent');
-                const headerSpacer = document.querySelector('.task-detail-header-spacer');
-                
-                const createdDate = task.createdAt ? new Date(task.createdAt) : new Date();
-                const createdDateStr = formatDateWithOrdinal(createdDate);
-                const createdTimeStr = task.createdAt ? formatTimeFromTimestamp(task.createdAt) : 'Just now';
-                
-                const isAssigned = task.assignedHelperName && task.assignedHelperName !== 'Not assigned' && task.assignedHelperName !== null;
-                const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
-                const helperInitial = helperName.charAt(0).toUpperCase();
-                
-                let stateText = '';
-                let stateClass = '';
-                
-                if (task.taskState === 'past' || task.status === 'completed') {
-                    stateText = 'Task completed';
-                    stateClass = 'completed';
-                } 
-                else if (task.taskState === 'future') {
-                    stateText = `Scheduled to start on ${task.date || 'future date'}`;
-                    stateClass = 'scheduled';
-                } 
-                else if (isAssigned) {
-                    stateText = 'Helper assigned';
-                    stateClass = 'assigned';
-                } else {
-                    stateText = 'Searching for helpers';
-                    stateClass = 'searching';
-                }
-                
-                const taskStateSpan = document.createElement('span');
-                taskStateSpan.className = `task-state-text ${stateClass}`;
-                taskStateSpan.textContent = stateText;
-                
-                const existingState = document.querySelector('.task-state-text');
-                if (existingState) existingState.remove();
-                headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
-                
-                let helperInfoHtml = '';
-                if (isAssigned) {
-                    helperInfoHtml = `
-                        <div class="helper-info-row">
-                            <div class="helper-info-left">
-                                <div class="helper-avatar">${helperInitial}</div>
-                                <div class="helper-details">
-                                    <span class="helper-label">Task with</span>
-                                    <span class="helper-name">${helperName}</span>
-                                </div>
-                            </div>
-                            <div class="helper-info-right">
-                                ${helperInitial}
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    helperInfoHtml = `
-                        <div class="helper-info-row">
-                            <div class="helper-info-left">
-                                <div class="helper-details">
-                                    <span class="helper-label">Task with</span>
-                                    <span class="helper-name">${helperName}</span>
-                                </div>
-                            </div>
-                            <div class="helper-info-right">
-                                ?
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                const primaryButtonText = isAssigned ? 'Message helper' : 'Get help with task';
-                
-                detailContent.innerHTML = `
-                    ${helperInfoHtml}
-                    
-                    <div class="detail-map-container" id="taskDetailMap"></div>
-                    
-                    <div class="task-timeline">
-                        <div class="timeline-item">
-                            <div class="timeline-dot-small"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">Task location</div>
-                                <div class="timeline-subtitle">${task.address || 'Location set'}</div>
-                                <div class="timeline-time">${createdDateStr} · ${createdTimeStr}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-item">
-                            <div class="timeline-icon-small">
-                                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
-                            </div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">${task.category || 'Task'}</div>
-                                <div class="timeline-subtitle">${task.notes || 'No additional notes'}</div>
-                                <div class="timeline-time">${task.taskState === 'past' ? 'Completed' : 'Posted'} on ${createdDateStr}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="task-action-buttons">
-                        <button class="action-btn primary" onclick="alert('${isAssigned ? 'Message feature coming soon' : 'Get help feature coming soon'}')">${primaryButtonText}</button>
-                        <button class="action-btn secondary" onclick="repostTask('${task.taskId || task.id}')">Rebook</button>
-                    </div>
-                `;
-                
-                setTimeout(() => {
-                    const mapContainer = document.getElementById('taskDetailMap');
-                    if (mapContainer) {
-                        const lat = (task.location && task.location.lat) ? task.location.lat : (currentLat || -26.195246);
-                        const lng = (task.location && task.location.lng) ? task.location.lng : (currentLng || 28.034088);
-                        
-                        const detailMap = new mapboxgl.Map({
-                            container: 'taskDetailMap',
-                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [lng, lat],
-                            zoom: 14,
-                            interactive: false
-                        });
-                        
-                        const pinElement = document.createElement('div');
-                        pinElement.className = 'pulsing-pin';
-                        
-                        new mapboxgl.Marker({ element: pinElement })
-                            .setLngLat([lng, lat])
-                            .addTo(detailMap);
-                    }
-                }, 100);
-                
-                setActivePage('taskDetail');
-            }
-
-            function displayTasksByCategory() {
-                const tasksContainer = document.getElementById('tasksListContainer');
-                
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                let filteredTasks = [];
-                
-                if (currentCategory === 'current') {
-                    filteredTasks = allTasks.filter(task => {
-                        if (task.taskState === 'current') return true;
-                        if (task.status !== 'open' && task.status !== 'in-progress' && task.status !== 'assigned') return false;
-                        if (task.date === 'now') return true;
-                        const taskDate = getTaskDateObj(task);
-                        if (taskDate) {
-                            const taskDay = new Date(taskDate);
-                            taskDay.setHours(0, 0, 0, 0);
-                            return taskDay.getTime() === today.getTime();
-                        }
-                        return false;
-                    });
-                    
-                    if (filteredTasks.length === 0) {
-                        tasksContainer.innerHTML = `
-                            <div class="empty-state">
-                                <h3>No current tasks</h3>
-                                <p>Tasks for today will appear here.</p>
-                                <button class="post-btn" onclick="document.getElementById('navHome').click()">Post a task</button>
-                            </div>
-                        `;
-                        return;
-                    }
-                } else if (currentCategory === 'future') {
-                    filteredTasks = allTasks.filter(task => {
-                        if (task.taskState === 'future') return true;
-                        if (task.status !== 'open' && task.status !== 'in-progress' && task.status !== 'assigned') return false;
-                        if (task.date === 'now') return false;
-                        const taskDate = getTaskDateObj(task);
-                        if (taskDate) {
-                            const taskDay = new Date(taskDate);
-                            taskDay.setHours(0, 0, 0, 0);
-                            return taskDay > today;
-                        }
-                        return false;
-                    });
-                    
-                    if (filteredTasks.length === 0) {
-                        tasksContainer.innerHTML = `
-                            <div class="empty-state">
-                                <h3>No future tasks</h3>
-                                <p>Tasks scheduled for future dates will appear here.</p>
-                                <button class="post-btn" onclick="document.getElementById('navHome').click()">Post a task</button>
-                            </div>
-                        `;
-                        return;
-                    }
-                } else {
-                    filteredTasks = allTasks.filter(task => {
-                        if (task.taskState === 'past') return true;
-                        if (task.status === 'completed' || task.status === 'cancelled') return true;
-                        if (task.date && task.date !== 'now') {
-                            const taskDate = getTaskDateObj(task);
-                            if (taskDate) {
-                                const taskDay = new Date(taskDate);
-                                taskDay.setHours(0, 0, 0, 0);
-                                return taskDay < today;
-                            }
-                        }
-                        return false;
-                    });
-                    
-                    if (filteredTasks.length === 0) {
-                        tasksContainer.innerHTML = `
-                            <div class="empty-state">
-                                <h3>No past tasks</h3>
-                                <p>Your completed and past tasks will appear here.</p>
-                                <button class="post-btn" onclick="document.getElementById('navHome').click()">Post a task</button>
-                            </div>
-                        `;
-                        return;
-                    }
-                }
-                
-                filteredTasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                
-                const groupedTasks = {};
-                filteredTasks.forEach(task => {
-                    const date = task.createdAt ? new Date(task.createdAt) : new Date();
-                    const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                    
-                    if (!groupedTasks[monthYear]) {
-                        groupedTasks[monthYear] = [];
-                    }
-                    groupedTasks[monthYear].push(task);
-                });
-                
-                let html = '';
-                for (const [monthYear, tasks] of Object.entries(groupedTasks)) {
-                    html += `<div class="task-month-group">`;
-                    html += `<div class="month-header">${monthYear}</div>`;
-                    
-                    tasks.forEach(task => {
-                        const taskDate = task.createdAt ? new Date(task.createdAt) : new Date();
-                        const formattedDate = formatDateWithOrdinal(taskDate);
-                        const formattedTime = formatTimeFromTimestamp(task.createdAt);
-                        const budgetDisplay = getFormattedBudget(task);
-                        
-                        html += `
-                            <div class="task-card" data-task-id="${task.taskId || task.id}">
-                                <div class="task-card-main">
-                                    <div class="task-icon">
-                                        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
-                                    </div>
-                                    <div class="task-content">
-                                        <div class="task-date-time">
-                                            <span class="task-date">${formattedDate}</span> · <span class="task-time">${formattedTime}</span>
-                                        </div>
-                                        <div class="task-title">${task.category || 'Task'}</div>
-                                        <div class="task-amount">${budgetDisplay}</div>
-                                    </div>
-                                    <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')">
-                                        <i class="fi fi-sr-arrows-retweet"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    html += `</div>`;
-                }
-                
-                tasksContainer.innerHTML = html;
-                
-                document.querySelectorAll('.task-card').forEach(card => {
-                    card.addEventListener('click', function(e) {
-                        if (e.target.closest('.task-repost-btn')) return;
-                        const taskId = this.dataset.taskId;
-                        const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
-                        if (task) {
-                            showTaskDetail(task);
-                        }
-                    });
-                });
-            }
-
-            window.repostTask = function(taskId) {
-                const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
-                if (task) {
-                    taskInput.value = task.category || '';
-                    streetInput.value = task.address ? task.address.split(',')[0] : '';
-                    if (task.budget !== 'open') {
-                        fixedBudgetBtn.click();
-                        budgetAmount.value = task.budget;
-                    } else {
-                        openBudgetBtn.click();
-                    }
-                    if (task.date === 'now') {
-                        whenNowBtn.click();
-                    } else {
-                        whenLaterBtn.click();
-                        if (task.date) dateDisplay.textContent = task.date;
-                        if (task.time) timeDisplay.textContent = task.time;
-                    }
-                    document.getElementById('extraNotes').value = task.notes || task.description || '';
-                    
-                    setActivePage('home');
-                    createTaskContainer.style.display = 'flex';
-                    validateForm();
-                }
-            };
-
+            // Search suggestions
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
             const searchIconBtn = document.getElementById('searchIconBtn');
             const createTaskContainer = document.getElementById('createTaskContainer');
@@ -2611,84 +1729,20 @@
             const fixedBudgetBtn = document.getElementById('fixedBudgetBtn');
             const openBudgetBtn = document.getElementById('openBudgetBtn');
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
+            const pickDateBtn = document.getElementById('pickDateBtn');
+            const pickTimeBtn = document.getElementById('pickTimeBtn');
             const taskCharCount = document.getElementById('taskCharCount');
 
-            function capitalizeFirstLetter(s) { 
-                if (!s) return '';
-                return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
-            }
+            function capitalizeFirstLetter(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
 
             if (mainSearchInput) {
-                mainSearchInput.addEventListener('focus', function() {
-                    if (!this.value.trim()) {
-                        mainSuggestionsList.innerHTML = `
-                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">please select a task:</div>
-                            ${taskSuggestions.slice(0, 7).map(t => 
-                                `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                            ).join('')}
-                        `;
-                        mainSuggestionsList.classList.add('active');
-                        
-                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
-                            el.addEventListener('click', function() {
-                                const task = this.dataset.task;
-                                mainSearchInput.value = task;
-                                taskInput.value = task;
-                                mainSuggestionsList.classList.remove('active');
-                                validateForm();
-                                if (currentUser) {
-                                    createTaskContainer.style.display = 'flex';
-                                } else {
-                                    window.location.href = 'login.html';
-                                }
-                            });
-                        });
-                    }
-                });
-                
                 mainSearchInput.addEventListener('input', function() {
                     const q = this.value.trim().toLowerCase();
-                    if (q.length < 1) { 
-                        mainSuggestionsList.innerHTML = `
-                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">please select a task:</div>
-                            ${taskSuggestions.slice(0, 7).map(t => 
-                                `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                            ).join('')}
-                        `;
-                        mainSuggestionsList.classList.add('active');
-                        
-                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
-                            el.addEventListener('click', function() {
-                                const task = this.dataset.task;
-                                mainSearchInput.value = task;
-                                taskInput.value = task;
-                                mainSuggestionsList.classList.remove('active');
-                                validateForm();
-                                if (currentUser) {
-                                    createTaskContainer.style.display = 'flex';
-                                } else {
-                                    window.location.href = 'login.html';
-                                }
-                            });
-                        });
-                        return; 
-                    }
-                    
-                    const matches = taskSuggestions.filter(t => 
-                        t.toLowerCase().includes(q)
-                    ).slice(0, 8);
-                    
-                    if (!matches.length) { 
-                        mainSuggestionsList.classList.remove('active'); 
-                        return; 
-                    }
-                    
-                    mainSuggestionsList.innerHTML = matches.map(t => 
-                        `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                    ).join('');
-                    
+                    if (q.length < 1) { mainSuggestionsList.classList.remove('active'); return; }
+                    const matches = taskSuggestions.filter(t => t.toLowerCase().includes(q)).slice(0, 8);
+                    if (!matches.length) { mainSuggestionsList.classList.remove('active'); return; }
+                    mainSuggestionsList.innerHTML = matches.map(t => `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`).join('');
                     mainSuggestionsList.classList.add('active');
-                    
                     document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
@@ -2696,61 +1750,23 @@
                             taskInput.value = task;
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
-                            if (currentUser) {
-                                createTaskContainer.style.display = 'flex';
-                            } else {
-                                window.location.href = 'login.html';
-                            }
+                            if (canUserPost()) createTaskContainer.style.display = 'flex';
                         });
                     });
                 });
-                
                 document.addEventListener('click', (e) => {
-                    if (!mainSearchInput.contains(e.target) && !mainSuggestionsList.contains(e.target)) {
+                    if (!mainSearchInput.contains(e.target) && !mainSuggestionsList.contains(e.target))
                         mainSuggestionsList.classList.remove('active');
-                    }
                 });
             }
 
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
-                
-                if (!currentUser) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                if (!mainSearchInput.value.trim()) {
-                    mainSuggestionsList.innerHTML = `
-                        <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">please select a task:</div>
-                        ${taskSuggestions.slice(0, 7).map(t => 
-                            `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                        ).join('')}
-                    `;
-                    mainSuggestionsList.classList.add('active');
-                    
-                    document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
-                        el.addEventListener('click', function() {
-                            const task = this.dataset.task;
-                            mainSearchInput.value = task;
-                            taskInput.value = task;
-                            mainSuggestionsList.classList.remove('active');
-                            validateForm();
-                            createTaskContainer.style.display = 'flex';
-                        });
-                    });
-                } else {
-                    taskInput.value = mainSearchInput.value.trim().toLowerCase();
-                    createTaskContainer.style.display = 'flex';
-                    mainSuggestionsList.classList.remove('active');
-                }
+                if (mainSearchInput.value.trim()) taskInput.value = mainSearchInput.value.trim();
+                if (canUserPost()) createTaskContainer.style.display = 'flex';
             });
 
-            closeCreateTaskBtn.addEventListener('click', () => {
-                createTaskContainer.style.display = 'none';
-                mainSuggestionsList.classList.remove('active');
-            });
+            closeCreateTaskBtn.addEventListener('click', () => createTaskContainer.style.display = 'none');
 
             taskInput.addEventListener('input', function() {
                 if (this.value.length > 50) this.value = this.value.slice(0,50);
@@ -2765,8 +1781,8 @@
                 let budgetValid = true;
                 if (fixedBudgetBtn.classList.contains('active')) {
                     const amount = budgetAmount.value.trim();
-                    const amountNum = parseFloat(amount);
-                    budgetValid = amount !== '' && !isNaN(amountNum) && amountNum > 0;
+                    const amountNum = parseInt(amount);
+                    budgetValid = amount !== '' && amountNum > 0;
                     if (!budgetValid && amount !== '') {
                         budgetAmount.classList.add('error');
                     } else {
@@ -2808,26 +1824,23 @@
                 validateForm();
             });
 
-            document.getElementById('pickDateBtn').addEventListener('click', () => nativeDatePicker.showPicker());
-            document.getElementById('pickTimeBtn').addEventListener('click', () => nativeTimePicker.showPicker());
+            pickDateBtn.addEventListener('click', () => nativeDatePicker.showPicker());
+            pickTimeBtn.addEventListener('click', () => nativeTimePicker.showPicker());
 
-            const todayDate = new Date().toISOString().split('T')[0];
-            nativeDatePicker.setAttribute('min', todayDate);
+            const today = new Date().toISOString().split('T')[0];
+            nativeDatePicker.setAttribute('min', today);
 
             nativeDatePicker.addEventListener('change', function() {
                 if (this.value) {
                     const selectedDate = new Date(this.value);
-                    const todayDateObj = new Date();
-                    todayDateObj.setHours(0,0,0,0);
-                    if (selectedDate < todayDateObj) {
+                    const todayDate = new Date();
+                    todayDate.setHours(0,0,0,0);
+                    if (selectedDate < todayDate) {
                         alert('Please select a future date.');
                         this.value = '';
                         dateDisplay.textContent = 'Pick date';
                     } else {
-                        const day = String(selectedDate.getDate()).padStart(2, '0');
-                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-                        const year = selectedDate.getFullYear();
-                        dateDisplay.textContent = `${day}/${month}/${year}`;
+                        dateDisplay.textContent = selectedDate.toLocaleDateString('en-GB');
                     }
                     validateForm();
                 }
@@ -2854,28 +1867,37 @@
                 validateForm();
             });
 
+            // Image upload
             const uploadArea = document.getElementById('uploadArea');
             uploadArea.addEventListener('click', () => {
+                if (!isUserLoggedIn()) { showUploadStatus('Please log in', 'warning'); return; }
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.multiple = true;
                 input.onchange = (e) => {
                     Array.from(e.target.files).forEach(file => {
-                        if (file.size > 5*1024*1024) { 
-                            alert('File too large (max 5MB)'); 
-                            return; 
-                        }
+                        if (file.size > 5*1024*1024) { showUploadStatus('File too large', 'error'); return; }
                         const reader = new FileReader();
                         reader.onload = (ev) => { 
                             uploadedImages.push(ev.target.result); 
                             displayPreviews(); 
+                            showUploadStatus('Uploaded', 'success'); 
+                            debugLog(`📸 Image uploaded: ${file.name}`, 'success');
                         };
                         reader.readAsDataURL(file);
                     });
                 };
                 input.click();
             });
+            
+            function showUploadStatus(msg, type) {
+                const s = document.getElementById('uploadStatus');
+                document.getElementById('uploadStatusText').textContent = msg;
+                s.className = `upload-status ${type}`;
+                s.style.display = 'flex';
+                if (type !== 'info') setTimeout(() => s.style.display = 'none', 3000);
+            }
             
             function displayPreviews() {
                 const container = document.getElementById('imagePreviewContainer');
@@ -2887,62 +1909,57 @@
                     w.querySelector('.remove-image').onclick = () => { 
                         uploadedImages.splice(idx,1); 
                         displayPreviews();
+                        debugLog('🗑️ Image removed', 'info');
                     };
                     container.appendChild(w);
                 });
             }
 
+            // Map modal
             const mapModal = document.getElementById('mapModal');
+            const pinIconBtn = document.getElementById('pinIconBtn');
             const closeMapModalBtn = document.getElementById('closeMapModalBtn');
             const confirmLocationBtn = document.getElementById('confirmLocationBtn');
-            const locationRowTrigger = document.getElementById('locationRowTrigger');
             let mapModalInstance, marker;
             
-            if (locationRowTrigger) {
-                locationRowTrigger.addEventListener('click', () => {
-                    mapModal.classList.add('active');
-                    setTimeout(() => {
-                        if (mapModalInstance) mapModalInstance.remove();
-                        mapModalInstance = new mapboxgl.Map({
-                            container: 'mapModalContainer',
-                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [currentLng||28.034088, currentLat||-26.195246],
-                            zoom: 15
-                        });
+            pinIconBtn.addEventListener('click', () => {
+                debugLog('🗺️ Opening map modal', 'info');
+                mapModal.classList.add('active');
+                setTimeout(() => {
+                    if (mapModalInstance) mapModalInstance.remove();
+                    mapModalInstance = new mapboxgl.Map({
+                        container: 'mapModalContainer',
+                        style: 'mapbox://styles/mapbox/dark-v11',
+                        center: [currentLng||28.034088, currentLat||-26.195246],
+                        zoom: 15
+                    });
+                    
+                    const modalPinElement = document.createElement('div');
+                    modalPinElement.className = 'pulsing-pin';
+                    
+                    marker = new mapboxgl.Marker({ 
+                        element: modalPinElement,
+                        draggable: true,
+                        anchor: 'center'
+                    })
+                    .setLngLat([currentLng||28.034088, currentLat||-26.195246])
+                    .addTo(mapModalInstance);
+                    
+                    marker.on('dragend', () => {
+                        const lngLat = marker.getLngLat();
+                        isManualMove = true;
+                        debugLog(`📍 Marker dragged to: ${lngLat.lat}, ${lngLat.lng}`, 'info');
                         
-                        const modalPinElement = document.createElement('div');
-                        modalPinElement.className = 'pulsing-pin';
-                        
-                        marker = new mapboxgl.Marker({ 
-                            element: modalPinElement,
-                            draggable: true,
-                            anchor: 'center'
-                        })
-                        .setLngLat([currentLng||28.034088, currentLat||-26.195246])
-                        .addTo(mapModalInstance);
-                        
-                        marker.on('dragend', () => {
-                            const lngLat = marker.getLngLat();
-                            isManualMove = true;
-                            
-                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-                                .then(r => r.json())
-                                .then(data => {
-                                    if (data.features && data.features[0]) {
-                                        let fullAddress = data.features[0].place_name;
-                                        let parts = fullAddress.split(', ');
-                                        if (parts.length > 1) {
-                                            parts.pop();
-                                            locationInput.value = parts.join(', ');
-                                        } else {
-                                            locationInput.value = fullAddress;
-                                        }
-                                    }
-                                });
-                        });
-                    }, 100);
-                });
-            }
+                        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.features && data.features[0]) {
+                                    locationInput.value = data.features[0].place_name;
+                                }
+                            });
+                    });
+                }, 100);
+            });
             
             closeMapModalBtn.addEventListener('click', () => mapModal.classList.remove('active'));
             confirmLocationBtn.addEventListener('click', () => { 
@@ -2952,26 +1969,17 @@
                     currentLat = lngLat.lat;
                     currentLng = lngLat.lng;
                     isManualMove = true;
+                    debugLog(`✅ Location confirmed: ${currentLat}, ${currentLng}`, 'success');
                     
-                    if (userLocationMarker) {
-                        userLocationMarker.setLngLat([currentLng, currentLat]);
-                    }
-                    if (userLocationRadius) {
-                        userLocationRadius.setLngLat([currentLng, currentLat]);
+                    if (mainMapPin) {
+                        mainMapPin.setLngLat([currentLng, currentLat]);
                     }
                     
                     fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
                         .then(r => r.json())
                         .then(data => {
                             if (data.features && data.features[0]) {
-                                let fullAddress = data.features[0].place_name;
-                                let parts = fullAddress.split(', ');
-                                if (parts.length > 1) {
-                                    parts.pop();
-                                    locationInput.value = parts.join(', ');
-                                } else {
-                                    locationInput.value = fullAddress;
-                                }
+                                locationInput.value = data.features[0].place_name;
                             }
                         });
                         
@@ -2981,119 +1989,332 @@
                 validateForm(); 
             });
 
-            document.getElementById('nextBtn').addEventListener('click', (e) => {
-                e.preventDefault();
+            // ===== TASK PREVIEW FUNCTIONALITY =====
+            const taskPreviewContainer = document.getElementById('taskPreviewContainer');
+            const closePreviewBtn = document.getElementById('closePreviewBtn');
+            const previewEditBtn = document.getElementById('previewEditBtn');
+            const previewConfirmBtn = document.getElementById('previewConfirmBtn');
+            let previewMap = null;
+
+            function showTaskPreview() {
+                debugLog('👁️ Showing task preview', 'info');
                 
-                if (!currentUser) {
-                    window.location.href = 'login.html';
-                    return;
-                }
+                // Populate preview data in the same hierarchy as create task
+                document.getElementById('previewLocation').textContent = locationInput.value || 'Location not set';
+                document.getElementById('previewStreet').textContent = streetInput.value.trim() || 'Street address not set';
+                document.getElementById('previewTask').textContent = taskInput.value.trim() || 'Task not specified';
+                document.getElementById('previewDescription').textContent = document.getElementById('extraNotes').value.trim() || 'No description';
                 
-                const locationInputValue = document.getElementById('locationInput').value;
-                const streetInputValue = document.getElementById('streetInput').value;
-                const taskInputValue = document.getElementById('taskInput').value;
-                const extraNotesValue = document.getElementById('extraNotes').value;
-                const budgetAmountValue = parseFloat(document.getElementById('budgetAmount').value) || 0;
-
-                const whenLaterBtn = document.getElementById('whenLaterBtn');
-                const nativeDatePicker = document.getElementById('nativeDatePicker');
-                const nativeTimePicker = document.getElementById('nativeTimePicker');
-
-                let taskDateTime;
-                const now = new Date();
-
+                let whenText = '';
                 if (whenLaterBtn.classList.contains('active')) {
-                    taskDateTime = new Date(`${nativeDatePicker.value} ${nativeTimePicker.value}`);
+                    whenText = `${dateDisplay.textContent} at ${timeDisplay.textContent}`;
                 } else {
-                    taskDateTime = now;
+                    whenText = 'Now';
+                }
+                document.getElementById('previewWhen').textContent = whenText;
+                
+                let budgetText = '';
+                if (fixedBudgetBtn.classList.contains('active')) {
+                    budgetText = `R${budgetAmount.value}`;
+                } else {
+                    budgetText = 'Open to offers';
+                }
+                document.getElementById('previewBudget').textContent = budgetText;
+                
+                // Show image previews
+                const previewImagesContainer = document.getElementById('previewImagesContainer');
+                previewImagesContainer.innerHTML = '';
+                if (uploadedImages.length === 0) {
+                    previewImagesContainer.innerHTML = '<div class="preview-section-value">No images uploaded</div>';
+                } else {
+                    uploadedImages.forEach(url => {
+                        const img = document.createElement('img');
+                        img.className = 'preview-image';
+                        img.src = url;
+                        previewImagesContainer.appendChild(img);
+                    });
+                }
+                
+                // Initialize preview map
+                createTaskContainer.style.display = 'none';
+                taskPreviewContainer.classList.add('active');
+                
+                setTimeout(() => {
+                    if (previewMap) previewMap.remove();
+                    previewMap = new mapboxgl.Map({
+                        container: 'previewMap',
+                        style: 'mapbox://styles/mapbox/dark-v11',
+                        center: [currentLng||28.034088, currentLat||-26.195246],
+                        zoom: 15
+                    });
+                    
+                    const previewPin = document.createElement('div');
+                    previewPin.className = 'pulsing-pin';
+                    
+                    new mapboxgl.Marker({ element: previewPin, anchor: 'center' })
+                        .setLngLat([currentLng||28.034088, currentLat||-26.195246])
+                        .addTo(previewMap);
+                        
+                    debugLog('🗺️ Preview map loaded', 'success');
+                }, 100);
+            }
+
+            closePreviewBtn.addEventListener('click', () => {
+                taskPreviewContainer.classList.remove('active');
+                createTaskContainer.style.display = 'flex';
+                if (previewMap) {
+                    previewMap.remove();
+                    previewMap = null;
+                }
+            });
+
+            previewEditBtn.addEventListener('click', () => {
+                taskPreviewContainer.classList.remove('active');
+                createTaskContainer.style.display = 'flex';
+                if (previewMap) {
+                    previewMap.remove();
+                    previewMap = null;
+                }
+                debugLog('✏️ Returning to edit task', 'info');
+            });
+
+            // ===== FIXED FIREBASE SAVE FUNCTION - USING CORRECT URL =====
+            async function saveTaskToFirebase() {
+                const user = getCurrentUser();
+                
+                // STEP 1: User check
+                debugLog('🔍 STEP 1: Checking local user authentication...', 'info');
+                let posterId;
+                let posterEmail = 'guest@example.com';
+                let posterName = 'Guest User';
+                
+                if (!user) {
+                    debugLog('⚠️ No local user found - using guest mode', 'warning');
+                    posterId = 'guest_' + Date.now();
+                } else {
+                    // Use the actual user ID from your local storage
+                    posterId = user.uid || user.id || user.email || 'user_' + Date.now();
+                    posterEmail = user.email || posterEmail;
+                    posterName = user.name || user.displayName || posterName;
+                    debugLog(`✅ Using local user ID: ${posterId}`, 'success');
+                    debugLog(`✅ User email: ${posterEmail}`, 'success');
                 }
 
-                let taskState = (taskDateTime > now) ? 'future' : 'current';
+                // Show loading overlay
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                previewConfirmBtn.disabled = true;
+                debugLog('⏳ Loading overlay shown', 'info');
 
-                const taskRef = database.ref('tasks/' + currentUser.uid).push();
-                const taskId = taskRef.key;
+                // Create a promise that will always resolve (never hang)
+                return new Promise((resolve) => {
+                    // Set a timeout to prevent infinite loading
+                    const timeout = setTimeout(() => {
+                        debugLog('❌ Save timeout - Firebase not responding', 'error');
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        previewConfirmBtn.disabled = false;
+                        alert('Connection timeout. Please check your internet and try again.');
+                        resolve(false);
+                    }, 20000);
+                    
+                    // STEP 2: Generate task ID and prepare data
+                    debugLog('🔍 STEP 2: Preparing task data...', 'info');
+                    const taskId = database.ref().child('tasks').push().key;
+                    debugLog(`📋 Generated task ID: ${taskId}`, 'info');
+                    
+                    const taskData = {
+                        taskId: taskId,
+                        posterId: posterId,
+                        posterEmail: posterEmail,
+                        posterName: posterName,
+                        category: taskInput.value.trim(),
+                        description: document.getElementById('extraNotes').value.trim() || '',
+                        location: {
+                            lat: currentLat || -26.195246,
+                            lng: currentLng || 28.034088
+                        },
+                        address: streetInput.value.trim() + ', ' + locationInput.value,
+                        budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
+                        date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
+                        time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
+                        images: uploadedImages,
+                        status: 'open',
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    };
 
-                const task = {
-                    taskId: taskId,
-                    posterId: currentUser.uid,
-                    posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-                    posterEmail: currentUser.email || '',
-                    category: taskInputValue.toLowerCase().trim(),
-                    description: extraNotesValue || '',
-                    address: streetInputValue,
-                    location: {
-                        city: locationInputValue,
-                        province: '',
-                        postalCode: '',
-                        lat: currentLat || -26.195246,
-                        lng: currentLng || 28.034088
-                    },
-                    budget: budgetAmountValue,
-                    date: nativeDatePicker.value || now.toISOString().split('T')[0],
-                    time: nativeTimePicker.value || now.toTimeString().split(' ')[0].substring(0, 5),
-                    status: 'open',
-                    taskState: taskState,
-                    assignedHelperId: null,
-                    assignedHelperName: null,
-                    completedAt: null,
-                    createdAt: Date.now(),
-                    notes: extraNotesValue || '',
-                    images: uploadedImages
-                };
+                    debugLog('📦 Task data prepared:', 'info');
+                    debugLog(JSON.stringify(taskData, null, 2), 'info');
 
-                const originalText = nextBtn.textContent;
-                nextBtn.textContent = 'Posting...';
-                nextBtn.disabled = true;
+                    // STEP 3: Save to Firebase directly
+                    debugLog('🔍 STEP 3: Saving to Firebase...', 'info');
+                    
+                    database.ref(`tasks/${taskId}`).set(taskData)
+                        .then(() => {
+                            // Success!
+                            clearTimeout(timeout);
+                            debugLog('✅ Task saved successfully!', 'success');
+                            
+                            // Hide loading
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            previewConfirmBtn.disabled = false;
+                            
+                            // Show success message
+                            const toast = document.getElementById('successToast');
+                            toast.textContent = 'Task posted successfully!';
+                            toast.style.display = 'block';
+                            setTimeout(() => {
+                                toast.style.display = 'none';
+                            }, 3000);
+                            
+                            resolve(taskId);
+                        })
+                        .catch((error) => {
+                            // Error!
+                            clearTimeout(timeout);
+                            debugLog(`❌ Firebase save error: ${error.message}`, 'error');
+                            debugLog(`❌ Error code: ${error.code || 'none'}`, 'error');
+                            
+                            // Check common Firebase errors
+                            if (error.code === 'PERMISSION_DENIED') {
+                                debugLog('❌ PERMISSION DENIED - Firebase rules require authentication', 'error');
+                                debugLog('💡 Make sure your Firebase rules allow writes from authenticated users', 'warning');
+                                debugLog('💡 Current user ID being used: ' + posterId, 'info');
+                                debugLog('💡 Current database URL: https://taskmartapp-74d6b-default-rtdb.firebaseio.com', 'info');
+                                alert('Permission denied. Your Firebase database rules may require authentication.');
+                            } else if (error.code === 'NETWORK_ERROR') {
+                                debugLog('❌ NETWORK ERROR - Check internet connection', 'error');
+                                alert('Network error. Please check your internet connection.');
+                            } else {
+                                alert('Error posting task: ' + error.message);
+                            }
+                            
+                            // ALWAYS hide loading and re-enable button
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            previewConfirmBtn.disabled = false;
+                            
+                            resolve(false);
+                        });
+                });
+            }
 
-                taskRef.set(task)
-                    .then(() => {
-                        console.log('task posted successfully:', task);
+            // ===== MODIFIED NEXT BUTTON HANDLER =====
+            nextBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                debugLog('👆 Next button clicked, showing preview', 'info');
+                showTaskPreview();
+            });
+
+            // ===== CONFIRM BUTTON HANDLER =====
+            previewConfirmBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                debugLog('👆 Post task button clicked, saving to Firebase...', 'info');
+                
+                const taskId = await saveTaskToFirebase();
+                
+                if (taskId) {
+                    debugLog('✅ Save successful, transitioning to offers screen', 'success');
+                    
+                    // Close preview
+                    taskPreviewContainer.classList.remove('active');
+                    if (previewMap) {
+                        previewMap.remove();
+                        previewMap = null;
+                    }
+                    
+                    // Show offers screen
+                    offersContainer.classList.add('active');
+                    
+                    // Initialize offers map with task location
+                    setTimeout(() => {
+                        if (offersMap) offersMap.remove();
+                        offersMap = new mapboxgl.Map({
+                            container: 'offersMap',
+                            style: 'mapbox://styles/mapbox/dark-v11',
+                            center: [currentLng||28.034088, currentLat||-26.195246],
+                            zoom: 15
+                        });
                         
-                        const toast = document.getElementById('successToast');
-                        toast.textContent = 'task posted! searching for helpers...';
-                        toast.style.display = 'block';
-                        setTimeout(() => {
-                            toast.style.display = 'none';
-                        }, 3000);
+                        // Add task location marker
+                        const taskPin = document.createElement('div');
+                        taskPin.className = 'pulsing-pin';
                         
-                        setTimeout(() => {
-                            createTaskContainer.style.display = 'none';
+                        new mapboxgl.Marker({ element: taskPin, anchor: 'center' })
+                            .setLngLat([currentLng||28.034088, currentLat||-26.195246])
+                            .addTo(offersMap);
                             
-                            taskInput.value = ''; 
-                            mainSearchInput.value = ''; 
-                            streetInput.value = ''; 
-                            budgetAmount.value = ''; 
-                            taskCharCount.textContent = '0/50';
-                            uploadedImages = []; 
-                            displayPreviews(); 
-                            whenNowBtn.click(); 
-                            fixedBudgetBtn.click(); 
-                            dateDisplay.textContent = 'Pick date'; 
-                            timeDisplay.textContent = 'Pick time';
-                            
-                            nextBtn.textContent = originalText;
-                            nextBtn.disabled = false;
-                            
-                            findAndAssignHelper(taskId, taskInputValue);
-                            
-                            setActivePage('tasks');
-                            loadUserTasks();
-                        }, 1500);
-                    })
-                    .catch(err => {
-                        console.error('error posting task:', err);
-                        alert('error posting task: ' + err.message);
-                        nextBtn.textContent = originalText;
-                        nextBtn.disabled = false;
-                    });
+                        debugLog('🗺️ Offers map initialized - waiting for helpers', 'success');
+                    }, 100);
+                    
+                    // Reset form
+                    taskInput.value = ''; 
+                    mainSearchInput.value = ''; 
+                    streetInput.value = ''; 
+                    budgetAmount.value = ''; 
+                    taskCharCount.textContent = '0/50';
+                    uploadedImages = []; 
+                    displayPreviews(); 
+                    whenNowBtn.click(); 
+                    fixedBudgetBtn.click(); 
+                    dateDisplay.textContent = 'Pick date'; 
+                    timeDisplay.textContent = 'Pick time';
+                    validateForm();
+                    
+                } else {
+                    debugLog('❌ Save failed, staying on preview', 'error');
+                }
+            });
+
+            // OFFERS PAGE
+            const offersContainer = document.getElementById('offersContainer');
+            let offersMap = null;
+
+            document.getElementById('offersBackBtn').addEventListener('click', () => {
+                offersContainer.classList.remove('active');
+                createTaskContainer.style.display = 'flex';
+                if (offersMap) {
+                    offersMap.remove();
+                    offersMap = null;
+                }
+            });
+            
+            document.getElementById('postOfferBtn').addEventListener('click', () => {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    showUploadStatus('Task posted!', 'success');
+                    offersContainer.classList.remove('active');
+                    if (typeof confetti === 'function') {
+                        confetti({ 
+                            particleCount: 100, 
+                            spread: 70, 
+                            origin: { y: 0.6 }, 
+                            colors: ['#000', '#333'] 
+                        });
+                    }
+                }, 1500);
             });
 
             validateForm();
+            checkVerificationStatus();
             
-            setTimeout(() => {
-                checkNotificationDot();
-            }, 2000);
+            debugLog('✅ Application initialized - ready to post tasks', 'success');
         })();
+    </script>
+
+    <!-- Load profile menu from GitHub -->
+    <script>
+        fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById('profile-menu-container').innerHTML = html;
+                Array.from(document.getElementById('profile-menu-container').getElementsByTagName('script')).forEach(s => {
+                    const ns = document.createElement('script');
+                    ns.textContent = s.textContent;
+                    document.body.appendChild(ns);
+                });
+            })
+            .catch(console.error);
     </script>
 </body>
 </html>
