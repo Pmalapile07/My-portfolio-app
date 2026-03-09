@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=block">
     
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
     <!-- Custom Font -->
     <style>
         @font-face {
@@ -1194,6 +1199,22 @@
         (function() {
             'use strict';
 
+            // ===== FIREBASE CONFIG =====
+            const firebaseConfig = {
+                apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+                authDomain: "taskmartapp-74d6b.firebaseapp.com",
+                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+                projectId: "taskmartapp-74d6b",
+                storageBucket: "taskmartapp-74d6b.firebasestorage.app",
+                messagingSenderId: "52910279328",
+                appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
+            };
+
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const database = firebase.database();
+
             const API_BASE_URL = '';
 
             let currentUser = null;
@@ -1208,7 +1229,6 @@
             let map = null;
             let isOnline = true;
             let selectedTaskId = null;
-            let authToken = null;
             let userSkills = [];
             let notifications = [];
             let todayEarnings = 0;
@@ -1240,6 +1260,65 @@
             const todayEarningsSpan = document.getElementById('todayEarnings');
             const profileMenuBtn = document.getElementById('profileMenuBtn');
 
+            // ===== AUTH STATE OBSERVER =====
+            auth.onAuthStateChanged(async (user) => {
+                if (!user) {
+                    console.log('No user logged in, redirecting to login');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                try {
+                    // Fetch user data from database
+                    const snapshot = await database.ref('users/' + user.uid).once('value');
+                    const userData = snapshot.val();
+
+                    if (!userData) {
+                        console.error('User data not found in database');
+                        await auth.signOut();
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    // Verify this is a helper account
+                    if (userData.role !== 'helper') {
+                        console.error('Not a helper account');
+                        await auth.signOut();
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    // Set up current user
+                    currentUser = {
+                        email: user.email,
+                        uid: user.uid,
+                        name: userData.name,
+                        phone: userData.phone,
+                        skills: userData.skills || []
+                    };
+
+                    userSkills = currentUser.skills;
+                    
+                    console.log('Helper logged in:', currentUser.name);
+                    console.log('User skills:', userSkills);
+
+                    // Load dashboard data
+                    loadNotifications();
+                    initMap();
+                    
+                    const savedEarnings = localStorage.getItem('taskmart_today_earnings');
+                    if (savedEarnings) {
+                        todayEarnings = parseInt(savedEarnings);
+                        todayEarningsSpan.textContent = `R${todayEarnings}`;
+                    }
+
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                    await auth.signOut();
+                    window.location.href = '/login.html';
+                }
+            });
+
             // ===== FULL SCREEN NOTIFICATIONS =====
             notificationBell.addEventListener('click', () => {
                 renderFullNotifications();
@@ -1257,15 +1336,15 @@
             function renderFullNotifications() {
                 let html = '';
 
-                const earningsNotifs = notifications.filter(n => n.type === 'earnings' || n.title.toLowerCase().includes('earned'));
+                const earningsNotifs = notifications.filter(n => n.type === 'earnings' || (n.title && n.title.toLowerCase().includes('earned')));
                 if (earningsNotifs.length > 0) {
                     html += '<div class="notification-group"><h3>Earnings</h3>';
                     earningsNotifs.forEach(n => {
                         html += `
                             <div class="full-notification-item earnings">
-                                <div class="notification-time">${n.timestamp}</div>
-                                <div class="notification-main-title">${n.title}</div>
-                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-time">${n.timestamp || ''}</div>
+                                <div class="notification-main-title">${n.title || 'Earnings'}</div>
+                                <div class="notification-desc">${n.message || ''}</div>
                                 ${n.amount ? `<div class="notification-amount">+R${n.amount}</div>` : ''}
                                 <div class="notification-status-badge earned">Earned</div>
                             </div>
@@ -1274,15 +1353,15 @@
                     html += '</div>';
                 }
 
-                const acceptedNotifs = notifications.filter(n => n.status === 'accepted' || n.title.toLowerCase().includes('accepted'));
+                const acceptedNotifs = notifications.filter(n => n.status === 'accepted' || (n.title && n.title.toLowerCase().includes('accepted')));
                 if (acceptedNotifs.length > 0) {
                     html += '<div class="notification-group"><h3>Accepted</h3>';
                     acceptedNotifs.forEach(n => {
                         html += `
                             <div class="full-notification-item accepted">
-                                <div class="notification-time">${n.timestamp}</div>
-                                <div class="notification-main-title">${n.title}</div>
-                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-time">${n.timestamp || ''}</div>
+                                <div class="notification-main-title">${n.title || 'Accepted'}</div>
+                                <div class="notification-desc">${n.message || ''}</div>
                                 <div class="notification-status-badge accepted">Accepted</div>
                             </div>
                         `;
@@ -1296,9 +1375,9 @@
                     pendingNotifs.forEach(n => {
                         html += `
                             <div class="full-notification-item pending">
-                                <div class="notification-time">${n.timestamp}</div>
-                                <div class="notification-main-title">${n.title}</div>
-                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-time">${n.timestamp || ''}</div>
+                                <div class="notification-main-title">${n.title || 'Pending'}</div>
+                                <div class="notification-desc">${n.message || ''}</div>
                                 <div class="notification-status-badge pending">Pending</div>
                             </div>
                         `;
@@ -1312,9 +1391,9 @@
                     rejectedNotifs.forEach(n => {
                         html += `
                             <div class="full-notification-item rejected">
-                                <div class="notification-time">${n.timestamp}</div>
-                                <div class="notification-main-title">${n.title}</div>
-                                <div class="notification-desc">${n.message}</div>
+                                <div class="notification-time">${n.timestamp || ''}</div>
+                                <div class="notification-main-title">${n.title || 'Rejected'}</div>
+                                <div class="notification-desc">${n.message || ''}</div>
                                 <div class="notification-status-badge rejected">Rejected</div>
                             </div>
                         `;
@@ -1400,11 +1479,6 @@
                 if (unreadCount > 0) {
                     notificationBadge.style.display = 'flex';
                     notificationBadge.textContent = unreadCount;
-                    
-                    notificationBell.classList.add('has-notifications');
-                    setTimeout(() => {
-                        notificationBell.classList.remove('has-notifications');
-                    }, 500);
                 } else {
                     notificationBadge.style.display = 'none';
                 }
@@ -1413,15 +1487,19 @@
             function loadNotifications() {
                 const saved = localStorage.getItem('taskmart_notifications');
                 if (saved) {
-                    notifications = JSON.parse(saved);
-                    updateNotificationBadge();
-                    
-                    const unreadCount = notifications.filter(n => !n.read).length;
-                    if (unreadCount > 0 && !soundPlayedOnLoad) {
-                        setTimeout(() => {
-                            playNotificationSound();
-                            soundPlayedOnLoad = true;
-                        }, 500);
+                    try {
+                        notifications = JSON.parse(saved);
+                        updateNotificationBadge();
+                        
+                        const unreadCount = notifications.filter(n => !n.read).length;
+                        if (unreadCount > 0 && !soundPlayedOnLoad) {
+                            setTimeout(() => {
+                                playNotificationSound();
+                                soundPlayedOnLoad = true;
+                            }, 500);
+                        }
+                    } catch (e) {
+                        console.error('Error loading notifications:', e);
                     }
                 }
             }
@@ -1434,20 +1512,7 @@
                 }, 3000);
             }
 
-            function getCurrentUser() {
-                try {
-                    const user = localStorage.getItem('taskmart_user');
-                    return user ? JSON.parse(user) : null;
-                } catch (e) {
-                    return null;
-                }
-            }
-
-            function getAuthToken() {
-                return localStorage.getItem('taskmart_token');
-            }
-
-            // ===== LOAD PROFILE MENU WITH EVENT LISTENER FIX =====
+            // ===== LOAD PROFILE MENU =====
             fetch('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/profile-menu.html')
                 .then(response => response.text())
                 .then(html => {
@@ -1750,7 +1815,7 @@
                     matchingRequests.forEach(task => {
                         html += `
                             <div class="matching-card">
-                                <div class="matching-title">${task.taskDescription}</div>
+                                <div class="matching-title">${task.taskDescription || 'Help needed'}</div>
                                 <div class="matching-poster">Posted by: ${task.userName || 'Someone'}</div>
                                 <div class="matching-status">
                                     <span class="material-symbols-outlined">hourglass_empty</span>
@@ -1773,7 +1838,7 @@
                     inProgressTasks.forEach(task => {
                         html += `
                             <div class="in-progress-card" onclick="window.selectInProgressTask('${task.id}')">
-                                <div class="in-progress-title">${task.taskDescription}</div>
+                                <div class="in-progress-title">${task.taskDescription || 'Help needed'}</div>
                                 <div class="in-progress-meta">
                                     <span>
                                         <span class="material-symbols-outlined">location_on</span>
@@ -1800,7 +1865,6 @@
                         const budget = task.budgetAmount;
                         const isOpenOffer = task.budgetType === 'open';
                         const posterName = task.userName || 'Someone';
-                        const posterAvatar = task.userAvatar || null;
                         const taskTitle = task.taskDescription || 'Help needed';
                         const isMatch = taskMatchesSkills(task);
                         const location = task.location ? task.location.split(',')[0] : 'Nearby';
@@ -2028,26 +2092,6 @@
                 }
             }, 10000);
 
-            currentUser = getCurrentUser();
-            authToken = getAuthToken();
-
-            if (currentUser) {
-                userSkills = currentUser.skills || [];
-                console.log('User skills loaded:', userSkills);
-            }
-
-            if (!currentUser || !authToken) {
-                window.location.href = '/login.html';
-            } else {
-                loadNotifications();
-                initMap();
-                
-                const savedEarnings = localStorage.getItem('taskmart_today_earnings');
-                if (savedEarnings) {
-                    todayEarnings = parseInt(savedEarnings);
-                    todayEarningsSpan.textContent = `R${todayEarnings}`;
-                }
-            }
         })();
     </script>
 </body>
