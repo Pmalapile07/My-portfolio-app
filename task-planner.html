@@ -674,7 +674,7 @@
             font-size: 0.9375rem;
             margin-bottom: 0.15rem;
             color: #000;
-            text-transform: capitalize;
+            text-transform: none; /* Changed from capitalize to none */
         }
         
         .task-amount {
@@ -800,7 +800,7 @@
             padding: 1.5rem;
         }
         
-        /* Helper info row - no icon when not assigned */
+        /* Helper info row - no icon when not assigned, text left-aligned */
         .helper-info-row {
             display: flex;
             align-items: center;
@@ -814,30 +814,10 @@
         .helper-info-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 0; /* No gap when no icon */
         }
         
-        /* No icon container when not assigned - just spacing */
-        .helper-icon-placeholder {
-            width: 48px;
-            height: 48px;
-            flex-shrink: 0;
-        }
-        
-        .helper-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #A6CBE3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-        
+        /* No icon container when not assigned - removed completely */
         .helper-details {
             display: flex;
             flex-direction: column;
@@ -869,7 +849,7 @@
             font-size: 1.2rem;
         }
         
-        /* Task state text - scheduled to start on for future */
+        /* Task state text */
         .task-state-text {
             font-size: 0.8rem;
             font-weight: 500;
@@ -879,19 +859,27 @@
             color: #333;
         }
         
-        .task-state-text.future {
+        .task-state-text.scheduled {
             background: #fff3e0;
             color: #e67e22;
         }
         
-        .task-state-text.current {
+        .task-state-text.searching {
             background: #e3f2fd;
             color: #1976d2;
+            animation: pulse-search 1.5s infinite;
         }
         
-        .task-state-text.past {
+        .task-state-text.completed {
             background: #e8f5e9;
             color: #388e3c;
+        }
+        
+        /* Searching animation */
+        @keyframes pulse-search {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; background: #bbdefb; }
+            100% { opacity: 1; }
         }
         
         /* Map container in detail page */
@@ -904,7 +892,7 @@
             border: 1px solid #f0f0f0;
         }
         
-        /* Timeline - with centered dots and icons */
+        /* Timeline - with perfectly centered dots and icons */
         .task-timeline {
             margin: 1.5rem 0;
             padding-left: 8px;
@@ -925,12 +913,13 @@
         .timeline-item:not(:last-child)::after {
             content: '';
             position: absolute;
-            left: 20px;
-            top: 28px;
+            left: 8px; /* Half of dot width (16px/2) */
+            top: 24px; /* Dot height (16px) + margin */
             width: 2px;
-            height: calc(100% - 16px);
+            height: calc(100% - 16px); /* Adjust to connect properly */
             background: #e0e0e0;
             z-index: 1;
+            transform: translateX(-50%); /* Center the line */
         }
         
         .timeline-dot-small {
@@ -942,7 +931,8 @@
             box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
             flex-shrink: 0;
             z-index: 2;
-            margin-top: 8px;
+            margin-top: 4px;
+            position: relative;
         }
         
         .timeline-icon-small {
@@ -952,9 +942,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-top: 8px;
+            margin-top: 4px;
             z-index: 2;
             background: white;
+            position: relative;
         }
         
         .timeline-icon-small img {
@@ -965,7 +956,7 @@
         
         .timeline-content {
             flex: 1;
-            padding-top: 4px;
+            padding-top: 0;
         }
         
         .timeline-title {
@@ -973,14 +964,14 @@
             font-size: 1rem;
             margin-bottom: 0.25rem;
             color: #000;
-            text-transform: capitalize;
+            text-transform: none; /* Changed from capitalize to none */
         }
         
         .timeline-subtitle {
             font-size: 0.8rem;
             color: #666;
             margin-bottom: 0.25rem;
-            text-transform: capitalize;
+            text-transform: none; /* Changed from capitalize to none */
         }
         
         .timeline-time {
@@ -2262,6 +2253,12 @@
                 return null;
             }
 
+            // Capitalize only the first letter of the string
+            function capitalizeFirstLetterOnly(str) {
+                if (!str) return '';
+                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+            }
+
             // Show task detail page
             function showTaskDetail(task) {
                 const detailContent = document.getElementById('taskDetailContent');
@@ -2277,18 +2274,28 @@
                 const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
                 const helperInitial = helperName.charAt(0).toUpperCase();
                 
-                // Add task state text to header
+                // Determine state text based on task status and taskState
                 let stateText = '';
-                if (task.taskState === 'future') {
+                let stateClass = '';
+                
+                // Check if task is in the past (completed)
+                if (task.taskState === 'past' || task.status === 'completed') {
+                    stateText = 'Task completed';
+                    stateClass = 'completed';
+                } 
+                // Check if task is in the future (scheduled)
+                else if (task.taskState === 'future') {
                     stateText = `Scheduled to start on ${task.date || 'future date'}`;
-                } else if (task.taskState === 'current') {
-                    stateText = 'Happening now';
-                } else if (task.taskState === 'past') {
-                    stateText = `Completed on ${task.date || 'past date'}`;
+                    stateClass = 'scheduled';
+                } 
+                // Current tasks - searching for helpers
+                else {
+                    stateText = 'Searching for helpers';
+                    stateClass = 'searching';
                 }
                 
                 const taskStateSpan = document.createElement('span');
-                taskStateSpan.className = `task-state-text ${task.taskState || 'current'}`;
+                taskStateSpan.className = `task-state-text ${stateClass}`;
                 taskStateSpan.textContent = stateText;
                 
                 // Clear previous state text and add new one
@@ -2296,13 +2303,12 @@
                 if (existingState) existingState.remove();
                 headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
                 
-                // Build helper info row - no icon when not assigned
+                // Build helper info row - no icon when not assigned, text flush left
                 let helperInfoHtml = '';
                 if (isAssigned) {
                     helperInfoHtml = `
                         <div class="helper-info-row">
                             <div class="helper-info-left">
-                                <div class="helper-avatar">${helperInitial}</div>
                                 <div class="helper-details">
                                     <span class="helper-label">Task with</span>
                                     <span class="helper-name">${helperName}</span>
@@ -2317,7 +2323,6 @@
                     helperInfoHtml = `
                         <div class="helper-info-row">
                             <div class="helper-info-left">
-                                <div class="helper-icon-placeholder"></div>
                                 <div class="helper-details">
                                     <span class="helper-label">Task with</span>
                                     <span class="helper-name">${helperName}</span>
@@ -2340,7 +2345,7 @@
                     <!-- Mini map showing task location -->
                     <div class="detail-map-container" id="taskDetailMap"></div>
                     
-                    <!-- Timeline with centered dots and icons -->
+                    <!-- Timeline with perfectly centered dots and icons -->
                     <div class="task-timeline">
                         <div class="timeline-item">
                             <div class="timeline-dot-small"></div>
@@ -2356,7 +2361,7 @@
                                 <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
                             </div>
                             <div class="timeline-content">
-                                <div class="timeline-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
+                                <div class="timeline-title">${task.category ? capitalizeFirstLetterOnly(task.category) : 'Task'}</div>
                                 <div class="timeline-subtitle">${task.notes || 'No additional notes'}</div>
                                 <div class="timeline-time">${task.taskState === 'past' ? 'Completed' : 'Posted'} on ${createdDateStr}</div>
                             </div>
@@ -2523,7 +2528,7 @@
                                         <div class="task-date-time">
                                             <span class="task-date">${formattedDate}</span> · <span class="task-time">${formattedTime}</span>
                                         </div>
-                                        <div class="task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
+                                        <div class="task-title">${task.category ? capitalizeFirstLetterOnly(task.category) : 'Task'}</div>
                                         <div class="task-amount">${budgetDisplay}</div>
                                     </div>
                                     <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')">
@@ -2606,10 +2611,10 @@
                 return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
             }
             
-            // Capitalize first letter of each sentence (not just first word)
-            function capitalizeSentence(str) {
+            // Capitalize first letter of string only (not each word)
+            function capitalizeFirstLetterOnly(str) {
                 if (!str) return '';
-                return str.replace(/(^\w|\.\s+\w)/g, letter => letter.toUpperCase());
+                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
             }
 
             if (mainSearchInput) {
@@ -2630,7 +2635,7 @@
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
                                 mainSearchInput.value = task;
-                                taskInput.value = capitalizeSentence(task);
+                                taskInput.value = capitalizeFirstLetterOnly(task);
                                 mainSuggestionsList.classList.remove('active');
                                 validateForm();
                                 if (currentUser) {
@@ -2660,7 +2665,7 @@
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
                                 mainSearchInput.value = task;
-                                taskInput.value = capitalizeSentence(task);
+                                taskInput.value = capitalizeFirstLetterOnly(task);
                                 mainSuggestionsList.classList.remove('active');
                                 validateForm();
                                 if (currentUser) {
@@ -2692,8 +2697,8 @@
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
                             mainSearchInput.value = task;
-                            // Capitalize sentence properly
-                            taskInput.value = capitalizeSentence(task);
+                            // Capitalize first letter only
+                            taskInput.value = capitalizeFirstLetterOnly(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
                             if (currentUser) {
@@ -2737,15 +2742,15 @@
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
                             mainSearchInput.value = task;
-                            taskInput.value = capitalizeSentence(task);
+                            taskInput.value = capitalizeFirstLetterOnly(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
                             createTaskContainer.style.display = 'flex';
                         });
                     });
                 } else {
-                    // If there's text, capitalize it properly and open create task
-                    taskInput.value = capitalizeSentence(mainSearchInput.value.trim());
+                    // If there's text, capitalize first letter only and open create task
+                    taskInput.value = capitalizeFirstLetterOnly(mainSearchInput.value.trim());
                     createTaskContainer.style.display = 'flex';
                     mainSuggestionsList.classList.remove('active');
                 }
