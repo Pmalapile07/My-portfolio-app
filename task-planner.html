@@ -42,7 +42,25 @@
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
 
     <style>
-        /* Add debug console styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 400;
+            font-size: 16px;
+            background: #000;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* Debug Console - Hidden by default */
         .debug-console {
             position: fixed;
             bottom: 60px;
@@ -62,60 +80,7 @@
         }
         
         .debug-console.visible {
-            display: block;
-        }
-        
-        .debug-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #333;
-        }
-        
-        .debug-title {
-            color: #fff;
-            font-weight: bold;
-        }
-        
-        .debug-close {
-            color: #fff;
-            cursor: pointer;
-            padding: 0 5px;
-        }
-        
-        .debug-log {
-            color: #0f0;
-            margin: 2px 0;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        
-        .debug-error {
-            color: #ff6b6b;
-        }
-        
-        .debug-success {
-            color: #69db7e;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 400;
-            font-size: 16px;
-            background: #000;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
+            display: none; /* Hidden by default */
         }
 
         #map {
@@ -403,6 +368,7 @@
             font-weight: 500;
         }
         
+        /* Notification Dots */
         .notification-dot {
             position: absolute;
             top: 0px;
@@ -417,6 +383,24 @@
         }
         
         .notification-dot.visible {
+            display: block;
+        }
+
+        /* Tasks page notification dot */
+        .tasks-notification-dot {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 10px;
+            height: 10px;
+            background: #A6CBE3;
+            border-radius: 50%;
+            display: none;
+            border: 2px solid white;
+            z-index: 10001;
+        }
+        
+        .tasks-notification-dot.visible {
             display: block;
         }
 
@@ -443,6 +427,7 @@
             align-items: center;
             margin-bottom: 1.5rem;
             margin-top: 1rem;
+            position: relative;
         }
         
         .tasks-header h2 {
@@ -733,6 +718,7 @@
             padding: 1.5rem;
         }
         
+        /* Helper info row - fixed left alignment */
         .helper-info-row {
             display: flex;
             align-items: center;
@@ -747,21 +733,6 @@
             display: flex;
             align-items: center;
             gap: 0;
-        }
-        
-        .helper-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #A6CBE3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            margin-right: 12px;
         }
         
         .helper-details {
@@ -840,6 +811,7 @@
             overflow: hidden;
             margin-bottom: 1.5rem;
             border: 1px solid #f0f0f0;
+            position: relative;
         }
         
         .task-timeline {
@@ -958,6 +930,65 @@
         
         .action-btn:active {
             opacity: 0.8;
+        }
+
+        /* Helper preview sheet on map */
+        .helper-preview-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            z-index: 20;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            display: none;
+        }
+        
+        .helper-preview-sheet.visible {
+            transform: translateY(0);
+            display: block;
+        }
+        
+        .helper-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .helper-preview-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #A6CBE3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .helper-preview-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .helper-preview-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .helper-preview-budget {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-weight: 500;
         }
 
         .create-task-container {
@@ -1398,7 +1429,7 @@
     </style>
 </head>
 <body>
-    <!-- Debug Console -->
+    <!-- Debug Console - Hidden -->
     <div class="debug-console" id="debugConsole">
         <div class="debug-header">
             <span class="debug-title">🐛 Debug Console</span>
@@ -1407,11 +1438,29 @@
         <div id="debugLogs"></div>
     </div>
 
+    <!-- Tasks Page Notification Dot -->
+    <div class="tasks-notification-dot" id="tasksNotificationDot"></div>
+
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">TASKMART</div>
     </div>
 
     <div id="map"></div>
+
+    <!-- Helper Preview Sheet -->
+    <div class="helper-preview-sheet" id="helperPreviewSheet">
+        <div class="helper-preview-header">
+            <div class="helper-preview-avatar" id="previewAvatar">?</div>
+            <div class="helper-preview-info">
+                <h3 id="previewName">Helper Name</h3>
+                <p id="previewEmail">email@example.com</p>
+            </div>
+        </div>
+        <div class="helper-preview-budget" id="previewBudget">
+            Budget: Open to offers
+        </div>
+        <button class="action-btn primary" style="width: 100%; margin-top: 10px;" onclick="hideHelperPreview()">Close</button>
+    </div>
 
     <div class="home-sheet" id="homeSheet">
         <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
@@ -1615,44 +1664,25 @@
                 measurementId: "G-Z8SPLR0HSL"
             };
 
-            // Debug console functions
+            // Debug console functions (hidden)
             const debugConsole = document.getElementById('debugConsole');
             const debugLogs = document.getElementById('debugLogs');
             
             function addDebugLog(message, type = 'info') {
-                const logEntry = document.createElement('div');
-                logEntry.className = `debug-log ${type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : ''}`;
-                logEntry.textContent = `> ${message}`;
-                debugLogs.appendChild(logEntry);
-                debugLogs.scrollTop = debugLogs.scrollHeight;
-                
-                // Also log to browser console
+                // Hidden but still logs to browser console
                 console.log(`[DEBUG] ${message}`);
             }
-            
-            function showDebugConsole() {
-                debugConsole.classList.add('visible');
-            }
-            
-            function clearDebugConsole() {
-                debugLogs.innerHTML = '';
-            }
-
-            // Show debug console on page load
-            window.addEventListener('load', () => {
-                setTimeout(showDebugConsole, 1000);
-                addDebugLog('🔧 Debug console initialized');
-                addDebugLog('Firebase config loaded');
-            });
 
             let database;
             let currentUser = null;
             let userProfile = null;
+            let hasTaskUpdates = false;
+            let helperMarkers = [];
+            let currentTaskForMap = null;
             
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
-                    addDebugLog('✅ Firebase initialized');
                 }
                 
                 database = firebase.database();
@@ -1671,8 +1701,6 @@
                             isAnonymous: false
                         };
                         
-                        addDebugLog(`👤 User logged in: ${user.email}`);
-                        
                         database.ref('users/' + user.uid).once('value')
                             .then((snapshot) => {
                                 userProfile = snapshot.val() || {};
@@ -1686,6 +1714,7 @@
                                     loadUserTasks();
                                 } else {
                                     checkNotificationDot();
+                                    checkTasksNotification();
                                 }
                             })
                             .catch((error) => {
@@ -1693,11 +1722,17 @@
                                 document.getElementById('accountEmail').textContent = user.email || 'No email';
                                 document.getElementById('accountUid').textContent = user.uid.substring(0, 8) + '...';
                                 checkNotificationDot();
-                                addDebugLog(`❌ Error loading profile: ${error.message}`, 'error');
+                                checkTasksNotification();
                             });
                         
                         accountLogoutBtn.style.display = 'block';
                         accountLoginBtn.style.display = 'none';
+                        
+                        // Listen for task updates
+                        database.ref('tasks/' + user.uid).on('value', (snapshot) => {
+                            const tasks = snapshot.val() || {};
+                            checkForUpdates(tasks);
+                        });
                         
                     } else if (user && user.isAnonymous) {
                         currentUser = null;
@@ -1711,17 +1746,52 @@
                         accountLoginBtn.onclick = () => window.location.href = 'login.html';
                         
                         document.getElementById('taskNotificationDot').classList.remove('visible');
-                        addDebugLog('👤 Guest user');
+                        document.getElementById('tasksNotificationDot').classList.remove('visible');
                     } else {
                         currentUser = null;
                         userProfile = null;
                         firebase.auth().signInAnonymously().catch(error => {});
                         document.getElementById('taskNotificationDot').classList.remove('visible');
+                        document.getElementById('tasksNotificationDot').classList.remove('visible');
                     }
                 });
                 
             } catch (error) {
-                addDebugLog(`❌ Firebase init error: ${error.message}`, 'error');
+                addDebugLog(`Firebase init error: ${error.message}`, 'error');
+            }
+
+            function checkForUpdates(tasks) {
+                if (!currentUser) return;
+                
+                // Check if any task has been updated since last view
+                const lastView = localStorage.getItem('tasksLastView_' + currentUser.uid) || 0;
+                let hasUpdates = false;
+                
+                Object.values(tasks).forEach(task => {
+                    if (task.updatedAt > lastView || (task.assignedAt && task.assignedAt > lastView)) {
+                        hasUpdates = true;
+                    }
+                });
+                
+                hasTaskUpdates = hasUpdates;
+                updateTasksNotificationDot();
+            }
+
+            function updateTasksNotificationDot() {
+                const dot = document.getElementById('tasksNotificationDot');
+                if (hasTaskUpdates && !document.getElementById('tasksPage').classList.contains('active')) {
+                    dot.classList.add('visible');
+                } else {
+                    dot.classList.remove('visible');
+                }
+            }
+
+            function markTasksAsViewed() {
+                if (currentUser) {
+                    localStorage.setItem('tasksLastView_' + currentUser.uid, Date.now());
+                    hasTaskUpdates = false;
+                    updateTasksNotificationDot();
+                }
             }
 
             function checkNotificationDot() {
@@ -1744,11 +1814,21 @@
                     .catch(() => {});
             }
 
+            function checkTasksNotification() {
+                if (!currentUser) return;
+                
+                database.ref('tasks/' + currentUser.uid).once('value')
+                    .then((snapshot) => {
+                        const tasks = snapshot.val() || {};
+                        checkForUpdates(tasks);
+                    });
+            }
+
             document.getElementById('accountLogoutBtn').addEventListener('click', () => {
                 if (currentUser) {
                     firebase.auth().signOut().then(() => {
                         document.getElementById('taskNotificationDot').classList.remove('visible');
-                        addDebugLog('👋 User logged out');
+                        document.getElementById('tasksNotificationDot').classList.remove('visible');
                     }).catch((error) => {});
                 }
             });
@@ -1811,6 +1891,63 @@
             const recenterBtn = document.getElementById('mapRecenterBtn');
             const locationInput = document.getElementById('locationInput');
             const DESIRED_ZOOM = 16;
+
+            function showHelperOnMap(helper, task) {
+                // Clear existing helper markers
+                helperMarkers.forEach(marker => marker.remove());
+                helperMarkers = [];
+                
+                if (!helper || !helper.location) return;
+                
+                // Create helper marker
+                const helperPin = document.createElement('div');
+                helperPin.className = 'pulsing-pin';
+                helperPin.style.background = '#A6CBE3';
+                
+                const helperMarker = new mapboxgl.Marker({ 
+                    element: helperPin,
+                    anchor: 'center'
+                })
+                .setLngLat([helper.location.lng, helper.location.lat])
+                .addTo(map);
+                
+                helperMarkers.push(helperMarker);
+                
+                // Add click handler to show preview
+                helperPin.addEventListener('click', () => {
+                    showHelperPreview(helper, task);
+                });
+                
+                // Fit bounds to show both user and helper
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend([currentLng, currentLat]);
+                bounds.extend([helper.location.lng, helper.location.lat]);
+                
+                map.fitBounds(bounds, {
+                    padding: 100,
+                    duration: 1000
+                });
+            }
+
+            function showHelperPreview(helper, task) {
+                document.getElementById('previewAvatar').textContent = helper.name.charAt(0).toUpperCase();
+                document.getElementById('previewName').textContent = helper.name;
+                document.getElementById('previewEmail').textContent = helper.email || 'No email';
+                
+                let budgetText = 'Budget: ';
+                if (task.budget === 'open') {
+                    budgetText += 'Open to offers';
+                } else {
+                    budgetText += `R ${task.budget}`;
+                }
+                document.getElementById('previewBudget').textContent = budgetText;
+                
+                document.getElementById('helperPreviewSheet').classList.add('visible');
+            }
+
+            window.hideHelperPreview = function() {
+                document.getElementById('helperPreviewSheet').classList.remove('visible');
+            };
 
             map.on('load', () => {
                 if (navigator.geolocation) {
@@ -2021,6 +2158,8 @@
                     mapEl.style.display = 'none';
                     homeSheetEl.style.display = 'none';
                     
+                    markTasksAsViewed();
+                    
                     if (currentUser) {
                         loadUserTasks();
                     } else {
@@ -2100,7 +2239,6 @@
                         tasksContainer.innerHTML = '<div class="empty-state"><h3>Error loading tasks</h3><p>Please try again</p><button class="post-btn" onclick="location.reload()">Try again</button></div>';
                         tasksCount.textContent = '0';
                         document.getElementById('taskNotificationDot').classList.remove('visible');
-                        addDebugLog(`❌ Error loading tasks: ${error.message}`, 'error');
                     });
             }
             
@@ -2146,13 +2284,6 @@
                 return `R ${task.budget}`;
             }
 
-            function getStatusFromTask(task) {
-                if (task.status) {
-                    return task.status.charAt(0).toUpperCase() + task.status.slice(1).toLowerCase();
-                }
-                return 'Open';
-            }
-
             function getTaskDateObj(task) {
                 if (task.date === 'now') return new Date();
                 if (task.date) {
@@ -2168,11 +2299,8 @@
                 return null;
             }
 
-            // ===== FIXED HELPER MATCHING FUNCTION WITH DEBUG CONSOLE =====
             function findAndAssignHelper(taskId, taskCategory) {
                 addDebugLog('🔍 ===== STARTING HELPER SEARCH =====');
-                addDebugLog(`Task ID: ${taskId}`);
-                addDebugLog(`Task Category: "${taskCategory}"`);
                 
                 if (!currentUser) {
                     addDebugLog('❌ No current user logged in', 'error');
@@ -2180,12 +2308,10 @@
                 }
                 
                 const cleanTaskCategory = taskCategory.toLowerCase().trim();
-                addDebugLog(`Cleaned category: "${cleanTaskCategory}"`);
                 
                 database.ref('users').once('value')
                     .then((snapshot) => {
                         const users = snapshot.val() || {};
-                        addDebugLog(`📊 Found ${Object.keys(users).length} total users in database`);
                         
                         let matchedHelper = null;
                         let helperCount = 0;
@@ -2195,32 +2321,21 @@
                             
                             if (user.role === 'helper') {
                                 helperCount++;
-                                addDebugLog(`\n👤 CHECKING HELPER #${helperCount}:`);
-                                addDebugLog(`  UID: ${uid}`);
-                                addDebugLog(`  Name: ${user.name || 'No name'}`);
-                                addDebugLog(`  Email: ${user.email || 'No email'}`);
-                                addDebugLog(`  Raw skills: ${JSON.stringify(user.skills)}`);
                                 
-                                // Convert skills object to array
                                 const helperSkills = Object.values(user.skills || {});
-                                addDebugLog(`  Converted skills array: [${helperSkills.join(', ')}]`);
                                 
                                 for (let i = 0; i < helperSkills.length; i++) {
                                     const skill = helperSkills[i];
                                     if (skill) {
                                         const cleanSkill = skill.toString().toLowerCase().trim();
-                                        addDebugLog(`  Comparing: "${cleanSkill}" vs "${cleanTaskCategory}"`);
                                         
-                                        // Use includes for partial matching (more flexible)
                                         if (cleanSkill.includes(cleanTaskCategory) || cleanTaskCategory.includes(cleanSkill)) {
-                                            addDebugLog(`  ✅ MATCH FOUND!`, 'success');
-                                            addDebugLog(`  Skill "${cleanSkill}" matches category "${cleanTaskCategory}"`);
-                                            
                                             matchedHelper = {
                                                 uid: uid,
                                                 name: user.name || 'Helper',
                                                 email: user.email || '',
-                                                phone: user.phone || ''
+                                                phone: user.phone || '',
+                                                location: user.location || { lat: currentLat, lng: currentLng }
                                             };
                                             break;
                                         }
@@ -2231,39 +2346,42 @@
                             }
                         }
                         
-                        addDebugLog(`\n📊 Total helpers checked: ${helperCount}`);
-                        
                         if (matchedHelper) {
-                            addDebugLog(`\n🎉 MATCHED HELPER FOUND:`, 'success');
-                            addDebugLog(`  UID: ${matchedHelper.uid}`);
-                            addDebugLog(`  Name: ${matchedHelper.name}`);
-                            addDebugLog(`  Email: ${matchedHelper.email}`);
-                            
-                            // Update the task with assigned helper
-                            database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
+                            const updates = {
                                 assignedHelperId: matchedHelper.uid,
                                 assignedHelperName: matchedHelper.name,
                                 status: 'assigned',
-                                assignedAt: Date.now()
-                            }).then(() => {
-                                addDebugLog(`✅ HELPER ASSIGNED SUCCESSFULLY!`, 'success');
-                                
-                                const toast = document.getElementById('successToast');
-                                toast.textContent = `✅ Helper ${matchedHelper.name} assigned to your task!`;
-                                toast.style.display = 'block';
-                                setTimeout(() => {
-                                    toast.style.display = 'none';
-                                }, 3000);
-                                
-                                if (document.getElementById('tasksPage').classList.contains('active')) {
-                                    loadUserTasks();
-                                }
-                            }).catch(error => {
-                                addDebugLog(`❌ Error assigning helper: ${error.message}`, 'error');
-                            });
+                                assignedAt: Date.now(),
+                                updatedAt: Date.now()
+                            };
+                            
+                            database.ref('tasks/' + currentUser.uid + '/' + taskId).update(updates)
+                                .then(() => {
+                                    addDebugLog(`✅ HELPER ASSIGNED SUCCESSFULLY!`, 'success');
+                                    
+                                    const toast = document.getElementById('successToast');
+                                    toast.textContent = `✅ Helper ${matchedHelper.name} assigned to your task!`;
+                                    toast.style.display = 'block';
+                                    setTimeout(() => {
+                                        toast.style.display = 'none';
+                                    }, 3000);
+                                    
+                                    // Load the task to show on map
+                                    database.ref('tasks/' + currentUser.uid + '/' + taskId).once('value')
+                                        .then((taskSnap) => {
+                                            const task = taskSnap.val();
+                                            showHelperOnMap(matchedHelper, task);
+                                        });
+                                    
+                                    if (document.getElementById('tasksPage').classList.contains('active')) {
+                                        loadUserTasks();
+                                    }
+                                })
+                                .catch(error => {
+                                    addDebugLog(`❌ Error assigning helper: ${error.message}`, 'error');
+                                });
                         } else {
-                            addDebugLog(`\n❌ NO MATCHING HELPER FOUND`, 'error');
-                            addDebugLog(`No helper with skill matching: "${cleanTaskCategory}"`);
+                            addDebugLog(`❌ NO MATCHING HELPER FOUND`, 'error');
                             
                             const toast = document.getElementById('successToast');
                             toast.textContent = 'No helper available right now. We\'ll notify you when one joins!';
@@ -2274,8 +2392,6 @@
                                 toast.style.backgroundColor = '#28a745';
                             }, 4000);
                         }
-                        
-                        addDebugLog('🔍 ===== HELPER SEARCH COMPLETE =====\n');
                     })
                     .catch(error => {
                         addDebugLog(`❌ Error searching for helpers: ${error.message}`, 'error');
@@ -2292,7 +2408,6 @@
                 
                 const isAssigned = task.assignedHelperName && task.assignedHelperName !== 'Not assigned' && task.assignedHelperName !== null;
                 const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
-                const helperInitial = helperName.charAt(0).toUpperCase();
                 
                 let stateText = '';
                 let stateClass = '';
@@ -2321,19 +2436,19 @@
                 if (existingState) existingState.remove();
                 headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
                 
+                // Fixed: Removed left avatar, text flush left
                 let helperInfoHtml = '';
                 if (isAssigned) {
                     helperInfoHtml = `
                         <div class="helper-info-row">
                             <div class="helper-info-left">
-                                <div class="helper-avatar">${helperInitial}</div>
                                 <div class="helper-details">
                                     <span class="helper-label">Task with</span>
                                     <span class="helper-name">${helperName}</span>
                                 </div>
                             </div>
                             <div class="helper-info-right">
-                                ${helperInitial}
+                                ${helperName.charAt(0).toUpperCase()}
                             </div>
                         </div>
                     `;
@@ -2615,15 +2730,12 @@
             if (mainSearchInput) {
                 mainSearchInput.addEventListener('focus', function() {
                     if (!this.value.trim()) {
-                        mainSuggestionsList.innerHTML = `
-                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">please select a task:</div>
-                            ${taskSuggestions.slice(0, 7).map(t => 
-                                `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                            ).join('')}
-                        `;
+                        mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
+                            `<div class="suggestion-item" data-task="${t}">${t}</div>`
+                        ).join('');
                         mainSuggestionsList.classList.add('active');
                         
-                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
+                        document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
                                 mainSearchInput.value = task;
@@ -2643,15 +2755,12 @@
                 mainSearchInput.addEventListener('input', function() {
                     const q = this.value.trim().toLowerCase();
                     if (q.length < 1) { 
-                        mainSuggestionsList.innerHTML = `
-                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">please select a task:</div>
-                            ${taskSuggestions.slice(0, 7).map(t => 
-                                `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                            ).join('')}
-                        `;
+                        mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
+                            `<div class="suggestion-item" data-task="${t}">${t}</div>`
+                        ).join('');
                         mainSuggestionsList.classList.add('active');
                         
-                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
+                        document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
                                 mainSearchInput.value = task;
@@ -2716,15 +2825,12 @@
                 }
                 
                 if (!mainSearchInput.value.trim()) {
-                    mainSuggestionsList.innerHTML = `
-                        <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">please select a task:</div>
-                        ${taskSuggestions.slice(0, 7).map(t => 
-                            `<div class="suggestion-item" data-task="${t}">${t}</div>`
-                        ).join('')}
-                    `;
+                    mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
+                        `<div class="suggestion-item" data-task="${t}">${t}</div>`
+                    ).join('');
                     mainSuggestionsList.classList.add('active');
                     
-                    document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
+                    document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
                             mainSearchInput.value = task;
@@ -3031,6 +3137,7 @@
                     assignedHelperName: null,
                     completedAt: null,
                     createdAt: Date.now(),
+                    updatedAt: Date.now(),
                     notes: extraNotesValue || '',
                     images: uploadedImages
                 };
@@ -3042,10 +3149,9 @@
                 taskRef.set(task)
                     .then(() => {
                         addDebugLog('✅ Task posted successfully');
-                        addDebugLog(`Task category: "${task.category}"`);
                         
                         const toast = document.getElementById('successToast');
-                        toast.textContent = 'task posted! searching for helpers...';
+                        toast.textContent = 'Task posted! Searching for helpers...';
                         toast.style.display = 'block';
                         setTimeout(() => {
                             toast.style.display = 'none';
@@ -3077,7 +3183,7 @@
                     })
                     .catch(err => {
                         addDebugLog(`❌ Error posting task: ${err.message}`, 'error');
-                        alert('error posting task: ' + err.message);
+                        alert('Error posting task: ' + err.message);
                         nextBtn.textContent = originalText;
                         nextBtn.disabled = false;
                     });
@@ -3087,6 +3193,7 @@
             
             setTimeout(() => {
                 checkNotificationDot();
+                checkTasksNotification();
             }, 2000);
         })();
     </script>
