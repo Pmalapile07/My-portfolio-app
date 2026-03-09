@@ -153,7 +153,7 @@
         }
         
         /* STATIC LOCATION PIN (smaller version) */
-        .static-location-pin-small {
+        .static-location-pin-small, .timeline-dot-small {
             width: 16px;
             height: 16px;
             background: #000000;
@@ -674,7 +674,6 @@
             font-size: 0.9375rem;
             margin-bottom: 0.15rem;
             color: #000;
-            text-transform: none; /* Changed from capitalize to none */
         }
         
         .task-amount {
@@ -800,7 +799,7 @@
             padding: 1.5rem;
         }
         
-        /* Helper info row - no icon when not assigned, text left-aligned */
+        /* Helper info row - no icon when not assigned */
         .helper-info-row {
             display: flex;
             align-items: center;
@@ -814,10 +813,24 @@
         .helper-info-left {
             display: flex;
             align-items: center;
-            gap: 0; /* No gap when no icon */
+            gap: 0;
         }
         
-        /* No icon container when not assigned - removed completely */
+        .helper-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #A6CBE3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+        
         .helper-details {
             display: flex;
             flex-direction: column;
@@ -870,9 +883,16 @@
             animation: pulse-search 1.5s infinite;
         }
         
+        .task-state-text.assigned {
+            background: #e8f5e9;
+            color: #388e3c;
+            animation: none;
+        }
+        
         .task-state-text.completed {
             background: #e8f5e9;
             color: #388e3c;
+            animation: none;
         }
         
         /* Searching animation */
@@ -913,13 +933,13 @@
         .timeline-item:not(:last-child)::after {
             content: '';
             position: absolute;
-            left: 8px; /* Half of dot width (16px/2) */
-            top: 24px; /* Dot height (16px) + margin */
+            left: 8px;
+            top: 24px;
             width: 2px;
-            height: calc(100% - 16px); /* Adjust to connect properly */
+            height: calc(100% - 16px);
             background: #e0e0e0;
             z-index: 1;
-            transform: translateX(-50%); /* Center the line */
+            transform: translateX(-50%);
         }
         
         .timeline-dot-small {
@@ -964,14 +984,12 @@
             font-size: 1rem;
             margin-bottom: 0.25rem;
             color: #000;
-            text-transform: none; /* Changed from capitalize to none */
         }
         
         .timeline-subtitle {
             font-size: 0.8rem;
             color: #666;
             margin-bottom: 0.25rem;
-            text-transform: none; /* Changed from capitalize to none */
         }
         
         .timeline-time {
@@ -1526,7 +1544,7 @@
             <div class="category-tab" data-category="past">Past</div>
         </div>
         
-        <!-- Tasks List Container - SIMPLE CARDS ONLY -->
+        <!-- Tasks List Container -->
         <div class="tasks-list-container" id="tasksListContainer">
             <!-- Tasks will be dynamically loaded here -->
         </div>
@@ -2259,6 +2277,85 @@
                 return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
             }
 
+            // ===== NEW FUNCTION: FIND AND ASSIGN A HELPER BASED ON SKILLS =====
+            function findAndAssignHelper(taskId, taskCategory) {
+                console.log('Searching for helper with skill:', taskCategory);
+                
+                // Get all users from database
+                database.ref('users').once('value')
+                    .then((snapshot) => {
+                        const users = snapshot.val() || {};
+                        let matchedHelper = null;
+                        
+                        // Loop through all users to find one with role="helper" and matching skills
+                        for (let uid in users) {
+                            const user = users[uid];
+                            
+                            // Check if user has role="helper" and has skills array
+                            if (user.role === 'helper' && Array.isArray(user.skills)) {
+                                // Check if any of their skills matches the task category
+                                const hasMatchingSkill = user.skills.some(skill => 
+                                    skill.toLowerCase() === taskCategory.toLowerCase()
+                                );
+                                
+                                if (hasMatchingSkill) {
+                                    matchedHelper = {
+                                        uid: uid,
+                                        name: user.name || 'Helper',
+                                        email: user.email || '',
+                                        phone: user.phone || ''
+                                    };
+                                    break; // Take the first matching helper
+                                }
+                            }
+                        }
+                        
+                        if (matchedHelper) {
+                            console.log('Found matching helper:', matchedHelper);
+                            
+                            // Update the task with assigned helper
+                            database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
+                                assignedHelperId: matchedHelper.uid,
+                                assignedHelperName: matchedHelper.name,
+                                status: 'assigned',
+                                assignedAt: Date.now()
+                            }).then(() => {
+                                console.log('Helper assigned successfully');
+                                
+                                // Show success toast
+                                const toast = document.getElementById('successToast');
+                                toast.textContent = `Helper ${matchedHelper.name} assigned to your task!`;
+                                toast.style.display = 'block';
+                                setTimeout(() => {
+                                    toast.style.display = 'none';
+                                }, 3000);
+                                
+                                // Reload tasks to show updated info
+                                if (document.getElementById('tasksPage').classList.contains('active')) {
+                                    loadUserTasks();
+                                }
+                            }).catch(error => {
+                                console.error('Error assigning helper:', error);
+                            });
+                        } else {
+                            console.log('No matching helper found for skill:', taskCategory);
+                            
+                            // Show toast that no helper was found
+                            const toast = document.getElementById('successToast');
+                            toast.textContent = 'No helper available right now. We\'ll notify you when one joins!';
+                            toast.style.backgroundColor = '#ff9800';
+                            toast.style.display = 'block';
+                            setTimeout(() => {
+                                toast.style.display = 'none';
+                                toast.style.backgroundColor = '#28a745';
+                            }, 4000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error searching for helpers:', error);
+                    });
+            }
+
             // Show task detail page
             function showTaskDetail(task) {
                 const detailContent = document.getElementById('taskDetailContent');
@@ -2288,8 +2385,11 @@
                     stateText = `Scheduled to start on ${task.date || 'future date'}`;
                     stateClass = 'scheduled';
                 } 
-                // Current tasks - searching for helpers
-                else {
+                // Current tasks - check if assigned
+                else if (isAssigned) {
+                    stateText = 'Helper assigned';
+                    stateClass = 'assigned';
+                } else {
                     stateText = 'Searching for helpers';
                     stateClass = 'searching';
                 }
@@ -2303,12 +2403,13 @@
                 if (existingState) existingState.remove();
                 headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
                 
-                // Build helper info row - no icon when not assigned, text flush left
+                // Build helper info row
                 let helperInfoHtml = '';
                 if (isAssigned) {
                     helperInfoHtml = `
                         <div class="helper-info-row">
                             <div class="helper-info-left">
+                                <div class="helper-avatar">${helperInitial}</div>
                                 <div class="helper-details">
                                     <span class="helper-label">Task with</span>
                                     <span class="helper-name">${helperName}</span>
@@ -2417,7 +2518,7 @@
                         // Use taskState if available
                         if (task.taskState === 'current') return true;
                         // Fallback to old logic
-                        if (task.status !== 'open' && task.status !== 'in-progress') return false;
+                        if (task.status !== 'open' && task.status !== 'in-progress' && task.status !== 'assigned') return false;
                         if (task.date === 'now') return true;
                         const taskDate = getTaskDateObj(task);
                         if (taskDate) {
@@ -2443,7 +2544,7 @@
                         // Use taskState if available
                         if (task.taskState === 'future') return true;
                         // Fallback to old logic
-                        if (task.status !== 'open' && task.status !== 'in-progress') return false;
+                        if (task.status !== 'open' && task.status !== 'in-progress' && task.status !== 'assigned') return false;
                         if (task.date === 'now') return false;
                         const taskDate = getTaskDateObj(task);
                         if (taskDate) {
@@ -2583,7 +2684,7 @@
                 }
             };
 
-            // Search suggestions with improved UI/UX
+            // Search suggestions
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
             const searchIconBtn = document.getElementById('searchIconBtn');
             const createTaskContainer = document.getElementById('createTaskContainer');
@@ -2610,18 +2711,10 @@
                 if (!s) return '';
                 return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
             }
-            
-            // Capitalize first letter of string only (not each word)
-            function capitalizeFirstLetterOnly(str) {
-                if (!str) return '';
-                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-            }
 
             if (mainSearchInput) {
-                // Show suggestions when input is focused or user types
                 mainSearchInput.addEventListener('focus', function() {
                     if (!this.value.trim()) {
-                        // Show top suggestions when focused empty with helpful message
                         mainSuggestionsList.innerHTML = `
                             <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
                             ${taskSuggestions.slice(0, 7).map(t => 
@@ -2630,7 +2723,6 @@
                         `;
                         mainSuggestionsList.classList.add('active');
                         
-                        // Reattach click handlers
                         document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
@@ -2651,7 +2743,6 @@
                 mainSearchInput.addEventListener('input', function() {
                     const q = this.value.trim().toLowerCase();
                     if (q.length < 1) { 
-                        // Show top suggestions when empty with helpful message
                         mainSuggestionsList.innerHTML = `
                             <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
                             ${taskSuggestions.slice(0, 7).map(t => 
@@ -2660,7 +2751,6 @@
                         `;
                         mainSuggestionsList.classList.add('active');
                         
-                        // Reattach click handlers
                         document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
@@ -2697,7 +2787,6 @@
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
                             mainSearchInput.value = task;
-                            // Capitalize first letter only
                             taskInput.value = capitalizeFirstLetterOnly(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
@@ -2717,7 +2806,6 @@
                 });
             }
 
-            // Search icon click handler with improved error handling
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2727,7 +2815,6 @@
                     return;
                 }
                 
-                // If search input is empty, show suggestions with helpful message
                 if (!mainSearchInput.value.trim()) {
                     mainSuggestionsList.innerHTML = `
                         <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
@@ -2737,7 +2824,6 @@
                     `;
                     mainSuggestionsList.classList.add('active');
                     
-                    // Reattach click handlers
                     document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
@@ -2749,7 +2835,6 @@
                         });
                     });
                 } else {
-                    // If there's text, capitalize first letter only and open create task
                     taskInput.value = capitalizeFirstLetterOnly(mainSearchInput.value.trim());
                     createTaskContainer.style.display = 'flex';
                     mainSuggestionsList.classList.remove('active');
@@ -2833,7 +2918,6 @@
                         this.value = '';
                         dateDisplay.textContent = 'Pick date';
                     } else {
-                        // Format as DD/MM/YYYY
                         const day = String(selectedDate.getDate()).padStart(2, '0');
                         const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
                         const year = selectedDate.getFullYear();
@@ -2993,7 +3077,7 @@
                 validateForm(); 
             });
 
-            // ===== NEW TASK SAVING STRUCTURE =====
+            // ===== UPDATED TASK SAVING WITH HELPER MATCHING =====
             document.getElementById('nextBtn').addEventListener('click', (e) => {
                 e.preventDefault();
                 
@@ -3027,7 +3111,7 @@
                 let taskState = (taskDateTime > now) ? 'future' : 'current';
 
                 // Generate taskId
-                const taskRef = firebase.database().ref('tasks/' + currentUser.uid).push();
+                const taskRef = database.ref('tasks/' + currentUser.uid).push();
                 const taskId = taskRef.key;
 
                 // Build full task object
@@ -3049,7 +3133,7 @@
                     budget: budgetAmountValue,
                     date: nativeDatePicker.value || now.toISOString().split('T')[0],
                     time: nativeTimePicker.value || now.toTimeString().split(' ')[0].substring(0, 5),
-                    status: 'open',
+                    status: 'open',  // Start as open
                     taskState: taskState,
                     assignedHelperId: null,
                     assignedHelperName: null,
@@ -3071,7 +3155,7 @@
                         
                         // Show success toast
                         const toast = document.getElementById('successToast');
-                        toast.textContent = 'Task posted successfully!';
+                        toast.textContent = 'Task posted! Searching for helpers...';
                         toast.style.display = 'block';
                         setTimeout(() => {
                             toast.style.display = 'none';
@@ -3080,8 +3164,6 @@
                         // Reset form and close
                         setTimeout(() => {
                             createTaskContainer.style.display = 'none';
-                            setActivePage('tasks');
-                            loadUserTasks();
                             
                             // Clear form
                             taskInput.value = ''; 
@@ -3098,6 +3180,13 @@
                             
                             nextBtn.textContent = originalText;
                             nextBtn.disabled = false;
+                            
+                            // === NEW: SEARCH FOR AND ASSIGN A HELPER ===
+                            findAndAssignHelper(taskId, taskInputValue);
+                            
+                            // Go to tasks page to see the task
+                            setActivePage('tasks');
+                            loadUserTasks();
                         }, 1500);
                     })
                     .catch(err => {
