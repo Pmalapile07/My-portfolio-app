@@ -2099,7 +2099,7 @@
 
             // Helper to parse date from task
             function getTaskDateObj(task) {
-                if (task.date === 'now') return new Date(); // treat 'now' as today
+                if (task.date === 'now') return new Date();
                 if (task.date) {
                     try {
                         // Assuming date format is DD/MM/YYYY from dateDisplay
@@ -2120,16 +2120,16 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
-                // Filter tasks based on category with proper date awareness
+                // Filter tasks based on category using taskState if available, fallback to old logic
                 let filteredTasks = [];
                 
                 if (currentCategory === 'current') {
-                    // Current: open or in-progress AND (date is 'now' OR date is today)
                     filteredTasks = allTasks.filter(task => {
+                        // Use taskState if available
+                        if (task.taskState === 'current') return true;
+                        // Fallback to old logic
                         if (task.status !== 'open' && task.status !== 'in-progress') return false;
-                        
                         if (task.date === 'now') return true;
-                        
                         const taskDate = getTaskDateObj(task);
                         if (taskDate) {
                             const taskDay = new Date(taskDate);
@@ -2150,11 +2150,12 @@
                         return;
                     }
                 } else if (currentCategory === 'future') {
-                    // Future: open or in-progress AND date is in the future (after today)
                     filteredTasks = allTasks.filter(task => {
+                        // Use taskState if available
+                        if (task.taskState === 'future') return true;
+                        // Fallback to old logic
                         if (task.status !== 'open' && task.status !== 'in-progress') return false;
                         if (task.date === 'now') return false;
-                        
                         const taskDate = getTaskDateObj(task);
                         if (taskDate) {
                             const taskDay = new Date(taskDate);
@@ -2175,10 +2176,10 @@
                         return;
                     }
                 } else {
-                    // Past: completed, cancelled, OR date in the past (before today)
                     filteredTasks = allTasks.filter(task => {
+                        // Past: completed, cancelled, OR taskState 'past'
+                        if (task.taskState === 'past') return true;
                         if (task.status === 'completed' || task.status === 'cancelled') return true;
-                        
                         if (task.date && task.date !== 'now') {
                             const taskDate = getTaskDateObj(task);
                             if (taskDate) {
@@ -2281,7 +2282,7 @@
                 const timeAgo = formatTimeFromTimestamp(createdAt);
                 
                 // Check if this is a future task
-                const isFuture = task && task.date && task.date !== 'now' && (() => {
+                const isFuture = task && (task.taskState === 'future' || (task.date && task.date !== 'now' && (() => {
                     const taskDate = getTaskDateObj(task);
                     if (taskDate) {
                         const today = new Date();
@@ -2291,7 +2292,7 @@
                         return taskDay > today;
                     }
                     return false;
-                })();
+                })()));
                 
                 let steps;
                 if (isFuture) {
@@ -2356,7 +2357,7 @@
                         if (task.date) dateDisplay.textContent = task.date;
                         if (task.time) timeDisplay.textContent = task.time;
                     }
-                    document.getElementById('extraNotes').value = task.description || '';
+                    document.getElementById('extraNotes').value = task.notes || task.description || '';
                     
                     setActivePage('home');
                     createTaskContainer.style.display = 'flex';
@@ -2438,7 +2439,7 @@
                 });
             }
 
-            // NEW: When search icon is clicked with empty input, show suggestions
+            // When search icon is clicked with empty input, show suggestions
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (!currentUser) {
@@ -2493,8 +2494,8 @@
                 let budgetValid = true;
                 if (fixedBudgetBtn.classList.contains('active')) {
                     const amount = budgetAmount.value.trim();
-                    const amountNum = parseInt(amount);
-                    budgetValid = amount !== '' && amountNum > 0;
+                    const amountNum = parseFloat(amount);
+                    budgetValid = amount !== '' && !isNaN(amountNum) && amountNum > 0;
                     if (!budgetValid && amount !== '') {
                         budgetAmount.classList.add('error');
                     } else {
@@ -2712,109 +2713,120 @@
                 validateForm(); 
             });
 
-            // ===== SAVE TASK TO FIREBASE =====
-            async function saveTaskToFirebase() {
-                if (!currentUser) {
-                    window.location.href = 'login.html';
-                    return false;
-                }
-
-                const originalText = nextBtn.textContent;
-                nextBtn.textContent = 'Posted!';
-                nextBtn.classList.add('posted');
-                nextBtn.disabled = true;
-
-                return new Promise((resolve) => {
-                    const timeout = setTimeout(() => {
-                        nextBtn.textContent = originalText;
-                        nextBtn.classList.remove('posted');
-                        nextBtn.disabled = false;
-                        alert('Connection timeout. Please try again.');
-                        resolve(false);
-                    }, 20000);
-                    
-                    const taskRef = database.ref('tasks/' + currentUser.uid).push();
-                    const taskId = taskRef.key;
-                    currentTaskId = taskId;
-                    
-                    const taskData = {
-                        taskId: taskId,
-                        posterId: currentUser.uid,
-                        posterEmail: currentUser.email || 'email@taskmart.app',
-                        posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-                        category: taskInput.value.trim(),
-                        description: document.getElementById('extraNotes').value.trim() || '',
-                        location: {
-                            lat: currentLat || -26.195246,
-                            lng: currentLng || 28.034088
-                        },
-                        address: streetInput.value.trim() + ', ' + locationInput.value,
-                        budget: fixedBudgetBtn.classList.contains('active') ? parseInt(budgetAmount.value) : 'open',
-                        date: whenLaterBtn.classList.contains('active') ? dateDisplay.textContent : 'now',
-                        time: whenLaterBtn.classList.contains('active') ? timeDisplay.textContent : 'now',
-                        images: uploadedImages,
-                        status: 'open',
-                        createdAt: firebase.database.ServerValue.TIMESTAMP
-                    };
-
-                    taskRef.set(taskData)
-                        .then(() => {
-                            clearTimeout(timeout);
-                            
-                            const toast = document.getElementById('successToast');
-                            toast.textContent = 'Task posted successfully!';
-                            toast.style.display = 'block';
-                            setTimeout(() => {
-                                toast.style.display = 'none';
-                            }, 3000);
-                            
-                            setTimeout(() => {
-                                createTaskContainer.style.display = 'none';
-                                setActivePage('tasks');
-                                loadUserTasks();
-                                
-                                taskInput.value = ''; 
-                                mainSearchInput.value = ''; 
-                                streetInput.value = ''; 
-                                budgetAmount.value = ''; 
-                                taskCharCount.textContent = '0/50';
-                                uploadedImages = []; 
-                                displayPreviews(); 
-                                whenNowBtn.click(); 
-                                fixedBudgetBtn.click(); 
-                                dateDisplay.textContent = 'Pick date'; 
-                                timeDisplay.textContent = 'Pick time';
-                                
-                                nextBtn.textContent = originalText;
-                                nextBtn.classList.remove('posted');
-                                nextBtn.disabled = false;
-                            }, 1500);
-                            
-                            resolve(taskId);
-                        })
-                        .catch((error) => {
-                            clearTimeout(timeout);
-                            
-                            nextBtn.textContent = originalText;
-                            nextBtn.classList.remove('posted');
-                            nextBtn.disabled = false;
-                            
-                            alert('Error posting task: ' + error.message);
-                            resolve(false);
-                        });
-                });
-            }
-
-            nextBtn.addEventListener('click', async function(e) {
+            // ===== NEW TASK SAVING STRUCTURE =====
+            document.getElementById('nextBtn').addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
+                
                 if (!currentUser) {
                     window.location.href = 'login.html';
                     return;
                 }
-                await saveTaskToFirebase();
+                
+                // Collect form inputs
+                const locationInputValue = document.getElementById('locationInput').value;
+                const streetInputValue = document.getElementById('streetInput').value;
+                const taskInputValue = document.getElementById('taskInput').value;
+                const extraNotesValue = document.getElementById('extraNotes').value;
+                const budgetAmountValue = parseFloat(document.getElementById('budgetAmount').value) || 0;
+
+                // Date and time
+                const whenLaterBtn = document.getElementById('whenLaterBtn');
+                const nativeDatePicker = document.getElementById('nativeDatePicker');
+                const nativeTimePicker = document.getElementById('nativeTimePicker');
+
+                let taskDateTime;
+                const now = new Date();
+
+                if (whenLaterBtn.classList.contains('active')) {
+                    taskDateTime = new Date(`${nativeDatePicker.value} ${nativeTimePicker.value}`);
+                } else {
+                    taskDateTime = now;
+                }
+
+                // Compute taskState
+                let taskState = (taskDateTime > now) ? 'future' : 'current';
+
+                // Generate taskId
+                const taskRef = firebase.database().ref('tasks/' + currentUser.uid).push();
+                const taskId = taskRef.key;
+
+                // Build full task object
+                const task = {
+                    taskId: taskId,
+                    posterId: currentUser.uid,
+                    posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                    posterEmail: currentUser.email || '',
+                    category: taskInputValue,
+                    description: extraNotesValue || '',
+                    address: streetInputValue,
+                    location: {
+                        city: locationInputValue,
+                        province: '',
+                        postalCode: ''
+                    },
+                    budget: budgetAmountValue,
+                    date: nativeDatePicker.value || now.toISOString().split('T')[0],
+                    time: nativeTimePicker.value || now.toTimeString().split(' ')[0].substring(0, 5),
+                    status: 'open',
+                    taskState: taskState,
+                    assignedHelperId: null,
+                    assignedHelperName: null,
+                    completedAt: null,
+                    createdAt: Date.now(),
+                    notes: extraNotesValue || '',
+                    images: uploadedImages
+                };
+
+                // Show loading state
+                const originalText = nextBtn.textContent;
+                nextBtn.textContent = 'Posting...';
+                nextBtn.disabled = true;
+
+                // Save to Firebase
+                taskRef.set(task)
+                    .then(() => {
+                        console.log('Task posted successfully:', task);
+                        
+                        // Show success toast
+                        const toast = document.getElementById('successToast');
+                        toast.textContent = 'Task posted successfully!';
+                        toast.style.display = 'block';
+                        setTimeout(() => {
+                            toast.style.display = 'none';
+                        }, 3000);
+                        
+                        // Reset form and close
+                        setTimeout(() => {
+                            createTaskContainer.style.display = 'none';
+                            setActivePage('tasks');
+                            loadUserTasks();
+                            
+                            // Clear form
+                            taskInput.value = ''; 
+                            mainSearchInput.value = ''; 
+                            streetInput.value = ''; 
+                            budgetAmount.value = ''; 
+                            taskCharCount.textContent = '0/50';
+                            uploadedImages = []; 
+                            displayPreviews(); 
+                            whenNowBtn.click(); 
+                            fixedBudgetBtn.click(); 
+                            dateDisplay.textContent = 'Pick date'; 
+                            timeDisplay.textContent = 'Pick time';
+                            
+                            nextBtn.textContent = originalText;
+                            nextBtn.disabled = false;
+                        }, 1500);
+                    })
+                    .catch(err => {
+                        console.error('Error posting task:', err);
+                        alert('Error posting task: ' + err.message);
+                        nextBtn.textContent = originalText;
+                        nextBtn.disabled = false;
+                    });
             });
 
+            // Keep original validation and other functions
             validateForm();
             
             setTimeout(() => {
