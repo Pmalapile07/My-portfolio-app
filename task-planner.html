@@ -36,7 +36,7 @@
     <!-- Config -->
     <script src="/config.js"></script>
     
-    <!-- Flaticon Icons - including thin-rounded for upload icon -->
+    <!-- Flaticon Icons -->
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
@@ -153,13 +153,13 @@
         }
         
         /* STATIC LOCATION PIN (smaller version) */
-        .static-location-pin {
-            width: 18px;
-            height: 18px;
+        .static-location-pin-small {
+            width: 16px;
+            height: 16px;
             background: #000000;
-            border: 2.5px solid white;
+            border: 2px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
             flex-shrink: 0;
         }
         
@@ -371,7 +371,7 @@
             background-color: #f5f5f5;
         }
 
-        /* RECENTER BUTTON */
+        /* RECENTER BUTTON - now white */
         .map-recenter-btn {
             position: absolute;
             top: -32px;
@@ -402,8 +402,9 @@
         }
         .map-recenter-btn i {
             font-size: 1.9rem;
-            color: black;
+            color: white; /* changed to white */
             background: transparent !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3); /* subtle shadow for visibility */
         }
 
         /* === BOTTOM NAVIGATION BAR === */
@@ -515,7 +516,7 @@
             font-weight: 500;
         }
         
-        /* Category Tabs - Now with Future */
+        /* Category Tabs */
         .task-categories {
             display: flex;
             margin-bottom: 1.5rem;
@@ -670,9 +671,10 @@
             font-weight: 400;
         }
         
+        /* REDUCED TASK TITLE SIZE by 1px (from 1rem to 0.9375rem) */
         .task-title {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9375rem;
             margin-bottom: 0.25rem;
             color: #000;
             text-transform: capitalize;
@@ -978,15 +980,15 @@
             font-family: 'Manrope', sans-serif;
         }
 
-        /* LOCATION ROW WITH SMALLER STATIC PIN */
+        /* LOCATION ROW - text brought back from far right */
         .location-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 1rem;
             background-color: #f0f0f0;
             border-radius: 5px;
-            padding: 0 10px;
+            padding: 0 12px;
         }
         
         .static-location-pin-small {
@@ -1009,12 +1011,12 @@
             font-size: 1rem !important;
             color: rgba(0,0,0,0.8);
             outline: none;
-            text-align: right;
+            text-align: left; /* changed from right to left */
         }
         
         .location-input-new::placeholder {
             color: rgba(0,0,0,0.4);
-            text-align: right;
+            text-align: left; /* changed from right to left */
         }
 
         .street-input {
@@ -1152,7 +1154,7 @@
             background-color: #fff0f0 !important;
         }
 
-        /* UPLOAD AREA - new icon in black */
+        /* UPLOAD AREA */
         .upload-area {
             background: #f0f0f0;
             padding: 2rem 1rem;
@@ -1360,7 +1362,7 @@
 
     <!-- HOME SHEET -->
     <div class="home-sheet" id="homeSheet">
-        <!-- RECENTER BUTTON -->
+        <!-- RECENTER BUTTON - now white -->
         <button class="map-recenter-btn" id="mapRecenterBtn" title="Recenter map">
             <i class="fi fi-sr-navigation"></i>
         </button>
@@ -1408,7 +1410,7 @@
             <span id="tasksCount">0</span>
         </div>
         
-        <!-- Category Tabs - Now with Future -->
+        <!-- Category Tabs -->
         <div class="task-categories" id="taskCategories">
             <div class="category-tab active" data-category="current">Current</div>
             <div class="category-tab" data-category="future">Future</div>
@@ -1442,7 +1444,7 @@
         </div>
     </div>
 
-    <!-- CREATE TASK FULL SCREEN - with updated upload icon and smaller pin -->
+    <!-- CREATE TASK FULL SCREEN -->
     <div class="create-task-container" id="createTaskContainer">
         <div class="create-task-header">
             <button class="close-btn" id="closeCreateTaskBtn">
@@ -1455,7 +1457,7 @@
         <div class="create-task-content">
             <div class="section">
                 <div class="section-label">Your location</div>
-                <!-- New location row with smaller static pin -->
+                <!-- Location row with text now left-aligned -->
                 <div class="location-row" id="locationRowTrigger">
                     <div class="static-location-pin-small"></div>
                     <input type="text" class="location-input-new" id="locationInput" placeholder="City or area" readonly>
@@ -1804,10 +1806,9 @@
                                 .then(data => {
                                     if (data.features && data.features[0]) {
                                         let fullAddress = data.features[0].place_name;
-                                        // Remove country name (last part after last comma)
                                         let parts = fullAddress.split(', ');
                                         if (parts.length > 1) {
-                                            parts.pop(); // Remove country
+                                            parts.pop();
                                             locationInput.value = parts.join(', ');
                                         } else {
                                             locationInput.value = fullAddress;
@@ -2096,28 +2097,44 @@
                 return 'Open';
             }
 
+            // Helper to parse date from task
+            function getTaskDateObj(task) {
+                if (task.date === 'now') return new Date(); // treat 'now' as today
+                if (task.date) {
+                    try {
+                        // Assuming date format is DD/MM/YYYY from dateDisplay
+                        const parts = task.date.split('/');
+                        if (parts.length === 3) {
+                            return new Date(parts[2], parts[1]-1, parts[0]);
+                        }
+                    } catch (e) {
+                        return null;
+                    }
+                }
+                return null;
+            }
+
             function displayTasksByCategory() {
                 const tasksContainer = document.getElementById('tasksListContainer');
                 
-                const now = new Date();
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
                 
-                // Filter tasks based on category with date awareness
+                // Filter tasks based on category with proper date awareness
                 let filteredTasks = [];
+                
                 if (currentCategory === 'current') {
                     // Current: open or in-progress AND (date is 'now' OR date is today)
                     filteredTasks = allTasks.filter(task => {
                         if (task.status !== 'open' && task.status !== 'in-progress') return false;
+                        
                         if (task.date === 'now') return true;
-                        if (task.date) {
-                            try {
-                                const taskDate = new Date(task.date.split('/').reverse().join('-'));
-                                const today = new Date();
-                                today.setHours(0,0,0,0);
-                                taskDate.setHours(0,0,0,0);
-                                return taskDate.getTime() === today.getTime();
-                            } catch {
-                                return false;
-                            }
+                        
+                        const taskDate = getTaskDateObj(task);
+                        if (taskDate) {
+                            const taskDay = new Date(taskDate);
+                            taskDay.setHours(0, 0, 0, 0);
+                            return taskDay.getTime() === today.getTime();
                         }
                         return false;
                     });
@@ -2133,20 +2150,16 @@
                         return;
                     }
                 } else if (currentCategory === 'future') {
-                    // Future: open or in-progress AND date is in the future (not today, not 'now')
+                    // Future: open or in-progress AND date is in the future (after today)
                     filteredTasks = allTasks.filter(task => {
                         if (task.status !== 'open' && task.status !== 'in-progress') return false;
                         if (task.date === 'now') return false;
-                        if (task.date) {
-                            try {
-                                const taskDate = new Date(task.date.split('/').reverse().join('-'));
-                                const today = new Date();
-                                today.setHours(0,0,0,0);
-                                taskDate.setHours(0,0,0,0);
-                                return taskDate > today;
-                            } catch {
-                                return false;
-                            }
+                        
+                        const taskDate = getTaskDateObj(task);
+                        if (taskDate) {
+                            const taskDay = new Date(taskDate);
+                            taskDay.setHours(0, 0, 0, 0);
+                            return taskDay > today;
                         }
                         return false;
                     });
@@ -2162,18 +2175,16 @@
                         return;
                     }
                 } else {
-                    // Past: completed, cancelled, OR date in the past (and not open)
+                    // Past: completed, cancelled, OR date in the past (before today)
                     filteredTasks = allTasks.filter(task => {
                         if (task.status === 'completed' || task.status === 'cancelled') return true;
-                        if (task.date && task.date !== 'now' && task.status !== 'open') {
-                            try {
-                                const taskDate = new Date(task.date.split('/').reverse().join('-'));
-                                const today = new Date();
-                                today.setHours(0,0,0,0);
-                                taskDate.setHours(0,0,0,0);
-                                return taskDate < today;
-                            } catch {
-                                return false;
+                        
+                        if (task.date && task.date !== 'now') {
+                            const taskDate = getTaskDateObj(task);
+                            if (taskDate) {
+                                const taskDay = new Date(taskDate);
+                                taskDay.setHours(0, 0, 0, 0);
+                                return taskDay < today;
                             }
                         }
                         return false;
@@ -2228,7 +2239,7 @@
                                         <div class="task-date-time">
                                             <span class="task-date">${formattedDate}</span> · <span class="task-time">${formattedTime}</span>
                                         </div>
-                                        <div class="task-title">${task.category || 'Task'}</div>
+                                        <div class="task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
                                         <div class="task-amount">${budgetDisplay}</div>
                                     </div>
                                     <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')">
@@ -2236,7 +2247,7 @@
                                     </button>
                                 </div>
                                 <div class="task-details-expanded" id="expanded-${task.taskId || task.id}">
-                                    ${getTaskProgressHTML(task.status, task.createdAt)}
+                                    ${getTaskProgressHTML(task, task.status, task.createdAt)}
                                     <div class="task-meta-row">
                                         <div class="meta-row-item">
                                             <div class="meta-row-label">Status</div>
@@ -2265,22 +2276,49 @@
                 });
             }
             
-            function getTaskProgressHTML(status, createdAt) {
+            // Updated progress bar with future task awareness
+            function getTaskProgressHTML(task, status, createdAt) {
                 const timeAgo = formatTimeFromTimestamp(createdAt);
                 
-                const steps = [
-                    { name: 'Task posted', time: timeAgo, completed: true, description: '' },
-                    { name: 'Finding helpers', time: '', completed: false, active: status === 'open', description: 'Finding helpers near you' },
-                    { name: 'Helper assigned', time: 'Waiting for helper', completed: false, description: '' },
-                    { name: 'Task completed', time: 'Not started', completed: false, description: '' }
-                ];
+                // Check if this is a future task
+                const isFuture = task && task.date && task.date !== 'now' && (() => {
+                    const taskDate = getTaskDateObj(task);
+                    if (taskDate) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const taskDay = new Date(taskDate);
+                        taskDay.setHours(0, 0, 0, 0);
+                        return taskDay > today;
+                    }
+                    return false;
+                })();
+                
+                let steps;
+                if (isFuture) {
+                    // For future tasks, first step shows the scheduled start date
+                    const startDate = task.date || 'future date';
+                    steps = [
+                        { name: `Task will start on ${startDate}`, time: '', completed: false, active: true, description: '' },
+                        { name: 'Finding helpers', time: '', completed: false, active: false, description: '' },
+                        { name: 'Helper assigned', time: '', completed: false, description: '' },
+                        { name: 'Task completed', time: '', completed: false, description: '' }
+                    ];
+                } else {
+                    // Normal progress for non-future tasks
+                    steps = [
+                        { name: 'Task posted', time: timeAgo, completed: true, description: '' },
+                        { name: 'Finding helpers', time: '', completed: false, active: status === 'open', description: 'Finding helpers near you' },
+                        { name: 'Helper assigned', time: 'Waiting for helper', completed: false, description: '' },
+                        { name: 'Task completed', time: 'Not started', completed: false, description: '' }
+                    ];
+                }
                 
                 let progressHtml = '<div class="task-progress-vertical">';
                 steps.forEach((step, index) => {
                     let stepClass = '';
                     if (step.completed) {
                         stepClass = 'completed';
-                    } else if (index === 1 && step.active) {
+                    } else if (step.active) {
                         stepClass = 'active';
                     }
                     
@@ -2400,19 +2438,47 @@
                 });
             }
 
+            // NEW: When search icon is clicked with empty input, show suggestions
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (!currentUser) {
                     window.location.href = 'login.html';
                     return;
                 }
-                if (mainSearchInput.value.trim()) {
-                    taskInput.value = mainSearchInput.value.trim();
+                
+                // If search input is empty, show the suggestions dropdown
+                if (!mainSearchInput.value.trim()) {
+                    // Show all suggestions
+                    mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
+                        `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                    ).join('');
+                    mainSuggestionsList.classList.add('active');
+                    
+                    // Add click handlers to suggestions
+                    document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
+                        el.addEventListener('click', function() {
+                            const task = this.dataset.task;
+                            mainSearchInput.value = task;
+                            taskInput.value = task;
+                            mainSuggestionsList.classList.remove('active');
+                            validateForm();
+                            createTaskContainer.style.display = 'flex';
+                        });
+                    });
+                } else {
+                    // If there's text, just open create task with that text
+                    if (mainSearchInput.value.trim()) {
+                        taskInput.value = mainSearchInput.value.trim();
+                    }
+                    createTaskContainer.style.display = 'flex';
                 }
-                createTaskContainer.style.display = 'flex';
             });
 
-            closeCreateTaskBtn.addEventListener('click', () => createTaskContainer.style.display = 'none');
+            closeCreateTaskBtn.addEventListener('click', () => {
+                createTaskContainer.style.display = 'none';
+                // Close suggestions when closing create task
+                mainSuggestionsList.classList.remove('active');
+            });
 
             taskInput.addEventListener('input', function() {
                 if (this.value.length > 50) this.value = this.value.slice(0,50);
@@ -2473,20 +2539,24 @@
             document.getElementById('pickDateBtn').addEventListener('click', () => nativeDatePicker.showPicker());
             document.getElementById('pickTimeBtn').addEventListener('click', () => nativeTimePicker.showPicker());
 
-            const today = new Date().toISOString().split('T')[0];
-            nativeDatePicker.setAttribute('min', today);
+            const todayDate = new Date().toISOString().split('T')[0];
+            nativeDatePicker.setAttribute('min', todayDate);
 
             nativeDatePicker.addEventListener('change', function() {
                 if (this.value) {
                     const selectedDate = new Date(this.value);
-                    const todayDate = new Date();
-                    todayDate.setHours(0,0,0,0);
-                    if (selectedDate < todayDate) {
+                    const todayDateObj = new Date();
+                    todayDateObj.setHours(0,0,0,0);
+                    if (selectedDate < todayDateObj) {
                         alert('Please select a future date.');
                         this.value = '';
                         dateDisplay.textContent = 'Pick date';
                     } else {
-                        dateDisplay.textContent = selectedDate.toLocaleDateString('en-GB');
+                        // Format as DD/MM/YYYY
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const year = selectedDate.getFullYear();
+                        dateDisplay.textContent = `${day}/${month}/${year}`;
                     }
                     validateForm();
                 }
