@@ -152,8 +152,8 @@
             animation: pulse-ring 2s infinite ease-in-out;
         }
         
-        /* STATIC LOCATION PIN (smaller version) - same as create task */
-        .static-location-pin-small, .timeline-dot-small {
+        /* STATIC LOCATION PIN (smaller version) */
+        .static-location-pin-small {
             width: 16px;
             height: 16px;
             background: #000000;
@@ -791,7 +791,6 @@
             color: #000;
         }
         
-        /* Title removed as requested */
         .task-detail-header-spacer {
             width: 32px;
         }
@@ -801,7 +800,7 @@
             padding: 1.5rem;
         }
         
-        /* Helper info row */
+        /* Helper info row - no icon when not assigned */
         .helper-info-row {
             display: flex;
             align-items: center;
@@ -818,19 +817,25 @@
             gap: 12px;
         }
         
-        .helper-icon {
+        /* No icon container when not assigned - just spacing */
+        .helper-icon-placeholder {
             width: 48px;
             height: 48px;
-            background: #e0e0e0;
+            flex-shrink: 0;
+        }
+        
+        .helper-avatar {
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
+            background: #A6CBE3;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .helper-icon i {
-            font-size: 1.5rem;
-            color: #666;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            flex-shrink: 0;
         }
         
         .helper-details {
@@ -864,28 +869,27 @@
             font-size: 1.2rem;
         }
         
-        /* Task state badge in header */
-        .task-state-badge {
+        /* Task state text - scheduled to start on for future */
+        .task-state-text {
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 500;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             background: #f0f0f0;
             color: #333;
-            text-transform: uppercase;
         }
         
-        .task-state-badge.current {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .task-state-badge.future {
+        .task-state-text.future {
             background: #fff3e0;
             color: #e67e22;
         }
         
-        .task-state-badge.past {
+        .task-state-text.current {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .task-state-text.past {
             background: #e8f5e9;
             color: #388e3c;
         }
@@ -900,7 +904,7 @@
             border: 1px solid #f0f0f0;
         }
         
-        /* Timeline - with smaller dots and icons */
+        /* Timeline - with centered dots and icons */
         .task-timeline {
             margin: 1.5rem 0;
             padding-left: 8px;
@@ -911,6 +915,7 @@
             gap: 16px;
             margin-bottom: 1.5rem;
             position: relative;
+            align-items: flex-start;
         }
         
         .timeline-item:last-child {
@@ -921,10 +926,11 @@
             content: '';
             position: absolute;
             left: 20px;
-            top: 40px;
+            top: 28px;
             width: 2px;
-            height: calc(100% - 20px);
+            height: calc(100% - 16px);
             background: #e0e0e0;
+            z-index: 1;
         }
         
         .timeline-dot-small {
@@ -936,7 +942,7 @@
             box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
             flex-shrink: 0;
             z-index: 2;
-            margin-top: 12px;
+            margin-top: 8px;
         }
         
         .timeline-icon-small {
@@ -946,7 +952,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-top: 12px;
+            margin-top: 8px;
+            z-index: 2;
+            background: white;
         }
         
         .timeline-icon-small img {
@@ -957,7 +965,7 @@
         
         .timeline-content {
             flex: 1;
-            padding-top: 8px;
+            padding-top: 4px;
         }
         
         .timeline-title {
@@ -965,12 +973,14 @@
             font-size: 1rem;
             margin-bottom: 0.25rem;
             color: #000;
+            text-transform: capitalize;
         }
         
         .timeline-subtitle {
             font-size: 0.8rem;
             color: #666;
             margin-bottom: 0.25rem;
+            text-transform: capitalize;
         }
         
         .timeline-time {
@@ -996,6 +1006,7 @@
             font-size: 0.9rem;
             cursor: pointer;
             font-family: 'Manrope', sans-serif;
+            transition: opacity 0.2s;
         }
         
         .action-btn.primary {
@@ -1535,7 +1546,7 @@
         <div class="task-detail-header">
             <button class="task-detail-back-btn" id="taskDetailBackBtn">←</button>
             <div class="task-detail-header-spacer"></div>
-            <!-- Task state badge will be inserted here dynamically -->
+            <!-- Task state text will be inserted here dynamically -->
         </div>
         
         <div class="task-detail-content" id="taskDetailContent">
@@ -2261,42 +2272,75 @@
                 const createdDateStr = formatDateWithOrdinal(createdDate);
                 const createdTimeStr = task.createdAt ? formatTimeFromTimestamp(task.createdAt) : 'Just now';
                 
-                // Helper name (placeholder)
-                const helperName = task.assignedHelperName || 'Not assigned';
+                // Helper info - check if assigned
+                const isAssigned = task.assignedHelperName && task.assignedHelperName !== 'Not assigned' && task.assignedHelperName !== null;
+                const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
                 const helperInitial = helperName.charAt(0).toUpperCase();
                 
-                // Add task state badge to header
-                const taskStateBadge = document.createElement('span');
-                taskStateBadge.className = `task-state-badge ${task.taskState || 'current'}`;
-                taskStateBadge.textContent = (task.taskState || 'current').toUpperCase();
+                // Add task state text to header
+                let stateText = '';
+                if (task.taskState === 'future') {
+                    stateText = `Scheduled to start on ${task.date || 'future date'}`;
+                } else if (task.taskState === 'current') {
+                    stateText = 'Happening now';
+                } else if (task.taskState === 'past') {
+                    stateText = `Completed on ${task.date || 'past date'}`;
+                }
                 
-                // Clear previous badge and add new one
-                const existingBadge = document.querySelector('.task-state-badge');
-                if (existingBadge) existingBadge.remove();
-                headerSpacer.parentNode.insertBefore(taskStateBadge, headerSpacer.nextSibling);
+                const taskStateSpan = document.createElement('span');
+                taskStateSpan.className = `task-state-text ${task.taskState || 'current'}`;
+                taskStateSpan.textContent = stateText;
+                
+                // Clear previous state text and add new one
+                const existingState = document.querySelector('.task-state-text');
+                if (existingState) existingState.remove();
+                headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
+                
+                // Build helper info row - no icon when not assigned
+                let helperInfoHtml = '';
+                if (isAssigned) {
+                    helperInfoHtml = `
+                        <div class="helper-info-row">
+                            <div class="helper-info-left">
+                                <div class="helper-avatar">${helperInitial}</div>
+                                <div class="helper-details">
+                                    <span class="helper-label">Task with</span>
+                                    <span class="helper-name">${helperName}</span>
+                                </div>
+                            </div>
+                            <div class="helper-info-right">
+                                ${helperInitial}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    helperInfoHtml = `
+                        <div class="helper-info-row">
+                            <div class="helper-info-left">
+                                <div class="helper-icon-placeholder"></div>
+                                <div class="helper-details">
+                                    <span class="helper-label">Task with</span>
+                                    <span class="helper-name">${helperName}</span>
+                                </div>
+                            </div>
+                            <div class="helper-info-right">
+                                ?
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Determine button text based on assignment
+                const primaryButtonText = isAssigned ? 'Message helper' : 'Get help with task';
                 
                 // Build detail HTML
                 detailContent.innerHTML = `
-                    <!-- Helper info row -->
-                    <div class="helper-info-row">
-                        <div class="helper-info-left">
-                            <div class="helper-icon">
-                                <i class="fi fi-rr-briefcase"></i>
-                            </div>
-                            <div class="helper-details">
-                                <span class="helper-label">Task with</span>
-                                <span class="helper-name">${helperName}</span>
-                            </div>
-                        </div>
-                        <div class="helper-info-right">
-                            ${helperInitial}
-                        </div>
-                    </div>
+                    ${helperInfoHtml}
                     
-                    <!-- Mini map showing task location - using actual task coordinates -->
+                    <!-- Mini map showing task location -->
                     <div class="detail-map-container" id="taskDetailMap"></div>
                     
-                    <!-- Timeline with smaller dots and icons -->
+                    <!-- Timeline with centered dots and icons -->
                     <div class="task-timeline">
                         <div class="timeline-item">
                             <div class="timeline-dot-small"></div>
@@ -2312,7 +2356,7 @@
                                 <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
                             </div>
                             <div class="timeline-content">
-                                <div class="timeline-title">${task.category || 'Task'}</div>
+                                <div class="timeline-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
                                 <div class="timeline-subtitle">${task.notes || 'No additional notes'}</div>
                                 <div class="timeline-time">${task.taskState === 'past' ? 'Completed' : 'Posted'} on ${createdDateStr}</div>
                             </div>
@@ -2321,7 +2365,7 @@
                     
                     <!-- Action buttons -->
                     <div class="task-action-buttons">
-                        <button class="action-btn primary" onclick="alert('Get help feature coming soon')">Get help with task</button>
+                        <button class="action-btn primary" onclick="alert('${isAssigned ? 'Message feature coming soon' : 'Get help feature coming soon'}')">${primaryButtonText}</button>
                         <button class="action-btn secondary" onclick="repostTask('${task.taskId || task.id}')">Rebook</button>
                     </div>
                 `;
@@ -2329,9 +2373,9 @@
                 // Initialize map in detail view with actual task coordinates
                 setTimeout(() => {
                     const mapContainer = document.getElementById('taskDetailMap');
-                    if (mapContainer && task.location) {
-                        const lat = task.location.lat || currentLat || -26.195246;
-                        const lng = task.location.lng || currentLng || 28.034088;
+                    if (mapContainer) {
+                        const lat = (task.location && task.location.lat) ? task.location.lat : (currentLat || -26.195246);
+                        const lng = (task.location && task.location.lng) ? task.location.lng : (currentLng || 28.034088);
                         
                         const detailMap = new mapboxgl.Map({
                             container: 'taskDetailMap',
@@ -2347,22 +2391,6 @@
                         
                         new mapboxgl.Marker({ element: pinElement })
                             .setLngLat([lng, lat])
-                            .addTo(detailMap);
-                    } else {
-                        // Fallback to current location
-                        const detailMap = new mapboxgl.Map({
-                            container: 'taskDetailMap',
-                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [currentLng || 28.034088, currentLat || -26.195246],
-                            zoom: 14,
-                            interactive: false
-                        });
-                        
-                        const pinElement = document.createElement('div');
-                        pinElement.className = 'pulsing-pin';
-                        
-                        new mapboxgl.Marker({ element: pinElement })
-                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
                             .addTo(detailMap);
                     }
                 }, 100);
