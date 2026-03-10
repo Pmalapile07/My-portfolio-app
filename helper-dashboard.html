@@ -57,7 +57,7 @@
             width: 100%;
         }
 
-        /* === FULLSCREEN MAP === */
+        /* === FULLSCREEN MAP - IMMEDIATE LOAD === */
         #map {
             position: absolute;
             top: 0;
@@ -65,6 +65,7 @@
             width: 100%;
             height: 100%;
             z-index: 1;
+            background: #1a1a1a; /* Dark background while loading */
         }
 
         /* Helper location dot */
@@ -1045,7 +1046,7 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <!-- Notification Sound -->
+    <!-- Notification Sound - from your repo -->
     <audio id="notificationSound" preload="auto" loop>
         <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-ding-101492.mp3" type="audio/mpeg">
     </audio>
@@ -1080,6 +1081,7 @@
             let selectedTask = null;
             let notificationSound = document.getElementById('notificationSound');
             let isShaking = false;
+            let locationResolve = null;
 
             // DOM Elements
             const navMap = document.getElementById('navMap');
@@ -1121,6 +1123,7 @@
             const previewCloseBtn = document.getElementById('previewCloseBtn');
 
             let currentCategory = 'current';
+            let shownTaskIds = new Set(); // Track which tasks we've already shown
 
             // ===== STOP SHAKING AND SOUND =====
             function stopShakingAndSound() {
@@ -1142,6 +1145,7 @@
             function showTaskPreview(task) {
                 if (!task) return;
                 
+                // Stop previous shaking
                 stopShakingAndSound();
                 
                 selectedTask = task;
@@ -1158,12 +1162,15 @@
                 
                 taskPreviewCard.classList.add('visible');
                 
-                // Start shaking for available tasks only
+                // Start shaking for available tasks
                 if (task.status === 'open') {
                     startShakingAndSound();
                 }
                 
                 floatingDistanceCard.classList.remove('visible');
+                
+                // Calculate route
+                calculateRoute(task);
             }
 
             function hideTaskPreview() {
@@ -1237,12 +1244,45 @@
                     accountSkills.textContent = currentUser.skills.join(', ') || 'No skills';
 
                     loadEarnings();
+                    
+                    // Initialize map immediately
                     initMap();
+
+                    // Set up real-time listener for new tasks
+                    setupTaskListener();
 
                 } catch (error) {
                     console.error('Auth error:', error);
                 }
             });
+
+            // ===== SETUP REAL-TIME TASK LISTENER =====
+            function setupTaskListener() {
+                database.ref('tasks').on('child_added', (posterSnapshot) => {
+                    posterSnapshot.ref.on('child_added', (taskSnapshot) => {
+                        const task = {
+                            id: taskSnapshot.key,
+                            posterId: posterSnapshot.key,
+                            ...taskSnapshot.val()
+                        };
+                        
+                        // Check if this is a new task and we're on map page
+                        if (task.status === 'open' && 
+                            task.taskState === 'current' && 
+                            task.posterId !== currentUser?.uid &&
+                            !shownTaskIds.has(task.id) &&
+                            mapPage.classList.contains('active')) {
+                            
+                            shownTaskIds.add(task.id);
+                            
+                            // Show the task card immediately
+                            setTimeout(() => {
+                                showTaskPreview(task);
+                            }, 100);
+                        }
+                    });
+                });
+            }
 
             // ===== LOAD EARNINGS =====
             async function loadEarnings() {
@@ -1262,7 +1302,8 @@
                                     total += parseFloat(task.budget);
                                     earnings.push({
                                         taskName: task.category || 'Task',
-                                        amount: parseFloat(task.budget)
+                                        amount: parseFloat(task.budget),
+                                        date: task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Recently'
                                     });
                                 }
                             }
@@ -1275,7 +1316,7 @@
                     if (earnings.length === 0) {
                         html = '<div style="text-align:center;color:#999;padding:1rem;">No earnings yet</div>';
                     } else {
-                        earnings.slice(-5).reverse().forEach(e => {
+                        earnings.slice(-10).reverse().forEach(e => {
                             html += `<div class="earning-item"><span class="earning-task">${e.taskName}</span><span class="earning-amount">+R${e.amount}</span></div>`;
                         });
                     }
@@ -1292,22 +1333,54 @@
                 setTimeout(() => toast.classList.remove('show'), 3000);
             }
 
-            // ===== MAP INIT =====
+            // ===== MAP INIT - IMMEDIATE LOAD =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) return;
 
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
+                // Create map with immediate display
                 map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                    center: [28.034088, -26.195246],
-                    zoom: 12
+                    center: [currentLng, currentLat],
+                    zoom: 14,
+                    fadeDuration: 0 // No fade for instant display
                 });
 
+                // Add controls immediately
+                map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+
+                // Get user location immediately
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            
+                            // Instantly jump to location
+                            map.jumpTo({
+                                center: [currentLng, currentLat],
+                                zoom: 15
+                            });
+                            
+                            updateUserMarker();
+                            fetchTasks();
+                        },
+                        (error) => {
+                            console.log('Using default location');
+                            updateUserMarker();
+                            fetchTasks();
+                        },
+                        { enableHighAccuracy: true, timeout: 5000 }
+                    );
+                } else {
+                    updateUserMarker();
+                    fetchTasks();
+                }
+
+                // Route layer
                 map.on('load', () => {
-                    map.resize();
-                    
                     map.addSource('route', {
                         type: 'geojson',
                         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
@@ -1319,38 +1392,18 @@
                         source: 'route',
                         paint: { 'line-color': '#666666', 'line-width': 3, 'line-opacity': 0.6 }
                     });
-
-                    getUserLocation();
                 });
-
-                window.addEventListener('resize', () => map.resize());
             }
 
-            function getUserLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            currentLat = pos.coords.latitude;
-                            currentLng = pos.coords.longitude;
-                            
-                            map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
-                            
-                            if (startMarker) startMarker.remove();
-                            
-                            const pin = document.createElement('div');
-                            pin.className = 'helper-pulsing-pin';
-                            
-                            startMarker = new mapboxgl.Marker({ element: pin })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-
-                            fetchTasks();
-                        },
-                        () => fetchTasks()
-                    );
-                } else {
-                    fetchTasks();
-                }
+            function updateUserMarker() {
+                if (startMarker) startMarker.remove();
+                
+                const pin = document.createElement('div');
+                pin.className = 'helper-pulsing-pin';
+                
+                startMarker = new mapboxgl.Marker({ element: pin })
+                    .setLngLat([currentLng, currentLat])
+                    .addTo(map);
             }
 
             // ===== CREATE TASK MARKER =====
@@ -1367,7 +1420,10 @@
                     .setLngLat([task.location.lng, task.location.lat])
                     .addTo(map);
                 
-                el.addEventListener('click', () => selectTask(task.id));
+                el.addEventListener('click', () => {
+                    // When clicking dot, show preview
+                    showTaskPreview(task);
+                });
                 
                 return marker;
             }
@@ -1427,21 +1483,6 @@
                 }
             }
 
-            // ===== SELECT TASK =====
-            async function selectTask(taskId) {
-                const task = availableTasks.find(t => t.id === taskId) || 
-                            inProgressTasks.find(t => t.id === taskId);
-                if (!task) return;
-
-                hideTaskPreview();
-                
-                if (task.status === 'open') {
-                    showTaskPreview(task);
-                }
-                
-                await calculateRoute(task);
-            }
-
             // ===== CALCULATE ROUTE =====
             async function calculateRoute(task) {
                 if (!task.location || !currentLat || !currentLng) return;
@@ -1464,15 +1505,17 @@
                         routeDuration.textContent = duration;
                         floatingDistanceCard.classList.add('visible');
 
-                        map.getSource('route').setData({
-                            type: 'Feature',
-                            geometry: route.geometry
-                        });
+                        if (map.getSource('route')) {
+                            map.getSource('route').setData({
+                                type: 'Feature',
+                                geometry: route.geometry
+                            });
+                        }
 
                         const bounds = new mapboxgl.LngLatBounds();
                         bounds.extend([currentLng, currentLat]);
                         bounds.extend([task.location.lng, task.location.lat]);
-                        map.fitBounds(bounds, { padding: 50 });
+                        map.fitBounds(bounds, { padding: 50, duration: 500 });
                     }
                 } catch (error) {
                     console.error('Route error:', error);
@@ -1480,6 +1523,8 @@
             }
 
             // ===== NAVIGATION =====
+            const mapPage = navMap;
+            
             function setActivePage(page) {
                 [navMap, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
                 
@@ -1515,14 +1560,14 @@
             navAccount.addEventListener('click', () => setActivePage('account'));
             taskDetailBackBtn.addEventListener('click', () => setActivePage('tasks'));
 
-            // ===== RENDER TASKS PAGE =====
+            // ===== RENDER TASKS PAGE WITH DETAILS =====
             function renderTasksPage() {
                 let html = '';
 
                 if (currentCategory === 'current') {
                     if (inProgressTasks.length > 0) {
                         inProgressTasks.forEach(task => {
-                            const date = new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                            const date = new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                             html += `
                                 <div class="task-card" onclick="showTaskDetail('${task.id}')">
                                     <div class="task-card-main">
@@ -1531,7 +1576,8 @@
                                             <div class="task-date-time">${date}</div>
                                             <div class="task-title">${task.category || 'Task'}</div>
                                             <div class="task-amount">${task.budget === 'open' ? 'Open to offers' : `R${task.budget}`}</div>
-                                            <span class="task-status-badge assigned">In Progress</span>
+                                            <span class="task-status-badge assigned">${task.status === 'assigned' ? 'Heading to location' : 'Working on task'}</span>
+                                            <div style="font-size:0.8rem;color:#666;margin-top:5px;">${task.address || ''}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1543,7 +1589,7 @@
                 } else {
                     if (completedTasks.length > 0) {
                         completedTasks.forEach(task => {
-                            const date = new Date(task.completedAt || task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                            const date = new Date(task.completedAt || task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                             html += `
                                 <div class="task-card" onclick="showTaskDetail('${task.id}')">
                                     <div class="task-card-main">
@@ -1553,6 +1599,7 @@
                                             <div class="task-title">${task.category || 'Task'}</div>
                                             <div class="task-amount">+R${task.budget}</div>
                                             <span class="task-status-badge completed">Completed</span>
+                                            <div style="font-size:0.8rem;color:#666;margin-top:5px;">${task.address || ''}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1571,8 +1618,31 @@
                 const task = [...inProgressTasks, ...completedTasks].find(t => t.id === taskId);
                 if (!task) return;
 
+                const createdDate = new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                const completedDate = task.completedAt ? new Date(task.completedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
                 const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
                 
+                let statusText = '';
+                let actionButton = '';
+                
+                if (task.status === 'assigned') {
+                    statusText = 'Heading to location';
+                    actionButton = `
+                        <button class="detail-action-btn primary" onclick="updateTaskStatus('${task.id}', 'in_progress')">
+                            I have arrived
+                        </button>
+                    `;
+                } else if (task.status === 'in_progress') {
+                    statusText = 'Working on task';
+                    actionButton = `
+                        <button class="detail-action-btn primary" onclick="completeTask('${task.id}')">
+                            Mark as completed
+                        </button>
+                    `;
+                } else if (task.status === 'completed') {
+                    statusText = `Completed on ${completedDate}`;
+                }
+
                 taskDetailContent.innerHTML = `
                     <div class="detail-poster-info">
                         <div class="detail-poster-left">
@@ -1593,7 +1663,7 @@
                             <div class="timeline-content">
                                 <div class="timeline-title">Task location</div>
                                 <div class="timeline-subtitle">${task.address || 'Location set'}</div>
-                                <div class="timeline-time">${new Date(task.createdAt).toLocaleDateString()}</div>
+                                <div class="timeline-time">Posted: ${createdDate}</div>
                             </div>
                         </div>
                         
@@ -1601,20 +1671,27 @@
                             <div class="timeline-dot"></div>
                             <div class="timeline-content">
                                 <div class="timeline-title">${task.category || 'Task'}</div>
-                                <div class="timeline-subtitle">${task.notes || 'No notes'}</div>
+                                <div class="timeline-subtitle">${task.notes || 'No additional notes'}</div>
+                                <div class="timeline-time">Budget: ${task.budget === 'open' ? 'Open to offers' : `R${task.budget}`}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Status</div>
+                                <div class="timeline-subtitle">${statusText}</div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="detail-actions">
-                        ${task.status === 'assigned' ? 
-                            `<button class="detail-action-btn primary" onclick="updateTaskStatus('${task.id}', 'in_progress')">I have arrived</button>` : 
-                        task.status === 'in_progress' ?
-                            `<button class="detail-action-btn primary" onclick="completeTask('${task.id}')">Mark as completed</button>` : ''}
-                        <button class="detail-action-btn secondary" onclick="setActivePage('tasks')">Back</button>
+                        ${actionButton}
+                        <button class="detail-action-btn secondary" onclick="setActivePage('tasks')">Back to tasks</button>
                     </div>
                 `;
 
+                // Initialize mini map
                 setTimeout(() => {
                     const mapContainer = document.getElementById('taskDetailMap');
                     if (mapContainer && task.location) {
@@ -1650,7 +1727,7 @@
                     completedAt: Date.now()
                 });
                 
-                showToast('Task completed!');
+                showToast('Task completed! Payment received.');
                 await loadEarnings();
                 await fetchTasks();
                 setActivePage('tasks');
