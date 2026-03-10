@@ -57,28 +57,6 @@
             width: 100%;
         }
 
-        /* Debug Panel - Hidden by default */
-        .debug-panel {
-            position: absolute;
-            top: 80px;
-            left: 16px;
-            right: 16px;
-            background: rgba(0,0,0,0.9);
-            color: #0f0;
-            padding: 12px;
-            border-radius: 5px;
-            z-index: 10000;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .debug-panel.visible {
-            display: none;
-        }
-
         /* === FULLSCREEN MAP === */
         #map {
             position: absolute;
@@ -130,46 +108,36 @@
             }
         }
         
-        /* Task marker (available tasks) */
-        .task-pin {
-            position: relative;
-            width: 12px;
-            height: 12px;
-            background: #000000;
-            border: 2px solid white;
+        /* Task marker - using same icon as nav menu */
+        .task-marker-icon {
+            width: 24px;
+            height: 24px;
+            background: white;
             border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
-            transform: translate(-50%, -50%);
-            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid #000;
             cursor: pointer;
-            animation: pulse-task 2s infinite ease-in-out;
+            transition: transform 0.2s;
         }
         
-        .task-pin::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            background: rgba(0, 122, 255, 0.15);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: -1;
-            animation: pulse-ring 2s infinite ease-in-out;
+        .task-marker-icon i {
+            font-size: 14px;
+            color: #000;
         }
         
-        @keyframes pulse-task {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
-            }
+        .task-marker-icon:hover {
+            transform: scale(1.1);
+        }
+        
+        .task-marker-icon.assigned {
+            border-color: #10b981;
+        }
+        
+        .task-marker-icon.assigned i {
+            color: #10b981;
         }
         
         @keyframes pulse-ring {
@@ -203,6 +171,7 @@
             z-index: 200;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             border: none;
+            animation: ringContinuous 2s infinite;
         }
 
         .notification-bell i {
@@ -211,13 +180,15 @@
         }
 
         .notification-bell.has-notifications {
-            animation: shake 0.5s ease-in-out;
+            animation: ringContinuous 0.5s infinite;
         }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-            20%, 40%, 60%, 80% { transform: translateX(2px); }
+        @keyframes ringContinuous {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            50% { transform: rotate(-10deg); }
+            75% { transform: rotate(5deg); }
+            100% { transform: rotate(0deg); }
         }
 
         .notification-badge {
@@ -321,15 +292,9 @@
             color: #000;
         }
 
-        .popup-distance {
-            font-size: 0.85rem;
-            color: #666;
-            margin-bottom: 12px;
-        }
-
-        .popup-poster {
+        .popup-message {
             font-size: 0.9rem;
-            color: #333;
+            color: #666;
             margin-bottom: 16px;
         }
 
@@ -354,12 +319,7 @@
             color: white;
         }
 
-        .popup-btn.schedule {
-            background: #f0f0f0;
-            color: #000;
-        }
-
-        .popup-btn.decline {
+        .popup-btn.dismiss {
             background: #f0f0f0;
             color: #666;
         }
@@ -369,7 +329,7 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* === TASK PREVIEW CARD - NEW === */
+        /* === TASK PREVIEW CARD === */
         .task-preview-card {
             position: fixed;
             bottom: 76px;
@@ -508,6 +468,8 @@
             color: #999;
             padding: 8px;
             font-size: 0.8rem;
+            width: 100%;
+            margin-top: 10px;
         }
 
         .preview-btn:hover {
@@ -561,14 +523,14 @@
             font-weight: 500;
         }
         
-        /* Notification dot on nav */
+        /* Notification dot on nav - FIXED POSITION */
         .nav-notification-dot {
             position: absolute;
-            top: 8px;
+            top: 5px;
             right: 50%;
             transform: translateX(15px);
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: #A6CBE3;
             border-radius: 50%;
             display: none;
@@ -839,6 +801,11 @@
             align-items: center;
             padding: 0.5rem 0;
             font-size: 0.9rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .earning-item:last-child {
+            border-bottom: none;
         }
         
         .earning-task {
@@ -1128,11 +1095,6 @@
     </style>
 </head>
 <body>
-    <!-- Debug Panel - Hidden -->
-    <div class="debug-panel" id="debugPanel">
-        <div id="debugContent">Waiting for Firebase auth...</div>
-    </div>
-
     <!-- MAP -->
     <div id="map"></div>
 
@@ -1157,17 +1119,14 @@
 
     <!-- Notification Popup -->
     <div class="notification-popup" id="notificationPopup">
-        <div class="popup-title" id="popupTitle">New Task Available</div>
-        <div class="popup-distance" id="popupDistance"></div>
-        <div class="popup-poster" id="popupPoster"></div>
-        <div class="popup-actions">
-            <button class="popup-btn accept" id="popupAccept">Accept</button>
-            <button class="popup-btn schedule" id="popupSchedule">Schedule</button>
-            <button class="popup-btn decline" id="popupDecline">Decline</button>
+        <div class="popup-title" id="popupTitle">Notification</div>
+        <div class="popup-message" id="popupMessage"></div>
+        <div class="popup-actions" id="popupActions">
+            <button class="popup-btn dismiss" id="popupDismiss">Dismiss</button>
         </div>
     </div>
 
-    <!-- TASK PREVIEW CARD - NEW -->
+    <!-- TASK PREVIEW CARD -->
     <div class="task-preview-card" id="taskPreviewCard">
         <div class="preview-header">
             <span class="preview-category" id="previewCategory">Loading...</span>
@@ -1265,7 +1224,7 @@
                     <span class="earnings-total-amount" id="totalEarnings">R0</span>
                 </div>
                 <div class="earnings-list" id="earningsList">
-                    <!-- Earnings will be populated here -->
+                    <!-- Earnings will be populated from Firebase -->
                 </div>
             </div>
             
@@ -1276,7 +1235,7 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <audio id="notificationSound" preload="auto">
+    <audio id="notificationSound" preload="auto" loop>
         <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-ding-101492.mp3" type="audio/mpeg">
     </audio>
 
@@ -1325,6 +1284,7 @@
             let walkingData = null;
             let currentNotificationTask = null;
             let notificationListener = null;
+            let activeNotifications = []; // Track active notifications for continuous ringing
 
             // DOM Elements
             const navMap = document.getElementById('navMap');
@@ -1344,11 +1304,9 @@
             const notificationBadge = document.getElementById('notificationBadge');
             const notificationPopup = document.getElementById('notificationPopup');
             const popupTitle = document.getElementById('popupTitle');
-            const popupDistance = document.getElementById('popupDistance');
-            const popupPoster = document.getElementById('popupPoster');
-            const popupAccept = document.getElementById('popupAccept');
-            const popupSchedule = document.getElementById('popupSchedule');
-            const popupDecline = document.getElementById('popupDecline');
+            const popupMessage = document.getElementById('popupMessage');
+            const popupActions = document.getElementById('popupActions');
+            const popupDismiss = document.getElementById('popupDismiss');
             const tasksCount = document.getElementById('tasksCount');
             const tasksListContainer = document.getElementById('tasksListContainer');
             const accountName = document.getElementById('accountName');
@@ -1427,6 +1385,9 @@
                         assignedAt: Date.now()
                     });
                     
+                    // Add notification for task accepted
+                    addNotification('Task Accepted', `You have accepted the task: ${task.category}`, 'success');
+                    
                     showToast('Task accepted! Head to the location.');
                     
                     // Hide preview
@@ -1457,6 +1418,177 @@
 
             previewCloseBtn.addEventListener('click', () => {
                 hideTaskPreview();
+            });
+
+            // ===== NOTIFICATION SYSTEM =====
+            function playNotificationSound() {
+                if (notificationSound) {
+                    notificationSound.currentTime = 0;
+                    notificationSound.play().catch(e => console.log('Sound play failed:', e));
+                }
+                
+                notificationBell.classList.add('has-notifications');
+            }
+
+            function stopNotificationSound() {
+                if (notificationSound) {
+                    notificationSound.pause();
+                    notificationSound.currentTime = 0;
+                }
+                notificationBell.classList.remove('has-notifications');
+            }
+
+            function addNotification(title, message, type = 'info') {
+                // Show popup
+                popupTitle.textContent = title;
+                popupMessage.textContent = message;
+                
+                // Clear previous actions and add dismiss button
+                popupActions.innerHTML = '<button class="popup-btn dismiss" id="popupDismiss">Dismiss</button>';
+                document.getElementById('popupDismiss').addEventListener('click', () => {
+                    notificationPopup.classList.remove('show');
+                });
+                
+                notificationPopup.classList.add('show');
+                
+                // Play sound
+                playNotificationSound();
+                
+                // Auto hide after 5 seconds
+                setTimeout(() => {
+                    notificationPopup.classList.remove('show');
+                }, 5000);
+            }
+
+            // ===== LOAD EARNINGS FROM FIREBASE =====
+            async function loadEarnings() {
+                if (!currentUser) return;
+                
+                try {
+                    // Get all completed tasks where this helper was assigned
+                    const tasksSnapshot = await database.ref('tasks').once('value');
+                    const allUsersTasks = tasksSnapshot.val() || {};
+                    
+                    earnings = [];
+                    totalEarnings = 0;
+                    
+                    for (let posterId in allUsersTasks) {
+                        const userTasks = allUsersTasks[posterId];
+                        if (userTasks) {
+                            for (let taskId in userTasks) {
+                                const task = userTasks[taskId];
+                                if (task.status === 'completed' && 
+                                    task.assignedHelperId === currentUser.uid &&
+                                    task.budget && 
+                                    task.budget !== 'open') {
+                                    
+                                    const amount = parseFloat(task.budget);
+                                    if (!isNaN(amount) && amount > 0) {
+                                        earnings.push({
+                                            taskName: task.category || 'Task',
+                                            amount: amount,
+                                            date: task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Recently'
+                                        });
+                                        totalEarnings += amount;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Sort by date (most recent first)
+                    earnings.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    updateEarningsDisplay();
+                    
+                } catch (error) {
+                    debugLog(`Error loading earnings: ${error.message}`);
+                }
+            }
+
+            function updateEarningsDisplay() {
+                totalEarningsSpan.textContent = `R${totalEarnings}`;
+                
+                let html = '';
+                if (earnings.length === 0) {
+                    html = '<div style="text-align: center; color: #999; padding: 1rem;">No earnings yet</div>';
+                } else {
+                    earnings.forEach(e => {
+                        html += `
+                            <div class="earning-item">
+                                <span class="earning-task">${e.taskName}</span>
+                                <span class="earning-amount">+R${e.amount}</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                earningsList.innerHTML = html;
+            }
+
+            // ===== SETUP NOTIFICATION LISTENER =====
+            function setupNotificationListener() {
+                if (!currentUser) return;
+                
+                if (notificationListener) {
+                    database.ref('notifications/' + currentUser.uid).off('child_added', notificationListener);
+                }
+                
+                notificationListener = database.ref('notifications/' + currentUser.uid)
+                    .orderByChild('createdAt')
+                    .limitToLast(1)
+                    .on('child_added', (snapshot) => {
+                        const notification = snapshot.val();
+                        notification.key = snapshot.key;
+                        
+                        // Add to active notifications
+                        activeNotifications.push(notification);
+                        
+                        // Show appropriate popup based on type
+                        if (notification.type === 'new_task') {
+                            addNotification('New Task Available', 
+                                `${notification.category} - ${notification.distance}km away`, 
+                                'info');
+                        } else if (notification.type === 'task_accepted') {
+                            addNotification('Task Accepted', 
+                                `Your task has been accepted by ${notification.helperName}`, 
+                                'success');
+                        } else if (notification.type === 'task_completed') {
+                            addNotification('Task Completed', 
+                                `Task completed! You earned R${notification.budget}`, 
+                                'success');
+                        } else if (notification.type === 'schedule_accepted') {
+                            addNotification('Schedule Accepted', 
+                                `Your scheduled task has been confirmed`, 
+                                'success');
+                        } else if (notification.type === 'schedule_rejected') {
+                            addNotification('Schedule Rejected', 
+                                `Your scheduled request was declined`, 'error');
+                        }
+                        
+                        // Update notification badge
+                        const currentCount = parseInt(notificationBadge.textContent || '0');
+                        notificationBadge.textContent = currentCount + 1;
+                        notificationBadge.style.display = 'flex';
+                        
+                        // Sound will keep playing until all notifications are cleared
+                        
+                        debugLog(`New notification: ${notification.type}`);
+                    });
+            }
+
+            // ===== CLEAR NOTIFICATIONS =====
+            function clearNotifications() {
+                activeNotifications = [];
+                notificationBadge.style.display = 'none';
+                stopNotificationSound();
+                notificationPopup.classList.remove('show');
+            }
+
+            // ===== NOTIFICATION BELL CLICK =====
+            notificationBell.addEventListener('click', () => {
+                clearNotifications();
+                showToast('Notifications cleared');
             });
 
             // ===== AUTH STATE OBSERVER =====
@@ -1508,8 +1640,8 @@
                     debugLog(`Helper logged in: ${currentUser.name}`);
                     debugLog(`User skills: ${JSON.stringify(userSkills)}`);
 
-                    // Load earnings
-                    loadEarnings();
+                    // Load earnings from Firebase
+                    await loadEarnings();
                     
                     // Initialize map
                     initMap();
@@ -1523,224 +1655,6 @@
                     window.location.href = '/login.html';
                 }
             });
-
-            // ===== LOAD EARNINGS =====
-            function loadEarnings() {
-                if (!currentUser) return;
-                
-                const saved = localStorage.getItem(`taskmart_earnings_${currentUser.uid}`);
-                if (saved) {
-                    try {
-                        earnings = JSON.parse(saved);
-                        totalEarnings = earnings.reduce((sum, e) => sum + e.amount, 0);
-                        updateEarningsDisplay();
-                    } catch (e) {
-                        debugLog(`Error loading earnings: ${e.message}`);
-                    }
-                }
-            }
-
-            function addEarning(taskName, amount) {
-                const numericAmount = parseFloat(amount) || 0;
-                if (numericAmount <= 0) return;
-                
-                earnings.push({
-                    taskName,
-                    amount: numericAmount,
-                    date: new Date().toLocaleDateString()
-                });
-                totalEarnings += numericAmount;
-                localStorage.setItem(`taskmart_earnings_${currentUser.uid}`, JSON.stringify(earnings));
-                updateEarningsDisplay();
-                showToast(`Earned R${numericAmount}!`);
-            }
-
-            function updateEarningsDisplay() {
-                totalEarningsSpan.textContent = `R${totalEarnings}`;
-                
-                let html = '';
-                if (earnings.length === 0) {
-                    html = '<div style="text-align: center; color: #999; padding: 1rem;">No earnings yet</div>';
-                } else {
-                    earnings.slice().reverse().forEach(e => {
-                        html += `
-                            <div class="earning-item">
-                                <span class="earning-task">${e.taskName}</span>
-                                <span class="earning-amount">+R${e.amount}</span>
-                            </div>
-                        `;
-                    });
-                }
-                
-                earningsList.innerHTML = html;
-            }
-
-            // ===== SETUP NOTIFICATION LISTENER =====
-            function setupNotificationListener() {
-                if (!currentUser) return;
-                
-                if (notificationListener) {
-                    database.ref('notifications/' + currentUser.uid).off('child_added', notificationListener);
-                }
-                
-                notificationListener = database.ref('notifications/' + currentUser.uid)
-                    .orderByChild('createdAt')
-                    .limitToLast(1)
-                    .on('child_added', (snapshot) => {
-                        const notification = snapshot.val();
-                        notification.key = snapshot.key;
-                        
-                        if (notification.type === 'new_task') {
-                            showNotificationPopup(notification);
-                        }
-                        
-                        playNotificationSound();
-                        
-                        // Update notification badge
-                        const currentCount = parseInt(notificationBadge.textContent || '0');
-                        notificationBadge.textContent = currentCount + 1;
-                        notificationBadge.style.display = 'flex';
-                        
-                        debugLog(`New notification: ${notification.type}`);
-                    });
-            }
-
-            // ===== SHOW NOTIFICATION POPUP =====
-            function showNotificationPopup(notification) {
-                currentNotificationTask = notification;
-                
-                popupTitle.textContent = `New Task: ${notification.category || 'Help needed'}`;
-                popupDistance.textContent = `${notification.distance || '?'}km away`;
-                popupPoster.textContent = `Posted by: ${notification.posterName || 'Someone'}`;
-                
-                notificationPopup.classList.add('show');
-                
-                setTimeout(() => {
-                    notificationPopup.classList.remove('show');
-                }, 30000);
-            }
-
-            // ===== HANDLE NOTIFICATION ACTIONS =====
-            popupAccept.addEventListener('click', async () => {
-                if (!currentNotificationTask || !currentUser) return;
-                
-                notificationPopup.classList.remove('show');
-                
-                try {
-                    const taskId = currentNotificationTask.taskId;
-                    const posterId = currentNotificationTask.posterId;
-                    
-                    await database.ref('tasks/' + posterId + '/' + taskId).update({
-                        status: 'assigned',
-                        assignedHelperId: currentUser.uid,
-                        assignedHelperName: currentUser.name,
-                        assignedAt: Date.now()
-                    });
-                    
-                    await database.ref('notifications/' + currentUser.uid + '/' + currentNotificationTask.key).remove();
-                    
-                    showToast('Task accepted! Head to the location.');
-                    
-                    // Update notification badge
-                    const currentCount = parseInt(notificationBadge.textContent || '0');
-                    if (currentCount > 0) {
-                        notificationBadge.textContent = currentCount - 1;
-                        if (notificationBadge.textContent === '0') {
-                            notificationBadge.style.display = 'none';
-                        }
-                    }
-                    
-                    fetchTasks();
-                    
-                } catch (error) {
-                    debugLog(`Error accepting task: ${error.message}`);
-                }
-            });
-
-            popupSchedule.addEventListener('click', async () => {
-                if (!currentNotificationTask || !currentUser) return;
-                
-                const hours = prompt('Schedule for how many hours from now? (1-48)', '2');
-                if (!hours) return;
-                
-                const scheduledTime = Date.now() + (parseInt(hours) * 60 * 60 * 1000);
-                
-                notificationPopup.classList.remove('show');
-                
-                try {
-                    const taskId = currentNotificationTask.taskId;
-                    const posterId = currentNotificationTask.posterId;
-                    
-                    await database.ref('scheduled_requests/' + posterId + '/' + taskId + '_' + currentUser.uid).set({
-                        taskId: taskId,
-                        helperUid: currentUser.uid,
-                        helperName: currentUser.name,
-                        scheduledTime: scheduledTime,
-                        status: 'pending',
-                        createdAt: Date.now()
-                    });
-                    
-                    await database.ref('notifications/' + currentUser.uid + '/' + currentNotificationTask.key).remove();
-                    
-                    showToast('Schedule request sent to poster');
-                    
-                    // Update notification badge
-                    const currentCount = parseInt(notificationBadge.textContent || '0');
-                    if (currentCount > 0) {
-                        notificationBadge.textContent = currentCount - 1;
-                        if (notificationBadge.textContent === '0') {
-                            notificationBadge.style.display = 'none';
-                        }
-                    }
-                    
-                } catch (error) {
-                    debugLog(`Error scheduling task: ${error.message}`);
-                }
-            });
-
-            popupDecline.addEventListener('click', async () => {
-                if (!currentNotificationTask || !currentUser) return;
-                
-                notificationPopup.classList.remove('show');
-                
-                try {
-                    await database.ref('notifications/' + currentUser.uid + '/' + currentNotificationTask.key).remove();
-                    
-                    showToast('Task declined');
-                    
-                    // Update notification badge
-                    const currentCount = parseInt(notificationBadge.textContent || '0');
-                    if (currentCount > 0) {
-                        notificationBadge.textContent = currentCount - 1;
-                        if (notificationBadge.textContent === '0') {
-                            notificationBadge.style.display = 'none';
-                        }
-                    }
-                    
-                } catch (error) {
-                    debugLog(`Error declining task: ${error.message}`);
-                }
-            });
-
-            // ===== NOTIFICATION BELL CLICK =====
-            notificationBell.addEventListener('click', () => {
-                // Clear all notifications (simplified)
-                notificationBadge.style.display = 'none';
-                showToast('Notifications cleared');
-            });
-
-            // ===== NOTIFICATION SYSTEM =====
-            function playNotificationSound() {
-                if (notificationSound) {
-                    notificationSound.currentTime = 0;
-                    notificationSound.play().catch(e => console.log('Sound play failed:', e));
-                }
-                
-                notificationBell.classList.add('has-notifications');
-                setTimeout(() => {
-                    notificationBell.classList.remove('has-notifications');
-                }, 500);
-            }
 
             function showToast(message) {
                 toast.textContent = message;
@@ -1759,11 +1673,13 @@
 
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
+                // Start with Johannesburg/Africa view
                 map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                    center: [28.034088, -26.195246],
-                    zoom: 13
+                    center: [28.034088, -26.195246], // Johannesburg
+                    zoom: 12,
+                    minZoom: 2 // Prevent zooming out too far
                 });
 
                 map.on('load', () => {
@@ -1830,13 +1746,27 @@
                         },
                         { enableHighAccuracy: true, timeout: 10000 }
                     );
+                } else {
+                    // If geolocation not supported, stay on Johannesburg
+                    fetchTasks();
                 }
             }
 
-            // ===== CREATE TASK MARKER =====
+            // ===== CREATE TASK MARKER - USING NAV ICON =====
             function createTaskMarker(task) {
                 const el = document.createElement('div');
-                el.className = 'task-pin';
+                el.className = 'task-marker-icon';
+                
+                // Use the same icon as nav menu based on task status
+                const icon = document.createElement('i');
+                if (task.status === 'assigned' || task.status === 'in_progress') {
+                    icon.className = 'fi fi-rr-check';
+                    el.classList.add('assigned');
+                } else {
+                    icon.className = 'fi fi-rr-clipboard';
+                }
+                
+                el.appendChild(icon);
                 el.dataset.taskId = task.id;
                 
                 const marker = new mapboxgl.Marker({ element: el })
@@ -1897,7 +1827,7 @@
                     // Update tasks count
                     tasksCount.textContent = (inProgressTasks.length + completedTasks.length).toString();
 
-                    // Update map markers (only show available tasks)
+                    // Update map markers (show all tasks on map with appropriate icons)
                     updateMapMarkers();
 
                     // Show notification dot if there are new available tasks
@@ -1923,8 +1853,11 @@
                 taskMarkers.forEach(marker => marker.remove());
                 taskMarkers = [];
 
-                // Add markers for available tasks
-                availableTasks.forEach(task => {
+                // Add markers for all tasks (available, in-progress, completed)
+                // but only if they have location data
+                const allRelevantTasks = [...availableTasks, ...inProgressTasks, ...completedTasks];
+                
+                allRelevantTasks.forEach(task => {
                     if (task.location && task.location.lat && task.location.lng) {
                         const marker = createTaskMarker(task);
                         taskMarkers.push(marker);
@@ -1932,16 +1865,20 @@
                 });
             }
 
-            // ===== SELECT TASK (UPDATED) =====
+            // ===== SELECT TASK =====
             async function selectTask(taskId) {
-                const task = availableTasks.find(t => t.id === taskId);
+                const task = availableTasks.find(t => t.id === taskId) || 
+                            inProgressTasks.find(t => t.id === taskId) ||
+                            completedTasks.find(t => t.id === taskId);
                 if (!task) return;
 
                 // Hide any existing preview
                 hideTaskPreview();
                 
-                // Show task preview
-                showTaskPreview(task);
+                // Show task preview for available tasks only
+                if (task.status === 'open') {
+                    showTaskPreview(task);
+                }
                 
                 // Calculate and show route
                 await calculateRoute(task);
@@ -2246,7 +2183,10 @@
                         });
                         
                         const pinElement = document.createElement('div');
-                        pinElement.className = 'task-pin';
+                        pinElement.className = 'task-marker-icon';
+                        const icon = document.createElement('i');
+                        icon.className = 'fi fi-rr-marker';
+                        pinElement.appendChild(icon);
                         
                         new mapboxgl.Marker({ element: pinElement })
                             .setLngLat([task.location.lng, task.location.lat])
@@ -2288,15 +2228,13 @@
                         completedAt: Date.now()
                     });
                     
-                    // Add earnings
-                    if (task.budget && task.budget !== 'open') {
-                        const amount = parseFloat(task.budget);
-                        if (!isNaN(amount) && amount > 0) {
-                            addEarning(task.category || 'Task', amount);
-                        }
-                    }
+                    // Add notification for task completion
+                    addNotification('Task Completed', `You earned R${task.budget} for ${task.category}`, 'success');
                     
                     showToast('Task completed! Payment received.');
+                    
+                    // Reload earnings from Firebase
+                    await loadEarnings();
                     await fetchTasks();
                     setActivePage('tasks');
                     
