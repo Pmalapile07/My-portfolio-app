@@ -416,17 +416,19 @@
             font-weight: 500;
         }
         
-        /* Notification dot on nav */
+        /* Notification dot on nav - FIXED POSITION */
         .nav-notification-dot {
             position: absolute;
-            top: 2px;
-            right: 25px;
+            top: 8px;
+            right: 50%;
+            transform: translateX(15px);
             width: 8px;
             height: 8px;
             background: #A6CBE3;
             border-radius: 50%;
             display: none;
             border: 2px solid white;
+            z-index: 3;
         }
         
         .nav-notification-dot.visible {
@@ -603,6 +605,11 @@
         .task-status-badge.assigned {
             background: #e3f2fd;
             color: #1976d2;
+        }
+        
+        .task-status-badge.in-progress {
+            background: #fff3e0;
+            color: #e67e22;
         }
         
         .task-status-badge.completed {
@@ -1015,7 +1022,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION BAR (same as task planner) -->
+    <!-- BOTTOM NAVIGATION BAR -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-item" id="navMap" data-page="map">
             <i class="fi fi-rr-map"></i>
@@ -1129,10 +1136,8 @@
             let taskMarkers = [];
             let startMarker = null;
             let map = null;
-            let isOnline = true;
             let selectedTaskId = null;
             let userSkills = [];
-            let notifications = [];
             let earnings = [];
             let totalEarnings = 0;
             let notificationSound = document.getElementById('notificationSound');
@@ -1144,7 +1149,6 @@
             let notificationListener = null;
 
             // DOM Elements
-            const bottomNav = document.getElementById('bottomNav');
             const navMap = document.getElementById('navMap');
             const navTasks = document.getElementById('navTasks');
             const navAccount = document.getElementById('navAccount');
@@ -1178,6 +1182,8 @@
             const tasksNotificationDot = document.getElementById('tasksNotificationDot');
             const taskDetailBackBtn = document.getElementById('taskDetailBackBtn');
             const taskDetailContent = document.getElementById('taskDetailContent');
+            const taskCategories = document.getElementById('taskCategories');
+            const categoryTabs = document.querySelectorAll('.category-tab');
 
             // Current page state
             let currentCategory = 'current';
@@ -1185,7 +1191,7 @@
             // ===== AUTH STATE OBSERVER =====
             auth.onAuthStateChanged(async (user) => {
                 if (!user) {
-                    debugLog('No user logged in, redirecting to login', 'error');
+                    debugLog('No user logged in, redirecting to login');
                     window.location.href = '/login.html';
                     return;
                 }
@@ -1198,7 +1204,7 @@
                     const userData = snapshot.val();
 
                     if (!userData) {
-                        debugLog('User data not found in database', 'error');
+                        debugLog('User data not found in database');
                         await auth.signOut();
                         window.location.href = '/login.html';
                         return;
@@ -1206,7 +1212,7 @@
 
                     // Verify this is a helper account
                     if (userData.role !== 'helper') {
-                        debugLog('Not a helper account', 'error');
+                        debugLog('Not a helper account');
                         await auth.signOut();
                         window.location.href = '/login.html';
                         return;
@@ -1226,10 +1232,10 @@
                     // Update account page
                     accountName.textContent = currentUser.name;
                     accountEmail.textContent = currentUser.email;
-                    accountSkills.textContent = userSkills.join(', ') || 'No skills listed';
+                    accountSkills.textContent = Array.isArray(userSkills) ? userSkills.join(', ') : 'No skills listed';
 
-                    debugLog(`Helper logged in: ${currentUser.name}`, 'success');
-                    debugLog(`User skills: ${JSON.stringify(userSkills)}`, 'info');
+                    debugLog(`Helper logged in: ${currentUser.name}`);
+                    debugLog(`User skills: ${JSON.stringify(userSkills)}`);
 
                     // Load earnings
                     loadEarnings();
@@ -1241,7 +1247,7 @@
                     setupNotificationListener();
 
                 } catch (error) {
-                    debugLog(`Error loading user data: ${error.message}`, 'error');
+                    debugLog(`Error loading user data: ${error.message}`);
                     await auth.signOut();
                     window.location.href = '/login.html';
                 }
@@ -1249,44 +1255,50 @@
 
             // ===== LOAD EARNINGS =====
             function loadEarnings() {
-                const saved = localStorage.getItem('taskmart_earnings_' + currentUser?.uid);
+                if (!currentUser) return;
+                
+                const saved = localStorage.getItem(`taskmart_earnings_${currentUser.uid}`);
                 if (saved) {
                     try {
                         earnings = JSON.parse(saved);
                         totalEarnings = earnings.reduce((sum, e) => sum + e.amount, 0);
                         updateEarningsDisplay();
                     } catch (e) {
-                        debugLog(`Error loading earnings: ${e.message}`, 'error');
+                        debugLog(`Error loading earnings: ${e.message}`);
                     }
                 }
             }
 
             function addEarning(taskName, amount) {
+                const numericAmount = parseFloat(amount) || 0;
+                if (numericAmount <= 0) return;
+                
                 earnings.push({
                     taskName,
-                    amount,
+                    amount: numericAmount,
                     date: new Date().toLocaleDateString()
                 });
-                totalEarnings += amount;
-                localStorage.setItem('taskmart_earnings_' + currentUser?.uid, JSON.stringify(earnings));
+                totalEarnings += numericAmount;
+                localStorage.setItem(`taskmart_earnings_${currentUser.uid}`, JSON.stringify(earnings));
                 updateEarningsDisplay();
+                showToast(`Earned R${numericAmount}!`);
             }
 
             function updateEarningsDisplay() {
                 totalEarningsSpan.textContent = `R${totalEarnings}`;
                 
                 let html = '';
-                earnings.slice(-5).reverse().forEach(e => {
-                    html += `
-                        <div class="earning-item">
-                            <span class="earning-task">${e.taskName}</span>
-                            <span class="earning-amount">+R${e.amount}</span>
-                        </div>
-                    `;
-                });
-                
                 if (earnings.length === 0) {
                     html = '<div style="text-align: center; color: #999; padding: 1rem;">No earnings yet</div>';
+                } else {
+                    earnings.slice().reverse().forEach(e => {
+                        html += `
+                            <div class="earning-item">
+                                <span class="earning-task">${e.taskName}</span>
+                                <span class="earning-amount">+R${e.amount}</span>
+                            </div>
+                        `;
+                    });
                 }
                 
                 earningsList.innerHTML = html;
@@ -1305,6 +1317,7 @@
                     .limitToLast(1)
                     .on('child_added', (snapshot) => {
                         const notification = snapshot.val();
+                        notification.key = snapshot.key;
                         
                         if (notification.type === 'new_task') {
                             showNotificationPopup(notification);
@@ -1313,11 +1326,11 @@
                         playNotificationSound();
                         
                         // Update notification badge
-                        const unreadCount = parseInt(notificationBadge.textContent || '0') + 1;
-                        notificationBadge.textContent = unreadCount;
+                        const currentCount = parseInt(notificationBadge.textContent || '0');
+                        notificationBadge.textContent = currentCount + 1;
                         notificationBadge.style.display = 'flex';
                         
-                        debugLog(`📢 New notification: ${notification.type}`, 'info');
+                        debugLog(`New notification: ${notification.type}`);
                     });
             }
 
@@ -1325,9 +1338,9 @@
             function showNotificationPopup(notification) {
                 currentNotificationTask = notification;
                 
-                popupTitle.textContent = `New Task: ${notification.category}`;
-                popupDistance.textContent = `${notification.distance}km away`;
-                popupPoster.textContent = `Posted by: ${notification.posterName}`;
+                popupTitle.textContent = `New Task: ${notification.category || 'Help needed'}`;
+                popupDistance.textContent = `${notification.distance || '?'}km away`;
+                popupPoster.textContent = `Posted by: ${notification.posterName || 'Someone'}`;
                 
                 notificationPopup.classList.add('show');
                 
@@ -1369,7 +1382,7 @@
                     fetchTasks();
                     
                 } catch (error) {
-                    debugLog(`Error accepting task: ${error.message}`, 'error');
+                    debugLog(`Error accepting task: ${error.message}`);
                 }
             });
 
@@ -1410,7 +1423,7 @@
                     }
                     
                 } catch (error) {
-                    debugLog(`Error scheduling task: ${error.message}`, 'error');
+                    debugLog(`Error scheduling task: ${error.message}`);
                 }
             });
 
@@ -1434,8 +1447,15 @@
                     }
                     
                 } catch (error) {
-                    debugLog(`Error declining task: ${error.message}`, 'error');
+                    debugLog(`Error declining task: ${error.message}`);
                 }
+            });
+
+            // ===== NOTIFICATION BELL CLICK =====
+            notificationBell.addEventListener('click', () => {
+                // Clear all notifications (simplified)
+                notificationBadge.style.display = 'none';
+                showToast('Notifications cleared');
             });
 
             // ===== NOTIFICATION SYSTEM =====
@@ -1462,7 +1482,7 @@
             // ===== MAP INIT =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) {
-                    debugLog('No Mapbox token', 'error');
+                    debugLog('No Mapbox token');
                     return;
                 }
 
@@ -1476,7 +1496,7 @@
                 });
 
                 map.on('load', () => {
-                    debugLog('Map loaded successfully', 'success');
+                    debugLog('Map loaded successfully');
                     
                     map.addSource('route', {
                         type: 'geojson',
@@ -1506,6 +1526,10 @@
 
                     getUserLocation();
                 });
+
+                map.on('error', (e) => {
+                    debugLog(`Map error: ${e.error}`);
+                });
             }
 
             // ===== GET LOCATION =====
@@ -1530,7 +1554,7 @@
                             fetchTasks();
                         },
                         (error) => {
-                            debugLog(`Location error: ${error.message}`, 'error');
+                            debugLog(`Location error: ${error.message}`);
                             fetchTasks();
                         },
                         { enableHighAccuracy: true, timeout: 10000 }
@@ -1539,7 +1563,7 @@
             }
 
             // ===== CREATE TASK MARKER =====
-            function createTaskMarker(task, isSelected = false) {
+            function createTaskMarker(task) {
                 const el = document.createElement('div');
                 el.className = 'task-pin';
                 el.dataset.taskId = task.id;
@@ -1604,15 +1628,20 @@
                     // Update map markers (only show available tasks)
                     updateMapMarkers();
 
-                    // Show notification dot if there are new tasks
+                    // Show notification dot if there are new available tasks
                     if (availableTasks.length > 0) {
                         tasksNotificationDot.classList.add('visible');
                     } else {
                         tasksNotificationDot.classList.remove('visible');
                     }
+                    
+                    // Render tasks page if active
+                    if (tasksPage.classList.contains('active')) {
+                        renderTasksPage();
+                    }
 
                 } catch (error) {
-                    debugLog(`Error fetching tasks: ${error.message}`, 'error');
+                    debugLog(`Error fetching tasks: ${error.message}`);
                 }
             }
 
@@ -1711,7 +1740,7 @@
                         map.fitBounds(bounds, { padding: 50 });
                     }
                 } catch (error) {
-                    debugLog(`Route error: ${error.message}`, 'error');
+                    debugLog(`Route error: ${error.message}`);
                 }
             }
 
@@ -1743,7 +1772,7 @@
                     accountPage.classList.remove('active');
                     taskDetailPage.classList.remove('active');
                     mapEl.style.display = 'block';
-                    floatingDistanceCard.style.display = 'flex';
+                    floatingDistanceCard.classList.remove('visible');
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
                     tasksPage.classList.add('active');
@@ -1771,70 +1800,79 @@
                 setActivePage('tasks');
             });
 
+            // ===== CATEGORY TAB SWITCHING =====
+            categoryTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    categoryTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCategory = this.dataset.category;
+                    renderTasksPage();
+                });
+            });
+
             // ===== RENDER TASKS PAGE =====
             function renderTasksPage() {
                 let html = '';
 
-                // Current tasks section
-                if (inProgressTasks.length > 0) {
-                    html += '<div class="task-month-group">';
-                    html += '<div class="month-header">Current</div>';
-                    
-                    inProgressTasks.forEach(task => {
-                        const date = task.createdAt ? new Date(task.createdAt) : new Date();
-                        const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                        
-                        html += `
-                            <div class="task-card" data-task-id="${task.id}" onclick="showTaskDetail('${task.id}')">
-                                <div class="task-card-main">
-                                    <div class="task-icon">
-                                        <i class="fi fi-rr-clipboard"></i>
-                                    </div>
-                                    <div class="task-content">
-                                        <div class="task-date-time">${formattedDate}</div>
-                                        <div class="task-title">${task.category || 'Task'}</div>
-                                        <div class="task-amount">${task.budget === 'open' ? 'Open to offers' : `R${task.budget}`}</div>
-                                        <span class="task-status-badge assigned">In Progress</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    html += '</div>';
-                }
-
-                // Past tasks section
-                if (completedTasks.length > 0) {
-                    html += '<div class="task-month-group">';
-                    html += '<div class="month-header">Completed</div>';
-                    
-                    completedTasks.forEach(task => {
-                        const date = task.completedAt ? new Date(task.completedAt) : new Date();
-                        const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-                        
-                        html += `
-                            <div class="task-card" data-task-id="${task.id}" onclick="showTaskDetail('${task.id}')">
-                                <div class="task-card-main">
-                                    <div class="task-icon">
-                                        <i class="fi fi-rr-check"></i>
-                                    </div>
-                                    <div class="task-content">
-                                        <div class="task-date-time">${formattedDate}</div>
-                                        <div class="task-title">${task.category || 'Task'}</div>
-                                        <div class="task-amount">+R${task.budget}</div>
-                                        <span class="task-status-badge completed">Completed</span>
+                if (currentCategory === 'current') {
+                    // Current tasks (in progress)
+                    if (inProgressTasks.length > 0) {
+                        inProgressTasks.forEach(task => {
+                            const date = task.createdAt ? new Date(task.createdAt) : new Date();
+                            const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                            
+                            let statusClass = 'assigned';
+                            let statusText = 'In Progress';
+                            if (task.status === 'in_progress') {
+                                statusClass = 'in-progress';
+                                statusText = 'Working';
+                            }
+                            
+                            html += `
+                                <div class="task-card" onclick="showTaskDetail('${task.id}')">
+                                    <div class="task-card-main">
+                                        <div class="task-icon">
+                                            <i class="fi fi-rr-clipboard"></i>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-date-time">${formattedDate}</div>
+                                            <div class="task-title">${task.category || 'Task'}</div>
+                                            <div class="task-amount">${task.budget === 'open' ? 'Open to offers' : `R${task.budget}`}</div>
+                                            <span class="task-status-badge ${statusClass}">${statusText}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
-                    });
-                    
-                    html += '</div>';
-                }
-
-                if (inProgressTasks.length === 0 && completedTasks.length === 0) {
-                    html = '<div class="empty-state"><h3>No tasks yet</h3><p>Tasks you accept will appear here</p></div>';
+                            `;
+                        });
+                    } else {
+                        html += '<div class="empty-state"><h3>No current tasks</h3><p>Tasks you accept will appear here</p></div>';
+                    }
+                } else {
+                    // Past tasks (completed)
+                    if (completedTasks.length > 0) {
+                        completedTasks.forEach(task => {
+                            const date = task.completedAt ? new Date(task.completedAt) : new Date();
+                            const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+                            
+                            html += `
+                                <div class="task-card" onclick="showTaskDetail('${task.id}')">
+                                    <div class="task-card-main">
+                                        <div class="task-icon">
+                                            <i class="fi fi-rr-check"></i>
+                                        </div>
+                                        <div class="task-content">
+                                            <div class="task-date-time">${formattedDate}</div>
+                                            <div class="task-title">${task.category || 'Task'}</div>
+                                            <div class="task-amount">+R${task.budget}</div>
+                                            <span class="task-status-badge completed">Completed</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<div class="empty-state"><h3>No past tasks</h3><p>Completed tasks will appear here</p></div>';
+                    }
                 }
 
                 tasksListContainer.innerHTML = html;
@@ -1851,23 +1889,24 @@
                 const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
                 
                 let statusText = '';
-                if (task.status === 'assigned') statusText = 'Heading to location';
-                else if (task.status === 'in_progress') statusText = 'Working on task';
-                else if (task.status === 'completed') statusText = 'Task completed';
-                
                 let actionButton = '';
+                
                 if (task.status === 'assigned') {
+                    statusText = 'Heading to location';
                     actionButton = `
                         <button class="detail-action-btn primary" onclick="updateTaskStatus('${task.id}', 'in_progress')">
                             I have arrived
                         </button>
                     `;
                 } else if (task.status === 'in_progress') {
+                    statusText = 'Working on task';
                     actionButton = `
                         <button class="detail-action-btn primary" onclick="completeTask('${task.id}')">
                             Mark as completed
                         </button>
                     `;
+                } else if (task.status === 'completed') {
+                    statusText = 'Task completed';
                 }
 
                 taskDetailContent.innerHTML = `
@@ -1952,11 +1991,11 @@
                     });
                     
                     showToast('Status updated');
-                    fetchTasks();
+                    await fetchTasks();
                     setActivePage('tasks');
                     
                 } catch (error) {
-                    debugLog(`Error updating task: ${error.message}`, 'error');
+                    debugLog(`Error updating task: ${error.message}`);
                 }
             };
 
@@ -1971,17 +2010,20 @@
                         completedAt: Date.now()
                     });
                     
-                    // Add earnings
+                    // Add earnings - FIXED: Parse budget correctly
                     if (task.budget && task.budget !== 'open') {
-                        addEarning(task.category || 'Task', task.budget);
+                        const amount = parseFloat(task.budget);
+                        if (!isNaN(amount) && amount > 0) {
+                            addEarning(task.category || 'Task', amount);
+                        }
                     }
                     
                     showToast('Task completed! Payment received.');
-                    fetchTasks();
+                    await fetchTasks();
                     setActivePage('tasks');
                     
                 } catch (error) {
-                    debugLog(`Error completing task: ${error.message}`, 'error');
+                    debugLog(`Error completing task: ${error.message}`);
                 }
             };
 
