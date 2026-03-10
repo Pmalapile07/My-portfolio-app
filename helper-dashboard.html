@@ -1101,6 +1101,9 @@
     <!-- Notification Sound - New rotary phone ring -->
     <audio id="notificationSound" preload="auto" loop>
         <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
+        <!-- Fallback in case the file has a different name -->
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869.mp3" type="audio/mpeg">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -1133,7 +1136,6 @@
             let selectedTask = null;
             let notificationSound = document.getElementById('notificationSound');
             let isShaking = false;
-            let locationResolve = null;
             let mapReady = false;
 
             // DOM Elements
@@ -1182,16 +1184,23 @@
             // ===== STOP SHAKING AND SOUND =====
             function stopShakingAndSound() {
                 taskPreviewCard.classList.remove('shaking');
-                notificationSound.pause();
-                notificationSound.currentTime = 0;
+                if (notificationSound) {
+                    notificationSound.pause();
+                    notificationSound.currentTime = 0;
+                }
                 isShaking = false;
             }
 
             // ===== START GENTLE SHAKING AND SOUND =====
             function startShakingAndSound() {
                 taskPreviewCard.classList.add('shaking');
-                notificationSound.currentTime = 0;
-                notificationSound.play().catch(e => console.log('Sound error:', e));
+                if (notificationSound) {
+                    // Try to play and handle any errors silently
+                    notificationSound.play().catch(e => {
+                        console.log('Sound play failed (user interaction may be needed):', e);
+                        // Some browsers require user interaction first
+                    });
+                }
                 isShaking = true;
             }
 
@@ -1238,26 +1247,40 @@
                 if (!task || !currentUser) return;
 
                 try {
+                    console.log('Accepting task:', task.id, 'for user:', currentUser.uid);
+                    
+                    // Update the task in Firebase
                     await database.ref('tasks/' + task.posterId + '/' + task.id).update({
                         status: 'assigned',
                         assignedHelperId: currentUser.uid,
                         assignedHelperName: currentUser.name,
-                        assignedAt: Date.now()
+                        assignedAt: firebase.database.ServerValue.TIMESTAMP
                     });
                     
+                    console.log('Task accepted successfully');
                     showToast('Task accepted! Head to the location.');
+                    
+                    // Stop shaking and sound
                     stopShakingAndSound();
+                    
+                    // Hide preview
                     hideTaskPreview();
+                    
+                    // Refresh tasks
                     await fetchTasks();
                     
                 } catch (error) {
                     console.error('Error accepting task:', error);
-                    showToast('Error accepting task');
+                    showToast('Error accepting task: ' + error.message);
                 }
             }
 
             previewAcceptBtn.addEventListener('click', () => {
-                if (selectedTask) acceptTask(selectedTask);
+                if (selectedTask) {
+                    acceptTask(selectedTask);
+                } else {
+                    showToast('No task selected');
+                }
             });
 
             previewDetailsBtn.addEventListener('click', () => {
@@ -1295,7 +1318,7 @@
 
                     accountName.textContent = currentUser.name;
                     accountEmail.textContent = currentUser.email;
-                    accountSkills.textContent = currentUser.skills.join(', ') || 'No skills';
+                    accountSkills.textContent = Array.isArray(currentUser.skills) ? currentUser.skills.join(', ') : 'No skills';
 
                     loadEarnings();
                     
@@ -1312,7 +1335,9 @@
 
             // ===== SETUP REAL-TIME TASK LISTENER =====
             function setupTaskListener() {
+                // Listen for new tasks
                 database.ref('tasks').on('child_added', (posterSnapshot) => {
+                    // Listen for tasks under each poster
                     posterSnapshot.ref.on('child_added', (taskSnapshot) => {
                         const task = {
                             id: taskSnapshot.key,
@@ -1503,18 +1528,23 @@
                     
                     for (let posterId in allUsersTasks) {
                         for (let taskId in allUsersTasks[posterId]) {
-                            allTasks.push({
-                                id: taskId,
-                                posterId: posterId,
-                                ...allUsersTasks[posterId][taskId]
-                            });
+                            const taskData = allUsersTasks[posterId][taskId];
+                            if (taskData) {
+                                allTasks.push({
+                                    id: taskId,
+                                    posterId: posterId,
+                                    ...taskData
+                                });
+                            }
                         }
                     }
 
                     if (!currentUser) return;
 
                     availableTasks = allTasks.filter(t => 
-                        t.status === 'open' && t.taskState === 'current' && t.posterId !== currentUser.uid
+                        t.status === 'open' && 
+                        t.taskState === 'current' && 
+                        t.posterId !== currentUser.uid
                     );
                     
                     inProgressTasks = allTasks.filter(t => 
@@ -1523,7 +1553,8 @@
                     );
                     
                     completedTasks = allTasks.filter(t => 
-                        t.status === 'completed' && t.assignedHelperId === currentUser.uid
+                        t.status === 'completed' && 
+                        t.assignedHelperId === currentUser.uid
                     );
 
                     tasksCount.textContent = (inProgressTasks.length + completedTasks.length).toString();
@@ -1533,7 +1564,7 @@
                     taskMarkers = [];
                     
                     [...availableTasks, ...inProgressTasks].forEach(task => {
-                        if (task.location) {
+                        if (task.location && task.location.lat && task.location.lng) {
                             const marker = createTaskMarker(task);
                             if (marker) taskMarkers.push(marker);
                         }
@@ -1550,7 +1581,7 @@
 
             // ===== CALCULATE ROUTE =====
             async function calculateRoute(task) {
-                if (!task.location || !currentLat || !currentLng) return;
+                if (!task.location || !task.location.lat || !task.location.lng || !currentLat || !currentLng) return;
 
                 try {
                     const res = await fetch(
@@ -1570,7 +1601,7 @@
                         routeDuration.textContent = duration;
                         floatingDistanceCard.classList.add('visible');
 
-                        if (map.getSource('route')) {
+                        if (map && map.getSource('route')) {
                             map.getSource('route').setData({
                                 type: 'Feature',
                                 geometry: route.geometry
@@ -1630,7 +1661,7 @@
                 if (currentCategory === 'current') {
                     if (inProgressTasks.length > 0) {
                         inProgressTasks.forEach(task => {
-                            const date = new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                            const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown date';
                             html += `
                                 <div class="task-card" onclick="showTaskDetail('${task.id}')">
                                     <div class="task-card-main">
@@ -1652,7 +1683,7 @@
                 } else {
                     if (completedTasks.length > 0) {
                         completedTasks.forEach(task => {
-                            const date = new Date(task.completedAt || task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                            const date = task.completedAt ? new Date(task.completedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown date';
                             html += `
                                 <div class="task-card" onclick="showTaskDetail('${task.id}')">
                                     <div class="task-card-main">
@@ -1681,7 +1712,7 @@
                 const task = [...inProgressTasks, ...completedTasks].find(t => t.id === taskId);
                 if (!task) return;
 
-                const createdDate = new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                const createdDate = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown';
                 const completedDate = task.completedAt ? new Date(task.completedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
                 const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
                 
@@ -1758,14 +1789,18 @@
                 // Initialize mini map
                 setTimeout(() => {
                     const mapContainer = document.getElementById('taskDetailMap');
-                    if (mapContainer && task.location) {
-                        new mapboxgl.Map({
-                            container: 'taskDetailMap',
-                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [task.location.lng, task.location.lat],
-                            zoom: 14,
-                            interactive: false
-                        });
+                    if (mapContainer && task.location && task.location.lat && task.location.lng) {
+                        try {
+                            new mapboxgl.Map({
+                                container: 'taskDetailMap',
+                                style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
+                                center: [task.location.lng, task.location.lat],
+                                zoom: 14,
+                                interactive: false
+                            });
+                        } catch (e) {
+                            console.log('Mini map error:', e);
+                        }
                     }
                 }, 100);
 
@@ -1776,25 +1811,38 @@
                 const task = inProgressTasks.find(t => t.id === taskId);
                 if (!task) return;
 
-                await database.ref('tasks/' + task.posterId + '/' + taskId).update({ status: newStatus });
-                showToast('Status updated');
-                await fetchTasks();
-                setActivePage('tasks');
+                try {
+                    await database.ref('tasks/' + task.posterId + '/' + taskId).update({ 
+                        status: newStatus,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    showToast('Status updated');
+                    await fetchTasks();
+                    setActivePage('tasks');
+                } catch (error) {
+                    console.error('Error updating task:', error);
+                    showToast('Error updating status');
+                }
             };
 
             window.completeTask = async function(taskId) {
                 const task = inProgressTasks.find(t => t.id === taskId);
                 if (!task) return;
 
-                await database.ref('tasks/' + task.posterId + '/' + taskId).update({
-                    status: 'completed',
-                    completedAt: Date.now()
-                });
-                
-                showToast('Task completed! Payment received.');
-                await loadEarnings();
-                await fetchTasks();
-                setActivePage('tasks');
+                try {
+                    await database.ref('tasks/' + task.posterId + '/' + taskId).update({
+                        status: 'completed',
+                        completedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    showToast('Task completed! Payment received.');
+                    await loadEarnings();
+                    await fetchTasks();
+                    setActivePage('tasks');
+                } catch (error) {
+                    console.error('Error completing task:', error);
+                    showToast('Error completing task');
+                }
             };
 
             document.getElementById('accountLogoutBtn').addEventListener('click', () => {
