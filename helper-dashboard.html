@@ -59,6 +59,70 @@
             line-height: 1 !important;
         }
 
+        /* Debug Console */
+        .debug-console {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            right: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.95);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100000;
+            border: 2px solid #00ff00;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .debug-console.visible {
+            display: block;
+        }
+
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .debug-title {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .debug-close {
+            color: #fff;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+
+        .debug-log {
+            color: #0f0;
+            margin: 2px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .debug-error {
+            color: #ff6b6b;
+        }
+
+        .debug-success {
+            color: #69db7e;
+        }
+
+        .debug-warning {
+            color: #ffd93d;
+        }
+
         /* === FULLSCREEN MAP - TASK PLANNER STYLE === */
         #map {
             position: absolute;
@@ -1205,9 +1269,36 @@
             left: 0;
             z-index: 10000;
         }
+
+        /* Debug button */
+        .debug-btn {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 100001;
+            background: #000;
+            color: white;
+            border: 2px solid #0f0;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Manrope', sans-serif;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
+    <!-- Debug Console -->
+    <div class="debug-console" id="debugConsole">
+        <div class="debug-header">
+            <span class="debug-title">🔍 DEBUG CONSOLE</span>
+            <span class="debug-close" onclick="document.getElementById('debugConsole').classList.remove('visible')">✕</span>
+        </div>
+        <div id="debugLogs"></div>
+    </div>
+
+    <button class="debug-btn" onclick="document.getElementById('debugConsole').classList.add('visible')">Show Debug</button>
+
     <div id="map"></div>
 
     <!-- Navigation Menu - Left Side -->
@@ -1302,6 +1393,29 @@
             const auth = firebase.auth();
             const database = firebase.database();
 
+            // Debug console functions
+            const debugConsole = document.getElementById('debugConsole');
+            const debugLogs = document.getElementById('debugLogs');
+            
+            function addDebugLog(message, type = 'info') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `debug-log ${type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : type === 'warning' ? 'debug-warning' : ''}`;
+                logEntry.textContent = `> ${message}`;
+                debugLogs.appendChild(logEntry);
+                debugLogs.scrollTop = debugLogs.scrollHeight;
+                
+                // Also log to browser console
+                console.log(`[DEBUG] ${message}`);
+            }
+            
+            function clearDebugLogs() {
+                debugLogs.innerHTML = '';
+            }
+
+            function showDebugConsole() {
+                debugConsole.classList.add('visible');
+            }
+
             let currentUser = null;
             let currentLat = null;
             let currentLng = null;
@@ -1348,18 +1462,20 @@
             // ===== AUTH STATE OBSERVER =====
             auth.onAuthStateChanged(async (user) => {
                 if (!user) {
-                    console.log('No user logged in, redirecting to login');
+                    addDebugLog('❌ No user logged in, redirecting to login', 'error');
                     window.location.href = '/login.html';
                     return;
                 }
 
                 try {
+                    addDebugLog(`👤 User authenticated: ${user.email}`);
+                    
                     // Fetch user data from database
                     const snapshot = await database.ref('users/' + user.uid).once('value');
                     const userData = snapshot.val();
 
                     if (!userData) {
-                        console.error('User data not found in database');
+                        addDebugLog('❌ User data not found in database', 'error');
                         await auth.signOut();
                         window.location.href = '/login.html';
                         return;
@@ -1367,7 +1483,7 @@
 
                     // Verify this is a helper account
                     if (userData.role !== 'helper') {
-                        console.error('Not a helper account');
+                        addDebugLog('❌ Not a helper account', 'error');
                         await auth.signOut();
                         window.location.href = '/login.html';
                         return;
@@ -1384,9 +1500,9 @@
 
                     userSkills = currentUser.skills;
                     
-                    console.log('✅ Helper logged in:', currentUser.name);
-                    console.log('🔑 Current user UID:', currentUser.uid);
-                    console.log('🎯 User skills:', userSkills);
+                    addDebugLog(`✅ Helper logged in: ${currentUser.name}`, 'success');
+                    addDebugLog(`🔑 Current user UID: ${currentUser.uid}`, 'info');
+                    addDebugLog(`🎯 User skills: ${JSON.stringify(userSkills)}`, 'info');
 
                     // Load dashboard data
                     loadNotifications();
@@ -1399,7 +1515,7 @@
                     }
 
                 } catch (error) {
-                    console.error('Error loading user data:', error);
+                    addDebugLog(`❌ Error loading user data: ${error.message}`, 'error');
                     await auth.signOut();
                     window.location.href = '/login.html';
                 }
@@ -1506,6 +1622,7 @@
                 updateNotificationBadge();
                 renderFullNotifications();
                 showToast('All notifications cleared');
+                addDebugLog('🧹 All notifications cleared', 'info');
             };
 
             // ===== ROUTE TOGGLE =====
@@ -1558,6 +1675,7 @@
                 playNotificationSound();
                 
                 localStorage.setItem('taskmart_notifications', JSON.stringify(notifications));
+                addDebugLog(`📢 Notification: ${message}`, 'info');
             }
 
             function updateNotificationBadge() {
@@ -1585,7 +1703,7 @@
                             }, 500);
                         }
                     } catch (e) {
-                        console.error('Error loading notifications:', e);
+                        addDebugLog(`❌ Error loading notifications: ${e.message}`, 'error');
                     }
                 }
             }
@@ -1620,7 +1738,7 @@
                         }
                     }, 100);
                 })
-                .catch(error => console.error('Failed to load profile menu:', error));
+                .catch(error => addDebugLog(`❌ Failed to load profile menu: ${error.message}`, 'error'));
 
             profileMenuBtn.addEventListener('click', () => {
                 const menuBtn = document.getElementById('profileMenuBtn');
@@ -1670,7 +1788,7 @@
             // ===== MAP INIT =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) {
-                    console.error('No Mapbox token');
+                    addDebugLog('❌ No Mapbox token', 'error');
                     return;
                 }
 
@@ -1684,6 +1802,8 @@
                 });
 
                 map.on('load', () => {
+                    addDebugLog('🗺️ Map loaded successfully', 'success');
+                    
                     map.addSource('route', {
                         type: 'geojson',
                         data: {
@@ -1712,15 +1832,23 @@
 
                     getUserLocation();
                 });
+
+                map.on('error', (e) => {
+                    addDebugLog(`❌ Map error: ${e.error}`, 'error');
+                });
             }
 
             // ===== GET LOCATION =====
             function getUserLocation() {
                 if (navigator.geolocation) {
+                    addDebugLog('📍 Getting user location...', 'info');
+                    
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
                             currentLat = pos.coords.latitude;
                             currentLng = pos.coords.longitude;
+                            
+                            addDebugLog(`📍 Location: ${currentLat}, ${currentLng}`, 'success');
                             
                             map.flyTo({ center: [currentLng, currentLat], zoom: 14 });
                             
@@ -1735,11 +1863,14 @@
                             fetchTasks();
                         },
                         (error) => {
-                            console.error('Location error:', error);
+                            addDebugLog(`❌ Location error: ${error.message}`, 'error');
                             fetchTasks();
                         },
                         { enableHighAccuracy: true, timeout: 10000 }
                     );
+                } else {
+                    addDebugLog('❌ Geolocation not supported', 'error');
+                    fetchTasks();
                 }
             }
 
@@ -1762,14 +1893,16 @@
             
             async function fetchTasks() {
                 try {
+                    addDebugLog('📡 ===== FETCHING TASKS =====', 'info');
+                    
                     // Show loading state
                     sheetContent.innerHTML = '<div class="skeleton-card"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div></div>';
-                    
-                    console.log('📡 Fetching tasks from Firebase...');
                     
                     // Get all tasks from all users
                     const tasksSnapshot = await database.ref('tasks').once('value');
                     const allUsersTasks = tasksSnapshot.val() || {};
+                    
+                    addDebugLog(`📊 Raw Firebase data: ${JSON.stringify(allUsersTasks).substring(0, 200)}...`, 'info');
                     
                     let allTasks = [];
                     let totalTaskCount = 0;
@@ -1792,24 +1925,29 @@
                         }
                     }
 
-                    console.log('📊 TOTAL TASKS IN DATABASE:', totalTaskCount);
+                    addDebugLog(`📊 TOTAL TASKS IN DATABASE: ${totalTaskCount}`, 'info');
                     
                     if (!currentUser) {
-                        console.log('❌ No current user, skipping task filtering');
+                        addDebugLog('❌ No current user, skipping task filtering', 'error');
                         return;
                     }
 
-                    console.log('👤 Current user UID:', currentUser.uid);
+                    addDebugLog(`👤 Current user UID: ${currentUser.uid}`, 'info');
+
+                    // Log all tasks for debugging
+                    allTasks.forEach((task, index) => {
+                        addDebugLog(`Task ${index + 1}: ID=${task.id}, Poster=${task.posterId}, Status=${task.status}, TaskState=${task.taskState}, AssignedHelper=${task.assignedHelperId || 'none'}`, 'info');
+                    });
 
                     // Filter out tasks posted by current user
                     const otherUsersTasks = allTasks.filter(task => task.posterId !== currentUser.uid);
-                    console.log('📌 Tasks from other users:', otherUsersTasks.length);
+                    addDebugLog(`📌 Tasks from other users: ${otherUsersTasks.length}`, 'info');
 
                     // Categorize tasks
                     inProgressTasks = otherUsersTasks.filter(task => {
                         const isAssigned = task.status === 'assigned' && task.assignedHelperId === currentUser.uid;
                         if (isAssigned) {
-                            console.log('✅ Found assigned task:', task.id, 'Helper UID:', task.assignedHelperId);
+                            addDebugLog(`✅ Found assigned task: ${task.id}, Helper UID: ${task.assignedHelperId}`, 'success');
                         }
                         return isAssigned;
                     });
@@ -1826,29 +1964,20 @@
                         return isOpen && isCurrent;
                     });
 
-                    console.log('📋 AVAILABLE TASKS (open + current):', availableTasks.length);
-                    console.log('▶️ IN-PROGRESS TASKS (assigned to me):', inProgressTasks.length);
-                    console.log('🤝 MATCHING REQUESTS:', matchingRequests.length);
+                    addDebugLog(`📋 AVAILABLE TASKS (open + current): ${availableTasks.length}`, 'info');
+                    addDebugLog(`▶️ IN-PROGRESS TASKS (assigned to me): ${inProgressTasks.length}`, 'info');
+                    addDebugLog(`🤝 MATCHING REQUESTS: ${matchingRequests.length}`, 'info');
 
                     if (availableTasks.length > 0) {
-                        console.log('📝 Available tasks details:', availableTasks.map(t => ({
-                            id: t.id,
-                            category: t.category,
-                            status: t.status,
-                            taskState: t.taskState,
-                            assignedHelperId: t.assignedHelperId
-                        })));
+                        availableTasks.forEach(task => {
+                            addDebugLog(`  - Available: ${task.category} (${task.id})`, 'info');
+                        });
                     }
 
                     if (inProgressTasks.length > 0) {
-                        console.log('📝 In-progress tasks details:', inProgressTasks.map(t => ({
-                            id: t.id,
-                            category: t.category,
-                            status: t.status,
-                            assignedHelperId: t.assignedHelperId,
-                            myUid: currentUser.uid,
-                            match: t.assignedHelperId === currentUser.uid
-                        })));
+                        inProgressTasks.forEach(task => {
+                            addDebugLog(`  - In-progress: ${task.category} (${task.id})`, 'success');
+                        });
                     }
 
                     if (availableTasks.length > lastTaskCount && lastTaskCount > 0) {
@@ -1876,8 +2005,11 @@
 
                     renderTasks();
                     addTaskMarkers(availableTasks);
+                    
+                    addDebugLog('✅ ===== TASK FETCH COMPLETE =====', 'success');
+                    
                 } catch (error) {
-                    console.error('❌ Error fetching tasks:', error);
+                    addDebugLog(`❌ Error fetching tasks: ${error.message}`, 'error');
                     sheetContent.innerHTML = '<div class="no-tasks">Error loading tasks</div>';
                 }
             }
@@ -1971,7 +2103,7 @@
                         }
                     }
                 } catch (error) {
-                    console.error('Route error:', error);
+                    addDebugLog(`❌ Route error: ${error.message}`, 'error');
                 }
             }
 
@@ -2287,6 +2419,7 @@
                 statusDot.className = isOnline ? 'status-dot' : 'status-dot offline';
                 statusText.textContent = isOnline ? 'Available' : 'Offline';
                 showToast(`You are now ${isOnline ? 'available' : 'offline'}`);
+                addDebugLog(`🔄 Status changed: ${isOnline ? 'Online' : 'Offline'}`, 'info');
             });
 
             expandIcon.addEventListener('click', (e) => {
