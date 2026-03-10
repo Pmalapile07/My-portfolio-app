@@ -1242,6 +1242,79 @@
             text-transform: uppercase;
         }
 
+        /* Notification popup for new tasks */
+        .notification-popup {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            right: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 5000;
+            animation: slideDown 0.3s ease;
+            display: none;
+        }
+
+        .notification-popup.show {
+            display: block;
+        }
+
+        .notification-popup .title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .notification-popup .distance {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .notification-popup .poster {
+            font-size: 0.9rem;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .notification-popup .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .notification-popup .actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .notification-popup .accept-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .notification-popup .decline-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        .notification-popup .schedule-btn {
+            background: #f59e0b;
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         @media (min-width: 768px) {
             .tasks-sheet {
                 left: 20px;
@@ -1270,7 +1343,6 @@
             z-index: 10000;
         }
 
-        /* Debug button */
         .debug-btn {
             position: fixed;
             top: 80px;
@@ -1300,6 +1372,18 @@
     <button class="debug-btn" onclick="document.getElementById('debugConsole').classList.add('visible')">Show Debug</button>
 
     <div id="map"></div>
+
+    <!-- Notification Popup -->
+    <div class="notification-popup" id="notificationPopup">
+        <div class="title" id="popupTitle">New Task Available</div>
+        <div class="distance" id="popupDistance"></div>
+        <div class="poster" id="popupPoster"></div>
+        <div class="actions">
+            <button class="accept-btn" id="popupAccept">Accept</button>
+            <button class="schedule-btn" id="popupSchedule">Schedule</button>
+            <button class="decline-btn" id="popupDecline">Decline</button>
+        </div>
+    </div>
 
     <!-- Navigation Menu - Left Side -->
     <div class="nav-menu">
@@ -1436,6 +1520,8 @@
             let isDriving = true;
             let drivingData = null;
             let walkingData = null;
+            let currentNotificationTask = null;
+            let notificationListener = null;
 
             // DOM Elements
             const tasksSheet = document.getElementById('tasksSheet');
@@ -1458,6 +1544,13 @@
             const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
             const todayEarningsSpan = document.getElementById('todayEarnings');
             const profileMenuBtn = document.getElementById('profileMenuBtn');
+            const notificationPopup = document.getElementById('notificationPopup');
+            const popupTitle = document.getElementById('popupTitle');
+            const popupDistance = document.getElementById('popupDistance');
+            const popupPoster = document.getElementById('popupPoster');
+            const popupAccept = document.getElementById('popupAccept');
+            const popupSchedule = document.getElementById('popupSchedule');
+            const popupDecline = document.getElementById('popupDecline');
 
             // ===== AUTH STATE OBSERVER =====
             auth.onAuthStateChanged(async (user) => {
@@ -1514,10 +1607,141 @@
                         todayEarningsSpan.textContent = `R${todayEarnings}`;
                     }
 
+                    // Set up notification listener
+                    setupNotificationListener();
+
                 } catch (error) {
                     addDebugLog(`❌ Error loading user data: ${error.message}`, 'error');
                     await auth.signOut();
                     window.location.href = '/login.html';
+                }
+            });
+
+            // ===== SETUP NOTIFICATION LISTENER =====
+            function setupNotificationListener() {
+                if (!currentUser) return;
+                
+                // Remove old listener if exists
+                if (notificationListener) {
+                    database.ref('notifications/' + currentUser.uid).off('child_added', notificationListener);
+                }
+                
+                // Listen for new notifications
+                notificationListener = database.ref('notifications/' + currentUser.uid)
+                    .orderByChild('createdAt')
+                    .limitToLast(1)
+                    .on('child_added', (snapshot) => {
+                        const notification = snapshot.val();
+                        
+                        // Only show popup for new task notifications and when online
+                        if (notification.type === 'new_task' && isOnline) {
+                            showNotificationPopup(notification);
+                        }
+                        
+                        // Play sound and update badge
+                        playNotificationSound();
+                        addDebugLog(`📢 New notification: ${notification.type}`, 'info');
+                    });
+            }
+
+            // ===== SHOW NOTIFICATION POPUP =====
+            function showNotificationPopup(notification) {
+                currentNotificationTask = notification;
+                
+                popupTitle.textContent = `New Task: ${notification.category}`;
+                popupDistance.textContent = `${notification.distance}km away`;
+                popupPoster.textContent = `Posted by: ${notification.posterName}`;
+                
+                notificationPopup.classList.add('show');
+                
+                // Auto hide after 30 seconds
+                setTimeout(() => {
+                    notificationPopup.classList.remove('show');
+                }, 30000);
+            }
+
+            // ===== HANDLE NOTIFICATION ACTIONS =====
+            popupAccept.addEventListener('click', async () => {
+                if (!currentNotificationTask || !currentUser) return;
+                
+                notificationPopup.classList.remove('show');
+                
+                try {
+                    const taskId = currentNotificationTask.taskId;
+                    const posterId = currentNotificationTask.posterId;
+                    
+                    // Update task status
+                    await database.ref('tasks/' + posterId + '/' + taskId).update({
+                        status: 'assigned',
+                        assignedHelperId: currentUser.uid,
+                        assignedHelperName: currentUser.name,
+                        assignedAt: Date.now()
+                    });
+                    
+                    // Remove notification
+                    await database.ref('notifications/' + currentUser.uid + '/' + currentNotificationTask.key).remove();
+                    
+                    addDebugLog(`✅ Task accepted: ${taskId}`, 'success');
+                    showToast('Task accepted! Head to the location.');
+                    
+                    // Refresh tasks
+                    fetchTasks();
+                    
+                } catch (error) {
+                    addDebugLog(`❌ Error accepting task: ${error.message}`, 'error');
+                }
+            });
+
+            popupSchedule.addEventListener('click', async () => {
+                if (!currentNotificationTask || !currentUser) return;
+                
+                // Open schedule picker (simplified - prompt for hours from now)
+                const hours = prompt('Schedule for how many hours from now? (1-48)', '2');
+                if (!hours) return;
+                
+                const scheduledTime = Date.now() + (parseInt(hours) * 60 * 60 * 1000);
+                
+                notificationPopup.classList.remove('show');
+                
+                try {
+                    const taskId = currentNotificationTask.taskId;
+                    const posterId = currentNotificationTask.posterId;
+                    
+                    // Create scheduled request
+                    await database.ref('scheduled_requests/' + posterId + '/' + taskId + '_' + currentUser.uid).set({
+                        taskId: taskId,
+                        helperUid: currentUser.uid,
+                        helperName: currentUser.name,
+                        scheduledTime: scheduledTime,
+                        status: 'pending',
+                        createdAt: Date.now()
+                    });
+                    
+                    // Remove notification
+                    await database.ref('notifications/' + currentUser.uid + '/' + currentNotificationTask.key).remove();
+                    
+                    addDebugLog(`📅 Scheduled request sent`, 'success');
+                    showToast('Schedule request sent to poster');
+                    
+                } catch (error) {
+                    addDebugLog(`❌ Error scheduling task: ${error.message}`, 'error');
+                }
+            });
+
+            popupDecline.addEventListener('click', async () => {
+                if (!currentNotificationTask || !currentUser) return;
+                
+                notificationPopup.classList.remove('show');
+                
+                try {
+                    // Remove notification
+                    await database.ref('notifications/' + currentUser.uid + '/' + currentNotificationTask.key).remove();
+                    
+                    addDebugLog(`❌ Task declined`, 'info');
+                    showToast('Task declined');
+                    
+                } catch (error) {
+                    addDebugLog(`❌ Error declining task: ${error.message}`, 'error');
                 }
             });
 
@@ -1902,8 +2126,6 @@
                     const tasksSnapshot = await database.ref('tasks').once('value');
                     const allUsersTasks = tasksSnapshot.val() || {};
                     
-                    addDebugLog(`📊 Raw Firebase data: ${JSON.stringify(allUsersTasks).substring(0, 200)}...`, 'info');
-                    
                     let allTasks = [];
                     let totalTaskCount = 0;
                     
@@ -1934,11 +2156,6 @@
 
                     addDebugLog(`👤 Current user UID: ${currentUser.uid}`, 'info');
 
-                    // Log all tasks for debugging
-                    allTasks.forEach((task, index) => {
-                        addDebugLog(`Task ${index + 1}: ID=${task.id}, Poster=${task.posterId}, Status=${task.status}, TaskState=${task.taskState}, AssignedHelper=${task.assignedHelperId || 'none'}`, 'info');
-                    });
-
                     // Filter out tasks posted by current user
                     const otherUsersTasks = allTasks.filter(task => task.posterId !== currentUser.uid);
                     addDebugLog(`📌 Tasks from other users: ${otherUsersTasks.length}`, 'info');
@@ -1946,10 +2163,9 @@
                     // Categorize tasks
                     inProgressTasks = otherUsersTasks.filter(task => {
                         const isAssigned = task.status === 'assigned' && task.assignedHelperId === currentUser.uid;
-                        if (isAssigned) {
-                            addDebugLog(`✅ Found assigned task: ${task.id}, Helper UID: ${task.assignedHelperId}`, 'success');
-                        }
-                        return isAssigned;
+                        const isInProgress = task.status === 'in_progress' && task.assignedHelperId === currentUser.uid;
+                        const isTraveling = task.status === 'traveling' && task.assignedHelperId === currentUser.uid;
+                        return isAssigned || isInProgress || isTraveling;
                     });
                     
                     matchingRequests = otherUsersTasks.filter(task => 
@@ -1967,33 +2183,6 @@
                     addDebugLog(`📋 AVAILABLE TASKS (open + current): ${availableTasks.length}`, 'info');
                     addDebugLog(`▶️ IN-PROGRESS TASKS (assigned to me): ${inProgressTasks.length}`, 'info');
                     addDebugLog(`🤝 MATCHING REQUESTS: ${matchingRequests.length}`, 'info');
-
-                    if (availableTasks.length > 0) {
-                        availableTasks.forEach(task => {
-                            addDebugLog(`  - Available: ${task.category} (${task.id})`, 'info');
-                        });
-                    }
-
-                    if (inProgressTasks.length > 0) {
-                        inProgressTasks.forEach(task => {
-                            addDebugLog(`  - In-progress: ${task.category} (${task.id})`, 'success');
-                        });
-                    }
-
-                    if (availableTasks.length > lastTaskCount && lastTaskCount > 0) {
-                        const newTasks = availableTasks.slice(0, availableTasks.length - lastTaskCount);
-                        newTasks.forEach(task => {
-                            if (taskMatchesSkills(task)) {
-                                addNotification(
-                                    'New task match!',
-                                    `${task.category} - This matches your skills!`,
-                                    'match'
-                                );
-                            }
-                        });
-                    }
-                    
-                    lastTaskCount = availableTasks.length;
 
                     availableTasks.sort((a, b) => {
                         const aMatches = taskMatchesSkills(a);
@@ -2139,6 +2328,11 @@
                     html += '<div class="in-progress-header">In progress</div>';
                     
                     inProgressTasks.forEach(task => {
+                        let statusText = 'Task in progress';
+                        if (task.status === 'assigned') statusText = 'Heading to location';
+                        else if (task.status === 'traveling') statusText = 'On the way';
+                        else if (task.status === 'in_progress') statusText = 'Working on task';
+                        
                         html += `
                             <div class="in-progress-card" onclick="window.selectInProgressTask('${task.id}')">
                                 <div class="in-progress-title">${task.category || 'Help needed'}</div>
@@ -2152,7 +2346,7 @@
                                         ${task.budget === 'open' ? 'Open' : `R${task.budget}`}
                                     </span>
                                 </div>
-                                <div class="in-progress-status">Task in progress</div>
+                                <div class="in-progress-status">${statusText}</div>
                             </div>
                         `;
                     });
@@ -2176,67 +2370,13 @@
                         if (isMatch) cardClass += ' matched';
                         if (isAssigned) cardClass += ' assigned';
 
-                        let actionButtons = '';
-                        
-                        if (isAssigned) {
-                            actionButtons = `
-                                <div class="poster-info">
-                                    <div class="poster-avatar">${posterName.charAt(0).toUpperCase()}</div>
-                                    <span class="poster-name">Task assigned to you</span>
-                                </div>
-                                <div class="action-row">
-                                    <button class="action-btn" onclick="event.stopPropagation(); window.startTask('${taskId}')">
-                                        <span class="material-symbols-outlined">play_arrow</span>
-                                        Start task
-                                    </button>
-                                    <button class="action-btn pass" onclick="event.stopPropagation(); window.declineTask('${taskId}')">
-                                        <span class="material-symbols-outlined">close</span>
-                                        Decline
-                                    </button>
-                                </div>
-                            `;
-                        } else if (isOpenOffer) {
-                            actionButtons = `
-                                <div class="offer-input">
-                                    <input type="number" id="offer-${taskId}" placeholder="Your offer (R)" min="1">
-                                    <button onclick="event.stopPropagation(); window.makeOffer('${taskId}')">Make offer</button>
-                                </div>
-                                <button class="action-btn pass" onclick="event.stopPropagation(); window.passOnTask('${taskId}')">
-                                    <span class="material-symbols-outlined">close</span>
-                                    Pass
-                                </button>
-                            `;
-                        } else {
-                            actionButtons = `
-                                <div class="action-row">
-                                    <button class="action-btn" onclick="event.stopPropagation(); window.expressInterest('${taskId}', ${budget})">
-                                        <span class="material-symbols-outlined">handshake</span>
-                                        I'm interested
-                                    </button>
-                                    <button class="action-btn pass" onclick="event.stopPropagation(); window.passOnTask('${taskId}')">
-                                        <span class="material-symbols-outlined">close</span>
-                                        Pass
-                                    </button>
-                                </div>
-                            `;
-                        }
-
                         html += `
                             <div class="${cardClass}" data-task-id="${taskId}" onclick="window.selectTask('${taskId}')">
                                 <div class="task-price-above ${isOpenOffer ? 'open' : ''}">
                                     ${isOpenOffer ? 'Open to offers' : `R${budget}`}
                                 </div>
                                 <div class="task-title">${taskTitle}</div>
-                                
                                 ${isMatch ? '<div class="skill-match">Matches your skills</div>' : ''}
-                                ${isAssigned ? '<div class="assigned-badge">Assigned to you</div>' : ''}
-                                
-                                <div class="task-expanded">
-                                    <div class="expanded-details">
-                                        ${task.notes ? `<p>${task.notes}</p>` : ''}
-                                        ${actionButtons}
-                                    </div>
-                                </div>
                             </div>
                         `;
                     });
@@ -2291,97 +2431,40 @@
                 }
             };
 
-            window.expressInterest = async function(taskId, budget) {
-                if (!isOnline) {
-                    showToast('Set status to available');
-                    return;
-                }
-
-                addNotification(
-                    'Interest sent',
-                    `You expressed interest in this task`,
-                    'interest',
-                    null,
-                    'pending'
-                );
-                
-                showToast('Interest sent to poster!');
-            };
-
-            window.makeOffer = async function(taskId) {
-                const input = document.getElementById(`offer-${taskId}`);
-                const amount = parseFloat(input.value);
-                
-                if (!amount || amount < 1) {
-                    showToast('Enter a valid amount');
-                    return;
-                }
-
-                if (!isOnline) {
-                    showToast('Set status to available');
-                    return;
-                }
-
-                addNotification(
-                    'Offer sent',
-                    `You offered R${amount}`,
-                    'offer',
-                    amount,
-                    'pending'
-                );
-                
-                showToast('Offer sent! Waiting for poster to respond.');
-                input.value = '';
-            };
-
-            window.passOnTask = async function(taskId) {
-                // Remove the task from available tasks
-                availableTasks = availableTasks.filter(t => t.id !== taskId);
-                renderTasks();
-                showToast('Task passed');
-                
-                // Hide distance card if this was the selected task
-                if (selectedTaskId === taskId) {
-                    floatingDistanceCard.classList.remove('active');
-                }
-            };
-
             window.confirmMatch = async function(taskId) {
                 const task = matchingRequests.find(t => t.id === taskId);
                 if (!task) return;
 
-                task.status = 'assigned';
-                inProgressTasks.unshift(task);
-                matchingRequests = matchingRequests.filter(t => t.id !== taskId);
-                
-                renderTasks();
-                
-                if (task.budget && task.budget !== 'open') {
-                    todayEarnings += task.budget;
-                    todayEarningsSpan.textContent = `R${todayEarnings}`;
-                    localStorage.setItem('taskmart_today_earnings', todayEarnings);
+                try {
+                    await database.ref('tasks/' + task.posterId + '/' + taskId).update({
+                        status: 'assigned',
+                        assignedHelperId: currentUser.uid,
+                        assignedHelperName: currentUser.name,
+                        assignedAt: Date.now()
+                    });
                     
-                    addNotification(
-                        'Payment received',
-                        `You earned R${task.budget}`,
-                        'earnings',
-                        task.budget
-                    );
-                }
-                
-                showToast('Match confirmed! Task is now in progress.');
-            };
-
-            window.startTask = async function(taskId) {
-                showToast('Task started! Good luck!');
-            };
-
-            window.declineTask = async function(taskId) {
-                showToast('Task declined');
-                availableTasks = availableTasks.filter(t => t.id !== taskId);
-                renderTasks();
-                if (selectedTaskId === taskId) {
-                    floatingDistanceCard.classList.remove('active');
+                    inProgressTasks.unshift(task);
+                    matchingRequests = matchingRequests.filter(t => t.id !== taskId);
+                    
+                    renderTasks();
+                    
+                    if (task.budget && task.budget !== 'open') {
+                        todayEarnings += task.budget;
+                        todayEarningsSpan.textContent = `R${todayEarnings}`;
+                        localStorage.setItem('taskmart_today_earnings', todayEarnings);
+                        
+                        addNotification(
+                            'Payment received',
+                            `You earned R${task.budget}`,
+                            'earnings',
+                            task.budget
+                        );
+                    }
+                    
+                    showToast('Match confirmed! Task is now in progress.');
+                    
+                } catch (error) {
+                    addDebugLog(`❌ Error confirming match: ${error.message}`, 'error');
                 }
             };
 
