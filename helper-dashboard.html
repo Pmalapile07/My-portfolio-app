@@ -1302,8 +1302,6 @@
             const auth = firebase.auth();
             const database = firebase.database();
 
-            const API_BASE_URL = '';
-
             let currentUser = null;
             let currentLat = null;
             let currentLng = null;
@@ -1386,8 +1384,9 @@
 
                     userSkills = currentUser.skills;
                     
-                    console.log('Helper logged in:', currentUser.name);
-                    console.log('User skills:', userSkills);
+                    console.log('✅ Helper logged in:', currentUser.name);
+                    console.log('🔑 Current user UID:', currentUser.uid);
+                    console.log('🎯 User skills:', userSkills);
 
                     // Load dashboard data
                     loadNotifications();
@@ -1747,8 +1746,9 @@
             // ===== CHECK IF TASK MATCHES USER SKILLS =====
             function taskMatchesSkills(task) {
                 if (!userSkills || userSkills.length === 0) return false;
+                if (!task.category) return false;
                 
-                const taskLower = (task.category || '').toLowerCase();
+                const taskLower = task.category.toLowerCase();
                 return userSkills.some(skill => taskLower.includes(skill.toLowerCase()));
             }
 
@@ -1765,53 +1765,91 @@
                     // Show loading state
                     sheetContent.innerHTML = '<div class="skeleton-card"><div class="skeleton-line short"></div><div class="skeleton-line medium"></div></div>';
                     
+                    console.log('📡 Fetching tasks from Firebase...');
+                    
                     // Get all tasks from all users
                     const tasksSnapshot = await database.ref('tasks').once('value');
                     const allUsersTasks = tasksSnapshot.val() || {};
                     
-                    let tasks = [];
+                    let allTasks = [];
+                    let totalTaskCount = 0;
                     
                     // Flatten tasks from all users
-                    for (let userId in allUsersTasks) {
-                        const userTasks = allUsersTasks[userId];
+                    for (let posterId in allUsersTasks) {
+                        const userTasks = allUsersTasks[posterId];
                         if (userTasks) {
                             for (let taskId in userTasks) {
-                                const task = userTasks[taskId];
-                                if (task) {
-                                    tasks.push({
+                                const taskData = userTasks[taskId];
+                                if (taskData) {
+                                    allTasks.push({
                                         id: taskId,
-                                        posterId: userId,
-                                        ...task
+                                        posterId: posterId,
+                                        ...taskData
                                     });
+                                    totalTaskCount++;
                                 }
                             }
                         }
                     }
 
-                    console.log('Fetched tasks:', tasks.length);
-
-                    if (currentUser) {
-                        // Filter out tasks posted by current user
-                        tasks = tasks.filter(task => task.posterId !== currentUser.uid);
-                        
-                        // Categorize tasks
-                        inProgressTasks = tasks.filter(task => 
-                            task.status === 'assigned' && task.assignedHelperId === currentUser.uid
-                        );
-                        
-                        matchingRequests = tasks.filter(task => 
-                            task.status === 'matching' && 
-                            task.selectedHelperId === currentUser.uid
-                        );
-                        
-                        availableTasks = tasks.filter(task => 
-                            task.status === 'open'
-                        );
+                    console.log('📊 TOTAL TASKS IN DATABASE:', totalTaskCount);
+                    
+                    if (!currentUser) {
+                        console.log('❌ No current user, skipping task filtering');
+                        return;
                     }
 
-                    console.log('Available tasks:', availableTasks.length);
-                    console.log('In progress tasks:', inProgressTasks.length);
-                    console.log('Matching requests:', matchingRequests.length);
+                    console.log('👤 Current user UID:', currentUser.uid);
+
+                    // Filter out tasks posted by current user
+                    const otherUsersTasks = allTasks.filter(task => task.posterId !== currentUser.uid);
+                    console.log('📌 Tasks from other users:', otherUsersTasks.length);
+
+                    // Categorize tasks
+                    inProgressTasks = otherUsersTasks.filter(task => {
+                        const isAssigned = task.status === 'assigned' && task.assignedHelperId === currentUser.uid;
+                        if (isAssigned) {
+                            console.log('✅ Found assigned task:', task.id, 'Helper UID:', task.assignedHelperId);
+                        }
+                        return isAssigned;
+                    });
+                    
+                    matchingRequests = otherUsersTasks.filter(task => 
+                        task.status === 'matching' && 
+                        task.selectedHelperId === currentUser.uid
+                    );
+                    
+                    // Available tasks: status is "open" AND taskState is "current"
+                    availableTasks = otherUsersTasks.filter(task => {
+                        const isOpen = task.status === 'open';
+                        const isCurrent = task.taskState === 'current';
+                        return isOpen && isCurrent;
+                    });
+
+                    console.log('📋 AVAILABLE TASKS (open + current):', availableTasks.length);
+                    console.log('▶️ IN-PROGRESS TASKS (assigned to me):', inProgressTasks.length);
+                    console.log('🤝 MATCHING REQUESTS:', matchingRequests.length);
+
+                    if (availableTasks.length > 0) {
+                        console.log('📝 Available tasks details:', availableTasks.map(t => ({
+                            id: t.id,
+                            category: t.category,
+                            status: t.status,
+                            taskState: t.taskState,
+                            assignedHelperId: t.assignedHelperId
+                        })));
+                    }
+
+                    if (inProgressTasks.length > 0) {
+                        console.log('📝 In-progress tasks details:', inProgressTasks.map(t => ({
+                            id: t.id,
+                            category: t.category,
+                            status: t.status,
+                            assignedHelperId: t.assignedHelperId,
+                            myUid: currentUser.uid,
+                            match: t.assignedHelperId === currentUser.uid
+                        })));
+                    }
 
                     if (availableTasks.length > lastTaskCount && lastTaskCount > 0) {
                         const newTasks = availableTasks.slice(0, availableTasks.length - lastTaskCount);
@@ -1839,7 +1877,7 @@
                     renderTasks();
                     addTaskMarkers(availableTasks);
                 } catch (error) {
-                    console.error('Error fetching tasks:', error);
+                    console.error('❌ Error fetching tasks:', error);
                     sheetContent.innerHTML = '<div class="no-tasks">Error loading tasks</div>';
                 }
             }
@@ -2001,7 +2039,6 @@
                         const taskTitle = task.category || 'Help needed';
                         const isMatch = taskMatchesSkills(task);
                         const isAssigned = isTaskAssignedToMe(task);
-                        const location = task.address ? task.address.split(',')[0] : 'Nearby';
 
                         let cardClass = 'task-card';
                         if (isMatch) cardClass += ' matched';
