@@ -57,7 +57,56 @@
             width: 100%;
         }
 
-        /* === FULLSCREEN MAP - IMMEDIATE LOAD === */
+        /* === MAP SKELETON LOADER === */
+        .map-skeleton {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .map-skeleton.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .skeleton-pulse {
+            width: 80px;
+            height: 80px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .skeleton-line {
+            width: 200px;
+            height: 16px;
+            background: #e0e0e0;
+            margin: 8px 0;
+            border-radius: 4px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .skeleton-line.short {
+            width: 150px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* === FULLSCREEN MAP === */
         #map {
             position: absolute;
             top: 0;
@@ -65,7 +114,6 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-            background: #1a1a1a; /* Dark background while loading */
         }
 
         /* Helper location dot */
@@ -171,7 +219,7 @@
             }
         }
 
-        /* === TASK PREVIEW CARD WITH SHAKE === */
+        /* === TASK PREVIEW CARD WITH GENTLE SHAKE === */
         .task-preview-card {
             position: fixed;
             bottom: 76px;
@@ -194,20 +242,16 @@
         }
 
         .task-preview-card.shaking {
-            animation: shake-continuous 0.5s infinite ease-in-out;
+            animation: shake-gentle 2s infinite ease-in-out;
         }
 
-        @keyframes shake-continuous {
+        @keyframes shake-gentle {
             0% { transform: translateX(0); }
-            10% { transform: translateX(-5px); }
-            20% { transform: translateX(5px); }
-            30% { transform: translateX(-5px); }
-            40% { transform: translateX(5px); }
-            50% { transform: translateX(-5px); }
-            60% { transform: translateX(5px); }
-            70% { transform: translateX(-5px); }
-            80% { transform: translateX(5px); }
-            90% { transform: translateX(-5px); }
+            5% { transform: translateX(-3px); }
+            10% { transform: translateX(3px); }
+            15% { transform: translateX(-2px); }
+            20% { transform: translateX(2px); }
+            25% { transform: translateX(0); }
             100% { transform: translateX(0); }
         }
 
@@ -925,6 +969,14 @@
     </style>
 </head>
 <body>
+    <!-- Map Skeleton Loader -->
+    <div class="map-skeleton" id="mapSkeleton">
+        <div class="skeleton-pulse"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+        <div style="margin-top: 20px; color: #666; font-family: 'Manrope', sans-serif;">Loading map...</div>
+    </div>
+
     <!-- MAP -->
     <div id="map"></div>
 
@@ -1046,9 +1098,9 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <!-- Notification Sound - from your repo -->
+    <!-- Notification Sound - New rotary phone ring -->
     <audio id="notificationSound" preload="auto" loop>
-        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-ding-101492.mp3" type="audio/mpeg">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -1082,8 +1134,10 @@
             let notificationSound = document.getElementById('notificationSound');
             let isShaking = false;
             let locationResolve = null;
+            let mapReady = false;
 
             // DOM Elements
+            const mapSkeleton = document.getElementById('mapSkeleton');
             const navMap = document.getElementById('navMap');
             const navTasks = document.getElementById('navTasks');
             const navAccount = document.getElementById('navAccount');
@@ -1123,7 +1177,7 @@
             const previewCloseBtn = document.getElementById('previewCloseBtn');
 
             let currentCategory = 'current';
-            let shownTaskIds = new Set(); // Track which tasks we've already shown
+            let shownTaskIds = new Set();
 
             // ===== STOP SHAKING AND SOUND =====
             function stopShakingAndSound() {
@@ -1133,7 +1187,7 @@
                 isShaking = false;
             }
 
-            // ===== START SHAKING AND SOUND =====
+            // ===== START GENTLE SHAKING AND SOUND =====
             function startShakingAndSound() {
                 taskPreviewCard.classList.add('shaking');
                 notificationSound.currentTime = 0;
@@ -1162,7 +1216,7 @@
                 
                 taskPreviewCard.classList.add('visible');
                 
-                // Start shaking for available tasks
+                // Start gentle shaking for available tasks
                 if (task.status === 'open') {
                     startShakingAndSound();
                 }
@@ -1245,7 +1299,7 @@
 
                     loadEarnings();
                     
-                    // Initialize map immediately
+                    // Initialize map
                     initMap();
 
                     // Set up real-time listener for new tasks
@@ -1271,7 +1325,7 @@
                             task.taskState === 'current' && 
                             task.posterId !== currentUser?.uid &&
                             !shownTaskIds.has(task.id) &&
-                            mapPage.classList.contains('active')) {
+                            navMap.classList.contains('active')) {
                             
                             shownTaskIds.add(task.id);
                             
@@ -1333,54 +1387,32 @@
                 setTimeout(() => toast.classList.remove('show'), 3000);
             }
 
-            // ===== MAP INIT - IMMEDIATE LOAD =====
+            // ===== MAP INIT =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) return;
 
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
-                // Create map with immediate display
+                // Create map
                 map = new mapboxgl.Map({
                     container: 'map',
                     style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
                     center: [currentLng, currentLat],
                     zoom: 14,
-                    fadeDuration: 0 // No fade for instant display
+                    fadeDuration: 0
                 });
 
-                // Add controls immediately
-                map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+                // Add navigation control to the RIGHT side
+                map.addControl(new mapboxgl.NavigationControl({
+                    showCompass: true,
+                    showZoom: true
+                }), 'top-right');
 
-                // Get user location immediately
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            currentLat = pos.coords.latitude;
-                            currentLng = pos.coords.longitude;
-                            
-                            // Instantly jump to location
-                            map.jumpTo({
-                                center: [currentLng, currentLat],
-                                zoom: 15
-                            });
-                            
-                            updateUserMarker();
-                            fetchTasks();
-                        },
-                        (error) => {
-                            console.log('Using default location');
-                            updateUserMarker();
-                            fetchTasks();
-                        },
-                        { enableHighAccuracy: true, timeout: 5000 }
-                    );
-                } else {
-                    updateUserMarker();
-                    fetchTasks();
-                }
-
-                // Route layer
+                // Hide skeleton when map loads
                 map.on('load', () => {
+                    mapSkeleton.classList.add('hidden');
+                    mapReady = true;
+                    
                     map.addSource('route', {
                         type: 'geojson',
                         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
@@ -1392,7 +1424,41 @@
                         source: 'route',
                         paint: { 'line-color': '#666666', 'line-width': 3, 'line-opacity': 0.6 }
                     });
+
+                    // Get user location
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                currentLat = pos.coords.latitude;
+                                currentLng = pos.coords.longitude;
+                                
+                                map.jumpTo({
+                                    center: [currentLng, currentLat],
+                                    zoom: 15
+                                });
+                                
+                                updateUserMarker();
+                                fetchTasks();
+                            },
+                            (error) => {
+                                console.log('Using default location');
+                                updateUserMarker();
+                                fetchTasks();
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                    } else {
+                        updateUserMarker();
+                        fetchTasks();
+                    }
                 });
+
+                // Fallback in case map takes too long
+                setTimeout(() => {
+                    if (!mapReady) {
+                        mapSkeleton.classList.add('hidden');
+                    }
+                }, 3000);
             }
 
             function updateUserMarker() {
@@ -1421,7 +1487,6 @@
                     .addTo(map);
                 
                 el.addEventListener('click', () => {
-                    // When clicking dot, show preview
                     showTaskPreview(task);
                 });
                 
@@ -1523,8 +1588,6 @@
             }
 
             // ===== NAVIGATION =====
-            const mapPage = navMap;
-            
             function setActivePage(page) {
                 [navMap, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
                 
@@ -1681,6 +1744,7 @@
                             <div class="timeline-content">
                                 <div class="timeline-title">Status</div>
                                 <div class="timeline-subtitle">${statusText}</div>
+                                ${task.completedAt ? `<div class="timeline-time">Completed: ${completedDate}</div>` : ''}
                             </div>
                         </div>
                     </div>
