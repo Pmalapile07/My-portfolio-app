@@ -145,37 +145,43 @@
             animation: pulse-ring 2s infinite ease-in-out;
         }
         
-        /* Task marker - BLACK DOTS */
+        /* Task marker - BLACK DOTS - with larger hit area */
         .task-pin {
             position: relative;
+            width: 20px; /* Increased for better touch target */
+            height: 20px;
+            background: transparent;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .task-pin::before {
+            content: '';
+            position: absolute;
             width: 12px;
             height: 12px;
             background: #000000;
             border: 2px solid white;
             border-radius: 50%;
             box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
-            transform: translate(-50%, -50%);
-            pointer-events: auto;
-            cursor: pointer;
             animation: pulse-task 2s infinite ease-in-out;
         }
         
         .task-pin::after {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            background: rgba(0, 122, 255, 0.15);
+            width: 40px; /* Larger invisible hit area */
+            height: 40px;
+            background: transparent;
             border-radius: 50%;
-            pointer-events: none;
-            z-index: -1;
-            animation: pulse-ring 2s infinite ease-in-out;
+            pointer-events: auto;
         }
         
-        .task-pin.assigned {
+        .task-pin.assigned::before {
             background: #10b981;
             box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
         }
@@ -219,6 +225,63 @@
             }
         }
 
+        /* === FLOATING DISTANCE CARD === */
+        .floating-distance-card {
+            position: fixed;
+            bottom: 76px;
+            left: 20px;
+            right: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 5px;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            border: none;
+        }
+
+        .floating-distance-card.visible {
+            display: flex;
+        }
+
+        .distance-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .distance-info i {
+            font-size: 1.2rem;
+            color: #000;
+        }
+
+        .distance-text {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #000;
+        }
+
+        .route-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .route-toggle i {
+            font-size: 1.2rem;
+            color: #000;
+            transition: transform 0.3s;
+        }
+
+        .route-toggle i.rotated {
+            transform: rotate(180deg);
+        }
+
         /* === TASK PREVIEW CARD WITH GENTLE SHAKE === */
         .task-preview-card {
             position: fixed;
@@ -235,6 +298,7 @@
             display: none;
             animation: slideUp 0.3s ease;
             border: 1px solid rgba(0,0,0,0.05);
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .task-preview-card.visible {
@@ -243,6 +307,12 @@
 
         .task-preview-card.shaking {
             animation: shake-gentle 2s infinite ease-in-out;
+        }
+
+        .task-preview-card.fade-out {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
         }
 
         @keyframes shake-gentle {
@@ -1101,9 +1171,7 @@
     <!-- Notification Sound - New rotary phone ring -->
     <audio id="notificationSound" preload="auto" loop>
         <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
-        <!-- Fallback in case the file has a different name -->
         <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869.mp3" type="audio/mpeg">
-        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -1181,6 +1249,16 @@
             let currentCategory = 'current';
             let shownTaskIds = new Set();
 
+            // ===== UNLOCK AUDIO ON FIRST INTERACTION =====
+            document.addEventListener('click', () => {
+                if (notificationSound) {
+                    notificationSound.play().then(() => {
+                        notificationSound.pause();
+                        notificationSound.currentTime = 0;
+                    }).catch(() => {});
+                }
+            }, { once: true });
+
             // ===== STOP SHAKING AND SOUND =====
             function stopShakingAndSound() {
                 taskPreviewCard.classList.remove('shaking');
@@ -1195,10 +1273,8 @@
             function startShakingAndSound() {
                 taskPreviewCard.classList.add('shaking');
                 if (notificationSound) {
-                    // Try to play and handle any errors silently
                     notificationSound.play().catch(e => {
-                        console.log('Sound play failed (user interaction may be needed):', e);
-                        // Some browsers require user interaction first
+                        console.log('Sound play failed:', e);
                     });
                 }
                 isShaking = true;
@@ -1223,6 +1299,7 @@
                 previewAddress.textContent = task.address || 'Location set';
                 previewNotesText.textContent = task.notes || 'No additional notes';
                 
+                taskPreviewCard.classList.remove('fade-out');
                 taskPreviewCard.classList.add('visible');
                 
                 // Start gentle shaking for available tasks
@@ -1237,37 +1314,53 @@
             }
 
             function hideTaskPreview() {
-                taskPreviewCard.classList.remove('visible');
+                taskPreviewCard.classList.remove('visible', 'fade-out');
                 stopShakingAndSound();
                 selectedTask = null;
             }
 
-            // ===== ACCEPT TASK =====
+            // ===== ACCEPT TASK WITH TRANSACTION (PREVENTS DOUBLE CLAIM) =====
             async function acceptTask(task) {
                 if (!task || !currentUser) return;
 
                 try {
-                    console.log('Accepting task:', task.id, 'for user:', currentUser.uid);
+                    console.log('Attempting to accept task:', task.id);
                     
-                    // Update the task in Firebase
-                    await database.ref('tasks/' + task.posterId + '/' + task.id).update({
-                        status: 'assigned',
-                        assignedHelperId: currentUser.uid,
-                        assignedHelperName: currentUser.name,
-                        assignedAt: firebase.database.ServerValue.TIMESTAMP
+                    const taskRef = database.ref('tasks/' + task.posterId + '/' + task.id);
+                    
+                    // Use transaction to ensure only one helper can accept
+                    await taskRef.transaction((currentData) => {
+                        if (currentData && currentData.status === 'open') {
+                            // Task is still available - claim it
+                            currentData.status = 'assigned';
+                            currentData.assignedHelperId = currentUser.uid;
+                            currentData.assignedHelperName = currentUser.name;
+                            currentData.assignedAt = firebase.database.ServerValue.TIMESTAMP;
+                            return currentData;
+                        }
+                        // Task was already taken - abort
+                        return;
+                    }).then((result) => {
+                        if (result.committed) {
+                            console.log('Task accepted successfully');
+                            
+                            // Add fade-out animation
+                            taskPreviewCard.classList.add('fade-out');
+                            
+                            setTimeout(() => {
+                                hideTaskPreview();
+                                showToast('Task accepted! Head to the location.');
+                            }, 300);
+                            
+                            // Refresh tasks
+                            fetchTasks();
+                        } else {
+                            console.log('Task was already accepted by someone else');
+                            showToast('Sorry, this task was just taken by another helper');
+                            hideTaskPreview();
+                            fetchTasks();
+                        }
                     });
-                    
-                    console.log('Task accepted successfully');
-                    showToast('Task accepted! Head to the location.');
-                    
-                    // Stop shaking and sound
-                    stopShakingAndSound();
-                    
-                    // Hide preview
-                    hideTaskPreview();
-                    
-                    // Refresh tasks
-                    await fetchTasks();
                     
                 } catch (error) {
                     console.error('Error accepting task:', error);
@@ -1497,7 +1590,7 @@
                     .addTo(map);
             }
 
-            // ===== CREATE TASK MARKER =====
+            // ===== CREATE TASK MARKER WITH LARGER HIT AREA =====
             function createTaskMarker(task) {
                 if (task.status === 'completed') return null;
                 
@@ -1511,7 +1604,9 @@
                     .setLngLat([task.location.lng, task.location.lat])
                     .addTo(map);
                 
-                el.addEventListener('click', () => {
+                // Make the entire marker area clickable (the larger hit area is in CSS)
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     showTaskPreview(task);
                 });
                 
