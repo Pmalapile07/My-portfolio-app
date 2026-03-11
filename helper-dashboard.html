@@ -34,8 +34,10 @@
     <!-- Config -->
     <script src="/config.js"></script>
     
-    <!-- Flaticon Icons - Updated with new versions -->
+    <!-- Flaticon Icons - Original plus new ones -->
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
 
@@ -570,7 +572,7 @@
             gap: 16px;
         }
 
-        /* Chat disclaimer styling */
+        /* Chat disclaimer styling - NEW */
         .chat-disclaimer {
             background: #f8f8f8;
             padding: 16px;
@@ -731,7 +733,7 @@
             justify-content: center;
         }
 
-        /* === MINIMIZED CHAT WIDGET - Updated to icon only === */
+        /* === MINIMIZED CHAT WIDGET - Black icon only - NEW === */
         .chat-minimized {
             position: fixed;
             bottom: 66px;
@@ -764,7 +766,7 @@
             to { transform: scale(1); opacity: 1; }
         }
 
-        .minimized-info, .minimized-avatar, .minimized-name, .minimized-dots {
+        .minimized-avatar, .minimized-info, .minimized-name, .minimized-dots {
             display: none;
         }
 
@@ -1571,7 +1573,7 @@
                 <div class="chat-fullscreen-avatar" id="chatFullscreenAvatar">?</div>
                 <div class="chat-fullscreen-info">
                     <span class="chat-fullscreen-name" id="chatFullscreenName">Loading...</span>
-                    <span class="chat-fullscreen-role" id="chatFullscreenRole">Poster</span>
+                    <span class="chat-fullscreen-role" id="chatFullscreenRole">Poster</span> <!-- CHANGED: from Helper to Poster -->
                 </div>
             </div>
             <div class="chat-fullscreen-minimize" id="chatMinimizeBtn">
@@ -1579,9 +1581,7 @@
             </div>
         </div>
         
-        <div class="chat-fullscreen-messages" id="chatFullscreenMessages">
-            <!-- Disclaimer will be inserted here via JavaScript -->
-        </div>
+        <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
         
         <div class="chat-fullscreen-quick-replies" id="chatFullscreenQuickReplies">
             <button class="quick-reply-btn-full" data-message="On my way!">On my way</button>
@@ -1594,13 +1594,13 @@
             <div class="chat-fullscreen-input-wrapper">
                 <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message...">
                 <button class="chat-fullscreen-send" id="chatFullscreenSend">
-                    <i class="fi fi-rr-angle-small-right"></i>
+                    <i class="fi fi-rr-angle-small-right"></i> <!-- CHANGED: from arrow-right to angle-small-right -->
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- MINIMIZED CHAT WIDGET - Updated to icon only -->
+    <!-- MINIMIZED CHAT WIDGET - Black icon only - NEW -->
     <div class="chat-minimized" id="chatMinimized">
         <i class="fi fi-tr-comment"></i>
     </div>
@@ -1959,6 +1959,8 @@
                 const chatBackBtn = document.getElementById('chatBackBtn');
                 const chatMinimizeBtn = document.getElementById('chatMinimizeBtn');
                 const chatMinimized = document.getElementById('chatMinimized');
+                const minimizedAvatar = document.getElementById('minimizedAvatar');
+                const minimizedName = document.getElementById('minimizedName');
                 const quickReplyBtnsFull = document.querySelectorAll('.quick-reply-btn-full');
 
                 // Task Preview Elements
@@ -2108,7 +2110,11 @@
                     // Update chat header
                     chatFullscreenName.textContent = task.posterName || 'Poster';
                     chatFullscreenAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
-                    chatFullscreenRole.textContent = 'Poster'; // Changed from 'Helper' to 'Poster'
+                    chatFullscreenRole.textContent = 'Poster'; // CHANGED: from 'Helper' to 'Poster'
+                    
+                    // Update minimized widget (these elements are hidden now but keeping for functionality)
+                    if (minimizedAvatar) minimizedAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
+                    if (minimizedName) minimizedName.textContent = task.posterName || 'Poster';
                     
                     // Hide task preview and distance card
                     hideTaskPreview();
@@ -2122,7 +2128,7 @@
                     // Clear previous messages
                     chatFullscreenMessages.innerHTML = '';
                     
-                    // Add disclaimer at the beginning
+                    // ADD DISCLAIMER AT THE BEGINNING - NEW
                     const disclaimerDiv = document.createElement('div');
                     disclaimerDiv.className = 'chat-disclaimer';
                     disclaimerDiv.innerHTML = `
@@ -2361,10 +2367,11 @@
                     setTimeout(() => toast.classList.remove('show'), 3000);
                 }
 
-                // ===== MAP INIT =====
+                // ===== MAP INIT - SIMPLIFIED AND FIXED =====
                 function initMap() {
                     if (!window.MAPBOX_TOKEN) {
                         console.error('No Mapbox token found');
+                        // Force hide skeleton immediately if no token
                         mapSkeleton.classList.add('hidden');
                         mapReady = true;
                         return;
@@ -2372,28 +2379,33 @@
 
                     mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
+                    // Clear any existing timeout
                     if (mapLoadTimeout) {
                         clearTimeout(mapLoadTimeout);
                     }
 
+                    // Create map with a standard style that definitely works
                     map = new mapboxgl.Map({
                         container: 'map',
-                        style: 'mapbox://styles/mapbox/streets-v12',
+                        style: 'mapbox://styles/mapbox/streets-v12', // Use a reliable standard style
                         center: [currentLng, currentLat],
                         zoom: 14,
                         fadeDuration: 0
                     });
 
+                    // Add navigation control
                     map.addControl(new mapboxgl.NavigationControl({
                         showCompass: true,
                         showZoom: true
                     }), 'top-right');
 
+                    // Force hide skeleton after 2 seconds no matter what
                     mapLoadTimeout = setTimeout(() => {
                         console.log('Map load timeout - forcing hide');
                         mapSkeleton.classList.add('hidden');
                         mapReady = true;
                         
+                        // Still try to get user location
                         if (navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(
                                 (pos) => {
@@ -2412,19 +2424,24 @@
                             updateUserMarker();
                         }
                         
+                        // Fetch tasks regardless
                         fetchTasks();
                     }, 2000);
 
+                    // Map loaded successfully
                     map.on('load', () => {
                         console.log('Map loaded successfully');
                         
+                        // Clear timeout
                         if (mapLoadTimeout) {
                             clearTimeout(mapLoadTimeout);
                         }
                         
+                        // Hide skeleton
                         mapSkeleton.classList.add('hidden');
                         mapReady = true;
                         
+                        // Add route source
                         map.addSource('route', {
                             type: 'geojson',
                             data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
@@ -2437,6 +2454,7 @@
                             paint: { 'line-color': '#666666', 'line-width': 3, 'line-opacity': 0.6 }
                         });
 
+                        // Get user location
                         if (navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(
                                 (pos) => {
@@ -2464,13 +2482,16 @@
                         }
                     });
 
+                    // Map error handler
                     map.on('error', (e) => {
                         console.error('Map error:', e.error);
+                        // Still hide skeleton on error
                         mapSkeleton.classList.add('hidden');
                         mapReady = true;
                         if (mapLoadTimeout) {
                             clearTimeout(mapLoadTimeout);
                         }
+                        // Try to get user location anyway
                         if (navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(
                                 (pos) => {
@@ -2645,6 +2666,7 @@
                                 });
                             }
 
+                            // Only zoom if shouldZoom is true (default false)
                             if (shouldZoom) {
                                 const bounds = new mapboxgl.LngLatBounds();
                                 bounds.extend([currentLng, currentLat]);
@@ -2972,7 +2994,7 @@
                 });
 
                 chatBackBtn.addEventListener('click', () => {
-                    closeChat();
+                    minimizeChat();
                 });
 
                 chatMinimizeBtn.addEventListener('click', () => {
