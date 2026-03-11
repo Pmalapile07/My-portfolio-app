@@ -465,24 +465,27 @@
             opacity: 0.8;
         }
 
-        /* Chat Fullscreen - FIXED KEYBOARD ISSUE */
+        /* Chat Fullscreen - Takes over entire screen */
         .chat-fullscreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            height: -webkit-fill-available;
             background: white;
-            z-index: 8000;
+            z-index: 10000000;
             display: none;
             flex-direction: column;
             overflow: hidden;
-            padding-bottom: 0;
         }
 
         .chat-fullscreen.active {
             display: flex;
+        }
+
+        /* Hide bottom nav when chat is active */
+        .chat-fullscreen.active ~ .bottom-nav {
+            display: none;
         }
 
         .chat-fullscreen-header {
@@ -647,10 +650,10 @@
             text-align: right;
         }
 
-        /* Input area - directly below messages */
+        /* Input area - Fixed at bottom */
         .chat-fullscreen-input-area {
             display: flex;
-            padding: 8px 20px 16px 20px;
+            padding: 12px 20px;
             gap: 12px;
             border-top: 1px solid #f0f0f0;
             background: white;
@@ -687,16 +690,15 @@
             color: white;
             font-weight: 600;
             font-size: 0.9rem;
-            padding: 0 16px;
+            padding: 0 20px;
             height: 48px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-left: 8px;
         }
 
-        /* Minimized chat widget - Updated icon */
+        /* Minimized chat widget */
         .chat-minimized {
             position: fixed;
             bottom: 66px;
@@ -1197,7 +1199,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.5);
-            z-index: 9000;
+            z-index: 20000000;
             display: none;
             align-items: center;
             justify-content: center;
@@ -1337,7 +1339,7 @@
         <button class="preview-btn close" id="previewCloseBtn">Close</button>
     </div>
 
-    <!-- FULL SCREEN CHAT - QUICK REPLIES REMOVED -->
+    <!-- FULL SCREEN CHAT - Takes over entire screen -->
     <div class="chat-fullscreen" id="chatFullscreen">
         <div class="chat-fullscreen-header">
             <div class="chat-fullscreen-poster" id="chatPosterInfo">
@@ -1354,7 +1356,7 @@
         
         <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
         
-        <!-- Only input area remains -->
+        <!-- Input area fixed at bottom -->
         <div class="chat-fullscreen-input-area">
             <div class="chat-fullscreen-input-wrapper">
                 <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message...">
@@ -1363,7 +1365,7 @@
         </div>
     </div>
 
-    <!-- MINIMIZED CHAT WIDGET - Updated icon -->
+    <!-- MINIMIZED CHAT WIDGET -->
     <div class="chat-minimized" id="chatMinimized">
         <i class="fi fi-sr-comment"></i>
     </div>
@@ -1492,7 +1494,6 @@
                 
                 const auth = firebase.auth();
                 const database = firebase.database();
-                const storage = firebase.storage();
 
                 let currentUser = null;
                 let currentLat = -26.195246;
@@ -1518,6 +1519,7 @@
                 const navMap = document.getElementById('navMap');
                 const navTasks = document.getElementById('navTasks');
                 const navAccount = document.getElementById('navAccount');
+                const bottomNav = document.getElementById('bottomNav');
                 const tasksPage = document.getElementById('tasksPage');
                 const taskDetailPage = document.getElementById('taskDetailPage');
                 const mapEl = document.getElementById('map');
@@ -1775,6 +1777,7 @@
                     hideTaskPreview();
                     if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
                     
+                    // Show chat fullscreen (this automatically hides bottom nav via CSS)
                     chatFullscreen.classList.add('active');
                     if (chatMinimizedEl) chatMinimizedEl.classList.remove('visible');
                     isChatMinimized = false;
@@ -1993,7 +1996,7 @@
                         // USING YOUR CUSTOM MAP STYLE
                         map = new mapboxgl.Map({
                             container: 'map',
-                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l', // Your custom style
+                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
                             center: [currentLng, currentLat],
                             zoom: 14,
                             fadeDuration: 0
@@ -2317,7 +2320,6 @@
                         hideTaskPreview();
                         renderTasksPage();
                     } else if (page === 'account') {
-                        // For now, just navigate to account page (will be fixed later)
                         window.location.href = 'helper-account.html';
                     } else if (page === 'taskDetail') {
                         if (taskDetailPage) taskDetailPage.classList.add('active');
@@ -2513,6 +2515,7 @@
                         const mapContainer = document.getElementById('taskDetailMap');
                         if (mapContainer && task.location && task.location.lat && task.location.lng && typeof mapboxgl !== 'undefined') {
                             try {
+                                // Create a mini map for task detail with streets style (clearer for small map)
                                 new mapboxgl.Map({
                                     container: 'taskDetailMap',
                                     style: 'mapbox://styles/mapbox/streets-v12',
