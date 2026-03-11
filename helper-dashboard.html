@@ -465,19 +465,19 @@
             opacity: 0.8;
         }
 
-        /* Chat Fullscreen - FIXED KEYBOARD OVERLAY */
+        /* Chat Fullscreen - Fixed keyboard overlay */
         .chat-fullscreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100dvh; /* Use dynamic viewport height */
-            height: -webkit-fill-available; /* iOS Safari fallback */
+            height: 100dvh;
             background: white;
             z-index: 10000000;
             display: none;
             flex-direction: column;
             overflow: hidden;
+            transition: height 0.1s ease-out;
         }
 
         .chat-fullscreen.active {
@@ -496,7 +496,7 @@
             border-bottom: 1px solid #f0f0f0;
             background: white;
             justify-content: space-between;
-            flex-shrink: 0; /* Header stays fixed */
+            flex-shrink: 0;
         }
 
         .chat-fullscreen-poster {
@@ -557,8 +557,8 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
-            min-height: 0; /* CRITICAL: Enables proper scrolling */
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
         }
 
         .chat-disclaimer {
@@ -653,14 +653,14 @@
             text-align: right;
         }
 
-        /* Input area - FIXED AT BOTTOM */
+        /* Input area - Fixed at bottom */
         .chat-fullscreen-input-area {
             display: flex;
             padding: 12px 20px;
             gap: 12px;
             border-top: 1px solid #f0f0f0;
             background: white;
-            flex-shrink: 0; /* Input stays fixed */
+            flex-shrink: 0;
         }
 
         .chat-fullscreen-input-wrapper {
@@ -1342,7 +1342,7 @@
         <button class="preview-btn close" id="previewCloseBtn">Close</button>
     </div>
 
-    <!-- FULL SCREEN CHAT - FIXED KEYBOARD BEHAVIOR -->
+    <!-- FULL SCREEN CHAT - Fixed keyboard overlay -->
     <div class="chat-fullscreen" id="chatFullscreen">
         <div class="chat-fullscreen-header">
             <div class="chat-fullscreen-poster" id="chatPosterInfo">
@@ -1780,7 +1780,7 @@
                     hideTaskPreview();
                     if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
                     
-                    // Show chat fullscreen (this automatically hides bottom nav via CSS)
+                    // Show chat fullscreen
                     chatFullscreen.classList.add('active');
                     if (chatMinimizedEl) chatMinimizedEl.classList.remove('visible');
                     isChatMinimized = false;
@@ -1809,12 +1809,23 @@
                         });
                     
                     if (chatFullscreenInput) setTimeout(() => chatFullscreenInput.focus(), 300);
+                    
+                    // Force keyboard fix after chat opens
+                    setTimeout(() => {
+                        fixKeyboardOverlay();
+                        window.dispatchEvent(new Event('resize'));
+                    }, 200);
                 }
 
                 function minimizeChat() {
                     if (chatFullscreen) chatFullscreen.classList.remove('active');
                     if (chatMinimizedEl) chatMinimizedEl.classList.add('visible');
                     isChatMinimized = true;
+                    
+                    // Restore full height when chat minimizes
+                    if (chatFullscreen) {
+                        chatFullscreen.style.height = '';
+                    }
                 }
 
                 function displayFullscreenMessage(message) {
@@ -1859,6 +1870,13 @@
                     try {
                         await database.ref('chats/' + currentChatTask.id).push(message);
                         if (chatFullscreenInput) chatFullscreenInput.value = '';
+                        
+                        // Scroll to bottom after sending
+                        setTimeout(() => {
+                            if (chatFullscreenMessages) {
+                                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
+                            }
+                        }, 50);
                     } catch (error) {
                         console.error('Error sending message:', error);
                         showToast('Failed to send message');
@@ -1943,11 +1961,73 @@
 
                         initMap();
                         setupTaskListener();
+                        setupKeyboardHandler();
 
                     } catch (error) {
                         console.error('Auth error:', error);
                     }
                 });
+
+                // ===== KEYBOARD FIX FUNCTION =====
+                function setupKeyboardHandler() {
+                    const chatContainer = document.getElementById('chatFullscreen');
+                    const messagesContainer = document.getElementById('chatFullscreenMessages');
+                    const chatInput = document.getElementById('chatFullscreenInput');
+                    
+                    if (!chatContainer || !messagesContainer || !chatInput) return;
+                    
+                    let originalHeight = window.innerHeight;
+                    let isKeyboardOpen = false;
+                    
+                    // Handle resize events (keyboard open/close)
+                    window.addEventListener('resize', function() {
+                        if (!chatContainer.classList.contains('active')) return;
+                        
+                        const currentHeight = window.innerHeight;
+                        
+                        if (currentHeight < originalHeight * 0.8) { // Keyboard opened
+                            if (!isKeyboardOpen) {
+                                isKeyboardOpen = true;
+                                chatContainer.style.height = currentHeight + 'px';
+                                
+                                // Scroll to bottom
+                                setTimeout(() => {
+                                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                }, 100);
+                            }
+                        } else { // Keyboard closed
+                            if (isKeyboardOpen) {
+                                isKeyboardOpen = false;
+                                chatContainer.style.height = '';
+                            }
+                        }
+                    });
+                    
+                    // Focus event
+                    chatInput.addEventListener('focus', function() {
+                        setTimeout(() => {
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }, 300);
+                    });
+                    
+                    // VisualViewport API for more precise control (modern browsers)
+                    if (window.visualViewport) {
+                        window.visualViewport.addEventListener('resize', () => {
+                            if (chatContainer.classList.contains('active')) {
+                                const visualHeight = window.visualViewport.height;
+                                chatContainer.style.height = visualHeight + 'px';
+                                
+                                setTimeout(() => {
+                                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                }, 50);
+                            }
+                        });
+                    }
+                }
+
+                function fixKeyboardOverlay() {
+                    setupKeyboardHandler();
+                }
 
                 if (horizontalCategoryTabs) {
                     horizontalCategoryTabs.forEach(tab => {
@@ -2518,7 +2598,6 @@
                         const mapContainer = document.getElementById('taskDetailMap');
                         if (mapContainer && task.location && task.location.lat && task.location.lng && typeof mapboxgl !== 'undefined') {
                             try {
-                                // Create a mini map for task detail with streets style (clearer for small map)
                                 new mapboxgl.Map({
                                     container: 'taskDetailMap',
                                     style: 'mapbox://styles/mapbox/streets-v12',
