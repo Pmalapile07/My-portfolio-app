@@ -21,7 +21,7 @@
         }
     </style>
     
-    <!-- Mapbox GL JS (needed for directions) -->
+    <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
@@ -109,7 +109,6 @@
             100% { opacity: 0.6; }
         }
 
-        /* Map iframe */
         #map {
             position: absolute;
             top: 0;
@@ -117,7 +116,6 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-            border: none;
         }
 
         .helper-pulsing-pin {
@@ -1292,16 +1290,8 @@
         <div style="margin-top: 20px; color: #666; font-family: 'Manrope', sans-serif;">Loading map...</div>
     </div>
 
-    <!-- MAP - Using iframe with custom style -->
-    <iframe 
-        id="map" 
-        width='100%' 
-        height='100%' 
-        src="https://api.mapbox.com/styles/v1/pmalapile07/cmmhmxzd900e801skap5a047l.html?title=false&access_token=pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sc2RveHpmMDRxODNlczdvaHlreGR3NSJ9.JcBPUfASVkZEHx8K9psySg&zoomwheel=false#0/0/0" 
-        title="TaskMart Uber-Light Style" 
-        style="border:none; position: absolute; top: 0; left: 0; z-index: 1;"
-        allow="geolocation"
-    ></iframe>
+    <!-- MAP - Using Mapbox GL JS with custom style -->
+    <div id="map"></div>
 
     <!-- Floating Distance Card -->
     <div class="floating-distance-card" id="floatingDistanceCard">
@@ -1502,6 +1492,7 @@
                 
                 const auth = firebase.auth();
                 const database = firebase.database();
+                const storage = firebase.storage();
 
                 let currentUser = null;
                 let currentLat = -26.195246;
@@ -1516,6 +1507,7 @@
                 let selectedTask = null;
                 let notificationSound = document.getElementById('notificationSound');
                 let isShaking = false;
+                let mapReady = false;
                 let chatListener = null;
                 let currentChatTask = null;
                 let isChatMinimized = false;
@@ -1596,37 +1588,6 @@
                     console.log('⚠️ Force hiding skeleton after timeout');
                     hideSkeleton();
                 }, 4000);
-
-                // Handle iframe load
-                if (mapEl) {
-                    mapEl.addEventListener('load', function() {
-                        console.log('✅ Map iframe loaded');
-                        hideSkeleton();
-                        
-                        // Get user location
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(
-                                (pos) => {
-                                    currentLat = pos.coords.latitude;
-                                    currentLng = pos.coords.longitude;
-                                    // We can't easily update the iframe's center, but we keep coordinates for distance calculations
-                                },
-                                (error) => {
-                                    console.log('Geolocation error:', error);
-                                },
-                                { enableHighAccuracy: true, timeout: 5000 }
-                            );
-                        }
-                        
-                        fetchTasks();
-                    });
-                    
-                    mapEl.addEventListener('error', function() {
-                        console.error('❌ Map iframe failed to load');
-                        hideSkeleton();
-                        fetchTasks();
-                    });
-                }
 
                 // ===== POSTER PROFILE FUNCTIONS =====
                 function showPosterProfile(posterId) {
@@ -1974,14 +1935,7 @@
                             profileImage: userData.profileImage || null
                         };
 
-                        // Account button now links to separate page
-                        if (navAccount) {
-                            navAccount.addEventListener('click', () => {
-                                window.location.href = 'helper-account.html';
-                            });
-                        }
-
-                        fetchTasks();
+                        initMap();
                         setupTaskListener();
 
                     } catch (error) {
@@ -2008,10 +1962,195 @@
                     }
                 }
 
+                function initMap() {
+                    console.log('🗺️ Initializing map...');
+                    
+                    if (typeof mapboxgl === 'undefined') {
+                        console.error('❌ Mapbox GL not loaded');
+                        hideSkeleton();
+                        return;
+                    }
+
+                    if (!window.MAPBOX_TOKEN) {
+                        console.error('❌ No Mapbox token found');
+                        hideSkeleton();
+                        return;
+                    }
+
+                    if (!mapEl) {
+                        console.error('❌ Map element not found');
+                        hideSkeleton();
+                        return;
+                    }
+
+                    try {
+                        mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+                        if (mapLoadTimeout) {
+                            clearTimeout(mapLoadTimeout);
+                        }
+
+                        // USING YOUR CUSTOM MAP STYLE
+                        map = new mapboxgl.Map({
+                            container: 'map',
+                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l', // Your custom style
+                            center: [currentLng, currentLat],
+                            zoom: 14,
+                            fadeDuration: 0
+                        });
+
+                        map.addControl(new mapboxgl.NavigationControl({
+                            showCompass: true,
+                            showZoom: true
+                        }), 'top-right');
+
+                        mapLoadTimeout = setTimeout(() => {
+                            console.log('⚠️ Map load timeout - forcing hide');
+                            hideSkeleton();
+                            
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                        currentLat = pos.coords.latitude;
+                                        currentLng = pos.coords.longitude;
+                                        if (map) {
+                                            map.jumpTo({ center: [currentLng, currentLat], zoom: 14 });
+                                            updateUserMarker();
+                                        }
+                                    },
+                                    () => updateUserMarker()
+                                );
+                            } else {
+                                updateUserMarker();
+                            }
+                            
+                            fetchTasks();
+                        }, 3000);
+
+                        map.on('load', () => {
+                            console.log('✅ Map loaded successfully');
+                            
+                            if (mapLoadTimeout) {
+                                clearTimeout(mapLoadTimeout);
+                            }
+                            
+                            hideSkeleton();
+                            mapReady = true;
+                            
+                            try {
+                                map.addSource('route', {
+                                    type: 'geojson',
+                                    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
+                                });
+
+                                map.addLayer({
+                                    id: 'route',
+                                    type: 'line',
+                                    source: 'route',
+                                    paint: { 'line-color': '#666666', 'line-width': 3, 'line-opacity': 0.6 }
+                                });
+                            } catch (e) {
+                                console.warn('Route layer error:', e);
+                            }
+
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                        currentLat = pos.coords.latitude;
+                                        currentLng = pos.coords.longitude;
+                                        
+                                        map.jumpTo({
+                                            center: [currentLng, currentLat],
+                                            zoom: 14
+                                        });
+                                        
+                                        updateUserMarker();
+                                        fetchTasks();
+                                    },
+                                    (error) => {
+                                        console.log('Geolocation error:', error);
+                                        updateUserMarker();
+                                        fetchTasks();
+                                    },
+                                    { enableHighAccuracy: true, timeout: 5000 }
+                                );
+                            } else {
+                                updateUserMarker();
+                                fetchTasks();
+                            }
+                        });
+
+                        map.on('error', (e) => {
+                            console.error('❌ Map error:', e.error);
+                            hideSkeleton();
+                            mapReady = true;
+                            if (mapLoadTimeout) {
+                                clearTimeout(mapLoadTimeout);
+                            }
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                        currentLat = pos.coords.latitude;
+                                        currentLng = pos.coords.longitude;
+                                        updateUserMarker();
+                                    },
+                                    () => {}
+                                );
+                            }
+                            fetchTasks();
+                        });
+                    } catch (e) {
+                        console.error('❌ Map creation error:', e);
+                        hideSkeleton();
+                    }
+                }
+
+                function updateUserMarker() {
+                    if (!map) return;
+                    
+                    try {
+                        if (startMarker) startMarker.remove();
+                        
+                        const pin = document.createElement('div');
+                        pin.className = 'helper-pulsing-pin';
+                        
+                        startMarker = new mapboxgl.Marker({ element: pin })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                    } catch (e) {
+                        console.warn('Marker error:', e);
+                    }
+                }
+
                 function createTaskMarker(task) {
-                    // Since we're using an iframe, we can't add markers directly
-                    // This function is kept for compatibility but doesn't do anything
-                    return null;
+                    if (!map || !task || !task.location) return null;
+                    
+                    try {
+                        const el = document.createElement('div');
+                        el.className = 'task-pin';
+                        
+                        if (task.status === 'assigned' || task.status === 'in_progress') {
+                            if (isTaskMine(task)) {
+                                el.classList.add('assigned');
+                            } else {
+                                el.classList.add('taken');
+                            }
+                        }
+                        
+                        const marker = new mapboxgl.Marker({ element: el })
+                            .setLngLat([task.location.lng, task.location.lat])
+                            .addTo(map);
+                        
+                        el.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            showTaskPreview(task);
+                        });
+                        
+                        return marker;
+                    } catch (e) {
+                        console.warn('Task marker error:', e);
+                        return null;
+                    }
                 }
 
                 async function fetchTasks() {
@@ -2056,6 +2195,20 @@
                             tasksCount.textContent = (incomingTasks.length + currentTasks.length + pastTasks.length).toString();
                         }
 
+                        if (taskMarkers) {
+                            taskMarkers.forEach(m => {
+                                if (m) m.remove();
+                            });
+                        }
+                        taskMarkers = [];
+                        
+                        [...incomingTasks, ...currentTasks].forEach(task => {
+                            if (task && task.location && task.location.lat && task.location.lng) {
+                                const marker = createTaskMarker(task);
+                                if (marker) taskMarkers.push(marker);
+                            }
+                        });
+
                         if (tasksNotificationDot) {
                             tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
                         }
@@ -2095,11 +2248,11 @@
                 }
 
                 async function calculateRoute(task, shouldZoom = false) {
-                    if (!task || !task.location || !task.location.lat || !task.location.lng || !currentLat || !currentLng) return;
+                    if (!task || !task.location || !task.location.lat || !task.location.lng || !currentLat || !currentLng || !map) return;
 
                     try {
                         const res = await fetch(
-                            `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${window.MAPBOX_TOKEN}`
+                            `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                         );
 
                         if (res.ok) {
@@ -2116,6 +2269,20 @@
                             if (routeDistance) routeDistance.textContent = distance;
                             if (routeDuration) routeDuration.textContent = duration;
                             if (floatingDistanceCard) floatingDistanceCard.classList.add('visible');
+
+                            if (map.getSource('route')) {
+                                map.getSource('route').setData({
+                                    type: 'Feature',
+                                    geometry: route.geometry
+                                });
+                            }
+
+                            if (shouldZoom) {
+                                const bounds = new mapboxgl.LngLatBounds();
+                                bounds.extend([currentLng, currentLat]);
+                                bounds.extend([task.location.lng, task.location.lat]);
+                                map.fitBounds(bounds, { padding: 50, duration: 500 });
+                            }
                         }
                     } catch (error) {
                         console.error('Route error:', error);
@@ -2138,7 +2305,9 @@
                         if (tasksPage) tasksPage.classList.remove('active');
                         if (taskDetailPage) taskDetailPage.classList.remove('active');
                         if (mapEl) mapEl.style.display = 'block';
-                        hideTaskPreview();
+                        setTimeout(() => {
+                            if (map) map.resize();
+                        }, 100);
                     } else if (page === 'tasks') {
                         if (navTasks) navTasks.classList.add('active');
                         if (tasksPage) tasksPage.classList.add('active');
@@ -2147,6 +2316,9 @@
                         if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
                         hideTaskPreview();
                         renderTasksPage();
+                    } else if (page === 'account') {
+                        // For now, just navigate to account page (will be fixed later)
+                        window.location.href = 'helper-account.html';
                     } else if (page === 'taskDetail') {
                         if (taskDetailPage) taskDetailPage.classList.add('active');
                         if (mapEl) mapEl.style.display = 'none';
@@ -2157,6 +2329,7 @@
 
                 if (navMap) navMap.addEventListener('click', () => setActivePage('map'));
                 if (navTasks) navTasks.addEventListener('click', () => setActivePage('tasks'));
+                if (navAccount) navAccount.addEventListener('click', () => setActivePage('account'));
                 if (taskDetailBackBtn) taskDetailBackBtn.addEventListener('click', () => setActivePage('tasks'));
 
                 // Add click handler for poster info in chat
