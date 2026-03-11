@@ -29,6 +29,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     
     <!-- Config -->
     <script src="/config.js"></script>
@@ -467,53 +468,266 @@
             opacity: 0.8;
         }
 
-        /* === CHAT WIDGET - FIXED KEYBOARD ISSUE === */
-        .chat-widget {
+        /* === FULL SCREEN CHAT === */
+        .chat-fullscreen {
             position: fixed;
-            bottom: 66px;
-            right: 20px;
-            width: 350px;
-            max-width: calc(100% - 40px);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 56px); /* Leave space for bottom nav */
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            z-index: 6000;
+            z-index: 8000;
             display: none;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.05);
-            max-height: 500px;
         }
 
-        .chat-widget.visible {
+        .chat-fullscreen.active {
             display: flex;
         }
 
-        .chat-widget.minimized {
-            height: 60px;
-            overflow: hidden;
-        }
-
-        .chat-header {
+        .chat-fullscreen-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
-            background: #f8f8f8;
+            padding: 16px 20px;
             border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
+            background: white;
         }
 
-        .chat-header-left {
+        .chat-fullscreen-back {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 5px;
+            color: #000;
+        }
+
+        .chat-fullscreen-back:hover {
+            background: #f0f0f0;
+        }
+
+        .chat-fullscreen-poster {
             display: flex;
             align-items: center;
             gap: 12px;
+            flex: 1;
         }
 
-        .chat-poster-avatar {
+        .chat-fullscreen-avatar {
+            width: 48px;
+            height: 48px;
+            background: #A6CBE3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .chat-fullscreen-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-fullscreen-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #000;
+        }
+
+        .chat-fullscreen-role {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .chat-fullscreen-minimize {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 5px;
+            color: #666;
+        }
+
+        .chat-fullscreen-minimize:hover {
+            background: #f0f0f0;
+        }
+
+        .chat-fullscreen-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-fullscreen-message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 80%;
+        }
+
+        .chat-fullscreen-message.own {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar-small {
             width: 36px;
             height: 36px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .message-bubble-full {
+            background: #f0f0f0;
+            padding: 12px 16px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .chat-fullscreen-message.own .message-bubble-full {
+            background: #A6CBE3;
+            color: #000;
+        }
+
+        .message-sender-full {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #666;
+        }
+
+        .chat-fullscreen-message.own .message-sender-full {
+            color: #333;
+        }
+
+        .message-text-full {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message-time-full {
+            font-size: 0.65rem;
+            color: #999;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-fullscreen-quick-replies {
+            padding: 16px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-top: 1px solid #f0f0f0;
+            background: white;
+        }
+
+        .quick-reply-btn-full {
+            background: #f0f0f0;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quick-reply-btn-full:hover {
+            background: #A6CBE3;
+        }
+
+        .chat-fullscreen-input-area {
+            display: flex;
+            padding: 16px 20px;
+            gap: 12px;
+            border-top: 1px solid #f0f0f0;
+            background: white;
+        }
+
+        .chat-fullscreen-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .chat-fullscreen-input {
+            width: 100%;
+            padding: 14px 50px 14px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-family: 'Manrope', sans-serif;
+            outline: none;
+        }
+
+        .chat-fullscreen-input:focus {
+            border-color: #A6CBE3;
+        }
+
+        .chat-fullscreen-send {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #000;
+            font-size: 1.3rem;
+            padding: 0;
+        }
+
+        /* === MINIMIZED CHAT WIDGET === */
+        .chat-minimized {
+            position: fixed;
+            bottom: 66px;
+            right: 20px;
+            width: 200px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 7000;
+            display: none;
+            align-items: center;
+            padding: 12px;
+            gap: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.05);
+            animation: slideIn 0.3s ease;
+        }
+
+        .chat-minimized.visible {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .minimized-avatar {
+            width: 40px;
+            height: 40px;
             background: #A6CBE3;
             border-radius: 50%;
             display: flex;
@@ -522,188 +736,45 @@
             color: white;
             font-weight: 600;
             font-size: 1rem;
-        }
-
-        .chat-poster-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-poster-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: #000;
-        }
-
-        .chat-poster-status {
-            font-size: 0.7rem;
-            color: #666;
-        }
-
-        .chat-header-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .chat-header-btn {
-            background: transparent;
-            border: none;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 5px;
-            color: #666;
-        }
-
-        .chat-header-btn:hover {
-            background: #e0e0e0;
-        }
-
-        .chat-messages {
-            flex: 1;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .chat-message {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            max-width: 80%;
-        }
-
-        .chat-message.own {
-            align-self: flex-end;
-            flex-direction: row-reverse;
-        }
-
-        .message-avatar {
-            width: 28px;
-            height: 28px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-weight: 600;
-            font-size: 0.8rem;
             flex-shrink: 0;
         }
 
-        .message-bubble {
-            background: #f0f0f0;
-            padding: 10px 12px;
-            border-radius: 5px;
-            position: relative;
-        }
-
-        .chat-message.own .message-bubble {
-            background: #A6CBE3;
-            color: #000;
-        }
-
-        .message-sender {
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #666;
-        }
-
-        .chat-message.own .message-sender {
-            color: #333;
-        }
-
-        .message-text {
-            font-size: 0.85rem;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
-
-        .message-time {
-            font-size: 0.6rem;
-            color: #999;
-            margin-top: 4px;
-            text-align: right;
-        }
-
-        .chat-quick-replies {
-            padding: 12px 16px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            border-top: 1px solid #f0f0f0;
-        }
-
-        .quick-reply-btn {
-            background: #f0f0f0;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #333;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .quick-reply-btn:hover {
-            background: #A6CBE3;
-        }
-
-        .chat-input-area {
-            display: flex;
-            padding: 12px 16px;
-            gap: 8px;
-            border-top: 1px solid #f0f0f0;
-            position: relative;
-        }
-
-        .chat-input-wrapper {
+        .minimized-info {
             flex: 1;
-            position: relative;
+            min-width: 0;
         }
 
-        .chat-input {
-            width: 100%;
-            padding: 12px 45px 12px 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
+        .minimized-name {
+            font-weight: 600;
             font-size: 0.85rem;
-            font-family: 'Manrope', sans-serif;
-            outline: none;
-        }
-
-        .chat-input:focus {
-            border-color: #A6CBE3;
-        }
-
-        .chat-send-btn {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            cursor: pointer;
             color: #000;
-            font-size: 1.2rem;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .chat-send-btn i {
-            font-size: 1.2rem;
+        .minimized-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .minimized-dot {
+            width: 6px;
+            height: 6px;
+            background: #A6CBE3;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .minimized-dot:nth-child(1) { animation-delay: 0s; }
+        .minimized-dot:nth-child(2) { animation-delay: 0.2s; }
+        .minimized-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+            30% { transform: translateY(-4px); opacity: 1; }
         }
 
         /* === BOTTOM NAVIGATION === */
@@ -1004,28 +1075,49 @@
             color: #388e3c;
         }
 
-        /* === ACCOUNT PAGE === */
+        /* === ACCOUNT PAGE - RESTRUCTURED === */
+        .account-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 10000;
+            overflow-y: auto;
+            display: none;
+            padding-bottom: 76px;
+        }
+        
+        .account-page.active {
+            display: block;
+        }
+        
         .account-header {
             font-family: 'Manrope', sans-serif;
             font-weight: 600;
             font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            margin-top: 1rem;
+            padding: 20px 20px 0 20px;
+            margin-bottom: 1rem;
         }
         
+        /* Profile Section - Editable */
         .profile-section {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 1.5rem;
-            padding: 1.5rem;
-            background: #f8f8f8;
-            border-radius: 12px;
+            padding: 20px;
+            background: white;
+            border-bottom: 8px solid #f5f5f5;
         }
         
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
+        .profile-image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .profile-image {
+            width: 100px;
+            height: 100px;
             background: #A6CBE3;
             border-radius: 50%;
             display: flex;
@@ -1033,170 +1125,317 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 2rem;
-            flex-shrink: 0;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
         
-        .profile-info {
+        .profile-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 0.7rem;
+            padding: 4px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .profile-image:hover .profile-image-overlay {
+            opacity: 1;
+        }
+        
+        .edit-profile-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .profile-fields {
+            margin-top: 20px;
+        }
+        
+        .profile-field {
+            margin-bottom: 16px;
+        }
+        
+        .profile-field-label {
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .profile-field-value {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.95rem;
+            color: #000;
+        }
+        
+        .profile-field-value i {
+            color: #999;
+            cursor: pointer;
+        }
+        
+        .profile-bio {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        /* Section Styling */
+        .account-section {
+            padding: 20px;
+            border-bottom: 8px solid #f5f5f5;
+        }
+        
+        .account-section-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #000;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .account-section-title i {
+            color: #A6CBE3;
+        }
+        
+        .verification-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .verification-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+        
+        .verification-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .verification-item-left i {
+            width: 24px;
+            color: #666;
+        }
+        
+        .verification-status {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #f0f0f0;
+        }
+        
+        .verification-status.verified {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .verification-status.pending {
+            background: #fff3e0;
+            color: #e67e22;
+        }
+        
+        .rating-summary {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .rating-average {
+            text-align: center;
+        }
+        
+        .rating-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .rating-stars {
+            color: #ffc107;
+            font-size: 1rem;
+        }
+        
+        .rating-count {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .rating-bars {
             flex: 1;
         }
         
-        .profile-name {
-            font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 0.25rem;
-            color: #000;
-        }
-        
-        .profile-email {
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        /* Skills in separate container */
-        .skills-container {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #f8f8f8;
-            border-radius: 5px;
-        }
-        
-        .skills-container h3 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
-        
-        .profile-skills {
+        .rating-bar-item {
             display: flex;
-            flex-wrap: wrap;
+            align-items: center;
             gap: 8px;
+            margin-bottom: 6px;
         }
         
-        .skill-tag {
-            background: #e0e0e0;
-            color: #333;
-            padding: 6px 12px;
-            border-radius: 20px;
+        .rating-bar-label {
+            width: 30px;
             font-size: 0.8rem;
-            font-weight: 500;
         }
         
-        .earnings-section {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #f8f8f8;
-            border-radius: 5px;
+        .rating-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
         }
         
-        .earnings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            padding: 0.5rem;
+        .rating-bar-fill {
+            height: 100%;
+            background: #ffc107;
+            border-radius: 3px;
         }
         
-        .earnings-header-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .earnings-header-left i {
-            font-size: 1.2rem;
-            color: #10b981;
-            transition: transform 0.3s;
-        }
-        
-        .earnings-header-left i.rotated {
-            transform: rotate(90deg);
-        }
-        
-        .earnings-total-label {
-            font-weight: 500;
-            color: #333;
-        }
-        
-        .earnings-total-amount {
-            font-weight: 600;
-            font-size: 1.2rem;
-            color: #000;
-        }
-        
-        .earnings-list {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            margin-top: 0;
-        }
-        
-        .earnings-list.expanded {
-            max-height: 400px;
-            margin-top: 1rem;
-            overflow-y: auto;
-        }
-        
-        .earning-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .earning-item:last-child {
-            border-bottom: none;
-        }
-        
-        .earning-task {
-            color: #333;
-        }
-        
-        .earning-amount {
-            font-weight: 500;
-            color: #10b981;
-        }
-        
-        .account-info-item {
-            padding: 0.75rem 0;
+        .review-item {
+            padding: 16px 0;
             border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .review-header {
             display: flex;
-            align-items: center;
-            gap: 1rem;
+            justify-content: space-between;
+            margin-bottom: 8px;
         }
         
-        .account-info-item:last-child {
-            border-bottom: none;
+        .reviewer-name {
+            font-weight: 600;
+            font-size: 0.9rem;
         }
         
-        .account-info-label {
-            font-weight: 500;
+        .review-date {
+            font-size: 0.7rem;
+            color: #999;
+        }
+        
+        .review-text {
+            font-size: 0.85rem;
             color: #666;
-            width: 100px;
+            line-height: 1.4;
         }
         
-        .account-info-value {
+        .wallet-balance {
+            background: #f8f8f8;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .wallet-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .wallet-amount {
+            font-size: 2rem;
+            font-weight: 700;
             color: #000;
-            font-weight: 400;
         }
         
-        .account-logout-btn {
-            width: 100%;
+        .wallet-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .wallet-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #000;
+            background: transparent;
+            border-radius: 5px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .wallet-btn.primary {
             background: #000;
             color: white;
             border: none;
-            padding: 0.9rem;
+        }
+        
+        .safety-item, .support-item, .legal-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        
+        .safety-item:last-child, .support-item:last-child, .legal-item:last-child {
+            border-bottom: none;
+        }
+        
+        .safety-item-left, .support-item-left, .legal-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .safety-item-left i, .support-item-left i, .legal-item-left i {
+            width: 24px;
+            color: #666;
+        }
+        
+        .logout-section {
+            padding: 20px;
+        }
+        
+        .logout-btn, .delete-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 5px;
             font-size: 1rem;
             font-weight: 500;
-            border-radius: 5px;
             cursor: pointer;
-            margin-top: 1.5rem;
-            font-family: 'Manrope', sans-serif;
+            margin-bottom: 12px;
+        }
+        
+        .logout-btn {
+            background: #000;
+            color: white;
+        }
+        
+        .delete-btn {
+            background: #fff0f0;
+            color: #ef4444;
+            border: 1px solid #ef4444;
         }
 
         .toast {
@@ -1209,7 +1448,7 @@
             background: #000;
             color: white;
             padding: 16px 24px;
-            z-index: 7000;
+            z-index: 9000;
             display: none;
             font-size: 0.9rem;
             font-weight: 300;
@@ -1273,167 +1512,6 @@
             flex: 1;
             padding: 1.5rem;
         }
-        
-        .detail-poster-info {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            background: #f8f8f8;
-            padding: 1rem;
-            border-radius: 12px;
-        }
-        
-        .detail-poster-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .detail-poster-avatar {
-            width: 48px;
-            height: 48px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .detail-poster-avatar i {
-            font-size: 1.5rem;
-            color: #666;
-        }
-        
-        .detail-poster-details {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detail-poster-label {
-            font-size: 0.7rem;
-            color: #999;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-        }
-        
-        .detail-poster-name {
-            font-weight: 600;
-            font-size: 1rem;
-            color: #000;
-        }
-        
-        .detail-poster-right {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #A6CBE3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-        
-        .detail-map-container {
-            width: 100%;
-            height: 200px;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 1.5rem;
-            border: 1px solid #f0f0f0;
-        }
-        
-        .detail-timeline {
-            margin: 1.5rem 0;
-            padding-left: 8px;
-        }
-        
-        .timeline-item {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-        
-        .timeline-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .timeline-item:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            left: 20px;
-            top: 40px;
-            width: 2px;
-            height: calc(100% - 20px);
-            background: #e0e0e0;
-        }
-        
-        .timeline-dot {
-            width: 16px;
-            height: 16px;
-            background: #000000;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
-            flex-shrink: 0;
-            z-index: 2;
-            margin-top: 12px;
-        }
-        
-        .timeline-content {
-            flex: 1;
-            padding-top: 8px;
-        }
-        
-        .timeline-title {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-            color: #000;
-        }
-        
-        .timeline-subtitle {
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 0.25rem;
-        }
-        
-        .timeline-time {
-            font-size: 0.7rem;
-            color: #999;
-        }
-        
-        .detail-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #f0f0f0;
-        }
-        
-        .detail-action-btn {
-            flex: 1;
-            padding: 1rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-        }
-        
-        .detail-action-btn.primary {
-            background: #000;
-            color: white;
-        }
-        
-        .detail-action-btn.secondary {
-            background: #f0f0f0;
-            color: #000;
-        }
     </style>
 </head>
 <body>
@@ -1492,41 +1570,52 @@
         <button class="preview-btn close" id="previewCloseBtn">Close</button>
     </div>
 
-    <!-- CHAT WIDGET -->
-    <div class="chat-widget" id="chatWidget">
-        <div class="chat-header" id="chatHeader">
-            <div class="chat-header-left">
-                <div class="chat-poster-avatar" id="chatPosterAvatar">?</div>
-                <div class="chat-poster-info">
-                    <span class="chat-poster-name" id="chatPosterName">Loading...</span>
-                    <span class="chat-poster-status" id="chatPosterStatus">Helper</span>
+    <!-- FULL SCREEN CHAT -->
+    <div class="chat-fullscreen" id="chatFullscreen">
+        <div class="chat-fullscreen-header">
+            <div class="chat-fullscreen-back" id="chatBackBtn">
+                <i class="fi fi-rr-arrow-left"></i>
+            </div>
+            <div class="chat-fullscreen-poster">
+                <div class="chat-fullscreen-avatar" id="chatFullscreenAvatar">?</div>
+                <div class="chat-fullscreen-info">
+                    <span class="chat-fullscreen-name" id="chatFullscreenName">Loading...</span>
+                    <span class="chat-fullscreen-role" id="chatFullscreenRole">Helper</span>
                 </div>
             </div>
-            <div class="chat-header-right">
-                <button class="chat-header-btn" id="chatMinimizeBtn">
-                    <i class="fi fi-rr-minus"></i>
-                </button>
-                <button class="chat-header-btn" id="chatCloseBtn">
-                    <i class="fi fi-rr-cross"></i>
-                </button>
+            <div class="chat-fullscreen-minimize" id="chatMinimizeBtn">
+                <i class="fi fi-rr-window-minimize"></i>
             </div>
         </div>
         
-        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
         
-        <div class="chat-quick-replies" id="chatQuickReplies">
-            <button class="quick-reply-btn" data-message="On my way!">On my way</button>
-            <button class="quick-reply-btn" data-message="I've arrived at the location">Arrived at location</button>
-            <button class="quick-reply-btn" data-message="Need more information about the address">Need more info</button>
-            <button class="quick-reply-btn" data-message="Please share your exact location">Share location</button>
+        <div class="chat-fullscreen-quick-replies" id="chatFullscreenQuickReplies">
+            <button class="quick-reply-btn-full" data-message="On my way!">On my way</button>
+            <button class="quick-reply-btn-full" data-message="I've arrived at the location">Arrived</button>
+            <button class="quick-reply-btn-full" data-message="Need more info">Need info</button>
+            <button class="quick-reply-btn-full" data-message="Please share your location">Share location</button>
         </div>
         
-        <div class="chat-input-area">
-            <div class="chat-input-wrapper">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Type a message...">
-                <button class="chat-send-btn" id="chatSendBtn">
+        <div class="chat-fullscreen-input-area">
+            <div class="chat-fullscreen-input-wrapper">
+                <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message...">
+                <button class="chat-fullscreen-send" id="chatFullscreenSend">
                     <i class="fi fi-rr-arrow-right"></i>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MINIMIZED CHAT WIDGET -->
+    <div class="chat-minimized" id="chatMinimized">
+        <div class="minimized-avatar" id="minimizedAvatar">?</div>
+        <div class="minimized-info">
+            <div class="minimized-name" id="minimizedName">Loading...</div>
+            <div class="minimized-dots">
+                <span class="minimized-dot"></span>
+                <span class="minimized-dot"></span>
+                <span class="minimized-dot"></span>
             </div>
         </div>
     </div>
@@ -1575,36 +1664,205 @@
         <div class="task-detail-content" id="taskDetailContent"></div>
     </div>
 
-    <!-- ACCOUNT PAGE -->
-    <div class="page-container" id="accountPage">
+    <!-- ACCOUNT PAGE - RESTRUCTURED -->
+    <div class="account-page" id="accountPage">
         <div class="account-header">Account</div>
-        <div class="account-section" id="accountInfo">
-            <div class="profile-section" id="profileSection">
-                <div class="profile-avatar" id="profileAvatar">?</div>
-                <div class="profile-info">
-                    <div class="profile-name" id="profileName">Loading...</div>
-                    <div class="profile-email" id="profileEmail">Loading...</div>
+        
+        <!-- Profile Section - Editable -->
+        <div class="profile-section">
+            <div class="profile-image-container">
+                <div class="profile-image" id="profileImageUpload">
+                    <span id="profileImageText">?</span>
+                    <div class="profile-image-overlay">Change photo</div>
                 </div>
+                <button class="edit-profile-btn" id="editProfileBtn">Edit Profile</button>
             </div>
             
-            <!-- Skills in separate container -->
-            <div class="skills-container">
-                <h3>Skills</h3>
-                <div class="profile-skills" id="profileSkills"></div>
-            </div>
-            
-            <div class="earnings-section">
-                <div class="earnings-header" id="earningsHeader">
-                    <div class="earnings-header-left">
-                        <i class="fi fi-rr-chevron-right" id="earningsChevron"></i>
-                        <span class="earnings-total-label">Total Earnings</span>
+            <div class="profile-fields" id="profileFields">
+                <div class="profile-field">
+                    <div class="profile-field-label">Full Name</div>
+                    <div class="profile-field-value" id="profileNameField">
+                        <span id="profileNameDisplay">Loading...</span>
+                        <i class="fi fi-rr-pencil"></i>
                     </div>
-                    <span class="earnings-total-amount" id="totalEarnings">R0</span>
                 </div>
-                <div class="earnings-list" id="earningsList"></div>
+                <div class="profile-field">
+                    <div class="profile-field-label">Phone Number</div>
+                    <div class="profile-field-value" id="profilePhoneField">
+                        <span id="profilePhoneDisplay">Not set</span>
+                        <i class="fi fi-rr-pencil"></i>
+                    </div>
+                </div>
+                <div class="profile-field">
+                    <div class="profile-field-label">Email</div>
+                    <div class="profile-field-value" id="profileEmailField">
+                        <span id="profileEmailDisplay">Loading...</span>
+                        <i class="fi fi-rr-pencil"></i>
+                    </div>
+                </div>
+                <div class="profile-field">
+                    <div class="profile-field-label">Bio</div>
+                    <div class="profile-bio" id="profileBio">
+                        No bio yet. Click edit to add a short description about yourself.
+                    </div>
+                </div>
             </div>
-            
-            <button class="account-logout-btn" id="accountLogoutBtn">Log out</button>
+        </div>
+        
+        <!-- Verification Section -->
+        <div class="account-section">
+            <div class="account-section-title">
+                <i class="fi fi-rr-badge-check"></i> Verification
+            </div>
+            <div class="verification-items">
+                <div class="verification-item">
+                    <div class="verification-item-left">
+                        <i class="fi fi-rr-id-card"></i>
+                        <span>ID Verification</span>
+                    </div>
+                    <span class="verification-status pending">Upload ID</span>
+                </div>
+                <div class="verification-item">
+                    <div class="verification-item-left">
+                        <i class="fi fi-rr-envelope"></i>
+                        <span>Email Verification</span>
+                    </div>
+                    <span class="verification-status verified">Verified</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ratings & Reviews Section -->
+        <div class="account-section">
+            <div class="account-section-title">
+                <i class="fi fi-rr-star"></i> Ratings & Reviews
+            </div>
+            <div class="rating-summary">
+                <div class="rating-average">
+                    <div class="rating-number">4.8</div>
+                    <div class="rating-stars">★★★★★</div>
+                    <div class="rating-count">24 reviews</div>
+                </div>
+                <div class="rating-bars">
+                    <div class="rating-bar-item">
+                        <span class="rating-bar-label">5</span>
+                        <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: 80%"></div></div>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="rating-bar-label">4</span>
+                        <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: 15%"></div></div>
+                    </div>
+                    <div class="rating-bar-item">
+                        <span class="rating-bar-label">3</span>
+                        <div class="rating-bar-bg"><div class="rating-bar-fill" style="width: 5%"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="review-item">
+                <div class="review-header">
+                    <span class="reviewer-name">Sarah Johnson</span>
+                    <span class="review-date">2 days ago</span>
+                </div>
+                <div class="review-text">Great helper, very professional and on time!</div>
+            </div>
+            <div class="review-item">
+                <div class="review-header">
+                    <span class="reviewer-name">Michael Smith</span>
+                    <span class="review-date">1 week ago</span>
+                </div>
+                <div class="review-text">Helped with moving furniture, would recommend.</div>
+            </div>
+        </div>
+        
+        <!-- Wallet & Earnings Section -->
+        <div class="account-section">
+            <div class="account-section-title">
+                <i class="fi fi-rr-wallet"></i> Wallet & Earnings
+            </div>
+            <div class="wallet-balance">
+                <div class="wallet-label">Available Balance</div>
+                <div class="wallet-amount" id="walletBalance">R0</div>
+            </div>
+            <div class="wallet-actions">
+                <button class="wallet-btn primary">Withdraw</button>
+                <button class="wallet-btn">History</button>
+            </div>
+        </div>
+        
+        <!-- Safety Section -->
+        <div class="account-section">
+            <div class="account-section-title">
+                <i class="fi fi-rr-shield"></i> Safety
+            </div>
+            <div class="safety-item">
+                <div class="safety-item-left">
+                    <i class="fi fi-rr-flag"></i>
+                    <span>Report a Problem</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+            <div class="safety-item">
+                <div class="safety-item-left">
+                    <i class="fi fi-rr-shield-check"></i>
+                    <span>Safety Guidelines</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+        </div>
+        
+        <!-- Support Section -->
+        <div class="account-section">
+            <div class="account-section-title">
+                <i class="fi fi-rr-headset"></i> Support
+            </div>
+            <div class="support-item">
+                <div class="support-item-left">
+                    <i class="fi fi-rr-life-ring"></i>
+                    <span>Help Center</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+            <div class="support-item">
+                <div class="support-item-left">
+                    <i class="fi fi-rr-comment"></i>
+                    <span>Contact Support</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+            <div class="support-item">
+                <div class="support-item-left">
+                    <i class="fi fi-rr-bug"></i>
+                    <span>Report a Bug</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+        </div>
+        
+        <!-- Legal Section -->
+        <div class="account-section">
+            <div class="account-section-title">
+                <i class="fi fi-rr-gavel"></i> Legal
+            </div>
+            <div class="legal-item">
+                <div class="legal-item-left">
+                    <i class="fi fi-rr-document"></i>
+                    <span>Terms of Service</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+            <div class="legal-item">
+                <div class="legal-item-left">
+                    <i class="fi fi-rr-lock"></i>
+                    <span>Privacy Policy</span>
+                </div>
+                <i class="fi fi-rr-arrow-right"></i>
+            </div>
+        </div>
+        
+        <!-- Logout Section -->
+        <div class="logout-section">
+            <button class="logout-btn" id="accountLogoutBtn">Log out</button>
+            <button class="delete-btn" id="deleteAccountBtn">Delete Account</button>
         </div>
     </div>
 
@@ -1634,6 +1892,7 @@
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
             const database = firebase.database();
+            const storage = firebase.storage();
 
             let currentUser = null;
             let currentLat = -26.195246;
@@ -1672,20 +1931,36 @@
             const routeToggleIcon = document.getElementById('routeToggleIcon');
             const tasksCount = document.getElementById('tasksCount');
             const tasksListContainer = document.getElementById('tasksListContainer');
-            const profileAvatar = document.getElementById('profileAvatar');
-            const profileName = document.getElementById('profileName');
-            const profileEmail = document.getElementById('profileEmail');
-            const profileSkills = document.getElementById('profileSkills');
-            const totalEarningsSpan = document.getElementById('totalEarnings');
-            const earningsList = document.getElementById('earningsList');
-            const earningsHeader = document.getElementById('earningsHeader');
-            const earningsChevron = document.getElementById('earningsChevron');
+            const profileNameDisplay = document.getElementById('profileNameDisplay');
+            const profilePhoneDisplay = document.getElementById('profilePhoneDisplay');
+            const profileEmailDisplay = document.getElementById('profileEmailDisplay');
+            const profileBio = document.getElementById('profileBio');
+            const profileImageText = document.getElementById('profileImageText');
+            const walletBalance = document.getElementById('walletBalance');
             const toast = document.getElementById('toast');
             const tasksNotificationDot = document.getElementById('tasksNotificationDot');
             const taskDetailBackBtn = document.getElementById('taskDetailBackBtn');
             const taskDetailContent = document.getElementById('taskDetailContent');
             const accountLogoutBtn = document.getElementById('accountLogoutBtn');
+            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+            const editProfileBtn = document.getElementById('editProfileBtn');
+            const profileImageUpload = document.getElementById('profileImageUpload');
             const horizontalCategoryTabs = document.querySelectorAll('.category-tab-horizontal');
+
+            // Chat Elements
+            const chatFullscreen = document.getElementById('chatFullscreen');
+            const chatFullscreenAvatar = document.getElementById('chatFullscreenAvatar');
+            const chatFullscreenName = document.getElementById('chatFullscreenName');
+            const chatFullscreenRole = document.getElementById('chatFullscreenRole');
+            const chatFullscreenMessages = document.getElementById('chatFullscreenMessages');
+            const chatFullscreenInput = document.getElementById('chatFullscreenInput');
+            const chatFullscreenSend = document.getElementById('chatFullscreenSend');
+            const chatBackBtn = document.getElementById('chatBackBtn');
+            const chatMinimizeBtn = document.getElementById('chatMinimizeBtn');
+            const chatMinimized = document.getElementById('chatMinimized');
+            const minimizedAvatar = document.getElementById('minimizedAvatar');
+            const minimizedName = document.getElementById('minimizedName');
+            const quickReplyBtnsFull = document.querySelectorAll('.quick-reply-btn-full');
 
             // Task Preview Elements
             const taskPreviewCard = document.getElementById('taskPreviewCard');
@@ -1697,19 +1972,6 @@
             const previewNotesText = document.getElementById('previewNotesText');
             const previewActions = document.getElementById('previewActions');
             const previewCloseBtn = document.getElementById('previewCloseBtn');
-
-            // Chat Elements
-            const chatWidget = document.getElementById('chatWidget');
-            const chatHeader = document.getElementById('chatHeader');
-            const chatPosterAvatar = document.getElementById('chatPosterAvatar');
-            const chatPosterName = document.getElementById('chatPosterName');
-            const chatPosterStatus = document.getElementById('chatPosterStatus');
-            const chatMessages = document.getElementById('chatMessages');
-            const chatInput = document.getElementById('chatInput');
-            const chatSendBtn = document.getElementById('chatSendBtn');
-            const chatMinimizeBtn = document.getElementById('chatMinimizeBtn');
-            const chatCloseBtn = document.getElementById('chatCloseBtn');
-            const quickReplyBtns = document.querySelectorAll('.quick-reply-btn');
 
             let shownTaskIds = new Set();
 
@@ -1812,8 +2074,6 @@
                     startShakingAndSound();
                 }
                 
-                // DO NOT zoom the map - just show card
-                
                 // Re-attach event listeners
                 document.getElementById('previewDetailsBtn')?.addEventListener('click', () => {
                     hideTaskPreview();
@@ -1846,22 +2106,25 @@
                 currentChatTask = task;
                 
                 // Update chat header
-                chatPosterName.textContent = task.posterName || 'Poster';
-                chatPosterAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
-                chatPosterStatus.textContent = 'Helper';
+                chatFullscreenName.textContent = task.posterName || 'Poster';
+                chatFullscreenAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
+                chatFullscreenRole.textContent = 'Poster';
+                
+                // Update minimized widget
+                minimizedAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
+                minimizedName.textContent = task.posterName || 'Poster';
                 
                 // Hide task preview and distance card
                 hideTaskPreview();
                 floatingDistanceCard.classList.remove('visible');
                 
-                // Show chat widget
-                chatWidget.classList.add('visible');
-                chatWidget.classList.remove('minimized');
+                // Show full screen chat
+                chatFullscreen.classList.add('active');
+                chatMinimized.classList.remove('visible');
                 chatMinimized = false;
-                chatMinimizeBtn.innerHTML = '<i class="fi fi-rr-minus"></i>';
                 
                 // Clear previous messages
-                chatMessages.innerHTML = '';
+                chatFullscreenMessages.innerHTML = '';
                 
                 // Remove old listener
                 if (chatListener) {
@@ -1873,11 +2136,17 @@
                     .orderByChild('timestamp')
                     .on('child_added', (snapshot) => {
                         const message = snapshot.val();
-                        displayMessage(message);
+                        displayFullscreenMessage(message);
                     });
                 
                 // Focus input
-                setTimeout(() => chatInput.focus(), 300);
+                setTimeout(() => chatFullscreenInput.focus(), 300);
+            }
+
+            function minimizeChat() {
+                chatFullscreen.classList.remove('active');
+                chatMinimized.classList.add('visible');
+                chatMinimized = true;
             }
 
             function closeChat() {
@@ -1886,39 +2155,42 @@
                     database.ref('chats/' + currentChatTask.id).off('child_added', chatListener);
                 }
                 
-                chatWidget.classList.remove('visible');
+                chatFullscreen.classList.remove('active');
+                chatMinimized.classList.remove('visible');
                 currentChatTask = null;
                 chatMinimized = false;
             }
 
-            function displayMessage(message) {
+            function displayFullscreenMessage(message) {
+                if (!currentChatTask) return;
+                
                 const isOwn = message.senderId === currentUser?.uid;
                 
                 const messageDiv = document.createElement('div');
-                messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
+                messageDiv.className = `chat-fullscreen-message ${isOwn ? 'own' : ''}`;
                 
                 const senderInitial = isOwn ? 
                     currentUser.name.charAt(0).toUpperCase() : 
-                    (currentChatTask?.posterName || 'P').charAt(0).toUpperCase();
+                    (currentChatTask.posterName || 'P').charAt(0).toUpperCase();
                 
                 const time = message.timestamp ? 
                     new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
                     'Just now';
                 
                 messageDiv.innerHTML = `
-                    <div class="message-avatar">${senderInitial}</div>
-                    <div class="message-bubble">
-                        <div class="message-sender">${isOwn ? 'You' : 'Poster'}</div>
-                        <div class="message-text">${message.text}</div>
-                        <div class="message-time">${time}</div>
+                    <div class="message-avatar-small">${senderInitial}</div>
+                    <div class="message-bubble-full">
+                        <div class="message-sender-full">${isOwn ? 'You' : 'Poster'}</div>
+                        <div class="message-text-full">${message.text}</div>
+                        <div class="message-time-full">${time}</div>
                     </div>
                 `;
                 
-                chatMessages.appendChild(messageDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+                chatFullscreenMessages.appendChild(messageDiv);
+                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
             }
 
-            async function sendMessage(text) {
+            async function sendFullscreenMessage(text) {
                 if (!currentChatTask || !currentUser || !text.trim()) return;
                 
                 const message = {
@@ -1930,7 +2202,7 @@
                 
                 try {
                     await database.ref('chats/' + currentChatTask.id).push(message);
-                    chatInput.value = '';
+                    chatFullscreenInput.value = '';
                 } catch (error) {
                     console.error('Error sending message:', error);
                     showToast('Failed to send message');
@@ -1938,52 +2210,34 @@
             }
 
             // Chat event listeners
-            chatSendBtn.addEventListener('click', () => {
-                sendMessage(chatInput.value);
+            chatFullscreenSend.addEventListener('click', () => {
+                sendFullscreenMessage(chatFullscreenInput.value);
             });
 
-            chatInput.addEventListener('keypress', (e) => {
+            chatFullscreenInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    sendMessage(chatInput.value);
+                    sendFullscreenMessage(chatFullscreenInput.value);
                 }
             });
 
-            quickReplyBtns.forEach(btn => {
+            quickReplyBtnsFull.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    sendMessage(btn.dataset.message);
+                    sendFullscreenMessage(btn.dataset.message);
                 });
             });
 
-            // Click anywhere on header to toggle minimize
-            chatHeader.addEventListener('click', (e) => {
-                // Don't toggle if clicking the buttons
-                if (e.target.closest('.chat-header-btn')) return;
-                
-                if (chatMinimized) {
-                    chatWidget.classList.remove('minimized');
-                    chatMinimizeBtn.innerHTML = '<i class="fi fi-rr-minus"></i>';
-                } else {
-                    chatWidget.classList.add('minimized');
-                    chatMinimizeBtn.innerHTML = '<i class="fi fi-rr-plus"></i>';
-                }
-                chatMinimized = !chatMinimized;
+            chatBackBtn.addEventListener('click', () => {
+                minimizeChat();
             });
 
-            chatMinimizeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (chatMinimized) {
-                    chatWidget.classList.remove('minimized');
-                    chatMinimizeBtn.innerHTML = '<i class="fi fi-rr-minus"></i>';
-                } else {
-                    chatWidget.classList.add('minimized');
-                    chatMinimizeBtn.innerHTML = '<i class="fi fi-rr-plus"></i>';
-                }
-                chatMinimized = !chatMinimized;
+            chatMinimizeBtn.addEventListener('click', () => {
+                minimizeChat();
             });
 
-            chatCloseBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                closeChat();
+            chatMinimized.addEventListener('click', () => {
+                // Restore full screen chat
+                chatMinimized.classList.remove('visible');
+                chatFullscreen.classList.add('active');
             });
 
             // ===== ACCEPT TASK WITH TRANSACTION =====
@@ -2063,23 +2317,17 @@
                         uid: user.uid,
                         name: userData.name,
                         email: user.email,
+                        phone: userData.phone || 'Not set',
+                        bio: userData.bio || 'No bio yet. Click edit to add a short description about yourself.',
                         skills: userData.skills || []
                     };
 
                     // Update account page
-                    profileName.textContent = currentUser.name;
-                    profileEmail.textContent = currentUser.email;
-                    profileAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
-                    
-                    let skillsHtml = '';
-                    if (Array.isArray(currentUser.skills) && currentUser.skills.length > 0) {
-                        currentUser.skills.forEach(skill => {
-                            skillsHtml += `<span class="skill-tag">${skill}</span>`;
-                        });
-                    } else {
-                        skillsHtml = '<span class="skill-tag">No skills listed</span>';
-                    }
-                    profileSkills.innerHTML = skillsHtml;
+                    profileNameDisplay.textContent = currentUser.name;
+                    profileEmailDisplay.textContent = currentUser.email;
+                    profilePhoneDisplay.textContent = currentUser.phone;
+                    profileBio.textContent = currentUser.bio;
+                    profileImageText.textContent = currentUser.name.charAt(0).toUpperCase();
 
                     loadEarnings();
                     
@@ -2104,18 +2352,6 @@
                 });
             });
 
-            // ===== EARNINGS TOGGLE =====
-            earningsHeader.addEventListener('click', () => {
-                earningsExpanded = !earningsExpanded;
-                if (earningsExpanded) {
-                    earningsList.classList.add('expanded');
-                    earningsChevron.classList.add('rotated');
-                } else {
-                    earningsList.classList.remove('expanded');
-                    earningsChevron.classList.remove('rotated');
-                }
-            });
-
             // ===== LOAD EARNINGS =====
             async function loadEarnings() {
                 if (!currentUser) return;
@@ -2124,7 +2360,6 @@
                     const snapshot = await database.ref('tasks').once('value');
                     const allUserTasks = snapshot.val() || {};
                     let total = 0;
-                    let earnings = [];
                     
                     for (let uid in allUserTasks) {
                         for (let tid in allUserTasks[uid]) {
@@ -2132,27 +2367,12 @@
                             if (task.status === 'completed' && task.assignedHelperId === currentUser.uid) {
                                 if (task.budget && task.budget !== 'open') {
                                     total += parseFloat(task.budget);
-                                    earnings.push({
-                                        taskName: task.category || 'Task',
-                                        amount: parseFloat(task.budget),
-                                        date: task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Recently'
-                                    });
                                 }
                             }
                         }
                     }
                     
-                    totalEarningsSpan.textContent = `R${total}`;
-                    
-                    let html = '';
-                    if (earnings.length === 0) {
-                        html = '<div style="text-align:center;color:#999;padding:1rem;">No earnings yet</div>';
-                    } else {
-                        earnings.slice().reverse().forEach(e => {
-                            html += `<div class="earning-item"><span class="earning-task">${e.taskName}</span><span class="earning-amount">+R${e.amount}</span></div>`;
-                        });
-                    }
-                    earningsList.innerHTML = html;
+                    walletBalance.textContent = `R${total}`;
                     
                 } catch (error) {
                     console.error('Error loading earnings:', error);
@@ -2682,6 +2902,20 @@
             // ===== LOGOUT =====
             accountLogoutBtn.addEventListener('click', () => {
                 auth.signOut().then(() => window.location.href = '/login.html');
+            });
+
+            deleteAccountBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                    showToast('Account deletion coming soon');
+                }
+            });
+
+            editProfileBtn.addEventListener('click', () => {
+                showToast('Edit profile coming soon');
+            });
+
+            profileImageUpload.addEventListener('click', () => {
+                showToast('Upload profile picture coming soon');
             });
 
             setActivePage('map');
