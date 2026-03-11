@@ -58,55 +58,6 @@
             width: 100%;
         }
 
-        /* === MAP SKELETON LOADER === */
-        .map-skeleton {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #f5f5f5;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease;
-        }
-
-        .map-skeleton.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .skeleton-pulse {
-            width: 80px;
-            height: 80px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            margin-bottom: 20px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .skeleton-line {
-            width: 200px;
-            height: 16px;
-            background: #e0e0e0;
-            margin: 8px 0;
-            border-radius: 4px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .skeleton-line.short {
-            width: 150px;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-
         /* === FULLSCREEN MAP === */
         #map {
             position: absolute;
@@ -115,7 +66,7 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-            background: #1a1a1a; /* Dark background while loading */
+            background: #f0f0f0; /* Light background while loading */
         }
 
         /* Helper location dot */
@@ -1516,14 +1467,6 @@
     </style>
 </head>
 <body>
-    <!-- Map Skeleton Loader -->
-    <div class="map-skeleton" id="mapSkeleton">
-        <div class="skeleton-pulse"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line short"></div>
-        <div style="margin-top: 20px; color: #666; font-family: 'Manrope', sans-serif;">Loading map...</div>
-    </div>
-
     <!-- MAP -->
     <div id="map"></div>
 
@@ -1908,15 +1851,12 @@
             let selectedTask = null;
             let notificationSound = document.getElementById('notificationSound');
             let isShaking = false;
-            let mapReady = false;
-            let earningsExpanded = false;
             let chatListener = null;
             let currentChatTask = null;
             let chatMinimized = false;
             let currentHorizontalCategory = 'all';
 
             // DOM Elements
-            const mapSkeleton = document.getElementById('mapSkeleton');
             const navMap = document.getElementById('navMap');
             const navTasks = document.getElementById('navTasks');
             const navAccount = document.getElementById('navAccount');
@@ -1975,7 +1915,6 @@
             const previewCloseBtn = document.getElementById('previewCloseBtn');
 
             let shownTaskIds = new Set();
-            let mapLoadTimeout = null;
 
             // ===== UNLOCK AUDIO ON FIRST INTERACTION =====
             document.addEventListener('click', () => {
@@ -2387,75 +2326,34 @@
                 setTimeout(() => toast.classList.remove('show'), 3000);
             }
 
-            // ===== MAP INIT =====
+            // ===== MAP INIT - SIMPLIFIED =====
             function initMap() {
                 if (!window.MAPBOX_TOKEN) {
                     console.error('No Mapbox token found');
-                    mapSkeleton.classList.add('hidden');
                     return;
                 }
 
                 mapboxgl.accessToken = window.MAPBOX_TOKEN;
 
-                // Clear any existing timeout
-                if (mapLoadTimeout) {
-                    clearTimeout(mapLoadTimeout);
-                }
-
-                // Create map
+                // Create map with standard style
                 map = new mapboxgl.Map({
                     container: 'map',
-                    style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
+                    style: 'mapbox://styles/mapbox/streets-v12',
                     center: [currentLng, currentLat],
-                    zoom: 14,
-                    fadeDuration: 0
+                    zoom: 14
                 });
 
-                // Add navigation control to the RIGHT side
+                // Add navigation control
                 map.addControl(new mapboxgl.NavigationControl({
                     showCompass: true,
                     showZoom: true
                 }), 'top-right');
 
-                // Force hide skeleton after 3 seconds no matter what
-                mapLoadTimeout = setTimeout(() => {
-                    if (!mapReady) {
-                        console.log('Map load timeout - forcing hide');
-                        mapSkeleton.classList.add('hidden');
-                        mapReady = true;
-                        
-                        // Still try to initialize
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(
-                                (pos) => {
-                                    currentLat = pos.coords.latitude;
-                                    currentLng = pos.coords.longitude;
-                                    map.jumpTo({ center: [currentLng, currentLat], zoom: 14 });
-                                    updateUserMarker();
-                                    fetchTasks();
-                                },
-                                () => {
-                                    updateUserMarker();
-                                    fetchTasks();
-                                }
-                            );
-                        } else {
-                            updateUserMarker();
-                            fetchTasks();
-                        }
-                    }
-                }, 3000);
-
-                // Hide skeleton when map loads
+                // Map loaded successfully
                 map.on('load', () => {
                     console.log('Map loaded successfully');
-                    mapSkeleton.classList.add('hidden');
-                    mapReady = true;
                     
-                    if (mapLoadTimeout) {
-                        clearTimeout(mapLoadTimeout);
-                    }
-                    
+                    // Add route source
                     map.addSource('route', {
                         type: 'geojson',
                         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
@@ -2496,18 +2394,25 @@
                     }
                 });
 
+                // Map error handler - still try to get location
                 map.on('error', (e) => {
                     console.error('Map error:', e.error);
-                    // Still hide skeleton on error
-                    mapSkeleton.classList.add('hidden');
-                    mapReady = true;
-                    if (mapLoadTimeout) {
-                        clearTimeout(mapLoadTimeout);
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                currentLat = pos.coords.latitude;
+                                currentLng = pos.coords.longitude;
+                            },
+                            () => {}
+                        );
                     }
+                    fetchTasks();
                 });
             }
 
             function updateUserMarker() {
+                if (!map) return;
+                
                 if (startMarker) startMarker.remove();
                 
                 const pin = document.createElement('div');
@@ -2520,6 +2425,8 @@
 
             // ===== CREATE TASK MARKER =====
             function createTaskMarker(task) {
+                if (!map) return null;
+                
                 const el = document.createElement('div');
                 el.className = 'task-pin';
                 
@@ -2593,7 +2500,7 @@
                     [...incomingTasks, ...currentTasks].forEach(task => {
                         if (task.location && task.location.lat && task.location.lng) {
                             const marker = createTaskMarker(task);
-                            taskMarkers.push(marker);
+                            if (marker) taskMarkers.push(marker);
                         }
                     });
 
@@ -2636,7 +2543,7 @@
 
             // ===== CALCULATE ROUTE =====
             async function calculateRoute(task, shouldZoom = false) {
-                if (!task.location || !task.location.lat || !task.location.lng || !currentLat || !currentLng) return;
+                if (!task.location || !task.location.lat || !task.location.lng || !currentLat || !currentLng || !map) return;
 
                 try {
                     const res = await fetch(
@@ -2656,7 +2563,7 @@
                         routeDuration.textContent = duration;
                         floatingDistanceCard.classList.add('visible');
 
-                        if (map && map.getSource('route')) {
+                        if (map.getSource('route')) {
                             map.getSource('route').setData({
                                 type: 'Feature',
                                 geometry: route.geometry
