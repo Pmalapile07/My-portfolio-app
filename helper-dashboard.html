@@ -39,7 +39,7 @@
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
-    <!-- CHANGE: Added uicons-thin-straight for steering wheel icon -->
+    <!-- FIX: Added uicons-thin-straight for arrow icon -->
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-straight/css/uicons-thin-straight.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
 
@@ -313,7 +313,7 @@
             color: #000;
         }
 
-        /* CHANGE: Ring doorbell button styling - transparent background, 2px solid black border, border-radius 50px */
+        /* FIX: Doorbell button styling - transparent background, 2px solid black border, border-radius 5px */
         .route-toggle {
             display: flex;
             align-items: center;
@@ -321,7 +321,7 @@
             cursor: pointer;
             background: transparent;
             border: 2px solid #000000;
-            border-radius: 50px;
+            border-radius: 5px;
             padding: 8px 12px;
         }
 
@@ -440,8 +440,6 @@
         .preview-details {
             margin-bottom: 20px;
         }
-
-        /* CHANGE: Removed preview-address styles as it's being removed from HTML */
 
         .preview-notes {
             background: #f8f8f8;
@@ -688,7 +686,7 @@
             text-align: right;
         }
 
-        /* Chat input with black border */
+        /* FIX: Chat input field redesign */
         .chat-fullscreen-input-area {
             display: flex;
             padding: 12px 20px;
@@ -709,38 +707,52 @@
             position: relative;
             display: flex;
             align-items: center;
+            background: #f0f0f0; /* Grey background */
+            border-radius: 5px;
+            padding: 4px;
         }
 
         .chat-fullscreen-input {
             width: 100%;
             padding: 14px 16px;
-            border: 1px solid grey;
+            border: none; /* Remove all borders */
             border-radius: 5px;
             font-size: 0.95rem;
             font-family: 'Manrope', sans-serif;
             outline: none;
             line-height: 1.2;
             height: 48px;
+            background: transparent; /* Inherit grey from wrapper */
+            color: #000; /* Text color black */
         }
 
-        .chat-fullscreen-input:focus {
-            border-color: #000;
+        .chat-fullscreen-input::placeholder {
+            color: #000; /* Black placeholder text */
+            opacity: 0.7;
         }
 
+        /* FIX: Circular send button with arrow icon */
         .chat-fullscreen-send {
-            background: #000;
+            width: 40px;
+            height: 40px;
+            background: #f0f0f0; /* Same grey as input wrapper */
             border: none;
-            border-radius: 5px;
+            border-radius: 50%; /* Circular */
             color: white;
             font-weight: 600;
             font-size: 0.9rem;
-            padding: 0 20px;
-            height: 48px;
+            padding: 0;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            margin-left: 4px;
+        }
+
+        .chat-fullscreen-send i {
+            color: white;
+            font-size: 1.2rem;
         }
 
         /* Chat minimized with shadow/blue tint */
@@ -1333,29 +1345,8 @@
             color: #666;
         }
 
-        /* Ring doorbell notification */
-        .ring-notification {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: #000;
-            color: white;
-            padding: 16px;
-            border-radius: 5px;
-            z-index: 10000001;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideDown 0.3s ease;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .ring-notification i {
-            color: white;
-            font-size: 1.5rem;
-        }
+        /* FIX: Removed ring notification styles - popup completely removed */
+        /* .ring-notification styles removed as per requirement */
 
         @keyframes slideDown {
             from { transform: translateY(-100px); opacity: 0; }
@@ -1459,7 +1450,7 @@
             <span class="distance-text">·</span>
             <span class="distance-text" id="routeDuration">0 min</span>
         </div>
-        <!-- CHANGE: Ring doorbell button with transparent bg, 2px solid black border, border-radius 50px -->
+        <!-- FIX: Ring doorbell button with transparent bg, 2px solid black border, border-radius 5px -->
         <div class="route-toggle" id="routeToggle">
             <i class="fi fi-ts-steering-wheel" id="routeToggleIcon"></i>
         </div>
@@ -1507,11 +1498,14 @@
         
         <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
         
+        <!-- FIX: Redesigned chat input area with grey background and circular send button -->
         <div class="chat-fullscreen-input-area">
             <div class="chat-fullscreen-input-wrapper">
-                <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message...">
+                <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message">
+                <button class="chat-fullscreen-send" id="chatFullscreenSend">
+                    <i class="fi fi-ts-arrow-small-up"></i>
+                </button>
             </div>
-            <button class="chat-fullscreen-send" id="chatFullscreenSend">Send</button>
         </div>
     </div>
 
@@ -1643,7 +1637,7 @@
                 let isChatMinimized = false;
                 let currentHorizontalCategory = 'all';
                 let ringTriggeredTasks = new Set();
-                let currentRouteProfile = 'driving'; // 'driving' or 'walking'
+                let currentRouteProfile = 'walking'; // FIX: Default to walking
                 
                 // CHANGE: Notifications array
                 let notifications = [];
@@ -1803,29 +1797,8 @@
                     });
                 }
 
-                function showRingNotification(task) {
-                    const notification = document.createElement('div');
-                    notification.className = 'ring-notification';
-                    notification.innerHTML = `
-                        <i class="fi fi-rr-bell"></i>
-                        <div>
-                            <strong>You've arrived!</strong><br>
-                            You're within 5 meters of ${task.posterName || 'the poster'}'s location.
-                        </div>
-                    `;
-                    document.body.appendChild(notification);
-                    
-                    // CHANGE: Add to notifications panel
-                    addNotification(`You've arrived at ${task.posterName || 'the poster'}'s location`, 'arrival');
-                    
-                    if (doorbellSound) {
-                        doorbellSound.play().catch(e => console.log('Doorbell sound failed:', e));
-                    }
-                    
-                    setTimeout(() => {
-                        notification.remove();
-                    }, 5000);
-                }
+                // FIX: Removed showRingNotification function - popup completely removed
+                // The arrival event still happens but no UI popup appears
 
                 function checkProximityAndRing() {
                     if (!currentChatTask || !currentChatTask.location) return;
@@ -1842,7 +1815,9 @@
                     
                     if (distanceInMeters <= 5) {
                         ringTriggeredTasks.add(currentChatTask.id);
-                        showRingNotification(currentChatTask);
+                        
+                        // FIX: Only add notification, no popup
+                        addNotification(`You've arrived at ${currentChatTask.posterName || 'the poster'}'s location`, 'arrival');
                         
                         // Update task status to arrived if needed
                         if (currentChatTask.status === 'assigned') {
@@ -2465,8 +2440,8 @@
                                 (route.distance / 1000).toFixed(1) + 'km';
                             const duration = Math.round(route.duration / 60) + 'min';
 
-                            // Set icon based on distance
-                            if (route.distance < 1000) {
+                            // FIX: Set icon based on route profile - walking icon for walking, car icon for driving
+                            if (currentRouteProfile === 'walking') {
                                 routeIcon.className = 'fi fi-tr-walking';
                             } else {
                                 routeIcon.className = 'fi fi-tr-car';
@@ -2495,15 +2470,22 @@
                     }
                 }
 
-                // Route toggle - now switches between driving and walking
+                // FIX: Route toggle - only toggles from walking to car when navigation starts
                 if (routeToggle) {
                     routeToggle.addEventListener('click', () => {
-                        // CHANGE: Toggle between driving and walking
-                        currentRouteProfile = currentRouteProfile === 'driving' ? 'walking' : 'driving';
-                        showToast(`Route mode: ${currentRouteProfile}`);
-                        if (selectedTask) {
-                            calculateRoute(selectedTask, false);
+                        // Only toggle from walking to driving, never back
+                        if (currentRouteProfile === 'walking') {
+                            currentRouteProfile = 'driving';
+                            showToast('Route mode: driving');
+                            
+                            // Update icon immediately
+                            routeIcon.className = 'fi fi-tr-car';
+                            
+                            if (selectedTask) {
+                                calculateRoute(selectedTask, false);
+                            }
                         }
+                        // If already driving, do nothing (cannot go back to walking)
                     });
                 }
 
