@@ -1,16 +1,27 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TaskMart · Helper — working map</title>
+    <title>TaskMart · Helper</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap">
     
-    <!-- Mapbox GL JS & CSS -->
+    <!-- Custom Fonts from GitHub -->
+    <style>
+        @font-face {
+            font-family: 'Codec Cold News';
+            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    
+    <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     
@@ -18,6 +29,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    
+    <!-- Config -->
+    <script src="/config.js"></script>
     
     <!-- Flaticon Icons -->
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
@@ -33,62 +48,17 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Manrope', sans-serif;
             font-weight: 400;
             font-size: 16px;
-            background: #fff;
-            min-height: 100dvh; 
-            margin: 0;
-            overflow-x: hidden;
-        }
-
-        .map-skeleton {
-            position: absolute;
-            top: 0;
-            left: 0;
+            background: #000;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
             width: 100%;
-            height: 100%;
-            background: #f5f5f5;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease;
-        }
-
-        .map-skeleton.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .skeleton-pulse {
-            width: 80px;
-            height: 80px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            margin-bottom: 20px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .skeleton-line {
-            width: 200px;
-            height: 16px;
-            background: #e0e0e0;
-            margin: 8px 0;
-            border-radius: 4px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .skeleton-line.short {
-            width: 150px;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
         }
 
         #map {
@@ -102,12 +72,12 @@
 
         .helper-pulsing-pin {
             position: relative;
-            width: 20px;
-            height: 20px;
-            background: #4A90E2;
-            border: 3px solid white;
+            width: 12px;
+            height: 12px;
+            background: #A6CBE3;
+            border: 2px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 0 6px rgba(74, 144, 226, 0.25);
+            box-shadow: 0 0 0 4px rgba(166, 203, 227, 0.3);
             transform: translate(-50%, -50%);
             pointer-events: none;
             animation: pulse-helper 2s infinite ease-in-out;
@@ -119,9 +89,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 150px;
-            height: 150px;
-            background: rgba(74, 144, 226, 0.15);
+            width: 100px;
+            height: 100px;
+            background: rgba(166, 203, 227, 0.15);
             border-radius: 50%;
             pointer-events: none;
             z-index: -1;
@@ -153,6 +123,16 @@
             animation: pulse-task 2s infinite ease-in-out;
         }
         
+        .task-pin::after {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+        
         .task-pin.assigned::before {
             background: #10b981;
             box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
@@ -164,21 +144,42 @@
         }
         
         @keyframes pulse-helper {
-            0% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(74, 144, 226, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(166, 203, 227, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(166, 203, 227, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(166, 203, 227, 0);
+            }
         }
         
         @keyframes pulse-task {
-            0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(0, 122, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+            }
         }
         
         @keyframes pulse-ring {
-            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
-            70% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
-            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.7;
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
         }
 
         .floating-distance-card {
@@ -196,6 +197,7 @@
             display: none;
             align-items: center;
             justify-content: space-between;
+            border: none;
         }
 
         .floating-distance-card.visible {
@@ -229,6 +231,11 @@
         .route-toggle i {
             font-size: 1.2rem;
             color: #000;
+            transition: transform 0.3s;
+        }
+
+        .route-toggle i.rotated {
+            transform: rotate(180deg);
         }
 
         .task-preview-card {
@@ -245,7 +252,8 @@
             z-index: 5001;
             display: none;
             animation: slideUp 0.3s ease;
-            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .task-preview-card.visible {
@@ -256,15 +264,20 @@
             animation: shake-gentle 2s infinite ease-in-out;
         }
 
-        .preview-actions button {
-            cursor: pointer;
-            pointer-events: auto;
+        .task-preview-card.fade-out {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
         }
 
         @keyframes shake-gentle {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-            20%, 40%, 60%, 80% { transform: translateX(2px); }
+            0% { transform: translateX(0); }
+            5% { transform: translateX(-3px); }
+            10% { transform: translateX(3px); }
+            15% { transform: translateX(-2px); }
+            20% { transform: translateX(2px); }
+            25% { transform: translateX(0); }
+            100% { transform: translateX(0); }
         }
 
         @keyframes slideUp {
@@ -319,6 +332,10 @@
             color: #333;
         }
 
+        .preview-details {
+            margin-bottom: 20px;
+        }
+
         .preview-address {
             display: flex;
             align-items: center;
@@ -328,13 +345,24 @@
             font-size: 0.9rem;
         }
 
+        .preview-address i {
+            color: #A6CBE3;
+            font-size: 1rem;
+        }
+
         .preview-notes {
             background: #f8f8f8;
             padding: 12px;
             border-radius: 5px;
             font-size: 0.9rem;
             color: #333;
+            line-height: 1.4;
             margin-bottom: 10px;
+        }
+
+        .preview-notes i {
+            color: #999;
+            margin-right: 5px;
         }
 
         .preview-actions {
@@ -351,11 +379,29 @@
             font-size: 0.9rem;
             cursor: pointer;
             font-family: 'Manrope', sans-serif;
+            transition: opacity 0.2s;
         }
 
-        .preview-btn.ring, .preview-btn.message, .preview-btn.accept {
+        .preview-btn.accept {
             background: #000;
             color: white;
+        }
+
+        .preview-btn.message {
+            background: #000;
+            color: white;
+        }
+
+        .preview-btn.details {
+            background: #f0f0f0;
+            color: #000;
+        }
+
+        .preview-btn.taken {
+            background: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.7;
         }
 
         .preview-btn.close {
@@ -365,6 +411,282 @@
             font-size: 0.8rem;
             width: 100%;
             margin-top: 10px;
+        }
+
+        .preview-btn:hover:not(.taken) {
+            opacity: 0.8;
+        }
+
+        /* Chat Fullscreen - COMPLETELY FIXED for keyboard */
+        .chat-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 10000000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-fullscreen.active {
+            display: flex;
+        }
+
+        /* HIDE EVERYTHING ELSE WHEN CHAT IS ACTIVE */
+        .chat-fullscreen.active ~ #map,
+        .chat-fullscreen.active ~ .floating-distance-card,
+        .chat-fullscreen.active ~ .task-preview-card,
+        .chat-fullscreen.active ~ .bottom-nav,
+        .chat-fullscreen.active ~ .chat-minimized {
+            display: none !important;
+        }
+
+        .chat-fullscreen-header {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            background: white;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .chat-fullscreen-poster {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .chat-fullscreen-avatar {
+            width: 48px;
+            height: 48px;
+            background: #A6CBE3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .chat-fullscreen-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-fullscreen-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #000;
+        }
+
+        .chat-fullscreen-role {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .chat-fullscreen-minimize {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 5px;
+            color: #666;
+        }
+
+        .chat-fullscreen-minimize:hover {
+            background: #f0f0f0;
+        }
+
+        .chat-fullscreen-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chat-disclaimer {
+            background: #f8f8f8;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #666;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            border-left: 3px solid #000;
+        }
+
+        .chat-disclaimer i {
+            color: #000;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .chat-disclaimer-text {
+            flex: 1;
+        }
+
+        .chat-disclaimer-text strong {
+            color: #000;
+            font-weight: 600;
+        }
+
+        .chat-fullscreen-message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 80%;
+        }
+
+        .chat-fullscreen-message.own {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar-small {
+            width: 36px;
+            height: 36px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .message-bubble-full {
+            background: #f0f0f0;
+            padding: 12px 16px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .chat-fullscreen-message.own .message-bubble-full {
+            background: #A6CBE3;
+            color: #000;
+        }
+
+        .message-sender-full {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #666;
+        }
+
+        .chat-fullscreen-message.own .message-sender-full {
+            color: #333;
+        }
+
+        .message-text-full {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message-time-full {
+            font-size: 0.65rem;
+            color: #999;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-fullscreen-input-area {
+            display: flex;
+            padding: 12px 20px;
+            gap: 12px;
+            border-top: 1px solid #f0f0f0;
+            background: white;
+            flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            transition: padding-bottom 0.2s ease;
+            z-index: 10;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        /* When keyboard is open */
+        .chat-fullscreen.keyboard-open .chat-fullscreen-input-area {
+            padding-bottom: 20px;
+        }
+
+        .chat-fullscreen-input-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-fullscreen-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-family: 'Manrope', sans-serif;
+            outline: none;
+            line-height: 1.2;
+            height: 48px;
+        }
+
+        .chat-fullscreen-input:focus {
+            border-color: #A6CBE3;
+        }
+
+        .chat-fullscreen-send {
+            background: #000;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0 20px;
+            height: 48px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-minimized {
+            position: fixed;
+            bottom: 66px;
+            right: 20px;
+            z-index: 7000;
+            display: none;
+            cursor: pointer;
+        }
+
+        .chat-minimized.visible {
+            display: block;
+        }
+
+        .chat-minimized i {
+            color: white;
+            font-size: 2rem;
         }
 
         .bottom-nav {
@@ -379,6 +701,7 @@
             align-items: center;
             z-index: 2000000; 
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+            padding-bottom: env(safe-area-inset-bottom, 0);
         }
         
         .nav-item {
@@ -387,12 +710,16 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 0px;
             cursor: pointer;
             color: #999;
-            border: none;
+            transition: color 0.2s;
+            font-size: 0.7rem;
             background: transparent;
+            border: none;
             font-family: 'Manrope', sans-serif;
             position: relative;
+            padding-top: 4px;
         }
         
         .nav-item.active {
@@ -401,50 +728,259 @@
         
         .nav-item i {
             font-size: 1.3rem;
+            color: currentColor;
+            margin-bottom: -2px;
         }
         
         .nav-item span {
             font-size: 0.65rem;
             font-weight: 500;
-        }
-
-        .map-top-left {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            background: white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            font-size: 1.3rem;
+            margin-top: -2px;
         }
         
-        .map-top-right {
+        .nav-notification-dot {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
-            background: white;
+            top: 8px;
+            right: 50%;
+            transform: translateX(15px);
+            width: 10px;
+            height: 10px;
+            background: #A6CBE3;
             border-radius: 50%;
+            display: none;
+            border: 2px solid white;
+            z-index: 3;
+        }
+        
+        .nav-notification-dot.visible {
+            display: block;
+        }
+
+        .page-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 10000;
+            overflow-y: auto;
+            display: none;
+            padding: 20px;
+            padding-bottom: 76px;
+        }
+        
+        .page-container.active {
+            display: block;
+        }
+        
+        .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tasks-header h2 {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: #000000;
+        }
+        
+        .tasks-header span {
+            font-size: 0.9rem;
+            color: #666;
+            background: #f0f0f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+        
+        .task-categories-horizontal {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding-bottom: 8px;
+            margin-bottom: 1.5rem;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .task-categories-horizontal::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .category-tab-horizontal {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .category-tab-horizontal.active {
+            background: #000;
+            color: white;
+        }
+        
+        .section-header {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #000;
+            margin: 1.5rem 0 1rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        .section-header:first-of-type {
+            margin-top: 0;
+        }
+        
+        .tasks-list-container {
+            margin-top: 1rem;
+        }
+        
+        .task-month-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .month-header {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        .task-card {
+            background: white;
+            padding: 1rem 0;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+        
+        .task-card:active {
+            background: #f5f5f5;
+        }
+        
+        .task-card.incoming {
+            border-left: 3px solid #A6CBE3;
+            padding-left: 12px;
+        }
+        
+        .task-card.current {
+            border-left: 3px solid #10b981;
+            padding-left: 12px;
+            background: #f0fff4;
+        }
+        
+        .task-card.past {
+            border-left: 3px solid #999;
+            padding-left: 12px;
+            opacity: 0.8;
+        }
+        
+        .task-card-main {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .task-icon {
             width: 40px;
             height: 40px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            cursor: pointer;
-            font-size: 1.3rem;
+            background: #f0f0f0;
+            border-radius: 50%;
+        }
+        
+        .task-icon i {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .task-categories-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        
+        .task-category-tag {
+            background: #e0e0e0;
+            color: #333;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+        
+        .task-date-time {
+            font-size: 0.7rem;
+            color: #999;
+            margin-bottom: 0.2rem;
+        }
+        
+        .task-title {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: 0.15rem;
+            color: #000;
+            text-transform: capitalize;
+        }
+        
+        .task-amount {
+            font-weight: 500;
+            font-size: 0.85rem;
             color: #000;
         }
         
-        .mapboxgl-ctrl-top-right .mapboxgl-ctrl {
-            display: none !important;
+        .task-status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            font-weight: 400;
+            background: #f0f0f0;
+            color: #333;
+            border-radius: 5px;
+            margin-top: 4px;
+        }
+        
+        .task-status-badge.incoming {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .task-status-badge.assigned {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .task-status-badge.in-progress {
+            background: #fff3e0;
+            color: #e67e22;
+        }
+        
+        .task-status-badge.completed {
+            background: #e8f5e9;
+            color: #388e3c;
         }
 
         .toast {
@@ -459,8 +995,10 @@
             padding: 16px 24px;
             z-index: 9000;
             display: none;
-            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 300;
             text-align: center;
+            border-radius: 5px;
         }
 
         .toast.show {
@@ -472,24 +1010,273 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .task-detail-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 3000000;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .task-detail-page.active {
+            display: flex;
+        }
+        
+        .task-detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.25rem 0.75rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        
+        .task-detail-back-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+        }
+        
+        .task-detail-header-spacer {
+            width: 32px;
+        }
+        
+        .task-detail-content {
+            flex: 1;
+            padding: 1.5rem;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            background: #000;
+            border: 2px solid white;
+            outline: 2px solid #A6CBE3;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .timeline-icon {
+            width: 12px;
+            height: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4px;
+            flex-shrink: 0;
+            color: #000;
+        }
+
+        .timeline-icon i {
+            font-size: 1.2rem;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline-subtitle {
+            color: #666;
+            margin: 4px 0;
+        }
+
+        .timeline-time {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .status-text {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 10px;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .detail-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .detail-action-btn.primary {
+            padding: 16px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .detail-action-btn.secondary {
+            padding: 16px;
+            background: transparent;
+            color: #000;
+            border: 1px solid #000;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .poster-profile-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 20000000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poster-profile-popup.active {
+            display: flex;
+        }
+
+        .poster-profile-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 320px;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        .poster-profile-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .poster-profile-avatar-large {
+            width: 80px;
+            height: 80px;
+            background: #A6CBE3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 2.5rem;
+            margin: 0 auto 16px;
+        }
+
+        .poster-profile-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .poster-profile-rating {
+            text-align: center;
+            color: #f5b342;
+            margin-bottom: 16px;
+        }
+
+        .poster-profile-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .poster-profile-info-item i {
+            color: #A6CBE3;
+            width: 20px;
+        }
+
+        .poster-profile-info-text {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .poster-profile-bio {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f8f8f8;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Ring doorbell notification */
+        .ring-notification {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: #000;
+            color: white;
+            padding: 16px;
+            border-radius: 5px;
+            z-index: 10000001;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.3s ease;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .ring-notification i {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <div class="map-top-left" id="mapMenuIcon"><i class="fi fi-rr-menu-burger"></i></div>
-    <div class="map-top-right" id="mapNotificationBell"><i class="fi fi-rr-bell"></i></div>
-
-    <div class="map-skeleton" id="mapSkeleton">
-        <div class="skeleton-pulse"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line short"></div>
-        <div style="margin-top: 20px; color: #666;">Loading map...</div>
-    </div>
-
     <div id="map"></div>
 
     <div class="floating-distance-card" id="floatingDistanceCard">
         <div class="distance-info">
-            <i class="fi fi-tr-car" id="routeIcon"></i>
+            <i class="fi fi-rr-navigation" id="routeIcon"></i>
             <span class="distance-text" id="routeDistance">0 km</span>
             <span class="distance-text">·</span>
             <span class="distance-text" id="routeDuration">0 min</span>
@@ -504,22 +1291,80 @@
             <span class="preview-category" id="previewCategory">Loading...</span>
             <span class="preview-budget" id="previewBudget">R0</span>
         </div>
+        
         <div class="preview-poster">
             <div class="preview-poster-avatar" id="previewAvatar">?</div>
             <span class="preview-poster-name" id="previewPosterName">Someone</span>
         </div>
+        
         <div class="preview-details">
             <div class="preview-address">
                 <i class="fi fi-rr-marker"></i>
                 <span id="previewAddress">Loading address...</span>
             </div>
+            
             <div class="preview-notes" id="previewNotes">
                 <i class="fi fi-rr-comment"></i>
                 <span id="previewNotesText">No additional notes</span>
             </div>
         </div>
+        
         <div class="preview-actions" id="previewActions"></div>
+        
         <button class="preview-btn close" id="previewCloseBtn">Close</button>
+    </div>
+
+    <!-- CHAT - NOW WITH FIXED HEADER AND PROPER KEYBOARD HANDLING -->
+    <div class="chat-fullscreen" id="chatFullscreen">
+        <div class="chat-fullscreen-header">
+            <div class="chat-fullscreen-poster" id="chatPosterInfo">
+                <div class="chat-fullscreen-avatar" id="chatFullscreenAvatar">?</div>
+                <div class="chat-fullscreen-info">
+                    <span class="chat-fullscreen-name" id="chatFullscreenName">Loading...</span>
+                    <span class="chat-fullscreen-role" id="chatFullscreenRole">Poster</span>
+                </div>
+            </div>
+            <div class="chat-fullscreen-minimize" id="chatMinimizeBtn">
+                <i class="fi fi-rr-window-minimize"></i>
+            </div>
+        </div>
+        
+        <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
+        
+        <div class="chat-fullscreen-input-area">
+            <div class="chat-fullscreen-input-wrapper">
+                <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message...">
+            </div>
+            <button class="chat-fullscreen-send" id="chatFullscreenSend">Send</button>
+        </div>
+    </div>
+
+    <div class="chat-minimized" id="chatMinimized">
+        <i class="fi fi-sr-comment"></i>
+    </div>
+
+    <div class="poster-profile-popup" id="posterProfilePopup">
+        <div class="poster-profile-content">
+            <div class="poster-profile-close" id="posterProfileClose">✕</div>
+            <div class="poster-profile-avatar-large" id="posterProfileAvatar">?</div>
+            <div class="poster-profile-name" id="posterProfileName">Poster Name</div>
+            <div class="poster-profile-rating" id="posterProfileRating">★★★★★ 5.0</div>
+            <div class="poster-profile-info-item">
+                <i class="fi fi-rr-calendar"></i>
+                <span class="poster-profile-info-text" id="posterProfileMemberSince">Member since Jan 2024</span>
+            </div>
+            <div class="poster-profile-info-item">
+                <i class="fi fi-rr-check"></i>
+                <span class="poster-profile-info-text" id="posterProfileTasksPosted">12 tasks posted</span>
+            </div>
+            <div class="poster-profile-info-item">
+                <i class="fi fi-rr-clock"></i>
+                <span class="poster-profile-info-text" id="posterProfileResponseTime">Usually responds within 30min</span>
+            </div>
+            <div class="poster-profile-bio" id="posterProfileBio">
+                No bio available.
+            </div>
+        </div>
     </div>
 
     <div class="bottom-nav" id="bottomNav">
@@ -530,6 +1375,7 @@
         <button class="nav-item" id="navTasks" data-page="tasks">
             <i class="fi fi-rr-clipboard"></i>
             <span>Tasks</span>
+            <span class="nav-notification-dot" id="tasksNotificationDot"></span>
         </button>
         <button class="nav-item" id="navAccount" data-page="account">
             <i class="fi fi-rr-user"></i>
@@ -537,208 +1383,1169 @@
         </button>
     </div>
 
+    <div class="page-container" id="tasksPage">
+        <div class="tasks-header">
+            <h2>Your tasks</h2>
+            <span id="tasksCount">0</span>
+        </div>
+        
+        <div class="task-categories-horizontal" id="horizontalCategories">
+            <button class="category-tab-horizontal active" data-category="all">All</button>
+            <button class="category-tab-horizontal" data-category="incoming">Incoming</button>
+            <button class="category-tab-horizontal" data-category="current">Current</button>
+            <button class="category-tab-horizontal" data-category="past">Past</button>
+        </div>
+        
+        <div class="tasks-list-container" id="tasksListContainer"></div>
+    </div>
+
+    <div class="task-detail-page" id="taskDetailPage">
+        <div class="task-detail-header">
+            <button class="task-detail-back-btn" id="taskDetailBackBtn">←</button>
+            <div class="task-detail-header-spacer"></div>
+        </div>
+        <div class="task-detail-content" id="taskDetailContent"></div>
+    </div>
+
     <div class="toast" id="toast"></div>
+
+    <audio id="notificationSound" preload="auto" loop>
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="doorbellSound" preload="auto">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/doorbell.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         (function() {
             'use strict';
 
-            // ========== CONFIG ==========
-            const firebaseConfig = {
-                apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
-                authDomain: "taskmartapp-74d6b.firebaseapp.com",
-                databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
-                projectId: "taskmartapp-74d6b",
-                storageBucket: "taskmartapp-74d6b.firebasestorage.app",
-                messagingSenderId: "52910279328",
-                appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
-            };
-
-            // Initialize Firebase
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            
-            const auth = firebase.auth();
-            const database = firebase.database();
-
-            // ========== GLOBAL VARIABLES ==========
-            let currentUser = null;
-            let currentLat = -26.195246;
-            let currentLng = 28.034088;
-            let map = null;
-            let startMarker = null;
-            let taskMarkers = [];
-            let selectedTask = null;
-            let currentRouteProfile = 'driving';
-            
-            // DOM Elements
-            const mapEl = document.getElementById('map');
-            const mapSkeleton = document.getElementById('mapSkeleton');
-            const toast = document.getElementById('toast');
-            const routeToggle = document.getElementById('routeToggle');
-            const routeIcon = document.getElementById('routeIcon');
-            const routeDistance = document.getElementById('routeDistance');
-            const routeDuration = document.getElementById('routeDuration');
-            const floatingDistanceCard = document.getElementById('floatingDistanceCard');
-            const taskPreviewCard = document.getElementById('taskPreviewCard');
-            const previewCloseBtn = document.getElementById('previewCloseBtn');
-
-            // ========== HELPER FUNCTIONS ==========
-            function hideSkeleton() {
-                if (mapSkeleton) mapSkeleton.classList.add('hidden');
-            }
-
-            function showToast(message) {
-                if (toast) {
-                    toast.textContent = message;
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
-            }
-
-            // ========== MAP INITIALIZATION - WITH YOUR EXACT TOKEN LOGIC ==========
-            function initMap() {
-                if (!mapEl) {
-                    console.error('Map container not found');
-                    hideSkeleton();
-                    return;
-                }
-
-                if (typeof mapboxgl === 'undefined') {
-                    console.error('Mapbox GL not loaded');
-                    hideSkeleton();
-                    return;
-                }
-
-                // YOUR EXACT TOKEN LOGIC
-                if (window.MAPBOX_TOKEN) {
-                    mapboxgl.accessToken = window.MAPBOX_TOKEN;
-                    console.log('Mapbox token loaded from config', 'success');
-                } else {
-                    mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
-                    console.log('Using fallback Mapbox token', 'info');
-                }
-
-                try {
-                    // YOUR EXACT MAP CONFIGURATION
-                    map = new mapboxgl.Map({
-                        container: 'map',
-                        style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                        center: [28.034088, -26.195246],
-                        zoom: 12
-                    });
-
-                    // Add navigation control (minimal)
-                    map.addControl(new mapboxgl.NavigationControl({
-                        showCompass: false,
-                        showZoom: true
-                    }), 'top-right');
-
-                    map.on('load', () => {
-                        console.log('Map loaded successfully');
-                        hideSkeleton();
-                        
-                        // Add route source
-                        try {
-                            map.addSource('route', {
-                                type: 'geojson',
-                                data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
-                            });
-                            map.addLayer({
-                                id: 'route',
-                                type: 'line',
-                                source: 'route',
-                                paint: { 'line-color': '#666666', 'line-width': 3, 'line-opacity': 0.6 }
-                            });
-                        } catch (e) {
-                            console.error('Error adding route layer:', e);
-                        }
-
-                        // Get user location
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(
-                                (pos) => {
-                                    currentLat = pos.coords.latitude;
-                                    currentLng = pos.coords.longitude;
-                                    
-                                    map.flyTo({
-                                        center: [currentLng, currentLat],
-                                        zoom: 14,
-                                        duration: 3000
-                                    });
-                                    
-                                    updateUserMarker();
-                                },
-                                (error) => {
-                                    console.warn('Geolocation error:', error.message);
-                                    updateUserMarker();
-                                }
-                            );
-                        } else {
-                            updateUserMarker();
-                        }
-                    });
-
-                    map.on('error', (e) => {
-                        console.error('Map error:', e.error);
-                        hideSkeleton();
-                    });
-
-                } catch (e) {
-                    console.error('Map initialization error:', e);
-                    hideSkeleton();
-                }
-            }
-
-            function updateUserMarker() {
-                if (!map) return;
+            document.addEventListener('DOMContentLoaded', function() {
+                const toastEl = document.getElementById('toast');
                 
-                try {
-                    if (startMarker) startMarker.remove();
-                    
-                    const pin = document.createElement('div');
-                    pin.className = 'helper-pulsing-pin';
-                    
-                    startMarker = new mapboxgl.Marker({ element: pin })
-                        .setLngLat([currentLng, currentLat])
-                        .addTo(map);
-                } catch (e) {
-                    console.error('Error updating user marker:', e);
+                if (typeof firebase === 'undefined') {
+                    console.error('Firebase SDK not loaded');
+                    return;
                 }
-            }
 
-            // ========== ROUTE TOGGLE ==========
-            if (routeToggle) {
-                routeToggle.addEventListener('click', () => {
-                    currentRouteProfile = currentRouteProfile === 'driving' ? 'walking' : 'driving';
-                    showToast(`Route mode: ${currentRouteProfile}`);
-                });
-            }
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+                    authDomain: "taskmartapp-74d6b.firebaseapp.com",
+                    databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+                    projectId: "taskmartapp-74d6b",
+                    storageBucket: "taskmartapp-74d6b.firebasestorage.app",
+                    messagingSenderId: "52910279328",
+                    appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
+                };
 
-            // ========== PREVIEW CARD ==========
-            if (previewCloseBtn) {
-                previewCloseBtn.addEventListener('click', () => {
-                    taskPreviewCard.classList.remove('visible');
-                });
-            }
-
-            // ========== AUTH ==========
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    currentUser = { uid: user.uid };
-                    initMap(); // Initialize map after auth
-                } else {
-                    window.location.href = '/login.html';
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
                 }
-            });
+                
+                const auth = firebase.auth();
+                const database = firebase.database();
 
-            // ========== NAVIGATION ==========
-            document.getElementById('navMap').addEventListener('click', () => {
-                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-                document.getElementById('navMap').classList.add('active');
-            });
+                let currentUser = null;
+                let currentLat = -26.195246;
+                let currentLng = 28.034088;
+                let incomingTasks = [];
+                let currentTasks = [];
+                let pastTasks = [];
+                let allTasks = [];
+                let taskMarkers = [];
+                let startMarker = null;
+                let map = null;
+                let selectedTask = null;
+                let notificationSound = document.getElementById('notificationSound');
+                let doorbellSound = document.getElementById('doorbellSound');
+                let isShaking = false;
+                let chatListener = null;
+                let currentChatTask = null;
+                let isChatMinimized = false;
+                let currentHorizontalCategory = 'all';
+                let ringTriggeredTasks = new Set();
 
+                const navMap = document.getElementById('navMap');
+                const navTasks = document.getElementById('navTasks');
+                const navAccount = document.getElementById('navAccount');
+                const tasksPage = document.getElementById('tasksPage');
+                const taskDetailPage = document.getElementById('taskDetailPage');
+                const mapEl = document.getElementById('map');
+                const floatingDistanceCard = document.getElementById('floatingDistanceCard');
+                const routeIcon = document.getElementById('routeIcon');
+                const routeDistance = document.getElementById('routeDistance');
+                const routeDuration = document.getElementById('routeDuration');
+                const routeToggle = document.getElementById('routeToggle');
+                const tasksCount = document.getElementById('tasksCount');
+                const tasksListContainer = document.getElementById('tasksListContainer');
+                const toast = document.getElementById('toast');
+                const tasksNotificationDot = document.getElementById('tasksNotificationDot');
+                const taskDetailBackBtn = document.getElementById('taskDetailBackBtn');
+                const taskDetailContent = document.getElementById('taskDetailContent');
+                const horizontalCategoryTabs = document.querySelectorAll('.category-tab-horizontal');
+
+                const posterProfilePopup = document.getElementById('posterProfilePopup');
+                const posterProfileClose = document.getElementById('posterProfileClose');
+                const posterProfileAvatar = document.getElementById('posterProfileAvatar');
+                const posterProfileName = document.getElementById('posterProfileName');
+                const posterProfileRating = document.getElementById('posterProfileRating');
+                const posterProfileMemberSince = document.getElementById('posterProfileMemberSince');
+                const posterProfileTasksPosted = document.getElementById('posterProfileTasksPosted');
+                const posterProfileResponseTime = document.getElementById('posterProfileResponseTime');
+                const posterProfileBio = document.getElementById('posterProfileBio');
+
+                const chatFullscreen = document.getElementById('chatFullscreen');
+                const chatFullscreenAvatar = document.getElementById('chatFullscreenAvatar');
+                const chatFullscreenName = document.getElementById('chatFullscreenName');
+                const chatFullscreenRole = document.getElementById('chatFullscreenRole');
+                const chatFullscreenMessages = document.getElementById('chatFullscreenMessages');
+                const chatFullscreenInput = document.getElementById('chatFullscreenInput');
+                const chatFullscreenSend = document.getElementById('chatFullscreenSend');
+                const chatMinimizeBtn = document.getElementById('chatMinimizeBtn');
+                const chatMinimizedEl = document.getElementById('chatMinimized');
+                const chatPosterInfo = document.getElementById('chatPosterInfo');
+
+                const taskPreviewCard = document.getElementById('taskPreviewCard');
+                const previewCategory = document.getElementById('previewCategory');
+                const previewBudget = document.getElementById('previewBudget');
+                const previewAvatar = document.getElementById('previewAvatar');
+                const previewPosterName = document.getElementById('previewPosterName');
+                const previewAddress = document.getElementById('previewAddress');
+                const previewNotesText = document.getElementById('previewNotesText');
+                const previewActions = document.getElementById('previewActions');
+                const previewCloseBtn = document.getElementById('previewCloseBtn');
+
+                let shownTaskIds = new Set();
+
+                // Johannesburg coordinates
+                const JOBURG_LAT = -26.195246;
+                const JOBURG_LNG = 28.034088;
+
+                // Keyboard handling variables
+                let originalViewportHeight = window.innerHeight;
+                let keyboardOpen = false;
+
+                // Handle keyboard show/hide
+                function handleResize() {
+                    if (!chatFullscreen || !chatFullscreen.classList.contains('active')) return;
+                    
+                    const currentHeight = window.innerHeight;
+                    const heightDifference = originalViewportHeight - currentHeight;
+                    
+                    // If height difference is more than 100px, keyboard is likely open
+                    if (heightDifference > 100 && !keyboardOpen) {
+                        keyboardOpen = true;
+                        chatFullscreen.classList.add('keyboard-open');
+                        
+                        // Scroll to bottom of messages
+                        setTimeout(() => {
+                            if (chatFullscreenMessages) {
+                                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
+                            }
+                        }, 100);
+                    } else if (heightDifference <= 100 && keyboardOpen) {
+                        keyboardOpen = false;
+                        chatFullscreen.classList.remove('keyboard-open');
+                    }
+                }
+
+                // Add resize listener
+                window.addEventListener('resize', handleResize);
+
+                function showToast(message) {
+                    if (toast) {
+                        toast.textContent = message;
+                        toast.classList.add('show');
+                        setTimeout(() => toast.classList.remove('show'), 3000);
+                    }
+                }
+
+                function showRingNotification(task) {
+                    const notification = document.createElement('div');
+                    notification.className = 'ring-notification';
+                    notification.innerHTML = `
+                        <i class="fi fi-rr-bell"></i>
+                        <div>
+                            <strong>You've arrived!</strong><br>
+                            You're within 5 meters of ${task.posterName || 'the poster'}'s location.
+                        </div>
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    if (doorbellSound) {
+                        doorbellSound.play().catch(e => console.log('Doorbell sound failed:', e));
+                    }
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 5000);
+                }
+
+                function checkProximityAndRing() {
+                    if (!currentChatTask || !currentChatTask.location) return;
+                    
+                    if (ringTriggeredTasks.has(currentChatTask.id)) return;
+                    
+                    const distance = calculateDistance(
+                        currentLat, currentLng,
+                        currentChatTask.location.lat, currentChatTask.location.lng
+                    );
+                    
+                    // Convert to meters
+                    const distanceInMeters = distance * 1000;
+                    
+                    if (distanceInMeters <= 5) {
+                        ringTriggeredTasks.add(currentChatTask.id);
+                        showRingNotification(currentChatTask);
+                        
+                        // Update task status to arrived if needed
+                        if (currentChatTask.status === 'assigned') {
+                            updateTaskStatus(currentChatTask.id, 'in_progress');
+                        }
+                    }
+                }
+
+                function calculateDistance(lat1, lon1, lat2, lon2) {
+                    const R = 6371; // Radius of the earth in km
+                    const dLat = deg2rad(lat2 - lat1);
+                    const dLon = deg2rad(lon2 - lon1);
+                    const a = 
+                        Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                        Math.sin(dLon/2) * Math.sin(dLon/2); 
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                    const distance = R * c; // Distance in km
+                    return distance;
+                }
+
+                function deg2rad(deg) {
+                    return deg * (Math.PI/180);
+                }
+
+                function showPosterProfile(posterId) {
+                    if (!posterId || !posterProfilePopup) return;
+                    
+                    database.ref('users/' + posterId).once('value').then((snapshot) => {
+                        const posterData = snapshot.val();
+                        if (!posterData) return;
+                        
+                        database.ref('tasks/' + posterId).once('value').then((taskSnapshot) => {
+                            const taskCount = taskSnapshot.val() ? Object.keys(taskSnapshot.val()).length : 0;
+                            
+                            if (posterProfileAvatar) posterProfileAvatar.textContent = (posterData.name || 'P').charAt(0).toUpperCase();
+                            if (posterProfileName) posterProfileName.textContent = posterData.name || 'Poster';
+                            if (posterProfileRating) posterProfileRating.textContent = '★★★★★ ' + (posterData.rating || '5.0');
+                            if (posterProfileMemberSince) posterProfileMemberSince.textContent = 'Member since ' + (posterData.memberSince || 'Jan 2024');
+                            if (posterProfileTasksPosted) posterProfileTasksPosted.textContent = taskCount + ' tasks posted';
+                            if (posterProfileResponseTime) posterProfileResponseTime.textContent = posterData.responseTime || 'Usually responds within 30min';
+                            if (posterProfileBio) posterProfileBio.textContent = posterData.bio || 'No bio available.';
+                            
+                            posterProfilePopup.classList.add('active');
+                        });
+                    });
+                }
+
+                if (posterProfileClose) {
+                    posterProfileClose.addEventListener('click', () => {
+                        posterProfilePopup.classList.remove('active');
+                    });
+                }
+
+                if (posterProfilePopup) {
+                    posterProfilePopup.addEventListener('click', (e) => {
+                        if (e.target === posterProfilePopup) {
+                            posterProfilePopup.classList.remove('active');
+                        }
+                    });
+                }
+
+                document.addEventListener('click', () => {
+                    if (notificationSound) {
+                        notificationSound.play().then(() => {
+                            notificationSound.pause();
+                            notificationSound.currentTime = 0;
+                        }).catch(() => {});
+                    }
+                }, { once: true });
+
+                function stopShakingAndSound() {
+                    if (taskPreviewCard) taskPreviewCard.classList.remove('shaking');
+                    if (notificationSound) {
+                        notificationSound.pause();
+                        notificationSound.currentTime = 0;
+                    }
+                    isShaking = false;
+                }
+
+                function startShakingAndSound() {
+                    if (taskPreviewCard) taskPreviewCard.classList.add('shaking');
+                    if (notificationSound) {
+                        notificationSound.play().catch(e => console.log('Sound play failed:', e));
+                    }
+                    isShaking = true;
+                }
+
+                function isTaskMine(task) {
+                    return task && task.assignedHelperId === currentUser?.uid;
+                }
+
+                function showTaskPreview(task) {
+                    if (!task || !taskPreviewCard) return;
+                    
+                    if (chatMinimizedEl) chatMinimizedEl.classList.remove('visible');
+                    
+                    stopShakingAndSound();
+                    selectedTask = task;
+                    
+                    if (previewCategory) previewCategory.textContent = task.category || 'Help needed';
+                    if (previewBudget) {
+                        previewBudget.textContent = task.budget === 'open' ? 'Open to offers' : `R${task.budget}`;
+                        previewBudget.style.color = task.budget === 'open' ? '#666' : '#10b981';
+                    }
+                    
+                    const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
+                    if (previewAvatar) previewAvatar.textContent = posterInitial;
+                    if (previewPosterName) previewPosterName.textContent = task.posterName || 'Someone';
+                    if (previewAddress) previewAddress.textContent = task.address || 'Location set';
+                    if (previewNotesText) previewNotesText.textContent = task.notes || 'No additional notes';
+                    
+                    let buttonsHtml = '';
+                    
+                    if (task.status === 'open') {
+                        buttonsHtml = `
+                            <button class="preview-btn accept" id="previewAcceptBtn">Accept task</button>
+                            <button class="preview-btn details" id="previewDetailsBtn">View details</button>
+                        `;
+                    } else if (task.status === 'assigned' || task.status === 'in_progress') {
+                        if (isTaskMine(task)) {
+                            buttonsHtml = `
+                                <button class="preview-btn message" id="previewMessageBtn">Message Poster</button>
+                                <button class="preview-btn details" id="previewDetailsBtn">View details</button>
+                            `;
+                        } else {
+                            buttonsHtml = `
+                                <button class="preview-btn taken" disabled>Task taken by another helper</button>
+                                <button class="preview-btn details" id="previewDetailsBtn">View details</button>
+                            `;
+                        }
+                    } else if (task.status === 'completed') {
+                        if (isTaskMine(task)) {
+                            buttonsHtml = `
+                                <button class="preview-btn details" id="previewDetailsBtn">View details</button>
+                            `;
+                        } else {
+                            return;
+                        }
+                    }
+                    
+                    if (previewActions) previewActions.innerHTML = buttonsHtml;
+                    
+                    taskPreviewCard.classList.remove('fade-out');
+                    taskPreviewCard.classList.add('visible');
+                    
+                    if (task.status === 'open') startShakingAndSound();
+                    
+                    setTimeout(() => {
+                        const detailsBtn = document.getElementById('previewDetailsBtn');
+                        if (detailsBtn) {
+                            detailsBtn.addEventListener('click', () => {
+                                hideTaskPreview();
+                                showTaskDetail(task.id);
+                            });
+                        }
+                        
+                        const acceptBtn = document.getElementById('previewAcceptBtn');
+                        if (acceptBtn) {
+                            acceptBtn.addEventListener('click', () => {
+                                acceptTask(task);
+                            });
+                        }
+                        
+                        const messageBtn = document.getElementById('previewMessageBtn');
+                        if (messageBtn) {
+                            messageBtn.addEventListener('click', () => {
+                                hideTaskPreview();
+                                openChat(task);
+                            });
+                        }
+                    }, 0);
+                    
+                    calculateRoute(task, false);
+                }
+
+                function hideTaskPreview() {
+                    if (taskPreviewCard) {
+                        taskPreviewCard.classList.remove('visible', 'fade-out');
+                    }
+                    stopShakingAndSound();
+                    selectedTask = null;
+                }
+
+                function openChat(task) {
+                    if (!task || !currentUser || !chatFullscreen || !chatFullscreenMessages) return;
+                    
+                    currentChatTask = task;
+                    
+                    if (chatFullscreenName) chatFullscreenName.textContent = task.posterName || 'Poster';
+                    if (chatFullscreenAvatar) chatFullscreenAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
+                    if (chatFullscreenRole) chatFullscreenRole.textContent = 'Poster';
+                    
+                    hideTaskPreview();
+                    if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
+                    
+                    chatFullscreen.classList.add('active');
+                    if (chatMinimizedEl) chatMinimizedEl.classList.remove('visible');
+                    isChatMinimized = false;
+                    
+                    chatFullscreenMessages.innerHTML = '';
+                    
+                    const disclaimerDiv = document.createElement('div');
+                    disclaimerDiv.className = 'chat-disclaimer';
+                    disclaimerDiv.innerHTML = `
+                        <i class="fi fi-tr-shield-check"></i>
+                        <div class="chat-disclaimer-text">
+                            <strong>Always keep all communication inside taskmart.</strong> Payments can be made with card or cash, but any arrangements made outside the app are not protected, and taskmart is not responsible for issues that happen off-platform.
+                        </div>
+                    `;
+                    chatFullscreenMessages.appendChild(disclaimerDiv);
+                    
+                    if (chatListener) {
+                        database.ref('chats/' + task.id).off('child_added', chatListener);
+                    }
+                    
+                    chatListener = database.ref('chats/' + task.id)
+                        .orderByChild('timestamp')
+                        .on('child_added', (snapshot) => {
+                            const message = snapshot.val();
+                            displayFullscreenMessage(message);
+                        });
+                    
+                    // Reset keyboard state
+                    keyboardOpen = false;
+                    chatFullscreen.classList.remove('keyboard-open');
+                    
+                    if (chatFullscreenInput) setTimeout(() => chatFullscreenInput.focus(), 300);
+                }
+
+                function minimizeChat() {
+                    if (chatFullscreen) chatFullscreen.classList.remove('active');
+                    if (chatMinimizedEl) chatMinimizedEl.classList.add('visible');
+                    isChatMinimized = true;
+                }
+
+                function displayFullscreenMessage(message) {
+                    if (!currentChatTask || !chatFullscreenMessages) return;
+                    
+                    const isOwn = message.senderId === currentUser?.uid;
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `chat-fullscreen-message ${isOwn ? 'own' : ''}`;
+                    
+                    const senderInitial = isOwn ? 
+                        (currentUser?.name || 'Y').charAt(0).toUpperCase() : 
+                        (currentChatTask.posterName || 'P').charAt(0).toUpperCase();
+                    
+                    const time = message.timestamp ? 
+                        new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+                        'Just now';
+                    
+                    messageDiv.innerHTML = `
+                        <div class="message-avatar-small">${senderInitial}</div>
+                        <div class="message-bubble-full">
+                            <div class="message-sender-full">${isOwn ? 'You' : 'Poster'}</div>
+                            <div class="message-text-full">${message.text || ''}</div>
+                            <div class="message-time-full">${time}</div>
+                        </div>
+                    `;
+                    
+                    chatFullscreenMessages.appendChild(messageDiv);
+                    chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
+                }
+
+                async function sendFullscreenMessage(text) {
+                    if (!currentChatTask || !currentUser || !text.trim()) return;
+                    
+                    const message = {
+                        senderId: currentUser.uid,
+                        senderName: currentUser.name,
+                        text: text.trim(),
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    
+                    try {
+                        await database.ref('chats/' + currentChatTask.id).push(message);
+                        if (chatFullscreenInput) chatFullscreenInput.value = '';
+                    } catch (error) {
+                        console.error('Error sending message:', error);
+                        showToast('Failed to send message');
+                    }
+                }
+
+                async function acceptTask(task) {
+                    if (!task || !currentUser) return;
+
+                    try {
+                        console.log('Attempting to accept task:', task.id);
+                        
+                        const taskRef = database.ref('tasks/' + task.posterId + '/' + task.id);
+                        
+                        await taskRef.transaction((currentData) => {
+                            if (currentData && currentData.status === 'open') {
+                                currentData.status = 'assigned';
+                                currentData.assignedHelperId = currentUser.uid;
+                                currentData.assignedHelperName = currentUser.name;
+                                currentData.assignedAt = firebase.database.ServerValue.TIMESTAMP;
+                                return currentData;
+                            }
+                            return;
+                        }).then((result) => {
+                            if (result.committed) {
+                                console.log('Task accepted successfully');
+                                
+                                if (taskPreviewCard) taskPreviewCard.classList.add('fade-out');
+                                
+                                setTimeout(() => {
+                                    hideTaskPreview();
+                                    showToast('Task accepted! Head to the location.');
+                                }, 300);
+                                
+                                fetchTasks();
+                            } else {
+                                console.log('Task was already accepted by someone else');
+                                showToast('Sorry, this task was just taken by another helper');
+                                
+                                if (selectedTask && selectedTask.id === task.id) {
+                                    showTaskPreview({...task, status: 'assigned'});
+                                }
+                                
+                                fetchTasks();
+                            }
+                        });
+                        
+                    } catch (error) {
+                        console.error('Error accepting task:', error);
+                        showToast('Error accepting task: ' + error.message);
+                    }
+                }
+
+                if (previewCloseBtn) {
+                    previewCloseBtn.addEventListener('click', hideTaskPreview);
+                }
+
+                auth.onAuthStateChanged(async (user) => {
+                    if (!user) {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    try {
+                        const snapshot = await database.ref('users/' + user.uid).once('value');
+                        const userData = snapshot.val();
+
+                        if (!userData || userData.role !== 'helper') {
+                            await auth.signOut();
+                            window.location.href = '/login.html';
+                            return;
+                        }
+
+                        currentUser = {
+                            uid: user.uid,
+                            name: userData.name,
+                            email: user.email,
+                            phone: userData.phone || 'Not set',
+                            bio: userData.bio || '',
+                            profileImage: userData.profileImage || null
+                        };
+
+                        initMap();
+                        setupTaskListener();
+
+                    } catch (error) {
+                        console.error('Auth error:', error);
+                    }
+                });
+
+                if (horizontalCategoryTabs) {
+                    horizontalCategoryTabs.forEach(tab => {
+                        tab.addEventListener('click', function() {
+                            horizontalCategoryTabs.forEach(t => t.classList.remove('active'));
+                            this.classList.add('active');
+                            currentHorizontalCategory = this.dataset.category;
+                            renderTasksPage();
+                        });
+                    });
+                }
+
+                function initMap() {
+                    if (typeof mapboxgl === 'undefined' || !window.MAPBOX_TOKEN || !mapEl) {
+                        return;
+                    }
+
+                    try {
+                        mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+                        map = new mapboxgl.Map({
+                            container: 'map',
+                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
+                            center: [JOBURG_LNG, JOBURG_LAT],
+                            zoom: 10
+                        });
+
+                        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+                        map.on('load', () => {
+                            try {
+                                map.addSource('route', {
+                                    type: 'geojson',
+                                    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
+                                });
+
+                                map.addLayer({
+                                    id: 'route',
+                                    type: 'line',
+                                    source: 'route',
+                                    paint: { 'line-color': '#666666', 'line-width': 3, 'line-opacity': 0.6 }
+                                });
+                            } catch (e) {}
+
+                            if (navigator.geolocation) {
+                                navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                        currentLat = pos.coords.latitude;
+                                        currentLng = pos.coords.longitude;
+                                        
+                                        // Smooth zoom to current location
+                                        map.flyTo({
+                                            center: [currentLng, currentLat],
+                                            zoom: 14,
+                                            essential: true,
+                                            duration: 3000
+                                        });
+                                        
+                                        updateUserMarker();
+                                        fetchTasks();
+                                    },
+                                    () => {
+                                        updateUserMarker();
+                                        fetchTasks();
+                                    }
+                                );
+                            } else {
+                                updateUserMarker();
+                                fetchTasks();
+                            }
+                        });
+
+                        map.on('error', () => {
+                            fetchTasks();
+                        });
+                    } catch (e) {}
+                }
+
+                function updateUserMarker() {
+                    if (!map) return;
+                    
+                    try {
+                        if (startMarker) startMarker.remove();
+                        
+                        const pin = document.createElement('div');
+                        pin.className = 'helper-pulsing-pin';
+                        
+                        startMarker = new mapboxgl.Marker({ element: pin })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                    } catch (e) {}
+                }
+
+                function createTaskMarker(task) {
+                    if (!map || !task || !task.location) return null;
+                    
+                    try {
+                        const el = document.createElement('div');
+                        el.className = 'task-pin';
+                        
+                        if (task.status === 'assigned' || task.status === 'in_progress') {
+                            if (isTaskMine(task)) {
+                                el.classList.add('assigned');
+                            } else {
+                                el.classList.add('taken');
+                            }
+                        }
+                        
+                        const marker = new mapboxgl.Marker({ element: el })
+                            .setLngLat([task.location.lng, task.location.lat])
+                            .addTo(map);
+                        
+                        el.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            showTaskPreview(task);
+                        });
+                        
+                        return marker;
+                    } catch (e) {
+                        return null;
+                    }
+                }
+
+                async function fetchTasks() {
+                    try {
+                        const snapshot = await database.ref('tasks').once('value');
+                        const allUsersTasks = snapshot.val() || {};
+                        
+                        allTasks = [];
+                        
+                        for (let posterId in allUsersTasks) {
+                            for (let taskId in allUsersTasks[posterId]) {
+                                const taskData = allUsersTasks[posterId][taskId];
+                                if (taskData) {
+                                    allTasks.push({
+                                        id: taskId,
+                                        posterId: posterId,
+                                        ...taskData
+                                    });
+                                }
+                            }
+                        }
+
+                        if (!currentUser) return;
+
+                        incomingTasks = allTasks.filter(t => 
+                            t && t.status === 'open' && 
+                            t.taskState === 'current' && 
+                            t.posterId !== currentUser.uid
+                        );
+                        
+                        currentTasks = allTasks.filter(t => 
+                            t && (t.status === 'assigned' || t.status === 'in_progress') && 
+                            t.assignedHelperId === currentUser.uid
+                        );
+                        
+                        pastTasks = allTasks.filter(t => 
+                            t && t.status === 'completed' && 
+                            t.assignedHelperId === currentUser.uid
+                        );
+
+                        if (tasksCount) {
+                            tasksCount.textContent = (incomingTasks.length + currentTasks.length + pastTasks.length).toString();
+                        }
+
+                        if (taskMarkers) {
+                            taskMarkers.forEach(m => { if (m) m.remove(); });
+                        }
+                        taskMarkers = [];
+                        
+                        [...incomingTasks, ...currentTasks].forEach(task => {
+                            if (task && task.location && task.location.lat && task.location.lng) {
+                                const marker = createTaskMarker(task);
+                                if (marker) taskMarkers.push(marker);
+                            }
+                        });
+
+                        if (tasksNotificationDot) {
+                            tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
+                        }
+                        
+                        if (tasksPage && tasksPage.classList.contains('active')) {
+                            renderTasksPage();
+                        }
+
+                    } catch (error) {
+                        console.error('Error fetching tasks:', error);
+                    }
+                }
+
+                function setupTaskListener() {
+                    database.ref('tasks').on('child_added', (posterSnapshot) => {
+                        posterSnapshot.ref.on('child_added', (taskSnapshot) => {
+                            const task = {
+                                id: taskSnapshot.key,
+                                posterId: posterSnapshot.key,
+                                ...taskSnapshot.val()
+                            };
+                            
+                            if (task && task.status === 'open' && 
+                                task.taskState === 'current' && 
+                                task.posterId !== currentUser?.uid &&
+                                !shownTaskIds.has(task.id) &&
+                                navMap && navMap.classList.contains('active')) {
+                                
+                                shownTaskIds.add(task.id);
+                                
+                                setTimeout(() => {
+                                    showTaskPreview(task);
+                                }, 100);
+                            }
+                        });
+                    });
+                }
+
+                async function calculateRoute(task, shouldZoom = false) {
+                    if (!task || !task.location || !task.location.lat || !task.location.lng || !currentLat || !currentLng || !map) return;
+
+                    try {
+                        const res = await fetch(
+                            `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
+                        );
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            const route = data.routes[0];
+                            if (!route) return;
+                            
+                            const distance = route.distance < 1000 ? 
+                                Math.round(route.distance) + 'm' : 
+                                (route.distance / 1000).toFixed(1) + 'km';
+                            const duration = Math.round(route.duration / 60) + 'min';
+
+                            if (routeIcon) routeIcon.className = 'fi fi-rr-car';
+                            if (routeDistance) routeDistance.textContent = distance;
+                            if (routeDuration) routeDuration.textContent = duration;
+                            if (floatingDistanceCard) floatingDistanceCard.classList.add('visible');
+
+                            if (map.getSource('route')) {
+                                map.getSource('route').setData({
+                                    type: 'Feature',
+                                    geometry: route.geometry
+                                });
+                            }
+
+                            if (shouldZoom) {
+                                const bounds = new mapboxgl.LngLatBounds();
+                                bounds.extend([currentLng, currentLat]);
+                                bounds.extend([task.location.lng, task.location.lat]);
+                                map.fitBounds(bounds, { padding: 50, duration: 500 });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Route error:', error);
+                    }
+                }
+
+                if (routeToggle) {
+                    routeToggle.addEventListener('click', () => {
+                        showToast('Route toggling coming soon');
+                    });
+                }
+
+                function setActivePage(page) {
+                    if (navMap && navTasks && navAccount) {
+                        [navMap, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
+                    }
+                    
+                    if (page === 'map') {
+                        if (navMap) navMap.classList.add('active');
+                        if (tasksPage) tasksPage.classList.remove('active');
+                        if (taskDetailPage) taskDetailPage.classList.remove('active');
+                        if (mapEl) mapEl.style.display = 'block';
+                        setTimeout(() => { if (map) map.resize(); }, 100);
+                    } else if (page === 'tasks') {
+                        if (navTasks) navTasks.classList.add('active');
+                        if (tasksPage) tasksPage.classList.add('active');
+                        if (taskDetailPage) taskDetailPage.classList.remove('active');
+                        if (mapEl) mapEl.style.display = 'none';
+                        if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
+                        hideTaskPreview();
+                        renderTasksPage();
+                    } else if (page === 'account') {
+                        window.location.href = 'helper-account.html';
+                    } else if (page === 'taskDetail') {
+                        if (taskDetailPage) taskDetailPage.classList.add('active');
+                        if (mapEl) mapEl.style.display = 'none';
+                        if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
+                        hideTaskPreview();
+                    }
+                }
+
+                if (navMap) navMap.addEventListener('click', () => setActivePage('map'));
+                if (navTasks) navTasks.addEventListener('click', () => setActivePage('tasks'));
+                if (navAccount) navAccount.addEventListener('click', () => setActivePage('account'));
+                if (taskDetailBackBtn) taskDetailBackBtn.addEventListener('click', () => setActivePage('tasks'));
+
+                if (chatPosterInfo) {
+                    chatPosterInfo.addEventListener('click', () => {
+                        if (currentChatTask) {
+                            showPosterProfile(currentChatTask.posterId);
+                        }
+                    });
+                }
+
+                function renderTasksPage() {
+                    if (!tasksListContainer) return;
+                    
+                    let html = '';
+
+                    let tasksToShow = [];
+                    if (currentHorizontalCategory === 'all') {
+                        tasksToShow = [...incomingTasks, ...currentTasks, ...pastTasks];
+                    } else if (currentHorizontalCategory === 'incoming') {
+                        tasksToShow = incomingTasks;
+                    } else if (currentHorizontalCategory === 'current') {
+                        tasksToShow = currentTasks;
+                    } else if (currentHorizontalCategory === 'past') {
+                        tasksToShow = pastTasks;
+                    }
+
+                    if (tasksToShow.length === 0) {
+                        html = '<div style="text-align: center; padding: 40px 20px;"><h3 style="font-weight: 500; margin-bottom: 10px;">No tasks in this category</h3><p style="color: #666;">Tasks will appear here when available</p></div>';
+                    } else {
+                        tasksToShow.forEach(task => {
+                            if (!task) return;
+                            
+                            let cardClass = '';
+                            let statusText = '';
+                            let statusClass = '';
+                            let icon = 'clipboard';
+                            
+                            if (incomingTasks.includes(task)) {
+                                cardClass = 'incoming';
+                                statusText = 'Waiting for acceptance';
+                                statusClass = 'incoming';
+                            } else if (currentTasks.includes(task)) {
+                                cardClass = 'current';
+                                statusText = task.status === 'assigned' ? 'Heading to location' : 'Working on task';
+                                statusClass = task.status === 'assigned' ? 'assigned' : 'in-progress';
+                            } else {
+                                cardClass = 'past';
+                                statusText = 'Completed';
+                                statusClass = 'completed';
+                            }
+                            
+                            const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Unknown';
+                            
+                            let categoryTags = '';
+                            if (task.category) {
+                                const categories = task.category.split(/[,\/]/).map(c => c.trim());
+                                categories.forEach(cat => {
+                                    if (cat) {
+                                        categoryTags += `<span class="task-category-tag">${cat}</span>`;
+                                    }
+                                });
+                            }
+                            
+                            html += `
+                                <div class="task-card ${cardClass}" onclick="handleTaskCardClick('${task.id}', '${cardClass}')">
+                                    <div class="task-card-main">
+                                        <div class="task-icon"><i class="fi fi-rr-${icon}"></i></div>
+                                        <div class="task-content">
+                                            <div class="task-date-time">${date}</div>
+                                            <div class="task-title">${task.category || 'Task'}</div>
+                                            <div class="task-amount">${task.budget === 'open' ? 'Open to offers' : `R${task.budget}`}</div>
+                                            <div class="task-categories-tags">${categoryTags}</div>
+                                            <span class="task-status-badge ${statusClass}">${statusText}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    tasksListContainer.innerHTML = html;
+                }
+
+                window.handleTaskCardClick = function(taskId, cardClass) {
+                    if (cardClass === 'incoming') {
+                        const task = incomingTasks.find(t => t && t.id === taskId);
+                        if (task) {
+                            setActivePage('map');
+                            setTimeout(() => {
+                                showTaskPreview(task);
+                            }, 100);
+                        }
+                    } else {
+                        showTaskDetail(taskId);
+                    }
+                };
+
+                window.showTaskDetail = function(taskId) {
+                    const task = [...currentTasks, ...pastTasks].find(t => t && t.id === taskId);
+                    if (!task || !taskDetailContent) return;
+
+                    const createdDate = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown';
+                    const completedDate = task.completedAt ? new Date(task.completedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
+                    const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
+                    
+                    let statusText = '';
+                    let statusClass = '';
+                    let actionButton = '';
+                    
+                    if (task.status === 'assigned') {
+                        statusText = 'Heading to location';
+                        statusClass = 'assigned';
+                        actionButton = `
+                            <button class="detail-action-btn primary" onclick="updateTaskStatus('${task.id}', 'in_progress')">
+                                I have arrived
+                            </button>
+                        `;
+                    } else if (task.status === 'in_progress') {
+                        statusText = 'Working on task';
+                        statusClass = 'in-progress';
+                        actionButton = `
+                            <button class="detail-action-btn primary" onclick="completeTask('${task.id}')">
+                                Mark as completed
+                            </button>
+                        `;
+                    } else if (task.status === 'completed') {
+                        statusText = `Completed on ${completedDate}`;
+                        statusClass = 'completed';
+                    }
+
+                    taskDetailContent.innerHTML = `
+                        <div class="detail-poster-info" style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 20px; padding: 16px; background: #f8f8f8; border-radius: 12px;">
+                            <div class="detail-poster-right" style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 12px;">${posterInitial}</div>
+                            <div class="detail-poster-details">
+                                <span class="detail-poster-label" style="font-size: 0.8rem; color: #666;">Task for</span>
+                                <span class="detail-poster-name" style="font-weight: 600; display: block;">${task.posterName || 'Someone'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-map-container" id="taskDetailMap" style="height: 150px; background: #f0f0f0; border-radius: 12px; margin-bottom: 20px;"></div>
+                        
+                        <div class="detail-timeline" style="margin-bottom: 24px;">
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Task location</div>
+                                    <div class="timeline-subtitle">${task.address || 'Location set'}</div>
+                                    <div class="timeline-time">Posted: ${createdDate}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item">
+                                <div class="timeline-icon">
+                                    <i class="fi fi-rr-clipboard"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">${task.category || 'Task'}</div>
+                                    <div class="timeline-subtitle">${task.notes || 'No additional notes'}</div>
+                                    <div class="timeline-time">Budget: ${task.budget === 'open' ? 'Open to offers' : `R${task.budget}`}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Status</div>
+                                    <div class="timeline-subtitle"><span class="status-text ${statusClass}">${statusText}</span></div>
+                                    ${task.completedAt ? `<div class="timeline-time">Completed: ${completedDate}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-actions">
+                            ${actionButton}
+                            <button class="detail-action-btn secondary" onclick="setActivePage('tasks')">Back to tasks</button>
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        const mapContainer = document.getElementById('taskDetailMap');
+                        if (mapContainer && task.location && task.location.lat && task.location.lng && typeof mapboxgl !== 'undefined') {
+                            try {
+                                new mapboxgl.Map({
+                                    container: 'taskDetailMap',
+                                    style: 'mapbox://styles/mapbox/streets-v12',
+                                    center: [task.location.lng, task.location.lat],
+                                    zoom: 14,
+                                    interactive: false
+                                });
+                            } catch (e) {}
+                        }
+                    }, 100);
+
+                    setActivePage('taskDetail');
+                };
+
+                window.updateTaskStatus = async function(taskId, newStatus) {
+                    const task = currentTasks.find(t => t && t.id === taskId);
+                    if (!task) return;
+
+                    try {
+                        await database.ref('tasks/' + task.posterId + '/' + taskId).update({ 
+                            status: newStatus
+                        });
+                        showToast('Status updated');
+                        await fetchTasks();
+                        setActivePage('tasks');
+                    } catch (error) {
+                        showToast('Error updating status');
+                    }
+                };
+
+                window.completeTask = async function(taskId) {
+                    const task = currentTasks.find(t => t && t.id === taskId);
+                    if (!task) return;
+
+                    try {
+                        await database.ref('tasks/' + task.posterId + '/' + taskId).update({
+                            status: 'completed',
+                            completedAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                        
+                        showToast('Task completed! Payment received.');
+                        await fetchTasks();
+                        setActivePage('tasks');
+                    } catch (error) {
+                        showToast('Error completing task');
+                    }
+                };
+
+                if (chatFullscreenSend) {
+                    chatFullscreenSend.addEventListener('click', () => {
+                        sendFullscreenMessage(chatFullscreenInput ? chatFullscreenInput.value : '');
+                    });
+                }
+
+                if (chatFullscreenInput) {
+                    chatFullscreenInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            sendFullscreenMessage(chatFullscreenInput.value);
+                        }
+                    });
+                    
+                    // Handle keyboard appearance
+                    chatFullscreenInput.addEventListener('focus', () => {
+                        setTimeout(() => {
+                            if (chatFullscreenMessages) {
+                                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
+                            }
+                        }, 300);
+                    });
+                }
+
+                if (chatMinimizeBtn) {
+                    chatMinimizeBtn.addEventListener('click', () => {
+                        minimizeChat();
+                    });
+                }
+
+                if (chatMinimizedEl) {
+                    chatMinimizedEl.addEventListener('click', () => {
+                        if (currentChatTask) {
+                            chatMinimizedEl.classList.remove('visible');
+                            if (chatFullscreen) chatFullscreen.classList.add('active');
+                        }
+                    });
+                }
+
+                // Watch position for proximity alerts
+                if (navigator.geolocation) {
+                    navigator.geolocation.watchPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            updateUserMarker();
+                            checkProximityAndRing();
+                        },
+                        (error) => console.log('Geolocation error:', error),
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                    );
+                }
+
+                setActivePage('map');
+                setInterval(fetchTasks, 30000);
+            });
         })();
     </script>
 </body>
