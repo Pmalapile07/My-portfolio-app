@@ -61,54 +61,6 @@
             width: 100%;
         }
 
-        .map-skeleton {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #f5f5f5;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease;
-        }
-
-        .map-skeleton.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .skeleton-pulse {
-            width: 80px;
-            height: 80px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            margin-bottom: 20px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .skeleton-line {
-            width: 200px;
-            height: 16px;
-            background: #e0e0e0;
-            margin: 8px 0;
-            border-radius: 4px;
-            animation: pulse 1.5s infinite;
-        }
-
-        .skeleton-line.short {
-            width: 150px;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-
         #map {
             position: absolute;
             top: 0;
@@ -465,7 +417,7 @@
             opacity: 0.8;
         }
 
-        /* Chat Fullscreen - SIMPLE FIX */
+        /* Chat Fullscreen - FIXED with proper keyboard handling */
         .chat-fullscreen {
             position: fixed;
             top: 0;
@@ -500,6 +452,9 @@
             background: white;
             justify-content: space-between;
             flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .chat-fullscreen-poster {
@@ -662,6 +617,10 @@
             border-top: 1px solid #f0f0f0;
             background: white;
             flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
         }
 
         .chat-fullscreen-input-wrapper {
@@ -700,6 +659,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .chat-minimized {
@@ -716,7 +676,7 @@
         }
 
         .chat-minimized i {
-            color: #000;
+            color: white;
             font-size: 2rem;
         }
 
@@ -1271,16 +1231,38 @@
             font-size: 0.9rem;
             color: #666;
         }
+
+        /* Ring doorbell notification */
+        .ring-notification {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: #000;
+            color: white;
+            padding: 16px;
+            border-radius: 5px;
+            z-index: 10000001;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.3s ease;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .ring-notification i {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <div class="map-skeleton" id="mapSkeleton">
-        <div class="skeleton-pulse"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line short"></div>
-        <div style="margin-top: 20px; color: #666; font-family: 'Manrope', sans-serif;">Loading map...</div>
-    </div>
-
     <div id="map"></div>
 
     <div class="floating-distance-card" id="floatingDistanceCard">
@@ -1323,7 +1305,7 @@
         <button class="preview-btn close" id="previewCloseBtn">Close</button>
     </div>
 
-    <!-- CHAT - NOW CORRECTLY HIDES EVERYTHING ELSE -->
+    <!-- CHAT - NOW WITH FIXED HEADER AND PROPER KEYBOARD HANDLING -->
     <div class="chat-fullscreen" id="chatFullscreen">
         <div class="chat-fullscreen-header">
             <div class="chat-fullscreen-poster" id="chatPosterInfo">
@@ -1423,6 +1405,10 @@
         <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869.mp3" type="audio/mpeg">
     </audio>
 
+    <audio id="doorbellSound" preload="auto">
+        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/doorbell.mp3" type="audio/mpeg">
+    </audio>
+
     <script>
         (function() {
             'use strict';
@@ -1464,13 +1450,14 @@
                 let map = null;
                 let selectedTask = null;
                 let notificationSound = document.getElementById('notificationSound');
+                let doorbellSound = document.getElementById('doorbellSound');
                 let isShaking = false;
                 let chatListener = null;
                 let currentChatTask = null;
                 let isChatMinimized = false;
                 let currentHorizontalCategory = 'all';
+                let ringTriggeredTasks = new Set();
 
-                const mapSkeleton = document.getElementById('mapSkeleton');
                 const navMap = document.getElementById('navMap');
                 const navTasks = document.getElementById('navTasks');
                 const navAccount = document.getElementById('navAccount');
@@ -1522,14 +1509,79 @@
                 const previewCloseBtn = document.getElementById('previewCloseBtn');
 
                 let shownTaskIds = new Set();
-                let mapLoadTimeout = null;
-                let skeletonForceHideTimeout = setTimeout(() => {
-                    if (mapSkeleton) mapSkeleton.classList.add('hidden');
-                }, 4000);
 
-                function hideSkeleton() {
-                    if (mapSkeleton) mapSkeleton.classList.add('hidden');
-                    if (skeletonForceHideTimeout) clearTimeout(skeletonForceHideTimeout);
+                // Johannesburg coordinates
+                const JOBURG_LAT = -26.195246;
+                const JOBURG_LNG = 28.034088;
+
+                function showToast(message) {
+                    if (toast) {
+                        toast.textContent = message;
+                        toast.classList.add('show');
+                        setTimeout(() => toast.classList.remove('show'), 3000);
+                    }
+                }
+
+                function showRingNotification(task) {
+                    const notification = document.createElement('div');
+                    notification.className = 'ring-notification';
+                    notification.innerHTML = `
+                        <i class="fi fi-rr-bell"></i>
+                        <div>
+                            <strong>You've arrived!</strong><br>
+                            You're within 5 meters of ${task.posterName || 'the poster'}'s location.
+                        </div>
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    if (doorbellSound) {
+                        doorbellSound.play().catch(e => console.log('Doorbell sound failed:', e));
+                    }
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 5000);
+                }
+
+                function checkProximityAndRing() {
+                    if (!currentChatTask || !currentChatTask.location) return;
+                    
+                    if (ringTriggeredTasks.has(currentChatTask.id)) return;
+                    
+                    const distance = calculateDistance(
+                        currentLat, currentLng,
+                        currentChatTask.location.lat, currentChatTask.location.lng
+                    );
+                    
+                    // Convert to meters
+                    const distanceInMeters = distance * 1000;
+                    
+                    if (distanceInMeters <= 5) {
+                        ringTriggeredTasks.add(currentChatTask.id);
+                        showRingNotification(currentChatTask);
+                        
+                        // Update task status to arrived if needed
+                        if (currentChatTask.status === 'assigned') {
+                            updateTaskStatus(currentChatTask.id, 'in_progress');
+                        }
+                    }
+                }
+
+                function calculateDistance(lat1, lon1, lat2, lon2) {
+                    const R = 6371; // Radius of the earth in km
+                    const dLat = deg2rad(lat2 - lat1);
+                    const dLon = deg2rad(lon2 - lon1);
+                    const a = 
+                        Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                        Math.sin(dLon/2) * Math.sin(dLon/2); 
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                    const distance = R * c; // Distance in km
+                    return distance;
+                }
+
+                function deg2rad(deg) {
+                    return deg * (Math.PI/180);
                 }
 
                 function showPosterProfile(posterId) {
@@ -1882,17 +1934,8 @@
                     });
                 }
 
-                function showToast(message) {
-                    if (toast) {
-                        toast.textContent = message;
-                        toast.classList.add('show');
-                        setTimeout(() => toast.classList.remove('show'), 3000);
-                    }
-                }
-
                 function initMap() {
                     if (typeof mapboxgl === 'undefined' || !window.MAPBOX_TOKEN || !mapEl) {
-                        hideSkeleton();
                         return;
                     }
 
@@ -1902,15 +1945,13 @@
                         map = new mapboxgl.Map({
                             container: 'map',
                             style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [currentLng, currentLat],
-                            zoom: 14
+                            center: [JOBURG_LNG, JOBURG_LAT],
+                            zoom: 10
                         });
 
                         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
                         map.on('load', () => {
-                            hideSkeleton();
-                            
                             try {
                                 map.addSource('route', {
                                     type: 'geojson',
@@ -1930,7 +1971,15 @@
                                     (pos) => {
                                         currentLat = pos.coords.latitude;
                                         currentLng = pos.coords.longitude;
-                                        map.jumpTo({ center: [currentLng, currentLat], zoom: 14 });
+                                        
+                                        // Smooth zoom to current location
+                                        map.flyTo({
+                                            center: [currentLng, currentLat],
+                                            zoom: 14,
+                                            essential: true,
+                                            duration: 3000
+                                        });
+                                        
                                         updateUserMarker();
                                         fetchTasks();
                                     },
@@ -1946,12 +1995,9 @@
                         });
 
                         map.on('error', () => {
-                            hideSkeleton();
                             fetchTasks();
                         });
-                    } catch (e) {
-                        hideSkeleton();
-                    }
+                    } catch (e) {}
                 }
 
                 function updateUserMarker() {
@@ -2413,6 +2459,13 @@
                             sendFullscreenMessage(chatFullscreenInput.value);
                         }
                     });
+                    
+                    // Handle keyboard appearance
+                    chatFullscreenInput.addEventListener('focus', () => {
+                        setTimeout(() => {
+                            chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
+                        }, 100);
+                    });
                 }
 
                 if (chatMinimizeBtn) {
@@ -2428,6 +2481,20 @@
                             if (chatFullscreen) chatFullscreen.classList.add('active');
                         }
                     });
+                }
+
+                // Watch position for proximity alerts
+                if (navigator.geolocation) {
+                    navigator.geolocation.watchPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            updateUserMarker();
+                            checkProximityAndRing();
+                        },
+                        (error) => console.log('Geolocation error:', error),
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                    );
                 }
 
                 setActivePage('map');
