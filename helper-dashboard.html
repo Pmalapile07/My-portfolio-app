@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TaskMart · Helper — FINAL</title>
+    <title>TaskMart · Helper — final refined</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1287,14 +1287,14 @@
             font-size: 1.3rem;
             color: #000;
         }
-        /* hide default navigation controls */
+        /* hide default navigation controls completely */
         .mapboxgl-ctrl-top-right .mapboxgl-ctrl {
             display: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- map top UI: menu (left) and bell (right) -->
+    <!-- map top UI: menu (left) and bell (right) - icons only, no emojis -->
     <div class="map-top-left" id="mapMenuIcon"><i class="fi fi-rr-menu-burger"></i></div>
     <div class="map-top-right" id="mapNotificationBell"><i class="fi fi-rr-bell"></i></div>
 
@@ -1672,15 +1672,7 @@
                     });
                 }
 
-                document.addEventListener('click', () => {
-                    if (notificationSound) {
-                        notificationSound.play().then(() => {
-                            notificationSound.pause();
-                            notificationSound.currentTime = 0;
-                        }).catch(() => {});
-                    }
-                }, { once: true });
-
+                // Stop all sounds when task is no longer open
                 function stopShakingAndSound() {
                     if (taskPreviewCard) taskPreviewCard.classList.remove('shaking');
                     if (notificationSound) {
@@ -1691,6 +1683,8 @@
                 }
 
                 function startShakingAndSound() {
+                    // Only shake for open tasks
+                    if (selectedTask && selectedTask.status !== 'open') return;
                     if (taskPreviewCard) taskPreviewCard.classList.add('shaking');
                     if (notificationSound) {
                         notificationSound.play().catch(e => console.log('Sound play failed:', e));
@@ -1712,11 +1706,9 @@
                     
                     if (chatMinimizedEl) chatMinimizedEl.classList.remove('visible');
                     
-                    // Stop shaking if task already accepted (not open)
+                    // Stop shaking if task is not open
                     if (task.status !== 'open') {
                         stopShakingAndSound();
-                    } else {
-                        startShakingAndSound();
                     }
                     
                     selectedTask = task;
@@ -1735,7 +1727,7 @@
                     
                     let buttonsHtml = '';
                     
-                    // Show message button if task is mine (assigned/in_progress)
+                    // Message poster button always present for my assigned/in-progress tasks
                     if (isTaskMine(task) && (task.status === 'assigned' || task.status === 'in_progress')) {
                         buttonsHtml = `
                             <button class="preview-btn message" id="previewMessageBtn">Message poster</button>
@@ -1746,7 +1738,6 @@
                             <button class="preview-btn accept" id="previewAcceptBtn">Accept task</button>
                         `;
                     } else {
-                        // for past or other's tasks, just close button (no actions)
                         buttonsHtml = ``;
                     }
                     
@@ -1754,6 +1745,9 @@
                     
                     taskPreviewCard.classList.remove('fade-out');
                     taskPreviewCard.classList.add('visible');
+                    
+                    // Only start shaking if open
+                    if (task.status === 'open') startShakingAndSound();
                     
                     setTimeout(() => {
                         const acceptBtn = document.getElementById('previewAcceptBtn');
@@ -1793,7 +1787,7 @@
                     selectedTask = null;
                 }
 
-                // tap anywhere on card -> show task details
+                // tap anywhere on card -> show task details (replaces view details)
                 if (taskPreviewCard) {
                     taskPreviewCard.addEventListener('click', function(e) {
                         if (e.target.closest('button')) return;
@@ -1864,6 +1858,7 @@
                         new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
                         'Just now';
                     
+                    // No avatar, no "You" label - only bubble and time
                     messageDiv.innerHTML = `
                         <div class="message-bubble-full">
                             <div class="message-text-full">${message.text || ''}</div>
@@ -2008,7 +2003,7 @@
                             zoom: 10
                         });
 
-                        // No navigation control added (removed per request)
+                        // No navigation controls added (removed as requested)
 
                         map.on('load', () => {
                             hideSkeleton();
@@ -2220,6 +2215,7 @@
                                 (route.distance / 1000).toFixed(1) + 'km';
                             const duration = Math.round(route.duration / 60) + 'min';
 
+                            // Set icon based on distance (not profile, but keeps visual)
                             if (route.distance < 1000) {
                                 routeIcon.className = 'fi fi-tr-walking';
                             } else {
@@ -2367,7 +2363,7 @@
                             }
                             
                             html += `
-                                <div class="task-card ${cardClass}" onclick="handleTaskCardClick('${task.id}', '${cardClass}')">
+                                <div class="task-card ${cardClass}" onclick="handleTaskCardClick('${task.id}')">
                                     <div class="task-card-main">
                                         <div class="task-icon"><i class="fi fi-rr-${icon}"></i></div>
                                         <div class="task-content">
@@ -2387,8 +2383,8 @@
                     tasksListContainer.innerHTML = html;
                 }
 
-                window.handleTaskCardClick = function(taskId, cardClass) {
-                    // For any card, show detail page (no view details button)
+                window.handleTaskCardClick = function(taskId) {
+                    // For any card, show detail page (replaces view details)
                     showTaskDetail(taskId);
                 };
 
