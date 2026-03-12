@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -59,6 +59,54 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
+        }
+
+        .map-skeleton {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .map-skeleton.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .skeleton-pulse {
+            width: 80px;
+            height: 80px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .skeleton-line {
+            width: 200px;
+            height: 16px;
+            background: #e0e0e0;
+            margin: 8px 0;
+            border-radius: 4px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .skeleton-line.short {
+            width: 150px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
         }
 
         #map {
@@ -417,7 +465,7 @@
             opacity: 0.8;
         }
 
-        /* Chat Fullscreen - COMPLETELY FIXED for keyboard */
+        /* Chat Fullscreen - FIXED with stagnant header and input */
         .chat-fullscreen {
             position: fixed;
             top: 0;
@@ -452,8 +500,10 @@
             background: white;
             justify-content: space-between;
             flex-shrink: 0;
-            position: sticky;
+            position: absolute;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 10;
             width: 100%;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -511,7 +561,11 @@
         }
 
         .chat-fullscreen-messages {
-            flex: 1;
+            position: absolute;
+            top: 80px;
+            bottom: 80px;
+            left: 0;
+            right: 0;
             overflow-y: auto;
             padding: 20px;
             display: flex;
@@ -612,6 +666,7 @@
             text-align: right;
         }
 
+        /* Search/Input Container - STAGNANT at bottom, unaffected by keyboard */
         .chat-fullscreen-input-area {
             display: flex;
             padding: 12px 20px;
@@ -619,17 +674,13 @@
             border-top: 1px solid #f0f0f0;
             background: white;
             flex-shrink: 0;
-            position: sticky;
+            position: absolute;
             bottom: 0;
+            left: 0;
+            right: 0;
             width: 100%;
-            transition: padding-bottom 0.2s ease;
             z-index: 10;
             padding-bottom: max(12px, env(safe-area-inset-bottom));
-        }
-
-        /* When keyboard is open */
-        .chat-fullscreen.keyboard-open .chat-fullscreen-input-area {
-            padding-bottom: 20px;
         }
 
         .chat-fullscreen-input-wrapper {
@@ -1272,6 +1323,13 @@
     </style>
 </head>
 <body>
+    <div class="map-skeleton" id="mapSkeleton">
+        <div class="skeleton-pulse"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+        <div style="margin-top: 20px; color: #666; font-family: 'Manrope', sans-serif;">Loading map...</div>
+    </div>
+
     <div id="map"></div>
 
     <div class="floating-distance-card" id="floatingDistanceCard">
@@ -1314,7 +1372,7 @@
         <button class="preview-btn close" id="previewCloseBtn">Close</button>
     </div>
 
-    <!-- CHAT - NOW WITH FIXED HEADER AND PROPER KEYBOARD HANDLING -->
+    <!-- CHAT - NOW WITH STAGNANT HEADER AND INPUT (UNAFFECTED BY KEYBOARD) -->
     <div class="chat-fullscreen" id="chatFullscreen">
         <div class="chat-fullscreen-header">
             <div class="chat-fullscreen-poster" id="chatPosterInfo">
@@ -1467,6 +1525,7 @@
                 let currentHorizontalCategory = 'all';
                 let ringTriggeredTasks = new Set();
 
+                const mapSkeleton = document.getElementById('mapSkeleton');
                 const navMap = document.getElementById('navMap');
                 const navTasks = document.getElementById('navTasks');
                 const navAccount = document.getElementById('navAccount');
@@ -1518,41 +1577,19 @@
                 const previewCloseBtn = document.getElementById('previewCloseBtn');
 
                 let shownTaskIds = new Set();
+                let mapLoadTimeout = null;
+                let skeletonForceHideTimeout = setTimeout(() => {
+                    if (mapSkeleton) mapSkeleton.classList.add('hidden');
+                }, 4000);
 
                 // Johannesburg coordinates
                 const JOBURG_LAT = -26.195246;
                 const JOBURG_LNG = 28.034088;
 
-                // Keyboard handling variables
-                let originalViewportHeight = window.innerHeight;
-                let keyboardOpen = false;
-
-                // Handle keyboard show/hide
-                function handleResize() {
-                    if (!chatFullscreen || !chatFullscreen.classList.contains('active')) return;
-                    
-                    const currentHeight = window.innerHeight;
-                    const heightDifference = originalViewportHeight - currentHeight;
-                    
-                    // If height difference is more than 100px, keyboard is likely open
-                    if (heightDifference > 100 && !keyboardOpen) {
-                        keyboardOpen = true;
-                        chatFullscreen.classList.add('keyboard-open');
-                        
-                        // Scroll to bottom of messages
-                        setTimeout(() => {
-                            if (chatFullscreenMessages) {
-                                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
-                            }
-                        }, 100);
-                    } else if (heightDifference <= 100 && keyboardOpen) {
-                        keyboardOpen = false;
-                        chatFullscreen.classList.remove('keyboard-open');
-                    }
+                function hideSkeleton() {
+                    if (mapSkeleton) mapSkeleton.classList.add('hidden');
+                    if (skeletonForceHideTimeout) clearTimeout(skeletonForceHideTimeout);
                 }
-
-                // Add resize listener
-                window.addEventListener('resize', handleResize);
 
                 function showToast(message) {
                     if (toast) {
@@ -1822,10 +1859,6 @@
                             displayFullscreenMessage(message);
                         });
                     
-                    // Reset keyboard state
-                    keyboardOpen = false;
-                    chatFullscreen.classList.remove('keyboard-open');
-                    
                     if (chatFullscreenInput) setTimeout(() => chatFullscreenInput.focus(), 300);
                 }
 
@@ -1980,6 +2013,7 @@
 
                 function initMap() {
                     if (typeof mapboxgl === 'undefined' || !window.MAPBOX_TOKEN || !mapEl) {
+                        hideSkeleton();
                         return;
                     }
 
@@ -1996,6 +2030,8 @@
                         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
                         map.on('load', () => {
+                            hideSkeleton();
+                            
                             try {
                                 map.addSource('route', {
                                     type: 'geojson',
@@ -2039,9 +2075,12 @@
                         });
 
                         map.on('error', () => {
+                            hideSkeleton();
                             fetchTasks();
                         });
-                    } catch (e) {}
+                    } catch (e) {
+                        hideSkeleton();
+                    }
                 }
 
                 function updateUserMarker() {
@@ -2502,15 +2541,6 @@
                         if (e.key === 'Enter') {
                             sendFullscreenMessage(chatFullscreenInput.value);
                         }
-                    });
-                    
-                    // Handle keyboard appearance
-                    chatFullscreenInput.addEventListener('focus', () => {
-                        setTimeout(() => {
-                            if (chatFullscreenMessages) {
-                                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
-                            }
-                        }, 300);
                     });
                 }
 
