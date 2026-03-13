@@ -35,7 +35,7 @@
     <script src="/config.js"></script>
     <!-- FIX: Add fallback Mapbox token -->
     <script>
-        window.MAPBOX_TOKEN = window.MAPBOX_TOKEN || "pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY20zbWpudjQ2MDFhNzJqcHpjeGl4aXd0cSJ9.vAkJ-2mP2DHS2Hx18yQ9MQ";
+        window.MAPBOX_TOKEN = window.MAPBOX_TOKEN || "pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sc2RveHpmMDRxODNlczdvaHlreGR3NSJ9.JcBPUfASVkZEHx8K9psySg";
     </script>
     
     <!-- Flaticon Icons -->
@@ -64,8 +64,6 @@
             position: fixed;
             width: 100%;
         }
-
-        /* Skeleton loader completely removed */
         
         #map {
             position: absolute;
@@ -74,6 +72,8 @@
             width: 100%;
             height: 100%;
             z-index: 1;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         /* Map top icons - perfectly centered */
@@ -242,24 +242,7 @@
             color: #000;
         }
 
-        .recenter-button {
-            position: fixed;
-            bottom: 130px;
-            right: 20px;
-            width: 44px;
-            height: 44px;
-            background: white;
-            border: 2px solid #000;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            font-size: 1.3rem;
-            color: #000;
-            z-index: 51;
-        }
+        /* Recenter button removed */
 
         /* Chat minimized - appears only after poster replies */
         .chat-minimized {
@@ -1147,9 +1130,7 @@
         </div>
     </div>
 
-    <div class="recenter-button" id="recenterButton">
-        <i class="fi fi-rr-crosshair"></i>
-    </div>
+    <!-- Recenter button removed -->
 
     <div class="task-preview-card" id="taskPreviewCard">
         <div class="preview-header">
@@ -1199,26 +1180,8 @@
         <i class="fi fi-sr-comment"></i>
     </div>
 
-    <div class="poster-profile-popup" id="posterProfilePopup">
-        <div class="poster-profile-content">
-            <div class="poster-profile-close" id="posterProfileClose">✕</div>
-            <div class="poster-profile-avatar-large" id="posterProfileAvatar">?</div>
-            <div class="poster-profile-name" id="posterProfileName">Poster Name</div>
-            <div class="poster-profile-rating" id="posterProfileRating">★★★★★ 5.0</div>
-            <div class="poster-profile-info-item">
-                <i class="fi fi-rr-calendar"></i>
-                <span class="poster-profile-info-text" id="posterProfileMemberSince">Member since Jan 2024</span>
-            </div>
-            <div class="poster-profile-info-item">
-                <i class="fi fi-rr-check"></i>
-                <span class="poster-profile-info-text" id="posterProfileTasksPosted">12 tasks posted</span>
-            </div>
-            <div class="poster-profile-info-item">
-                <i class="fi fi-rr-clock"></i>
-                <span class="poster-profile-info-text" id="posterProfileResponseTime">Usually responds within 30min</span>
-            </div>
-            <div class="poster-profile-bio" id="posterProfileBio">No bio available.</div>
-        </div>
+    <div class="poster-profile-popup" id="posterProfilePopup" style="display: none;">
+        <!-- Poster profile content removed as requested -->
     </div>
 
     <div class="bottom-nav" id="bottomNav">
@@ -1319,6 +1282,7 @@
                 let ringTriggeredTasks = new Set();
                 let currentRouteProfile = 'walking';
                 let posterHasReplied = false; // Track if poster has replied to show chat icon
+                let animationCompleted = false; // Track if map animation completed
                 
                 let notifications = [];
                 let isNotificationPanelOpen = false;
@@ -1334,7 +1298,6 @@
                 const routeIconDriving = document.getElementById('routeIconDriving');
                 const routeDistanceWalking = document.getElementById('routeDistanceWalking');
                 const routeDistanceDriving = document.getElementById('routeDistanceDriving');
-                const recenterButton = document.getElementById('recenterButton');
                 const tasksCount = document.getElementById('tasksCount');
                 const tasksListContainer = document.getElementById('tasksListContainer');
                 const toast = document.getElementById('toast');
@@ -1346,9 +1309,6 @@
                 const notificationBell = document.getElementById('mapNotificationBell');
                 const notificationPanel = document.getElementById('notificationPanel');
                 const notificationList = document.getElementById('notificationList');
-
-                const posterProfilePopup = document.getElementById('posterProfilePopup');
-                const posterProfileClose = document.getElementById('posterProfileClose');
 
                 const chatFullscreen = document.getElementById('chatFullscreen');
                 const chatFullscreenAvatar = document.getElementById('chatFullscreenAvatar');
@@ -1461,62 +1421,6 @@
 
                 function deg2rad(deg) {
                     return deg * (Math.PI/180);
-                }
-
-                function recenterMap() {
-                    if (!map) return;
-                    map.flyTo({ center: [currentLng, currentLat], zoom: 14, duration: 1000 });
-                    showToast('Recentered to your location');
-                }
-
-                if (recenterButton) {
-                    recenterButton.addEventListener('click', recenterMap);
-                }
-
-                function showPosterProfile(posterId) {
-                    if (!posterId || !posterProfilePopup) return;
-                    database.ref('users/' + posterId).once('value').then((snapshot) => {
-                        const posterData = snapshot.val();
-                        if (!posterData) return;
-                        database.ref('tasks/' + posterId).once('value').then((taskSnapshot) => {
-                            const taskCount = taskSnapshot.val() ? Object.keys(taskSnapshot.val()).length : 0;
-                            if (posterProfileAvatar) posterProfileAvatar.textContent = (posterData.name || 'P').charAt(0).toUpperCase();
-                            if (posterProfileName) posterProfileName.textContent = posterData.name || 'Poster';
-                            if (posterProfileRating) posterProfileRating.textContent = '★★★★★ ' + (posterData.rating || '5.0');
-                            if (posterProfileMemberSince) posterProfileMemberSince.textContent = 'Member since ' + (posterData.memberSince || 'Jan 2024');
-                            if (posterProfileTasksPosted) posterProfileTasksPosted.textContent = taskCount + ' tasks posted';
-                            if (posterProfileResponseTime) posterProfileResponseTime.textContent = posterData.responseTime || 'Usually responds within 30min';
-                            if (posterProfileBio) posterProfileBio.textContent = posterData.bio || 'No bio available.';
-                            posterProfilePopup.classList.add('active');
-                        });
-                    });
-                }
-
-                if (posterProfileClose) {
-                    posterProfileClose.addEventListener('click', () => posterProfilePopup.classList.remove('active'));
-                }
-
-                if (posterProfilePopup) {
-                    posterProfilePopup.addEventListener('click', (e) => {
-                        if (e.target === posterProfilePopup) posterProfilePopup.classList.remove('active');
-                    });
-                }
-
-                document.addEventListener('click', () => {
-                    notificationSound.play().then(() => { notificationSound.pause(); notificationSound.currentTime = 0; }).catch(() => {});
-                }, { once: true });
-
-                function stopShakingAndSound() {
-                    if (taskPreviewCard) taskPreviewCard.classList.remove('shaking');
-                    notificationSound.pause();
-                    notificationSound.currentTime = 0;
-                    isShaking = false;
-                }
-
-                function startShakingAndSound() {
-                    taskPreviewCard.classList.add('shaking');
-                    notificationSound.play().catch(e => console.log('Sound play failed:', e));
-                    isShaking = true;
                 }
 
                 function isTaskMine(task) {
@@ -1760,12 +1664,23 @@
                     }
                     try {
                         mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                        
+                        // Create map with will-change for GPU acceleration
                         map = new mapboxgl.Map({
                             container: 'map',
                             style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
                             center: [JOBURG_LNG, JOBURG_LAT], // Start in Africa (Johannesburg)
-                            zoom: 10
+                            zoom: 9,
+                            pitch: 0,
+                            bearing: 0,
+                            antialias: true // Enable antialiasing for smoother rendering
                         });
+                        
+                        // Add GPU acceleration CSS
+                        const mapCanvas = map.getCanvas();
+                        mapCanvas.style.willChange = 'transform';
+                        mapCanvas.style.transform = 'translateZ(0)';
+                        
                         map.on('load', () => {
                             try {
                                 map.addSource('route', {
@@ -1780,31 +1695,52 @@
                                 });
                             } catch (e) {}
                             
-                            // Get current location and zoom to it quickly
+                            // Get current location and animate to it with cinematic flyTo
                             if (navigator.geolocation) {
                                 navigator.geolocation.getCurrentPosition(
                                     (pos) => {
                                         currentLat = pos.coords.latitude;
                                         currentLng = pos.coords.longitude;
-                                        // Zoom to current location with animation
-                                        map.flyTo({ center: [currentLng, currentLat], zoom: 14, duration: 3000 });
+                                        
+                                        // Cinematic flyTo animation with 3D effect
+                                        map.flyTo({
+                                            center: [currentLng, currentLat],
+                                            zoom: 15,
+                                            speed: 0.5, // Medium speed for cinematic feel
+                                            curve: 1.6, // Swoop curve
+                                            easing: (t) => t, // Linear easing for smoothness
+                                            pitch: 48, // Add 3D tilt for cinematic effect
+                                            bearing: 0,
+                                            duration: 6000 // 6 seconds for dramatic effect
+                                        });
+                                        
+                                        // After animation completes, add pulsing marker
+                                        setTimeout(() => {
+                                            updateUserMarker();
+                                            animationCompleted = true;
+                                            fetchTasks();
+                                        }, 6500); // Slightly longer than animation
+                                    },
+                                    (error) => {
+                                        console.log('Geolocation error, staying at Joburg');
                                         updateUserMarker();
                                         fetchTasks();
                                     },
-                                    () => {
-                                        updateUserMarker();
-                                        fetchTasks();
-                                    }
+                                    { enableHighAccuracy: true, timeout: 10000 }
                                 );
                             } else {
                                 updateUserMarker();
                                 fetchTasks();
                             }
                         });
-                        map.on('error', () => {
+                        
+                        map.on('error', (e) => {
+                            console.log('Map error:', e);
                             fetchTasks();
                         });
-                    } catch (e) {}
+                    } catch (e) {
+                        console.log('Map init error:', e);
+                    }
                 }
 
                 function updateUserMarker() {
@@ -1867,14 +1803,17 @@
                         
                         tasksCount.textContent = (incomingTasks.length + currentTasks.length + pastTasks.length).toString();
                         
-                        taskMarkers.forEach(m => { if (m) m.remove(); });
-                        taskMarkers = [];
-                        [...incomingTasks, ...currentTasks].forEach(task => {
-                            if (task && task.location && task.location.lat && task.location.lng) {
-                                const marker = createTaskMarker(task);
-                                if (marker) taskMarkers.push(marker);
-                            }
-                        });
+                        // Only update markers if animation completed or no geolocation
+                        if (animationCompleted || !navigator.geolocation) {
+                            taskMarkers.forEach(m => { if (m) m.remove(); });
+                            taskMarkers = [];
+                            [...incomingTasks, ...currentTasks].forEach(task => {
+                                if (task && task.location && task.location.lat && task.location.lng) {
+                                    const marker = createTaskMarker(task);
+                                    if (marker) taskMarkers.push(marker);
+                                }
+                            });
+                        }
                         
                         tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
                         if (tasksPage.classList.contains('active')) renderTasksPage();
@@ -1938,7 +1877,6 @@
                         taskDetailPage.classList.remove('active');
                         mapEl.style.display = 'block';
                         setTimeout(() => { if (map) map.resize(); }, 100);
-                        recenterButton.style.display = 'flex';
                     } else if (page === 'tasks') {
                         navTasks.classList.add('active');
                         tasksPage.classList.add('active');
@@ -1947,7 +1885,6 @@
                         floatingDistanceCard.classList.remove('visible');
                         hideTaskPreview();
                         renderTasksPage();
-                        recenterButton.style.display = 'none';
                     } else if (page === 'account') {
                         window.location.href = 'helper-account.html';
                     } else if (page === 'taskDetail') {
@@ -1955,7 +1892,6 @@
                         mapEl.style.display = 'none';
                         floatingDistanceCard.classList.remove('visible');
                         hideTaskPreview();
-                        recenterButton.style.display = 'none';
                     }
                 }
 
@@ -1965,7 +1901,10 @@
                 taskDetailBackBtn.addEventListener('click', () => setActivePage('tasks'));
 
                 chatPosterInfo.addEventListener('click', () => {
-                    if (currentChatTask) showPosterProfile(currentChatTask.posterId);
+                    if (currentChatTask) {
+                        // Removed poster profile popup as requested
+                        showToast('Poster profile');
+                    }
                 });
 
                 function renderTasksPage() {
@@ -2072,7 +2011,7 @@
                     const task = currentTasks.find(t => t && t.id === taskId);
                     if (!task) return;
                     try {
-                        await database.ref('tasks/' + task.posterId + '/' + taskId).update({ status: newStatus, assignedAt: newStatus === 'in_progress' ? firebase.database.ServerValue.TIMESTAMP : undefined });
+                        await database.ref('tasks/' + task.posterId + '/' + taskId).update({ status: newStatus });
                         showToast('Status updated');
                         await fetchTasks();
                         setActivePage('tasks');
@@ -2093,7 +2032,14 @@
 
                 if (navigator.geolocation) {
                     navigator.geolocation.watchPosition(
-                        (pos) => { currentLat = pos.coords.latitude; currentLng = pos.coords.longitude; updateUserMarker(); checkProximityAndRing(); },
+                        (pos) => { 
+                            currentLat = pos.coords.latitude; 
+                            currentLng = pos.coords.longitude; 
+                            if (animationCompleted) {
+                                updateUserMarker(); 
+                                checkProximityAndRing();
+                            }
+                        },
                         (error) => console.log('Geolocation error:', error),
                         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
                     );
