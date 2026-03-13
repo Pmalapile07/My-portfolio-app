@@ -242,8 +242,6 @@
             color: #000;
         }
 
-        /* Recenter button removed */
-
         /* Chat minimized - appears only after poster replies */
         .chat-minimized {
             position: fixed;
@@ -1130,8 +1128,6 @@
         </div>
     </div>
 
-    <!-- Recenter button removed -->
-
     <div class="task-preview-card" id="taskPreviewCard">
         <div class="preview-header">
             <span class="preview-category" id="previewCategory">Loading...</span>
@@ -1178,10 +1174,6 @@
 
     <div class="chat-minimized" id="chatMinimized">
         <i class="fi fi-sr-comment"></i>
-    </div>
-
-    <div class="poster-profile-popup" id="posterProfilePopup" style="display: none;">
-        <!-- Poster profile content removed as requested -->
     </div>
 
     <div class="bottom-nav" id="bottomNav">
@@ -1281,8 +1273,7 @@
                 let currentHorizontalCategory = 'all';
                 let ringTriggeredTasks = new Set();
                 let currentRouteProfile = 'walking';
-                let posterHasReplied = false; // Track if poster has replied to show chat icon
-                let animationCompleted = false; // Track if map animation completed
+                let posterHasReplied = false;
                 
                 let notifications = [];
                 let isNotificationPanelOpen = false;
@@ -1429,6 +1420,8 @@
 
                 function ringDoorbell(task) {
                     addNotification(`Doorbell rung for ${task.posterName || 'poster'}`, 'doorbell');
+                    // Play doorbell sound
+                    doorbellSound.play().catch(e => console.log('Doorbell sound failed:', e));
                 }
 
                 function showTaskPreview(task) {
@@ -1525,7 +1518,7 @@
                     chatFullscreen.classList.add('active');
                     chatMinimizedEl.classList.remove('visible');
                     isChatMinimized = false;
-                    posterHasReplied = false; // Reset for new chat
+                    posterHasReplied = false;
                     
                     chatFullscreenMessages.innerHTML = '';
                     const disclaimerDiv = document.createElement('div');
@@ -1541,6 +1534,7 @@
                         // Check if message is from poster and show minimized icon if chat not active
                         if (message.senderId === task.posterId && !chatFullscreen.classList.contains('active')) {
                             chatMinimizedEl.classList.add('visible');
+                            posterHasReplied = true;
                         }
                     });
                     
@@ -1549,7 +1543,6 @@
 
                 function minimizeChat() {
                     chatFullscreen.classList.remove('active');
-                    // Only show minimized icon if poster has replied
                     if (posterHasReplied) {
                         chatMinimizedEl.classList.add('visible');
                     }
@@ -1665,18 +1658,16 @@
                     try {
                         mapboxgl.accessToken = window.MAPBOX_TOKEN;
                         
-                        // Create map with will-change for GPU acceleration
                         map = new mapboxgl.Map({
                             container: 'map',
                             style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [JOBURG_LNG, JOBURG_LAT], // Start in Africa (Johannesburg)
+                            center: [JOBURG_LNG, JOBURG_LAT],
                             zoom: 9,
                             pitch: 0,
                             bearing: 0,
-                            antialias: true // Enable antialiasing for smoother rendering
+                            antialias: true
                         });
                         
-                        // Add GPU acceleration CSS
                         const mapCanvas = map.getCanvas();
                         mapCanvas.style.willChange = 'transform';
                         mapCanvas.style.transform = 'translateZ(0)';
@@ -1695,48 +1686,45 @@
                                 });
                             } catch (e) {}
                             
-                            // Get current location and animate to it with cinematic flyTo
+                            // Fetch tasks immediately so markers appear
+                            fetchTasks();
+                            
+                            // Get current location and animate to it
                             if (navigator.geolocation) {
                                 navigator.geolocation.getCurrentPosition(
                                     (pos) => {
                                         currentLat = pos.coords.latitude;
                                         currentLng = pos.coords.longitude;
                                         
-                                        // Cinematic flyTo animation with 3D effect
+                                        // Cinematic flyTo animation
                                         map.flyTo({
                                             center: [currentLng, currentLat],
                                             zoom: 15,
-                                            speed: 0.5, // Medium speed for cinematic feel
-                                            curve: 1.6, // Swoop curve
-                                            easing: (t) => t, // Linear easing for smoothness
-                                            pitch: 48, // Add 3D tilt for cinematic effect
+                                            speed: 0.5,
+                                            curve: 1.6,
+                                            pitch: 48,
                                             bearing: 0,
-                                            duration: 6000 // 6 seconds for dramatic effect
+                                            duration: 6000
                                         });
                                         
-                                        // After animation completes, add pulsing marker
+                                        // Add pulsing marker after animation
                                         setTimeout(() => {
                                             updateUserMarker();
-                                            animationCompleted = true;
-                                            fetchTasks();
-                                        }, 6500); // Slightly longer than animation
+                                        }, 6500);
                                     },
                                     (error) => {
                                         console.log('Geolocation error, staying at Joburg');
                                         updateUserMarker();
-                                        fetchTasks();
                                     },
                                     { enableHighAccuracy: true, timeout: 10000 }
                                 );
                             } else {
                                 updateUserMarker();
-                                fetchTasks();
                             }
                         });
                         
                         map.on('error', (e) => {
                             console.log('Map error:', e);
-                            fetchTasks();
                         });
                     } catch (e) {
                         console.log('Map init error:', e);
@@ -1803,17 +1791,15 @@
                         
                         tasksCount.textContent = (incomingTasks.length + currentTasks.length + pastTasks.length).toString();
                         
-                        // Only update markers if animation completed or no geolocation
-                        if (animationCompleted || !navigator.geolocation) {
-                            taskMarkers.forEach(m => { if (m) m.remove(); });
-                            taskMarkers = [];
-                            [...incomingTasks, ...currentTasks].forEach(task => {
-                                if (task && task.location && task.location.lat && task.location.lng) {
-                                    const marker = createTaskMarker(task);
-                                    if (marker) taskMarkers.push(marker);
-                                }
-                            });
-                        }
+                        // Always update markers - this is the fix!
+                        taskMarkers.forEach(m => { if (m) m.remove(); });
+                        taskMarkers = [];
+                        [...incomingTasks, ...currentTasks].forEach(task => {
+                            if (task && task.location && task.location.lat && task.location.lng) {
+                                const marker = createTaskMarker(task);
+                                if (marker) taskMarkers.push(marker);
+                            }
+                        });
                         
                         tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
                         if (tasksPage.classList.contains('active')) renderTasksPage();
@@ -1902,8 +1888,7 @@
 
                 chatPosterInfo.addEventListener('click', () => {
                     if (currentChatTask) {
-                        // Removed poster profile popup as requested
-                        showToast('Poster profile');
+                        showToast('Chat with ' + (currentChatTask.posterName || 'poster'));
                     }
                 });
 
@@ -2035,10 +2020,8 @@
                         (pos) => { 
                             currentLat = pos.coords.latitude; 
                             currentLng = pos.coords.longitude; 
-                            if (animationCompleted) {
-                                updateUserMarker(); 
-                                checkProximityAndRing();
-                            }
+                            updateUserMarker();
+                            checkProximityAndRing();
                         },
                         (error) => console.log('Geolocation error:', error),
                         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
