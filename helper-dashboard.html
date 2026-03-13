@@ -10,6 +10,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap">
     
+    <!-- Custom Fonts -->
+    <style>
+        @font-face {
+            font-family: 'Codec Cold News';
+            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
@@ -44,6 +55,44 @@
             width: 100%;
         }
 
+        /* Splash Screen - NEW */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 100000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            font-family: 'Codec Cold News', 'Manrope', sans-serif;
+            font-size: 3rem;
+            font-weight: normal;
+            color: #000;
+            text-transform: lowercase;
+            letter-spacing: -1px;
+        }
+
+        .splash-subtitle {
+            font-family: 'Manrope', sans-serif;
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+            font-weight: 400;
+        }
+
         #map {
             position: absolute;
             top: 0;
@@ -51,6 +100,8 @@
             width: 100%;
             height: 100%;
             z-index: 1;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         .map-top-left, .map-top-right {
@@ -77,7 +128,7 @@
             display: none !important;
         }
 
-        /* Helper pulse marker */
+        /* Helper marker - different from task markers */
         .helper-pulsing-pin {
             position: relative;
             width: 20px;
@@ -91,7 +142,7 @@
             animation: pulse-helper 2s infinite ease-in-out;
         }
         
-        /* Task marker */
+        /* Task markers - SQUARES with black fill, white borders - UPDATED */
         .task-pin {
             position: relative;
             width: 24px;
@@ -108,17 +159,16 @@
         .task-pin::before {
             content: '';
             position: absolute;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             background: #000000;
-            border: 3px solid white;
-            border-radius: 50%;
+            border: 2px solid white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
+            transition: transform 0.1s ease;
         }
         
         .task-pin:hover::before {
-            transform: scale(1.2);
+            transform: scale(1.1);
         }
         
         .task-pin.assigned::before {
@@ -153,35 +203,22 @@
             100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
         }
 
-        /* Loading skeleton */
-        .loading-skeleton {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: white;
-            z-index: 10000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 20px;
+        /* Loading spinner for tasks page only - UPDATED */
+        .tasks-loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-size: 0.9rem;
         }
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid #f0f0f0;
-            border-top: 3px solid #000;
+        .tasks-loading .spinner {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #f0f0f0;
+            border-top: 2px solid #000;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-        }
-
-        .loading-text {
-            font-size: 1rem;
-            color: #666;
-            font-weight: 500;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
@@ -189,7 +226,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Floating distance card */
+        /* Floating distance card - kept for map route */
         .floating-distance-card {
             position: fixed;
             bottom: 130px;
@@ -249,6 +286,12 @@
             transition: all 0.2s;
         }
 
+        .route-btn:hover {
+            background: #000;
+            color: white;
+            border-color: #000;
+        }
+
         .route-btn.active {
             background: #000;
             color: white;
@@ -282,23 +325,24 @@
             font-size: 1.5rem;
         }
 
-        /* Task preview card - FIXED */
+        /* Task preview card - CENTERED, NO DELAY, NO MAP, NO DISTANCE - UPDATED */
         .task-preview-card {
             position: fixed;
-            bottom: 130px;
-            left: 20px;
-            right: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
             max-width: 400px;
-            margin: 0 auto;
+            margin: 0;
             background: white;
             border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            z-index: 5001;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 100000;
             display: none;
-            animation: slideUp 0.3s ease;
             border: 1px solid rgba(0,0,0,0.05);
             cursor: pointer;
+            /* No animation delay */
         }
 
         .task-preview-card.visible {
@@ -306,17 +350,8 @@
         }
 
         .task-preview-card.fade-out {
-            animation: fadeOut 0.3s ease forwards;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(20px); }
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
         .preview-header {
@@ -348,7 +383,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid #f0f0f0;
         }
@@ -383,7 +418,6 @@
             font-size: 0.9rem;
             color: #333;
             line-height: 1.5;
-            margin-bottom: 15px;
             display: flex;
             gap: 10px;
             align-items: flex-start;
@@ -394,41 +428,15 @@
             font-size: 1.1rem;
         }
 
-        /* Distance card inside preview - FIXED */
-        .preview-distance-card {
-            background: #f0f0f0;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .distance-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .distance-item i {
-            font-size: 1.1rem;
-            color: #000;
-        }
-
-        .distance-value {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
+        /* Preview actions with chat icon on right - UPDATED */
         .preview-actions {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
+            align-items: center;
         }
 
         .preview-btn {
-            flex: 1;
-            padding: 14px;
+            padding: 14px 20px;
             border: none;
             border-radius: 8px;
             font-weight: 600;
@@ -443,6 +451,7 @@
         }
 
         .preview-btn.accept {
+            flex: 1;
             background: #000;
             color: white;
         }
@@ -459,6 +468,7 @@
         }
 
         .preview-btn.taken {
+            flex: 1;
             background: #f0f0f0;
             color: #999;
             cursor: not-allowed;
@@ -470,16 +480,29 @@
             padding: 8px;
             font-size: 0.85rem;
             width: 100%;
-            margin-top: 5px;
+            margin-top: 15px;
         }
 
-        .preview-map {
-            width: 100%;
-            height: 150px;
+        /* Chat icon button - NEW */
+        .preview-chat-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
             background: #f0f0f0;
-            border-radius: 10px;
-            margin: 15px 0;
-            overflow: hidden;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #000;
+            font-size: 1.2rem;
+            margin-left: auto;
+        }
+
+        .preview-chat-btn:hover {
+            background: #000;
+            color: white;
         }
 
         /* Chat fullscreen */
@@ -1150,10 +1173,10 @@
     </style>
 </head>
 <body>
-    <!-- Loading Skeleton -->
-    <div class="loading-skeleton" id="loadingSkeleton">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading your tasks...</div>
+    <!-- Splash Screen - NEW -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">taskmart</div>
+        <div class="splash-subtitle">helper</div>
     </div>
 
     <div class="map-top-left" id="mapMenuIcon">
@@ -1172,7 +1195,7 @@
 
     <div id="map"></div>
 
-    <!-- Floating Distance Card -->
+    <!-- Floating Distance Card (kept for map route) -->
     <div class="floating-distance-card" id="floatingDistanceCard">
         <div class="distance-info">
             <div class="route-toggle">
@@ -1187,7 +1210,7 @@
         </div>
     </div>
 
-    <!-- Task Preview Card - FIXED with distance display -->
+    <!-- Task Preview Card - UPDATED: centered, no map, no distance, chat icon on right -->
     <div class="task-preview-card" id="taskPreviewCard">
         <div class="preview-header">
             <span class="preview-category" id="previewCategory">Loading...</span>
@@ -1197,20 +1220,6 @@
             <div class="preview-poster-avatar" id="previewAvatar">?</div>
             <span class="preview-poster-name" id="previewPosterName">Someone</span>
         </div>
-        
-        <!-- Distance Card inside Preview - FIXED -->
-        <div class="preview-distance-card" id="previewDistanceCard">
-            <div class="distance-item">
-                <i class="fi fi-tr-walking"></i>
-                <span class="distance-value" id="previewWalkDistance">...</span>
-            </div>
-            <div class="distance-item">
-                <i class="fi fi-tr-car"></i>
-                <span class="distance-value" id="previewDriveDistance">...</span>
-            </div>
-        </div>
-
-        <div class="preview-map" id="previewMap"></div>
         
         <div class="preview-details">
             <div class="preview-notes">
@@ -1282,7 +1291,13 @@
             <button class="category-tab-horizontal" data-category="current">Current</button>
             <button class="category-tab-horizontal" data-category="past">Past</button>
         </div>
-        <div class="tasks-list-container" id="tasksListContainer"></div>
+        <div class="tasks-list-container" id="tasksListContainer">
+            <!-- Loading indicator only appears here -->
+            <div class="tasks-loading" id="tasksLoading">
+                <div class="spinner"></div>
+                <div>Loading your tasks...</div>
+            </div>
+        </div>
     </div>
 
     <!-- Task Detail Page -->
@@ -1339,10 +1354,10 @@
             const messageRateLimiter = new RateLimiter(10, 60000);
 
             document.addEventListener('DOMContentLoaded', function() {
-                // Hide loading skeleton when everything is ready
+                // Hide splash screen after 1.5 seconds
                 setTimeout(() => {
-                    document.getElementById('loadingSkeleton').style.display = 'none';
-                }, 2000);
+                    document.getElementById('splashScreen').classList.add('hidden');
+                }, 1500);
 
                 const toastEl = document.getElementById('toast');
                 
@@ -1391,12 +1406,10 @@
                 let currentRouteProfile = 'walking';
                 let notifications = [];
                 let isNotificationPanelOpen = false;
-                let previewMapInstance = null;
                 let shownTaskIds = new Set();
                 let isMapReady = false;
 
                 // DOM Elements
-                const loadingSkeleton = document.getElementById('loadingSkeleton');
                 const navMap = document.getElementById('navMap');
                 const navTasks = document.getElementById('navTasks');
                 const navAccount = document.getElementById('navAccount');
@@ -1409,6 +1422,7 @@
                 const routeDrivingBtn = document.getElementById('routeDrivingBtn');
                 const tasksCount = document.getElementById('tasksCount');
                 const tasksListContainer = document.getElementById('tasksListContainer');
+                const tasksLoading = document.getElementById('tasksLoading');
                 const toast = document.getElementById('toast');
                 const tasksNotificationDot = document.getElementById('tasksNotificationDot');
                 const taskDetailBackBtn = document.getElementById('taskDetailBackBtn');
@@ -1435,10 +1449,6 @@
                 const previewNotesText = document.getElementById('previewNotesText');
                 const previewActions = document.getElementById('previewActions');
                 const previewCloseBtn = document.getElementById('previewCloseBtn');
-                const previewMap = document.getElementById('previewMap');
-                const previewWalkDistance = document.getElementById('previewWalkDistance');
-                const previewDriveDistance = document.getElementById('previewDriveDistance');
-                const previewDistanceCard = document.getElementById('previewDistanceCard');
 
                 const JOBURG_LAT = -26.195246;
                 const JOBURG_LNG = 28.034088;
@@ -1501,23 +1511,20 @@
                     return task && task.assignedHelperId === currentUser?.uid;
                 }
 
-                // Doorbell function - FIXED
+                // Doorbell function
                 function ringDoorbell(task) {
                     if (!task) return;
                     
-                    // Play doorbell sound
                     if (doorbellSound) {
                         doorbellSound.currentTime = 0;
                         doorbellSound.play().catch(e => console.log('Doorbell play error:', e));
                     }
                     
-                    addNotification(`🔔 Doorbell rung for ${task.posterName || 'poster'}`, 'doorbell');
-                    showToast(`Doorbell rung! ${task.posterName} will know you're there.`);
+                    addNotification(`Doorbell rung for ${task.posterName || 'poster'}`, 'doorbell');
+                    showToast(`Doorbell rung!`);
                     
-                    // Mark as rung
                     ringTriggeredTasks.add(task.id);
                     
-                    // Update task status if needed
                     if (task.status === 'assigned') {
                         updateTaskStatus(task.id, 'in_progress');
                     }
@@ -1534,10 +1541,10 @@
                         currentChatTask.location.lng
                     );
                     
-                    if (distance <= 0.01) { // 10 meters
+                    if (distance <= 0.01) {
                         ringTriggeredTasks.add(currentChatTask.id);
-                        addNotification(`📍 You've arrived at ${currentChatTask.posterName || 'the poster'}'s location`, 'arrival');
-                        showToast('You have arrived at the location');
+                        addNotification(`You've arrived at ${currentChatTask.posterName || 'the poster'}'s location`, 'arrival');
+                        showToast('You have arrived');
                         
                         if (currentChatTask.status === 'assigned') {
                             updateTaskStatus(currentChatTask.id, 'in_progress');
@@ -1564,18 +1571,16 @@
                     }
                 }
 
-                // Route calculation - FIXED
+                // Route calculation
                 async function calculateRoute(task) {
                     if (!task || !task.location || !task.location.lat || !task.location.lng || 
                         !currentLat || !currentLng || !map || !mapboxgl.accessToken) return null;
                     
                     try {
-                        // Get walking route
                         const walkingRes = await fetch(
                             `https://api.mapbox.com/directions/v5/mapbox/walking/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                         );
                         
-                        // Get driving route
                         const drivingRes = await fetch(
                             `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                         );
@@ -1588,7 +1593,6 @@
                             
                             if (!walkingRoute || !drivingRoute) return null;
                             
-                            // Format distances
                             const walkingDist = walkingRoute.distance < 1000 ? 
                                 Math.round(walkingRoute.distance) + 'm' : 
                                 (walkingRoute.distance / 1000).toFixed(1) + 'km';
@@ -1608,7 +1612,7 @@
                     return null;
                 }
 
-                // Show task preview - FIXED with distance display
+                // Show task preview - UPDATED: immediate, centered, no map, chat icon separate
                 async function showTaskPreview(task) {
                     if (!task || !taskPreviewCard) return;
                     
@@ -1616,7 +1620,7 @@
                     stopShakingAndSound();
                     selectedTask = task;
                     
-                    // Update preview content
+                    // Update preview content - immediate
                     previewCategory.textContent = sanitizeHTML(task.category || 'Help needed');
                     previewBudget.textContent = task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`;
                     previewBudget.className = task.budget === 'open' ? 'preview-budget open' : 'preview-budget';
@@ -1626,55 +1630,28 @@
                     previewPosterName.textContent = sanitizeHTML(task.posterName || 'Someone');
                     previewNotesText.textContent = sanitizeHTML(task.notes || 'No additional notes');
                     
-                    // Calculate and display distances
-                    if (task.location) {
-                        const routes = await calculateRoute(task);
-                        if (routes) {
-                            previewWalkDistance.textContent = routes.walking.distance;
-                            previewDriveDistance.textContent = routes.driving.distance;
-                            previewDistanceCard.style.display = 'flex';
-                        }
-                    }
-                    
-                    // Initialize preview map
-                    if (previewMap && task.location && task.location.lat && task.location.lng && typeof mapboxgl !== 'undefined') {
-                        if (previewMapInstance) {
-                            previewMapInstance.remove();
-                        }
-                        
-                        previewMapInstance = new mapboxgl.Map({
-                            container: 'previewMap',
-                            style: 'mapbox://styles/mapbox/streets-v12',
-                            center: [task.location.lng, task.location.lat],
-                            zoom: 15,
-                            interactive: false,
-                            attributionControl: false
-                        });
-                        
-                        previewMapInstance.on('load', () => {
-                            const markerEl = document.createElement('div');
-                            markerEl.className = 'task-pin';
-                            new mapboxgl.Marker({ element: markerEl })
-                                .setLngLat([task.location.lng, task.location.lat])
-                                .addTo(previewMapInstance);
-                        });
-                    }
-                    
-                    // Create action buttons
+                    // Create action buttons with chat icon on the right
                     let buttonsHtml = '';
                     if (task.status === 'open') {
                         buttonsHtml = '<button class="preview-btn accept" id="previewAcceptBtn">Accept task</button>';
                     } else if (task.status === 'assigned' || task.status === 'in_progress') {
                         if (isTaskMine(task)) {
-                            buttonsHtml = '<button class="preview-btn message" id="previewMessageBtn">💬 Message</button><button class="preview-btn ring" id="previewRingBtn">🔔 Ring doorbell</button>';
+                            buttonsHtml = '<button class="preview-btn ring" id="previewRingBtn">Ring doorbell</button>';
                         } else {
                             buttonsHtml = '<button class="preview-btn taken" disabled>Task taken</button>';
                         }
                     }
                     
+                    // Add chat button on the right for assigned/in_progress tasks that are mine
+                    if (task.status === 'assigned' || task.status === 'in_progress') {
+                        if (isTaskMine(task)) {
+                            buttonsHtml += '<button class="preview-chat-btn" id="previewChatBtn"><i class="fi fi-rr-comment"></i></button>';
+                        }
+                    }
+                    
                     previewActions.innerHTML = buttonsHtml;
                     
-                    // Show card
+                    // Show card immediately with no animation delay
                     taskPreviewCard.classList.remove('fade-out');
                     taskPreviewCard.classList.add('visible');
                     
@@ -1687,15 +1664,15 @@
                             acceptTask(task); 
                         });
                         
-                        document.getElementById('previewMessageBtn')?.addEventListener('click', (e) => { 
-                            e.stopPropagation(); 
-                            hideTaskPreview(); 
-                            openChat(task); 
-                        });
-                        
                         document.getElementById('previewRingBtn')?.addEventListener('click', (e) => { 
                             e.stopPropagation(); 
                             ringDoorbell(task); 
+                        });
+                        
+                        document.getElementById('previewChatBtn')?.addEventListener('click', (e) => { 
+                            e.stopPropagation(); 
+                            hideTaskPreview(); 
+                            openChat(task); 
                         });
                     }, 0);
                     
@@ -1714,7 +1691,6 @@
                         routeDistance.textContent = distance;
                         floatingDistanceCard.classList.add('visible');
                         
-                        // Update route on map
                         if (map && map.getSource('route')) {
                             const routeData = currentRouteProfile === 'walking' ? 
                                 routes.walking.route : routes.driving.route;
@@ -1730,10 +1706,6 @@
                     taskPreviewCard.classList.remove('visible', 'fade-out');
                     stopShakingAndSound();
                     selectedTask = null;
-                    if (previewMapInstance) {
-                        previewMapInstance.remove();
-                        previewMapInstance = null;
-                    }
                 }
 
                 // Chat functions
@@ -1751,21 +1723,17 @@
                     chatMinimizedEl.classList.remove('visible');
                     isChatMinimized = false;
                     
-                    // Clear messages
                     chatFullscreenMessages.innerHTML = '';
                     
-                    // Add disclaimer
                     const disclaimerDiv = document.createElement('div');
                     disclaimerDiv.className = 'chat-disclaimer';
-                    disclaimerDiv.innerHTML = '<i class="fi fi-tr-shield-check"></i><div><strong>Stay safe!</strong> Keep all communication inside TaskMart. Payments made outside the app are not protected.</div>';
+                    disclaimerDiv.innerHTML = '<i class="fi fi-tr-shield-check"></i><div><strong>Stay safe!</strong> Keep all communication inside TaskMart.</div>';
                     chatFullscreenMessages.appendChild(disclaimerDiv);
                     
-                    // Remove old listener
                     if (chatListener) {
                         database.ref('chats/' + task.id).off('child_added', chatListener);
                     }
                     
-                    // Add new listener
                     chatListener = database.ref('chats/' + task.id)
                         .orderByChild('timestamp')
                         .on('child_added', (snapshot) => {
@@ -1809,7 +1777,7 @@
                     if (!currentChatTask || !currentUser || !text.trim()) return;
                     
                     if (!messageRateLimiter.canCall()) {
-                        showToast('Too many messages. Please wait a moment.');
+                        showToast('Too many messages. Please wait.');
                         return;
                     }
                     
@@ -1829,13 +1797,12 @@
                         chatFullscreenInput.value = '';
                     } catch (error) {
                         showToast('Failed to send message');
-                        console.error('Send error:', error);
                     } finally {
                         chatFullscreenSend.disabled = false;
                     }
                 }
 
-                // Accept task - FIXED
+                // Accept task
                 async function acceptTask(task) {
                     if (!task || !currentUser) return;
                     
@@ -1856,10 +1823,10 @@
                         });
                         
                         if (result.committed) {
-                            addNotification(`✅ Task accepted: ${task.category || 'Task'}`, 'success');
+                            addNotification(`Task accepted: ${task.category || 'Task'}`, 'success');
                             taskPreviewCard.classList.add('fade-out');
-                            setTimeout(hideTaskPreview, 300);
-                            showToast('Task accepted! Head to the location.');
+                            setTimeout(hideTaskPreview, 200);
+                            showToast('Task accepted!');
                             await fetchTasks();
                         } else {
                             showToast('Sorry, this task was just taken');
@@ -1867,7 +1834,6 @@
                         }
                     } catch (error) {
                         showToast('Error accepting task');
-                        console.error('Accept error:', error);
                     }
                 }
 
@@ -1887,14 +1853,12 @@
                         setActivePage('tasks');
                     } catch (error) {
                         showToast('Error updating status');
-                        console.error('Update error:', error);
                     }
                 };
 
-                // Map functions
+                // Map functions - UPDATED with previous aesthetic
                 function initMap() {
                     if (typeof mapboxgl === 'undefined') {
-                        console.error('Mapbox not loaded');
                         fetchTasks();
                         return;
                     }
@@ -1902,9 +1866,10 @@
                     try {
                         mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sc2RveHpmMDRxODNlczdvaHlreGR3NSJ9.JcBPUfASVkZEHx8K9psySg';
                         
+                        // Previous map style
                         map = new mapboxgl.Map({
                             container: 'map',
-                            style: 'mapbox://styles/mapbox/streets-v12',
+                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
                             center: [JOBURG_LNG, JOBURG_LAT],
                             zoom: 9
                         });
@@ -1921,10 +1886,9 @@
                                     type: 'line',
                                     source: 'route',
                                     paint: { 
-                                        'line-color': '#000000',
-                                        'line-width': 4,
-                                        'line-opacity': 0.8,
-                                        'line-dasharray': [2, 1]
+                                        'line-color': '#666666',
+                                        'line-width': 3,
+                                        'line-opacity': 0.6
                                     }
                                 });
                             } catch (e) {
@@ -1933,7 +1897,6 @@
                             
                             isMapReady = true;
                             
-                            // Get user location
                             if (navigator.geolocation) {
                                 navigator.geolocation.getCurrentPosition(
                                     (pos) => {
@@ -2024,9 +1987,14 @@
                     }
                 }
 
-                // Fetch tasks
+                // Fetch tasks - UPDATED: loading only in tasks page
                 async function fetchTasks() {
                     if (!currentUser) return;
+                    
+                    // Show loading in tasks page only
+                    if (tasksLoading) {
+                        tasksLoading.style.display = 'block';
+                    }
                     
                     try {
                         const snapshot = await database.ref('tasks').once('value');
@@ -2074,16 +2042,20 @@
                         
                         tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
                         
+                        // Hide loading
+                        if (tasksLoading) {
+                            tasksLoading.style.display = 'none';
+                        }
+                        
                         if (tasksPage.classList.contains('active')) {
                             renderTasksPage();
                         }
-                        
-                        // Hide loading skeleton
-                        loadingSkeleton.style.display = 'none';
                     } catch (error) {
                         console.error('Error fetching tasks:', error);
                         showToast('Error loading tasks');
-                        loadingSkeleton.style.display = 'none';
+                        if (tasksLoading) {
+                            tasksLoading.style.display = 'none';
+                        }
                     }
                 }
 
@@ -2106,7 +2078,7 @@
                                 !shownTaskIds.has(task.id) && 
                                 navMap.classList.contains('active')) {
                                 shownTaskIds.add(task.id);
-                                setTimeout(() => showTaskPreview(task), 100);
+                                showTaskPreview(task); // Immediate, no delay
                             }
                             
                             fetchTasks();
@@ -2123,7 +2095,6 @@
                         tasksPage.classList.remove('active');
                         taskDetailPage.classList.remove('active');
                         mapEl.style.display = 'block';
-                        floatingDistanceCard.classList.remove('visible');
                         setTimeout(() => { if (map) map.resize(); }, 100);
                     } else if (page === 'tasks') {
                         navTasks.classList.add('active');
@@ -2290,7 +2261,6 @@
                         </div>
                     `;
                     
-                    // Initialize detail map
                     setTimeout(() => {
                         const mapContainer = document.getElementById('taskDetailMap');
                         if (mapContainer && task.location && task.location.lat && task.location.lng && typeof mapboxgl !== 'undefined') {
@@ -2395,7 +2365,7 @@
                     }
                 });
 
-                // Route toggle buttons
+                // Route toggle buttons with hover effects
                 routeWalkingBtn?.addEventListener('click', async () => {
                     routeWalkingBtn.classList.add('active');
                     routeDrivingBtn.classList.remove('active');
