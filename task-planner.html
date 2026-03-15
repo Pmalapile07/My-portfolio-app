@@ -40,6 +40,11 @@
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
+    
+    <!-- ADDITION: Flaticon 4.0 icons for task icons -->
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-straight/css/uicons-thin-straight.css'>
+    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-chubby/css/uicons-thin-chubby.css'>
 
     <style>
         * {
@@ -92,7 +97,7 @@
             z-index: 1;
         }
 
-        /* Searching label */
+        /* ADDITION: Searching label */
         .searching-label {
             position: absolute;
             top: 20px;
@@ -109,6 +114,7 @@
             white-space: nowrap;
         }
         
+        /* ADDITION: Helper count toast */
         .helper-count-toast {
             position: absolute;
             bottom: 120px;
@@ -157,7 +163,7 @@
             }
         }
 
-        /* Custom pulsing pin (for map) - FAST BEEPING ANIMATION */
+        /* Custom pulsing pin (for map) */
         .pulsing-pin {
             position: relative;
             width: 12px;
@@ -168,6 +174,11 @@
             box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
             transform: translate(-50%, -50%);
             pointer-events: none;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        /* ADDITION: Fast beeping animation */
+        .pulsing-pin.fast-beep {
             animation: fast-beep 0.6s infinite ease-in-out;
         }
         
@@ -1501,8 +1512,8 @@
             padding: 2rem;
             color: #666;
         }
-        
-        /* Price breakdown styling */
+
+        /* ADDITION: Price breakdown styling */
         .price-breakdown {
             background: #f8f8f8;
             padding: 1rem;
@@ -1529,6 +1540,17 @@
             text-align: right;
             margin-top: 0.5rem;
         }
+        
+        /* ADDITION: Question select styling */
+        .question-select {
+            width: 100%;
+            padding: 0.8rem;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Manrope', sans-serif;
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -1545,10 +1567,10 @@
     <!-- MAP -->
     <div id="map"></div>
     
-    <!-- Searching label (visible after task post) -->
+    <!-- ADDITION: Searching label (initially hidden) -->
     <div class="searching-label" id="searchingLabel" style="display: none;">Searching for helpers...</div>
     
-    <!-- Helper count toast -->
+    <!-- ADDITION: Helper count toast (initially hidden) -->
     <div class="helper-count-toast" id="helperCountToast" style="display: none;">0 helpers found nearby</div>
 
     <!-- HOME SHEET -->
@@ -1710,6 +1732,9 @@
                         </div>
                     </div>
 
+                    <!-- ADDITION: Dynamic questions container -->
+                    <div id="questionsContainer" style="margin-bottom: 1.5rem;"></div>
+
                     <div style="margin-bottom: 1.5rem;">
                         <div class="section-label">Add images (optional)</div>
                         <div class="upload-area" id="uploadArea">
@@ -1727,28 +1752,28 @@
                 </div>
             </div>
             
-            <!-- Price breakdown section (visible in step 3) -->
+            <!-- ADDITION: Price breakdown section -->
             <div class="section" id="priceBreakdownSection" style="display: none;">
                 <div class="section-label">Price breakdown</div>
                 <div class="price-breakdown" id="priceBreakdown">
                     <div class="price-breakdown-item">
                         <span>Base price</span>
-                        <span>R <span id="basePrice">0.00</span></span>
+                        <span>R <span id="basePrice">0</span></span>
                     </div>
-                    <div class="price-breakdown-item">
-                        <span>Rooms/Loads</span>
-                        <span>R <span id="multiplierAdd">0.00</span></span>
+                    <div class="price-breakdown-item" id="multiplierRow" style="display: none;">
+                        <span id="multiplierLabel">Rooms multiplier</span>
+                        <span>R <span id="multiplierAmount">0</span></span>
                     </div>
-                    <div class="price-breakdown-item">
+                    <div class="price-breakdown-item" id="distanceRow" style="display: none;">
                         <span>Distance fee</span>
-                        <span>R <span id="distanceFee">0.00</span></span>
+                        <span>R <span id="distanceFee">0</span></span>
                     </div>
                     <div class="price-breakdown-item">
                         <span>Total</span>
-                        <span>R <span id="totalPrice">0.00</span></span>
+                        <span>R <span id="totalPrice">0</span></span>
                     </div>
                 </div>
-                <div class="estimated-price" id="estimatedPrice">Estimated: R 0.00</div>
+                <div class="estimated-price" id="estimatedPrice">Estimated: R 0</div>
             </div>
         </div>
 
@@ -1797,6 +1822,206 @@
             function debugLog(message, type = 'info') {
                 console.log(`[${type}] ${message}`);
             }
+
+            // ===== ADDITION: Task Icons and Pricing from Flaticon =====
+            const taskIconsFlaticon = {
+                // Household
+                "laundry": { iClass: "fi fi-tr-washer", minPrice: 80 },
+                "ironing": { iClass: "fi fi-tr-steam-iron", minPrice: 70 },
+                "house cleaning": { iClass: "fi fi-ts-sweep", minPrice: 120 },
+                "dish washing": { iClass: "fi fi-ts-washing-dishes", minPrice: 50 },
+
+                // Errands
+                "grocery shopping": { iClass: "fi fi-tr-grocery-bag", minPrice: 50 },
+                "parcel pickup": { iClass: "fi fi-tr-box-open-full", minPrice: 50 },
+                "delivery of small items": { iClass: "fi fi-tc-people-carry-box", minPrice: 50 },
+                "running errands": { iClass: "fi fi-tr-user-fast-running", minPrice: 50 },
+                "queue for me": { iClass: "fi fi-tr-queue-line", minPrice: 50 },
+
+                // Yard / Outdoor
+                "gardening": { iClass: "fi fi-tr-watering-can-drop", minPrice: 100 },
+                "lawn mowing": { iClass: "fi fi-tr-mower", minPrice: 70},
+                "yard cleanup": { iClass: "fi fi-tr-fence", minPrice: 150 },
+                "trash removal": { iClass: "fi fi-tr-person-dragging-bag", minPrice: 40},
+
+                // Care
+                "babysitting": { iClass: "fi fi-tr-baby-carriage", minPrice: 150 },
+                "elderly companionship": { iClass: "fi fi-tr-old-people", minPrice: 120 },
+                "pet care": { iClass: "fi fi-tc-pets", minPrice: 70 },
+                "dog walking": { iClass: "fi fi-tr-dog-leashed", minPrice: 70 },
+
+                // Car / Vehicle
+                "car washing": { iClass: "fi fi-tr-car-wash", minPrice: 50 },
+
+                // Furniture / Moving
+                "furniture assembly": { iClass: "fi fi-tr-loveseat", minPrice: 120 },
+
+                // Home Maintenance
+                "minor plumbing": { iClass: "fi fi-ts-faucet", minPrice: 100 },
+                "minor electrical": { iClass: "fi fi-tr-plug-cable", minPrice: 100 },
+                "painting walls": { iClass: "fi fi-tr-paint-roller", minPrice: 150 },
+                "fix home appliances": { iClass: "fi fi-tr-wrench-alt", minPrice: 120 },
+                "install / fix burglar bars": { iClass: "fi fi-tr-building-foundation", minPrice: 150 },
+                "jojo tank installation": { iClass: "fi fi-tr-tank-water", minPrice: 160 },
+                "pest control": { iClass: "fi fi-tr-bug-slash", minPrice: 100 },
+
+                // Gas / Misc
+                "gas/petrol bottle refill": { iClass: "fi fi-tr-gas-pump-alt", minPrice: 50 },
+
+                // Personal Care / Home Beauty
+                "in-house hair installation": { iClass: "fi fi-ts-comb-hair", minPrice: 180 },
+                "haircut at home": { iClass: "fi fi-tr-hair-clipper", minPrice: 60},
+                "manicure / pedicure at home": { iClass: "fi fi-tr-manicure", minPrice: 90 },
+                "makeup at home": { iClass: "fi fi-tr-makeup-bag", minPrice: 90 }
+            };
+
+            // ===== ADDITION: Pricing Engine =====
+            const pricingEngine = {
+                // Get base price from taskIconsFlaticon
+                getBasePrice: function(category) {
+                    if (!category) return 75; // Default
+                    
+                    // Try exact match first
+                    const exactMatch = taskIconsFlaticon[category.toLowerCase()];
+                    if (exactMatch) return exactMatch.minPrice;
+                    
+                    // Try partial match
+                    for (const [key, value] of Object.entries(taskIconsFlaticon)) {
+                        if (category.toLowerCase().includes(key)) {
+                            return value.minPrice;
+                        }
+                    }
+                    
+                    return 75; // Default fallback
+                },
+                
+                // Multipliers based on answers with proper keys
+                multipliers: {
+                    'rooms': {
+                        '1': 1.0,
+                        '2': 1.3,
+                        '3': 1.6,
+                        '4': 2.0,
+                        '5+': 2.5
+                    },
+                    'fullness': {
+                        'light': 1.0,
+                        'moderate': 1.3,
+                        'heavy': 1.8
+                    },
+                    'items': {
+                        'few': 1.0,
+                        'some': 1.2,
+                        'many': 1.5
+                    },
+                    'urgency': {
+                        'now': 1.5,
+                        'today': 1.2,
+                        'week': 1.0
+                    }
+                },
+                
+                // Distance multiplier (R per km beyond free range)
+                distanceRate: 2.5,
+                freeKm: 3,
+                
+                // Calculate price based on category, answers, and distance
+                calculatePrice: function(category, answers = {}, distance = 5) {
+                    const basePrice = this.getBasePrice(category);
+                    
+                    // Apply multipliers
+                    let multiplier = 1.0;
+                    let multiplierBreakdown = [];
+                    
+                    if (answers.rooms && this.multipliers.rooms[answers.rooms]) {
+                        multiplier *= this.multipliers.rooms[answers.rooms];
+                        multiplierBreakdown.push({ factor: 'rooms', value: this.multipliers.rooms[answers.rooms] });
+                    }
+                    if (answers.fullness && this.multipliers.fullness[answers.fullness]) {
+                        multiplier *= this.multipliers.fullness[answers.fullness];
+                        multiplierBreakdown.push({ factor: 'fullness', value: this.multipliers.fullness[answers.fullness] });
+                    }
+                    if (answers.items && this.multipliers.items[answers.items]) {
+                        multiplier *= this.multipliers.items[answers.items];
+                        multiplierBreakdown.push({ factor: 'items', value: this.multipliers.items[answers.items] });
+                    }
+                    if (answers.urgency && this.multipliers.urgency[answers.urgency]) {
+                        multiplier *= this.multipliers.urgency[answers.urgency];
+                        multiplierBreakdown.push({ factor: 'urgency', value: this.multipliers.urgency[answers.urgency] });
+                    }
+                    
+                    const multipliedPrice = basePrice * multiplier;
+                    
+                    // Distance fee
+                    const distanceFee = distance > this.freeKm ? (distance - this.freeKm) * this.distanceRate : 0;
+                    
+                    // Round to nearest 5
+                    const total = Math.round((multipliedPrice + distanceFee) / 5) * 5;
+                    
+                    return {
+                        basePrice: basePrice,
+                        multiplier: multiplier,
+                        multipliedPrice: Math.round(multipliedPrice),
+                        distanceFee: Math.round(distanceFee),
+                        total: total,
+                        multiplierBreakdown: multiplierBreakdown
+                    };
+                },
+                
+                // Generate questions with proper keys based on category
+                generateQuestions: function(category) {
+                    const questions = [];
+                    
+                    if (!category) return questions;
+                    
+                    const cat = category.toLowerCase();
+                    
+                    if (cat.includes('clean') || cat.includes('cleaning')) {
+                        questions.push({
+                            key: 'rooms',
+                            text: 'How many rooms need cleaning?',
+                            type: 'select',
+                            options: ['1', '2', '3', '4', '5+']
+                        });
+                        questions.push({
+                            key: 'fullness',
+                            text: 'How messy is the space?',
+                            type: 'select',
+                            options: ['light', 'moderate', 'heavy']
+                        });
+                    } else if (cat.includes('laundry')) {
+                        questions.push({
+                            key: 'items',
+                            text: 'How many laundry items?',
+                            type: 'select',
+                            options: ['few (1-10)', 'some (11-20)', 'many (20+)']
+                        });
+                    } else if (cat.includes('move') || cat.includes('furniture')) {
+                        questions.push({
+                            key: 'items',
+                            text: 'How many items to move/assemble?',
+                            type: 'select',
+                            options: ['few', 'some', 'many']
+                        });
+                    } else if (cat.includes('garden') || cat.includes('lawn')) {
+                        questions.push({
+                            key: 'fullness',
+                            text: 'How overgrown is the garden?',
+                            type: 'select',
+                            options: ['light', 'moderate', 'heavy']
+                        });
+                    } else {
+                        questions.push({
+                            key: 'urgency',
+                            text: 'How urgent is this task?',
+                            type: 'select',
+                            options: ['now', 'today', 'week']
+                        });
+                    }
+                    
+                    return questions;
+                }
+            };
 
             // Initialize Firebase
             let database;
@@ -1886,158 +2111,6 @@
                 debugLog(`Firebase init error: ${error.message}`, 'error');
             }
 
-            // ===== PRICING ENGINE WITH KEY MAPPING =====
-            const pricingEngine = {
-                // Base rates by category
-                baseRates: {
-                    'cleaning': 80,
-                    'laundry': 60,
-                    'plumbing': 120,
-                    'electrical': 130,
-                    'moving': 150,
-                    'gardening': 70,
-                    'painting': 100,
-                    'furniture assembly': 90,
-                    'pet care': 50,
-                    'babysitting': 60,
-                    'default': 75
-                },
-                
-                // Multipliers based on answers (using consistent keys)
-                multipliers: {
-                    'fullness': {
-                        'light': 1.0,
-                        'moderate': 1.3,
-                        'heavy': 1.8
-                    },
-                    'rooms': {
-                        '1': 1.0,
-                        '2': 1.4,
-                        '3': 1.8,
-                        '4': 2.2,
-                        '5': 2.6
-                    },
-                    'items': {
-                        'few': 1.0,
-                        'some': 1.2,
-                        'many': 1.5
-                    },
-                    'urgency': {
-                        'now': 1.5,
-                        'today': 1.2,
-                        'week': 1.0
-                    }
-                },
-                
-                // Distance multiplier (R per km beyond free range)
-                distanceRate: 2.5,
-                freeKm: 3,
-                
-                // Calculate price based on task details and answers
-                calculatePrice: function(category, answers = {}, distance = 0) {
-                    // Get base rate
-                    const baseRate = this.baseRates[category?.toLowerCase()] || this.baseRates.default;
-                    
-                    // Apply multipliers based on answers with proper keys
-                    let multiplier = 1.0;
-                    const multiplierDetails = [];
-                    
-                    // Check for fullness key
-                    if (answers.fullness && this.multipliers.fullness[answers.fullness]) {
-                        multiplier *= this.multipliers.fullness[answers.fullness];
-                        multiplierDetails.push({ factor: 'fullness', value: this.multipliers.fullness[answers.fullness] });
-                    }
-                    
-                    // Check for rooms key
-                    if (answers.rooms && this.multipliers.rooms[answers.rooms]) {
-                        multiplier *= this.multipliers.rooms[answers.rooms];
-                        multiplierDetails.push({ factor: 'rooms', value: this.multipliers.rooms[answers.rooms] });
-                    }
-                    
-                    // Check for items key
-                    if (answers.items && this.multipliers.items[answers.items]) {
-                        multiplier *= this.multipliers.items[answers.items];
-                        multiplierDetails.push({ factor: 'items', value: this.multipliers.items[answers.items] });
-                    }
-                    
-                    // Check for urgency key
-                    if (answers.urgency && this.multipliers.urgency[answers.urgency]) {
-                        multiplier *= this.multipliers.urgency[answers.urgency];
-                        multiplierDetails.push({ factor: 'urgency', value: this.multipliers.urgency[answers.urgency] });
-                    }
-                    
-                    // Calculate base price with multiplier
-                    const basePrice = baseRate;
-                    const multipliedPrice = basePrice * multiplier;
-                    
-                    // Calculate distance fee
-                    const distanceFee = distance > this.freeKm ? (distance - this.freeKm) * this.distanceRate : 0;
-                    
-                    // Round to nearest 5
-                    const total = Math.round((multipliedPrice + distanceFee) / 5) * 5;
-                    
-                    return {
-                        basePrice: Math.round(basePrice),
-                        multiplier: multiplier,
-                        multipliedPrice: Math.round(multipliedPrice),
-                        distanceFee: Math.round(distanceFee),
-                        total: total,
-                        breakdown: [
-                            { label: 'Base price', amount: Math.round(basePrice) },
-                            ...multiplierDetails.map(m => ({ 
-                                label: `${m.factor} multiplier`, 
-                                amount: Math.round(basePrice * (m.value - 1)) 
-                            })),
-                            { label: 'Distance fee', amount: Math.round(distanceFee) },
-                            { label: 'Total', amount: total }
-                        ]
-                    };
-                },
-                
-                // Generate questions with proper keys
-                generateQuestions: function(category) {
-                    const questions = [];
-                    
-                    if (category?.toLowerCase().includes('clean')) {
-                        questions.push({
-                            key: 'rooms',
-                            text: 'How many rooms?',
-                            type: 'select',
-                            options: ['1', '2', '3', '4', '5+']
-                        });
-                        questions.push({
-                            key: 'fullness',
-                            text: 'How full is the space?',
-                            type: 'select',
-                            options: ['light', 'moderate', 'heavy']
-                        });
-                    } else if (category?.toLowerCase().includes('laundry')) {
-                        questions.push({
-                            key: 'items',
-                            text: 'How many items?',
-                            type: 'select',
-                            options: ['few', 'some', 'many']
-                        });
-                    } else if (category?.toLowerCase().includes('move')) {
-                        questions.push({
-                            key: 'items',
-                            text: 'How many items?',
-                            type: 'select',
-                            options: ['few', 'some', 'many']
-                        });
-                    } else {
-                        questions.push({
-                            key: 'urgency',
-                            text: 'How urgent?',
-                            type: 'select',
-                            options: ['now', 'today', 'week']
-                        });
-                    }
-                    
-                    return questions;
-                }
-            };
-
             // Function to check and set notification dot based on open tasks
             function checkNotificationDot() {
                 if (!currentUser) {
@@ -2080,23 +2153,7 @@
                 debugLog('Using fallback Mapbox token', 'info');
             }
 
-            const taskSuggestions = [
-                "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
-                "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
-                "plumbing (minor fixes)", "electrical work (minor)", "furniture assembly", "gardening / lawn care",
-                "painting walls / touch-ups", "moving / lifting heavy objects", "website setup",
-                "software troubleshooting", "device setup (phones/laptops)", "graphic design / logo design",
-                "social media support", "picking up parcels", "delivery of small items", "car washing / cleaning",
-                "running personal errands", "house sitting", "pet sitting", "event setup / decorating",
-                "photography / videography", "tutoring / lessons", "moving / relocation help",
-                "assembling electronics", "minor car maintenance", "package wrapping / gift prep",
-                "shopping for gifts / items", "plant care / watering", "cleaning windows", "packing / unpacking",
-                "minor sewing / clothing repair", "furniture moving", "appliance setup", "data entry / admin support",
-                "email / inbox management", "basic accounting / bookkeeping", "errand planning / scheduling",
-                "toy / small item repair", "basic sewing / mending", "recycling / trash pickup",
-                "inventory check / organizing", "pet training / basic commands", "tech device troubleshooting",
-                "gift wrapping / decoration", "small handyman tasks"
-            ];
+            const taskSuggestions = Object.keys(taskIconsFlaticon).map(key => key);
 
             // Keyboard detection
             const homeSheet = document.getElementById('homeSheet');
@@ -2136,7 +2193,7 @@
             const locationInput = document.getElementById('locationInput');
             const DESIRED_ZOOM = 16;
             
-            // Post-task map state
+            // ADDITION: Post-task map state
             let isSearchingForHelpers = false;
             let helperMarkers = [];
             let helperListener = null;
@@ -2354,7 +2411,7 @@
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
                     
-                    // Hide searching UI if visible
+                    // ADDITION: Hide searching UI when returning home
                     document.getElementById('searchingLabel').style.display = 'none';
                     document.getElementById('helperCountToast').style.display = 'none';
                     
@@ -2847,6 +2904,9 @@
             const openBudgetBtn = document.getElementById('openBudgetBtn');
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
             const taskCharCount = document.getElementById('taskCharCount');
+            
+            // ADDITION: Questions container
+            const questionsContainer = document.getElementById('questionsContainer');
 
             function capitalizeFirstLetter(s) { 
                 if (!s) return '';
@@ -2857,6 +2917,81 @@
             function capitalizeSentence(str) {
                 if (!str) return '';
                 return str.replace(/(^\w|\.\s+\w)/g, letter => letter.toUpperCase());
+            }
+
+            // ADDITION: Update questions based on task category
+            function updateQuestions() {
+                const category = taskInput.value.trim();
+                const questions = pricingEngine.generateQuestions(category);
+                
+                if (questions.length > 0) {
+                    let html = '<div class="section-label">Additional details</div>';
+                    questions.forEach(q => {
+                        html += `
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 0.85rem; margin-bottom: 0.3rem;">${q.text}</div>
+                                <select class="question-select" data-key="${q.key}" style="width:100%; padding:0.8rem; background:#f0f0f0; border:none; border-radius:5px;">
+                                    ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    });
+                    questionsContainer.innerHTML = html;
+                    
+                    // Add change listeners
+                    document.querySelectorAll('.question-select').forEach(select => {
+                        select.addEventListener('change', updatePriceEstimate);
+                    });
+                } else {
+                    questionsContainer.innerHTML = '';
+                }
+            }
+
+            // ADDITION: Update price estimate in real-time
+            function updatePriceEstimate() {
+                const category = taskInput.value.trim();
+                if (!category) {
+                    document.getElementById('priceBreakdownSection').style.display = 'none';
+                    return;
+                }
+                
+                // Collect answers from questions with proper keys
+                const answers = {};
+                document.querySelectorAll('.question-select').forEach(select => {
+                    const key = select.dataset.key;
+                    const value = select.value;
+                    answers[key] = value;
+                });
+                
+                // Calculate distance (simplified - in production use actual distance)
+                const distance = 5; // Example: 5km from task location
+                
+                const price = pricingEngine.calculatePrice(category, answers, distance);
+                
+                // Update UI
+                document.getElementById('basePrice').textContent = price.basePrice;
+                
+                if (price.multiplierBreakdown.length > 0) {
+                    document.getElementById('multiplierRow').style.display = 'flex';
+                    const multiplierFactor = price.multiplierBreakdown[0].factor;
+                    document.getElementById('multiplierLabel').textContent = 
+                        multiplierFactor.charAt(0).toUpperCase() + multiplierFactor.slice(1) + ' multiplier';
+                    document.getElementById('multiplierAmount').textContent = 
+                        price.multipliedPrice - price.basePrice;
+                } else {
+                    document.getElementById('multiplierRow').style.display = 'none';
+                }
+                
+                if (price.distanceFee > 0) {
+                    document.getElementById('distanceRow').style.display = 'flex';
+                    document.getElementById('distanceFee').textContent = price.distanceFee;
+                } else {
+                    document.getElementById('distanceRow').style.display = 'none';
+                }
+                
+                document.getElementById('totalPrice').textContent = price.total;
+                document.getElementById('estimatedPrice').textContent = `Estimated: R ${price.total}`;
+                document.getElementById('priceBreakdownSection').style.display = 'block';
             }
 
             if (mainSearchInput) {
@@ -2880,6 +3015,7 @@
                                 taskInput.value = capitalizeSentence(task);
                                 mainSuggestionsList.classList.remove('active');
                                 validateForm();
+                                updateQuestions();
                                 updatePriceEstimate();
                                 if (currentUser) {
                                     createTaskContainer.style.display = 'flex';
@@ -2911,6 +3047,7 @@
                                 taskInput.value = capitalizeSentence(task);
                                 mainSuggestionsList.classList.remove('active');
                                 validateForm();
+                                updateQuestions();
                                 updatePriceEstimate();
                                 if (currentUser) {
                                     createTaskContainer.style.display = 'flex';
@@ -2945,6 +3082,7 @@
                             taskInput.value = capitalizeSentence(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
+                            updateQuestions();
                             updatePriceEstimate();
                             if (currentUser) {
                                 createTaskContainer.style.display = 'flex';
@@ -2990,6 +3128,7 @@
                             taskInput.value = capitalizeSentence(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
+                            updateQuestions();
                             updatePriceEstimate();
                             createTaskContainer.style.display = 'flex';
                         });
@@ -2999,6 +3138,7 @@
                     taskInput.value = capitalizeSentence(mainSearchInput.value.trim());
                     createTaskContainer.style.display = 'flex';
                     mainSuggestionsList.classList.remove('active');
+                    updateQuestions();
                     updatePriceEstimate();
                 }
             });
@@ -3013,6 +3153,7 @@
                 taskCharCount.textContent = this.value.length + '/50';
                 mainSearchInput.value = this.value;
                 validateForm();
+                updateQuestions();
                 updatePriceEstimate();
             });
 
@@ -3037,76 +3178,10 @@
                     whenValid = dateDisplay.textContent !== 'Pick date' && timeDisplay.textContent !== 'Pick time';
                 }
                 nextBtn.disabled = !(taskFilled && streetFilled && budgetValid && whenValid);
-                
-                // Show price breakdown when form is partially filled
-                if (taskFilled && streetFilled) {
-                    document.getElementById('priceBreakdownSection').style.display = 'block';
-                } else {
-                    document.getElementById('priceBreakdownSection').style.display = 'none';
-                }
-            }
-
-            // Update price estimate in real-time
-            function updatePriceEstimate() {
-                const category = taskInput.value.trim();
-                if (!category || !currentLat || !currentLng) return;
-                
-                // Sample answers based on category (in real app, these would come from question inputs)
-                const answers = {};
-                if (category.toLowerCase().includes('clean')) {
-                    answers.rooms = '2'; // Default, would come from question input
-                    answers.fullness = 'moderate';
-                } else if (category.toLowerCase().includes('laundry')) {
-                    answers.items = 'some';
-                }
-                
-                // Calculate distance (example: 5km)
-                const distance = 5;
-                
-                const price = pricingEngine.calculatePrice(category, answers, distance);
-                
-                document.getElementById('basePrice').textContent = price.basePrice;
-                document.getElementById('multiplierAdd').textContent = price.multipliedPrice - price.basePrice;
-                document.getElementById('distanceFee').textContent = price.distanceFee;
-                document.getElementById('totalPrice').textContent = price.total;
-                document.getElementById('estimatedPrice').textContent = `Estimated: R ${price.total}`;
             }
 
             streetInput.addEventListener('input', validateForm);
             budgetAmount.addEventListener('input', validateForm);
-            
-            // Add listeners for question changes (simplified - in real app would be dynamic)
-            setTimeout(() => {
-                // Simulate question inputs for demo
-                const questionContainer = document.createElement('div');
-                questionContainer.id = 'dynamicQuestions';
-                questionContainer.style.marginTop = '1rem';
-                
-                const questions = pricingEngine.generateQuestions(taskInput.value);
-                if (questions.length > 0) {
-                    let html = '<div class="section-label">Additional details</div>';
-                    questions.forEach(q => {
-                        html += `
-                            <div style="margin-bottom: 1rem;">
-                                <div style="font-size: 0.85rem; margin-bottom: 0.3rem;">${q.text}</div>
-                                <select class="question-select" data-key="${q.key}" style="width:100%; padding:0.8rem; background:#f0f0f0; border:none; border-radius:5px;">
-                                    ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                                </select>
-                            </div>
-                        `;
-                    });
-                    questionContainer.innerHTML = html;
-                    
-                    // Insert before price breakdown
-                    const priceSection = document.getElementById('priceBreakdownSection');
-                    collapsibleSection.appendChild(questionContainer);
-                    
-                    // Add change listeners
-                    document.querySelectorAll('.question-select').forEach(select => {
-                        select.addEventListener('change', updatePriceEstimate);
-                    });
-                }
-            }, 500);
 
             moreDetailsBtn.addEventListener('click', () => {
                 if (collapsibleSection.style.display === 'none') {
@@ -3307,7 +3382,7 @@
                 validateForm(); 
             });
 
-            // ===== START SEARCHING FOR HELPERS (POST-TASK MAP) =====
+            // ===== ADDITION: START SEARCHING FOR HELPERS (POST-TASK MAP) =====
             function startSearchingForHelpers(taskCategory, taskLat, taskLng) {
                 isSearchingForHelpers = true;
                 
@@ -3318,13 +3393,13 @@
                 // Change pin animation to fast beeping
                 if (userLocationMarker) {
                     const pinElement = userLocationMarker.getElement();
-                    pinElement.className = 'pulsing-pin'; // Fast beeping
+                    pinElement.className = 'pulsing-pin fast-beep';
                 }
                 
                 // Query for helpers near task location
                 const radius = 10; // km
                 
-                // Simple query - in production use GeoFire or similar
+                // Stop previous listener if any
                 if (helperListener) {
                     helperListener.off();
                 }
@@ -3337,8 +3412,8 @@
                         snapshot.forEach(child => {
                             const helper = child.val();
                             if (helper.location && helper.location.lat && helper.location.lng) {
-                                // Calculate distance
-                                const R = 6371;
+                                // Calculate distance using Haversine formula
+                                const R = 6371; // Earth's radius in km
                                 const dLat = (helper.location.lat - taskLat) * Math.PI/180;
                                 const dLon = (helper.location.lng - taskLng) * Math.PI/180;
                                 const a = 
@@ -3368,7 +3443,7 @@
                         // Slow down pin animation if helpers found
                         if (helpers.length > 0 && userLocationMarker) {
                             const pinElement = userLocationMarker.getElement();
-                            pinElement.classList.add('slow-pulse');
+                            pinElement.className = 'pulsing-pin slow-pulse';
                         }
                     });
             }
@@ -3394,6 +3469,7 @@
                         el.style.justifyContent = 'center';
                         el.style.color = 'white';
                         el.style.fontWeight = 'bold';
+                        el.style.fontSize = '20px';
                         el.textContent = helper.name?.charAt(0) || 'H';
                     }
                     
@@ -3410,7 +3486,7 @@
                 });
             }
 
-            // ===== NEW TASK SAVING STRUCTURE =====
+            // ===== UPDATED TASK SAVING STRUCTURE with answers and price =====
             document.getElementById('nextBtn').addEventListener('click', (e) => {
                 e.preventDefault();
                 
@@ -3426,7 +3502,7 @@
                 const extraNotesValue = document.getElementById('extraNotes').value;
                 const budgetAmountValue = parseFloat(document.getElementById('budgetAmount').value) || 0;
 
-                // Collect answers from dynamic questions with proper keys
+                // Collect answers from questions with proper keys
                 const answers = {};
                 document.querySelectorAll('.question-select').forEach(select => {
                     const key = select.dataset.key;
@@ -3473,7 +3549,15 @@
                     },
                     answers: answers, // Store answers with proper keys
                     calculatedPrice: price.total,
-                    priceBreakdown: price.breakdown,
+                    priceBreakdown: [
+                        { label: 'Base price', amount: price.basePrice },
+                        ...price.multiplierBreakdown.map(m => ({ 
+                            label: `${m.factor} multiplier`, 
+                            amount: Math.round(price.basePrice * (m.value - 1)) 
+                        })),
+                        { label: 'Distance fee', amount: price.distanceFee },
+                        { label: 'Total', amount: price.total }
+                    ],
                     notes: extraNotesValue || '',
                     status: 'open',
                     taskState: taskState,
@@ -3527,6 +3611,7 @@
                             taskCharCount.textContent = '0/50';
                             uploadedImages = []; 
                             displayPreviews(); 
+                            questionsContainer.innerHTML = '';
                             whenNowBtn.click(); 
                             fixedBudgetBtn.click(); 
                             dateDisplay.textContent = 'Pick date'; 
