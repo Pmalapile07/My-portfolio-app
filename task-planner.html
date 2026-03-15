@@ -36,17 +36,10 @@
     <!-- Config -->
     <script src="/config.js"></script>
     
-    <!-- Flaticon Icons (all black via CSS filter) -->
+    <!-- Flaticon Icons -->
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
     <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
-    <style>
-        /* Force all Flaticon icons to black */
-        [class^="fi-"], [class*=" fi-"] {
-            color: #000000 !important;
-            filter: brightness(0) saturate(100%) !important;
-        }
-    </style>
 
     <style>
         * {
@@ -99,6 +92,40 @@
             z-index: 1;
         }
 
+        /* Searching label */
+        .searching-label {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+            border: 2px solid #000;
+            white-space: nowrap;
+        }
+        
+        .helper-count-toast {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: opacity 0.3s;
+        }
+
         /* User location radius circle */
         .user-location-radius {
             position: absolute;
@@ -130,7 +157,7 @@
             }
         }
 
-        /* Custom pulsing pin (for map) */
+        /* Custom pulsing pin (for map) - FAST BEEPING ANIMATION */
         .pulsing-pin {
             position: relative;
             width: 12px;
@@ -141,6 +168,10 @@
             box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.3);
             transform: translate(-50%, -50%);
             pointer-events: none;
+            animation: fast-beep 0.6s infinite ease-in-out;
+        }
+        
+        .pulsing-pin.slow-pulse {
             animation: pulse 2s infinite ease-in-out;
         }
         
@@ -157,6 +188,18 @@
             pointer-events: none;
             z-index: -1;
             animation: pulse-ring 2s infinite ease-in-out;
+        }
+        
+        @keyframes fast-beep {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.9);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(0, 122, 255, 0.3);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+            }
         }
         
         /* STATIC LOCATION PIN (smaller version) - same as create task */
@@ -265,9 +308,8 @@
             box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
         }
 
-        /* When keyboard opens, give more space for suggestions */
         .home-sheet.keyboard-open {
-            padding-bottom: 160px;
+            padding-bottom: 120px;
         }
 
         .sheet-header {
@@ -656,10 +698,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: transparent;
-            border-radius: 0;
-            font-size: 2rem;
-            color: #000;
+            background: #f0f0f0;
+            border-radius: 50%;
+        }
+        
+        .task-icon img {
+            width: 24px;
+            height: 24px;
+            opacity: 0.8;
         }
         
         .task-content {
@@ -688,8 +734,8 @@
         }
         
         .task-repost-btn {
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             background: none;
             border: none;
             display: flex;
@@ -701,49 +747,12 @@
         }
         
         .task-repost-btn i {
-            font-size: 1rem;
+            font-size: 1.2rem;
             color: #666;
         }
         
         .task-repost-btn:active i {
             color: #000;
-        }
-        
-        /* Status badge */
-        .task-status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            font-size: 0.7rem;
-            font-weight: 400;
-            background: #f0f0f0;
-            color: #333;
-            border-radius: 5px;
-            margin-top: 4px;
-        }
-        
-        .task-status-badge.assigned {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .task-status-badge.traveling {
-            background: #fff3e0;
-            color: #e67e22;
-        }
-        
-        .task-status-badge.in-progress {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .task-status-badge.completed {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .task-status-badge.scheduled {
-            background: #f3e5f5;
-            color: #7b1fa2;
         }
         
         /* Remove old expanded styles */
@@ -842,7 +851,7 @@
             padding: 1.5rem;
         }
         
-        /* Helper info row - profile icon removed */
+        /* Helper info row */
         .helper-info-row {
             display: flex;
             align-items: center;
@@ -856,16 +865,27 @@
         .helper-info-left {
             display: flex;
             align-items: center;
-            gap: 0;
-            margin-left: 0;
-            padding-left: 0;
+            gap: 12px;
+        }
+        
+        .helper-icon {
+            width: 48px;
+            height: 48px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .helper-icon i {
+            font-size: 1.5rem;
+            color: #666;
         }
         
         .helper-details {
             display: flex;
             flex-direction: column;
-            margin-left: 0;
-            padding-left: 0;
         }
         
         .helper-label {
@@ -918,11 +938,6 @@
         .task-state-badge.past {
             background: #e8f5e9;
             color: #388e3c;
-        }
-        
-        .task-state-badge.scheduled {
-            background: #f3e5f5;
-            color: #7b1fa2;
         }
         
         /* Map container in detail page */
@@ -984,9 +999,10 @@
             margin-top: 12px;
         }
         
-        .timeline-icon-small i {
-            font-size: 1.2rem;
-            color: #000;
+        .timeline-icon-small img {
+            width: 16px;
+            height: 16px;
+            opacity: 0.8;
         }
         
         .timeline-content {
@@ -1044,111 +1060,6 @@
         
         .action-btn:active {
             opacity: 0.8;
-        }
-        
-        /* Scheduled requests section */
-        .scheduled-section {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: #fafafa;
-            border-radius: 5px;
-        }
-        
-        .scheduled-header {
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-transform: lowercase;
-        }
-        
-        .scheduled-header::first-letter {
-            text-transform: uppercase;
-        }
-        
-        .scheduled-request {
-            padding: 1rem;
-            background: white;
-            border: 1px solid #f0f0f0;
-            margin-bottom: 1rem;
-            border-radius: 5px;
-        }
-        
-        .scheduled-request:last-child {
-            margin-bottom: 0;
-        }
-        
-        .scheduled-helper {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .scheduled-time {
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 1rem;
-        }
-        
-        .scheduled-actions {
-            display: flex;
-            gap: 1rem;
-        }
-        
-        .scheduled-btn {
-            flex: 1;
-            padding: 0.8rem;
-            border: none;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        
-        .scheduled-btn.approve {
-            background: #10b981;
-            color: white;
-        }
-        
-        .scheduled-btn.decline {
-            background: #ef4444;
-            color: white;
-        }
-        
-        /* Arrival confirmation */
-        .arrival-confirmation {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #fafafa;
-            border-radius: 5px;
-        }
-        
-        .arrival-header {
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-        
-        .helper-photo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #f0f0f0;
-            margin: 0 auto 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: #666;
-        }
-        
-        .confirm-arrival-btn {
-            width: 100%;
-            padding: 1rem;
-            background: #000;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            cursor: pointer;
         }
 
         /* === CREATE TASK CONTAINER === */
@@ -1590,6 +1501,34 @@
             padding: 2rem;
             color: #666;
         }
+        
+        /* Price breakdown styling */
+        .price-breakdown {
+            background: #f8f8f8;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .price-breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .price-breakdown-item:last-child {
+            border-bottom: none;
+            font-weight: 700;
+        }
+        
+        .estimated-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #000;
+            text-align: right;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -1605,6 +1544,12 @@
 
     <!-- MAP -->
     <div id="map"></div>
+    
+    <!-- Searching label (visible after task post) -->
+    <div class="searching-label" id="searchingLabel" style="display: none;">Searching for helpers...</div>
+    
+    <!-- Helper count toast -->
+    <div class="helper-count-toast" id="helperCountToast" style="display: none;">0 helpers found nearby</div>
 
     <!-- HOME SHEET -->
     <div class="home-sheet" id="homeSheet">
@@ -1781,6 +1726,30 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Price breakdown section (visible in step 3) -->
+            <div class="section" id="priceBreakdownSection" style="display: none;">
+                <div class="section-label">Price breakdown</div>
+                <div class="price-breakdown" id="priceBreakdown">
+                    <div class="price-breakdown-item">
+                        <span>Base price</span>
+                        <span>R <span id="basePrice">0.00</span></span>
+                    </div>
+                    <div class="price-breakdown-item">
+                        <span>Rooms/Loads</span>
+                        <span>R <span id="multiplierAdd">0.00</span></span>
+                    </div>
+                    <div class="price-breakdown-item">
+                        <span>Distance fee</span>
+                        <span>R <span id="distanceFee">0.00</span></span>
+                    </div>
+                    <div class="price-breakdown-item">
+                        <span>Total</span>
+                        <span>R <span id="totalPrice">0.00</span></span>
+                    </div>
+                </div>
+                <div class="estimated-price" id="estimatedPrice">Estimated: R 0.00</div>
+            </div>
         </div>
 
         <div class="post-btn-container">
@@ -1823,58 +1792,6 @@
                 messagingSenderId: "52910279328",
                 appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
                 measurementId: "G-Z8SPLR0HSL"
-            };
-
-            // ===== TASK ICONS (FLATICON, BLACK) WITH MINPRICE AND QUESTIONS =====
-            const taskIconsFlaticon = {
-                // Household
-                "laundry": { iClass: "fi fi-tr-washer", minPrice: 80, questions: ["How full is the basket? (small/medium/full)"] },
-                "ironing": { iClass: "fi fi-tr-steam-iron", minPrice: 70, questions: ["How many items need ironing?"] },
-                "house cleaning": { iClass: "fi fi-ts-sweep", minPrice: 120, questions: ["How many rooms need cleaning?"] },
-                "dish washing": { iClass: "fi fi-ts-washing-dishes", minPrice: 50, questions: ["Approximate volume? (small/medium/large)"] },
-
-                // Errands
-                "grocery shopping": { iClass: "fi fi-tr-grocery-bag", minPrice: 50, questions: ["Number of items or short description"] },
-                "parcel pickup": { iClass: "fi fi-tr-box-open-full", minPrice: 50, questions: ["Number of parcels or short description"] },
-                "delivery of small items": { iClass: "fi fi-tc-people-carry-box", minPrice: 50, questions: ["Number of items to deliver"] },
-                "running errands": { iClass: "fi fi-tr-user-fast-running", minPrice: 50, questions: ["Short description of errands"] },
-                "queue for me": { iClass: "fi fi-tr-queue-line", minPrice: 50, questions: ["Number of people/items in queue or brief note"] },
-
-                // Yard / Outdoor
-                "gardening": { iClass: "fi fi-tr-watering-can-drop", minPrice: 100, questions: ["Size of area (small/medium/large) or tasks needed"] },
-                "lawn mowing": { iClass: "fi fi-tr-mower", minPrice: 70, questions: ["Lawn size (small/medium/large)"] },
-                "yard cleanup": { iClass: "fi fi-tr-fence", minPrice: 150, questions: ["Number of trash bags/piles"] },
-                "trash removal": { iClass: "fi fi-tr-person-dragging-bag", minPrice: 40, questions: ["Number of bags/trash bins"] },
-
-                // Care
-                "babysitting": { iClass: "fi fi-tr-baby-carriage", minPrice: 150, questions: ["Number of children"] },
-                "elderly companionship": { iClass: "fi fi-tr-old-people", minPrice: 120, questions: ["Hours required"] },
-                "pet care": { iClass: "fi fi-tc-pets", minPrice: 70, questions: ["Number of pets"] },
-                "dog walking": { iClass: "fi fi-tr-dog-leashed", minPrice: 70, questions: ["Number of dogs", "Duration in hours"] },
-
-                // Car / Vehicle
-                "car washing": { iClass: "fi fi-tr-car-wash", minPrice: 50, questions: ["Type of wash (interior/exterior/full)"] },
-
-                // Furniture / Moving
-                "furniture assembly": { iClass: "fi fi-tr-loveseat", minPrice: 120, questions: ["Number of items to assemble"] },
-
-                // Home Maintenance
-                "minor plumbing": { iClass: "fi fi-ts-faucet", minPrice: 100, questions: ["Short description of task"] },
-                "minor electrical": { iClass: "fi fi-tr-plug-cable", minPrice: 100, questions: ["Short description of task"] },
-                "painting walls": { iClass: "fi fi-tr-paint-roller", minPrice: 150, questions: ["Number of walls"] },
-                "fix home appliances": { iClass: "fi fi-tr-wrench-alt", minPrice: 120, questions: ["Short description of appliance issue"] },
-                "install / fix burglar bars": { iClass: "fi fi-tr-building-foundation", minPrice: 150, questions: ["Number of doors/windows"] },
-                "jojo tank installation": { iClass: "fi fi-tr-tank-water", minPrice: 160, questions: ["Tank size if applicable"] },
-                "pest control": { iClass: "fi fi-tr-bug-slash", minPrice: 100, questions: ["Type of pests or area size"] },
-
-                // Gas / Misc
-                "gas/petrol bottle refill": { iClass: "fi fi-tr-gas-pump-alt", minPrice: 50, questions: ["Number of bottles"] },
-
-                // Personal Care / Home Beauty
-                "in-house hair installation": { iClass: "fi fi-ts-comb-hair", minPrice: 180, questions: ["Number of people"] },
-                "haircut at home": { iClass: "fi fi-tr-hair-clipper", minPrice: 60, questions: ["Number of people"] },
-                "manicure / pedicure at home": { iClass: "fi fi-tr-manicure", minPrice: 90, questions: ["Number of people"] },
-                "makeup at home": { iClass: "fi fi-tr-makeup-bag", minPrice: 90, questions: ["Number of people"] }
             };
 
             function debugLog(message, type = 'info') {
@@ -1969,6 +1886,158 @@
                 debugLog(`Firebase init error: ${error.message}`, 'error');
             }
 
+            // ===== PRICING ENGINE WITH KEY MAPPING =====
+            const pricingEngine = {
+                // Base rates by category
+                baseRates: {
+                    'cleaning': 80,
+                    'laundry': 60,
+                    'plumbing': 120,
+                    'electrical': 130,
+                    'moving': 150,
+                    'gardening': 70,
+                    'painting': 100,
+                    'furniture assembly': 90,
+                    'pet care': 50,
+                    'babysitting': 60,
+                    'default': 75
+                },
+                
+                // Multipliers based on answers (using consistent keys)
+                multipliers: {
+                    'fullness': {
+                        'light': 1.0,
+                        'moderate': 1.3,
+                        'heavy': 1.8
+                    },
+                    'rooms': {
+                        '1': 1.0,
+                        '2': 1.4,
+                        '3': 1.8,
+                        '4': 2.2,
+                        '5': 2.6
+                    },
+                    'items': {
+                        'few': 1.0,
+                        'some': 1.2,
+                        'many': 1.5
+                    },
+                    'urgency': {
+                        'now': 1.5,
+                        'today': 1.2,
+                        'week': 1.0
+                    }
+                },
+                
+                // Distance multiplier (R per km beyond free range)
+                distanceRate: 2.5,
+                freeKm: 3,
+                
+                // Calculate price based on task details and answers
+                calculatePrice: function(category, answers = {}, distance = 0) {
+                    // Get base rate
+                    const baseRate = this.baseRates[category?.toLowerCase()] || this.baseRates.default;
+                    
+                    // Apply multipliers based on answers with proper keys
+                    let multiplier = 1.0;
+                    const multiplierDetails = [];
+                    
+                    // Check for fullness key
+                    if (answers.fullness && this.multipliers.fullness[answers.fullness]) {
+                        multiplier *= this.multipliers.fullness[answers.fullness];
+                        multiplierDetails.push({ factor: 'fullness', value: this.multipliers.fullness[answers.fullness] });
+                    }
+                    
+                    // Check for rooms key
+                    if (answers.rooms && this.multipliers.rooms[answers.rooms]) {
+                        multiplier *= this.multipliers.rooms[answers.rooms];
+                        multiplierDetails.push({ factor: 'rooms', value: this.multipliers.rooms[answers.rooms] });
+                    }
+                    
+                    // Check for items key
+                    if (answers.items && this.multipliers.items[answers.items]) {
+                        multiplier *= this.multipliers.items[answers.items];
+                        multiplierDetails.push({ factor: 'items', value: this.multipliers.items[answers.items] });
+                    }
+                    
+                    // Check for urgency key
+                    if (answers.urgency && this.multipliers.urgency[answers.urgency]) {
+                        multiplier *= this.multipliers.urgency[answers.urgency];
+                        multiplierDetails.push({ factor: 'urgency', value: this.multipliers.urgency[answers.urgency] });
+                    }
+                    
+                    // Calculate base price with multiplier
+                    const basePrice = baseRate;
+                    const multipliedPrice = basePrice * multiplier;
+                    
+                    // Calculate distance fee
+                    const distanceFee = distance > this.freeKm ? (distance - this.freeKm) * this.distanceRate : 0;
+                    
+                    // Round to nearest 5
+                    const total = Math.round((multipliedPrice + distanceFee) / 5) * 5;
+                    
+                    return {
+                        basePrice: Math.round(basePrice),
+                        multiplier: multiplier,
+                        multipliedPrice: Math.round(multipliedPrice),
+                        distanceFee: Math.round(distanceFee),
+                        total: total,
+                        breakdown: [
+                            { label: 'Base price', amount: Math.round(basePrice) },
+                            ...multiplierDetails.map(m => ({ 
+                                label: `${m.factor} multiplier`, 
+                                amount: Math.round(basePrice * (m.value - 1)) 
+                            })),
+                            { label: 'Distance fee', amount: Math.round(distanceFee) },
+                            { label: 'Total', amount: total }
+                        ]
+                    };
+                },
+                
+                // Generate questions with proper keys
+                generateQuestions: function(category) {
+                    const questions = [];
+                    
+                    if (category?.toLowerCase().includes('clean')) {
+                        questions.push({
+                            key: 'rooms',
+                            text: 'How many rooms?',
+                            type: 'select',
+                            options: ['1', '2', '3', '4', '5+']
+                        });
+                        questions.push({
+                            key: 'fullness',
+                            text: 'How full is the space?',
+                            type: 'select',
+                            options: ['light', 'moderate', 'heavy']
+                        });
+                    } else if (category?.toLowerCase().includes('laundry')) {
+                        questions.push({
+                            key: 'items',
+                            text: 'How many items?',
+                            type: 'select',
+                            options: ['few', 'some', 'many']
+                        });
+                    } else if (category?.toLowerCase().includes('move')) {
+                        questions.push({
+                            key: 'items',
+                            text: 'How many items?',
+                            type: 'select',
+                            options: ['few', 'some', 'many']
+                        });
+                    } else {
+                        questions.push({
+                            key: 'urgency',
+                            text: 'How urgent?',
+                            type: 'select',
+                            options: ['now', 'today', 'week']
+                        });
+                    }
+                    
+                    return questions;
+                }
+            };
+
             // Function to check and set notification dot based on open tasks
             function checkNotificationDot() {
                 if (!currentUser) {
@@ -2011,18 +2080,30 @@
                 debugLog('Using fallback Mapbox token', 'info');
             }
 
-            const taskSuggestions = Object.keys(taskIconsFlaticon);
+            const taskSuggestions = [
+                "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
+                "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
+                "plumbing (minor fixes)", "electrical work (minor)", "furniture assembly", "gardening / lawn care",
+                "painting walls / touch-ups", "moving / lifting heavy objects", "website setup",
+                "software troubleshooting", "device setup (phones/laptops)", "graphic design / logo design",
+                "social media support", "picking up parcels", "delivery of small items", "car washing / cleaning",
+                "running personal errands", "house sitting", "pet sitting", "event setup / decorating",
+                "photography / videography", "tutoring / lessons", "moving / relocation help",
+                "assembling electronics", "minor car maintenance", "package wrapping / gift prep",
+                "shopping for gifts / items", "plant care / watering", "cleaning windows", "packing / unpacking",
+                "minor sewing / clothing repair", "furniture moving", "appliance setup", "data entry / admin support",
+                "email / inbox management", "basic accounting / bookkeeping", "errand planning / scheduling",
+                "toy / small item repair", "basic sewing / mending", "recycling / trash pickup",
+                "inventory check / organizing", "pet training / basic commands", "tech device troubleshooting",
+                "gift wrapping / decoration", "small handyman tasks"
+            ];
 
-            // Keyboard detection & sheet expansion
+            // Keyboard detection
             const homeSheet = document.getElementById('homeSheet');
             const mainSearchInput = document.getElementById('mainSearchInput');
             if (mainSearchInput) {
-                mainSearchInput.addEventListener('focus', () => {
-                    homeSheet.classList.add('keyboard-open');
-                });
-                mainSearchInput.addEventListener('blur', () => {
-                    homeSheet.classList.remove('keyboard-open');
-                });
+                mainSearchInput.addEventListener('focus', () => homeSheet.classList.add('keyboard-open'));
+                mainSearchInput.addEventListener('blur', () => homeSheet.classList.remove('keyboard-open'));
             }
 
             // Splash screen
@@ -2054,6 +2135,11 @@
             const recenterBtn = document.getElementById('mapRecenterBtn');
             const locationInput = document.getElementById('locationInput');
             const DESIRED_ZOOM = 16;
+            
+            // Post-task map state
+            let isSearchingForHelpers = false;
+            let helperMarkers = [];
+            let helperListener = null;
 
             map.on('load', () => {
                 debugLog('Map loaded successfully', 'success');
@@ -2256,7 +2342,6 @@
             // Category tabs state
             let currentCategory = 'current';
             let allTasks = [];
-            let scheduledRequests = {};
 
             function setActivePage(page) {
                 [navHome, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
@@ -2268,6 +2353,16 @@
                     taskDetailPage.classList.remove('active');
                     mapEl.style.display = 'block';
                     homeSheetEl.style.display = 'block';
+                    
+                    // Hide searching UI if visible
+                    document.getElementById('searchingLabel').style.display = 'none';
+                    document.getElementById('helperCountToast').style.display = 'none';
+                    
+                    // Stop helper listener if active
+                    if (helperListener) {
+                        helperListener.off();
+                        helperListener = null;
+                    }
                     
                     setTimeout(() => map.resize(), 100);
                 } else if (page === 'tasks') {
@@ -2356,27 +2451,12 @@
                         } else {
                             dot.classList.remove('visible');
                         }
-                        
-                        // Load scheduled requests
-                        loadScheduledRequests();
                     })
                     .catch((error) => {
                         debugLog(`Error loading tasks: ${error.message}`, 'error');
                         tasksContainer.innerHTML = '<div class="empty-state"><h3>Error loading tasks</h3><p>Please try again</p><button class="post-btn" onclick="location.reload()">Try again</button></div>';
                         tasksCount.textContent = '0';
                         document.getElementById('taskNotificationDot').classList.remove('visible');
-                    });
-            }
-            
-            function loadScheduledRequests() {
-                if (!currentUser) return;
-                
-                database.ref('scheduled_requests/' + currentUser.uid).once('value')
-                    .then((snapshot) => {
-                        scheduledRequests = snapshot.val() || {};
-                    })
-                    .catch((error) => {
-                        debugLog(`Error loading scheduled requests: ${error.message}`, 'error');
                     });
             }
             
@@ -2446,272 +2526,7 @@
                 return null;
             }
 
-            // ===== CALCULATE DISTANCE BETWEEN TWO COORDINATES =====
-            function calculateDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371; // Radius of the earth in km
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = 
-                    Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const distance = R * c; // Distance in km
-                return distance;
-            }
-
-            // ===== FIND MATCHING HELPERS =====
-            async function findMatchingHelpers(taskId, taskCategory, taskLocation) {
-                debugLog(`🔍 Searching for helpers for task: ${taskId}`, 'info');
-                
-                try {
-                    // Get all users
-                    const usersSnapshot = await database.ref('users').once('value');
-                    const users = usersSnapshot.val() || {};
-                    
-                    let matchingHelpers = [];
-                    
-                    for (let uid in users) {
-                        const user = users[uid];
-                        
-                        // Check if user is a helper
-                        if (user.role === 'helper') {
-                            // Check if helper has location
-                            if (!user.location || !user.location.lat || !user.location.lng) continue;
-                            
-                            // Calculate distance
-                            const distance = calculateDistance(
-                                taskLocation.lat, taskLocation.lng,
-                                user.location.lat, user.location.lng
-                            );
-                            
-                            // Check if within 10km
-                            if (distance > 10) continue;
-                            
-                            // Check if skills match
-                            const helperSkills = Object.values(user.skills || {});
-                            const taskLower = taskCategory.toLowerCase();
-                            
-                            const hasMatchingSkill = helperSkills.some(skill => 
-                                skill.toLowerCase().includes(taskLower) || taskLower.includes(skill.toLowerCase())
-                            );
-                            if (hasMatchingSkill) {
-                                matchingHelpers.push({
-                                    uid: uid,
-                                    name: user.name || 'Helper',
-                                    distance: Math.round(distance * 10) / 10,
-                                    skills: helperSkills
-                                });
-                            }
-                        }
-                    }
-                    
-                    debugLog(`✅ Found ${matchingHelpers.length} matching helpers within 10km`, 'success');
-                    
-                    // Create notifications for matching helpers
-                    for (let helper of matchingHelpers) {
-                        await createHelperNotification(helper.uid, taskId, taskCategory, helper.distance);
-                    }
-                    
-                    return matchingHelpers;
-                    
-                } catch (error) {
-                    debugLog(`❌ Error finding matching helpers: ${error.message}`, 'error');
-                    return [];
-                }
-            }
-
-            // ===== CREATE HELPER NOTIFICATION =====
-            async function createHelperNotification(helperUid, taskId, taskCategory, distance) {
-                try {
-                    const notificationRef = database.ref('notifications/' + helperUid).push();
-                    
-                    await notificationRef.set({
-                        taskId: taskId,
-                        posterId: currentUser.uid,
-                        posterName: userProfile?.name || currentUser.displayName || 'Someone',
-                        category: taskCategory,
-                        distance: distance,
-                        status: 'pending',
-                        createdAt: Date.now(),
-                        type: 'new_task'
-                    });
-                    
-                    debugLog(`📢 Notification sent to helper: ${helperUid}`, 'success');
-                    
-                } catch (error) {
-                    debugLog(`❌ Error creating notification: ${error.message}`, 'error');
-                }
-            }
-
-            // ===== HANDLE SCHEDULED REQUEST =====
-            async function handleScheduledRequest(taskId, helperUid, helperName, scheduledTime) {
-                if (!currentUser) return;
-                
-                try {
-                    const requestRef = database.ref('scheduled_requests/' + currentUser.uid + '/' + taskId + '_' + helperUid);
-                    
-                    await requestRef.set({
-                        taskId: taskId,
-                        helperUid: helperUid,
-                        helperName: helperName,
-                        scheduledTime: scheduledTime,
-                        status: 'pending',
-                        createdAt: Date.now()
-                    });
-                    
-                    debugLog(`📅 Scheduled request created for helper: ${helperName}`, 'success');
-                    
-                    // Update UI
-                    loadScheduledRequests();
-                    
-                } catch (error) {
-                    debugLog(`❌ Error creating scheduled request: ${error.message}`, 'error');
-                }
-            }
-
-            // ===== APPROVE SCHEDULED REQUEST =====
-            window.approveScheduledRequest = async function(taskId, helperUid, helperName, scheduledTime) {
-                if (!currentUser) return;
-                
-                try {
-                    // Update task
-                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
-                        assignedHelperId: helperUid,
-                        assignedHelperName: helperName,
-                        status: 'scheduled',
-                        scheduledStart: scheduledTime,
-                        assignedAt: Date.now()
-                    });
-                    
-                    // Remove scheduled request
-                    await database.ref('scheduled_requests/' + currentUser.uid + '/' + taskId + '_' + helperUid).remove();
-                    
-                    // Notify helper
-                    const notificationRef = database.ref('notifications/' + helperUid).push();
-                    await notificationRef.set({
-                        taskId: taskId,
-                        posterId: currentUser.uid,
-                        posterName: userProfile?.name || currentUser.displayName || 'Someone',
-                        category: 'scheduled_accepted',
-                        status: 'accepted',
-                        scheduledTime: scheduledTime,
-                        createdAt: Date.now(),
-                        type: 'schedule_accepted'
-                    });
-                    
-                    debugLog(`✅ Scheduled request approved for helper: ${helperName}`, 'success');
-                    
-                    // Reload tasks
-                    loadUserTasks();
-                    showToast(`Helper ${helperName} has been scheduled`);
-                    
-                } catch (error) {
-                    debugLog(`❌ Error approving scheduled request: ${error.message}`, 'error');
-                }
-            };
-
-            // ===== DECLINE SCHEDULED REQUEST =====
-            window.declineScheduledRequest = async function(taskId, helperUid) {
-                if (!currentUser) return;
-                
-                try {
-                    // Remove scheduled request
-                    await database.ref('scheduled_requests/' + currentUser.uid + '/' + taskId + '_' + helperUid).remove();
-                    
-                    // Notify helper
-                    const notificationRef = database.ref('notifications/' + helperUid).push();
-                    await notificationRef.set({
-                        taskId: taskId,
-                        posterId: currentUser.uid,
-                        posterName: userProfile?.name || currentUser.displayName || 'Someone',
-                        status: 'rejected',
-                        createdAt: Date.now(),
-                        type: 'schedule_rejected'
-                    });
-                    
-                    debugLog(`❌ Scheduled request declined for helper`, 'info');
-                    
-                    // Reload scheduled requests
-                    loadScheduledRequests();
-                    showToast('Scheduled request declined');
-                    
-                } catch (error) {
-                    debugLog(`❌ Error declining scheduled request: ${error.message}`, 'error');
-                }
-            };
-
-            // ===== CONFIRM HELPER ARRIVAL =====
-            window.confirmHelperArrival = async function(taskId) {
-                if (!currentUser) return;
-                
-                try {
-                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
-                        status: 'in_progress',
-                        startedAt: Date.now()
-                    });
-                    
-                    debugLog(`✅ Helper arrival confirmed, task in progress`, 'success');
-                    
-                    // Notify helper
-                    const task = allTasks.find(t => t.id === taskId);
-                    if (task && task.assignedHelperId) {
-                        const notificationRef = database.ref('notifications/' + task.assignedHelperId).push();
-                        await notificationRef.set({
-                            taskId: taskId,
-                            posterId: currentUser.uid,
-                            posterName: userProfile?.name || currentUser.displayName || 'Someone',
-                            status: 'started',
-                            createdAt: Date.now(),
-                            type: 'task_started'
-                        });
-                    }
-                    
-                    loadUserTasks();
-                    showToast('Task started!');
-                    
-                } catch (error) {
-                    debugLog(`❌ Error confirming arrival: ${error.message}`, 'error');
-                }
-            };
-
-            // ===== COMPLETE TASK =====
-            window.completeTask = async function(taskId) {
-                if (!currentUser) return;
-                
-                try {
-                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
-                        status: 'completed',
-                        completedAt: Date.now(),
-                        taskState: 'past'
-                    });
-                    
-                    debugLog(`✅ Task completed`, 'success');
-                    
-                    // Notify helper
-                    const task = allTasks.find(t => t.id === taskId);
-                    if (task && task.assignedHelperId) {
-                        const notificationRef = database.ref('notifications/' + task.assignedHelperId).push();
-                        await notificationRef.set({
-                            taskId: taskId,
-                            posterId: currentUser.uid,
-                            posterName: userProfile?.name || currentUser.displayName || 'Someone',
-                            status: 'completed',
-                            createdAt: Date.now(),
-                            type: 'task_completed',
-                            budget: task.budget
-                        });
-                    }
-                    
-                    loadUserTasks();
-                    showToast('Task completed!');
-                    
-                } catch (error) {
-                    debugLog(`❌ Error completing task: ${error.message}`, 'error');
-                }
-            };
-
-            // ===== SHOW TASK DETAIL =====
+            // Show task detail page
             function showTaskDetail(task) {
                 const detailContent = document.getElementById('taskDetailContent');
                 const headerSpacer = document.querySelector('.task-detail-header-spacer');
@@ -2721,99 +2536,28 @@
                 const createdDateStr = formatDateWithOrdinal(createdDate);
                 const createdTimeStr = task.createdAt ? formatTimeFromTimestamp(task.createdAt) : 'Just now';
                 
-                // Helper info
-                const isAssigned = task.assignedHelperName && task.assignedHelperName !== 'Not assigned' && task.assignedHelperName !== null;
-                const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
+                // Helper name (placeholder)
+                const helperName = task.assignedHelperName || 'Not assigned';
                 const helperInitial = helperName.charAt(0).toUpperCase();
                 
                 // Add task state badge to header
-                let stateText = '';
-                let stateClass = '';
-                
-                if (task.status === 'scheduled') {
-                    stateText = `Scheduled for ${new Date(task.scheduledStart).toLocaleString()}`;
-                    stateClass = 'scheduled';
-                } else if (task.status === 'assigned') {
-                    stateText = 'Helper assigned';
-                    stateClass = 'assigned';
-                } else if (task.status === 'traveling') {
-                    stateText = 'Helper on the way';
-                    stateClass = 'traveling';
-                } else if (task.status === 'in_progress') {
-                    stateText = 'Task in progress';
-                    stateClass = 'in-progress';
-                } else if (task.status === 'completed') {
-                    stateText = 'Task completed';
-                    stateClass = 'completed';
-                } else if (task.taskState === 'future') {
-                    stateText = `Scheduled to start on ${task.date || 'future date'}`;
-                    stateClass = 'future';
-                } else {
-                    stateText = 'Searching for helpers';
-                    stateClass = 'current';
-                }
-                
-                const taskStateSpan = document.createElement('span');
-                taskStateSpan.className = `task-state-badge ${stateClass}`;
-                taskStateSpan.textContent = stateText;
+                const taskStateBadge = document.createElement('span');
+                taskStateBadge.className = `task-state-badge ${task.taskState || 'current'}`;
+                taskStateBadge.textContent = (task.taskState || 'current').toUpperCase();
                 
                 // Clear previous badge and add new one
                 const existingBadge = document.querySelector('.task-state-badge');
                 if (existingBadge) existingBadge.remove();
-                headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
+                headerSpacer.parentNode.insertBefore(taskStateBadge, headerSpacer.nextSibling);
                 
-                // Build detail HTML - removed helper icon/profile picture
-                let actionButtons = '';
-                
-                if (task.status === 'assigned' || task.status === 'traveling') {
-                    actionButtons = `
-                        <div class="arrival-confirmation">
-                            <div class="arrival-header">Confirm helper arrival</div>
-                            <div class="helper-photo">${helperInitial}</div>
-                            <button class="confirm-arrival-btn" onclick="confirmHelperArrival('${task.id}')">
-                                Helper has arrived
-                            </button>
-                        </div>
-                    `;
-                } else if (task.status === 'in_progress') {
-                    actionButtons = `
-                        <button class="action-btn primary" onclick="completeTask('${task.id}')">
-                            Mark as completed
-                        </button>
-                    `;
-                }
-                
-                // Check for scheduled requests
-                let scheduledHtml = '';
-                const requestKey = task.id + '_' + (task.pendingHelperUid || '');
-                if (scheduledRequests[requestKey]) {
-                    const request = scheduledRequests[requestKey];
-                    scheduledHtml = `
-                        <div class="scheduled-section">
-                            <div class="scheduled-header">Scheduled request</div>
-                            <div class="scheduled-request">
-                                <div class="scheduled-helper">${request.helperName}</div>
-                                <div class="scheduled-time">Requested for: ${new Date(request.scheduledTime).toLocaleString()}</div>
-                                <div class="scheduled-actions">
-                                    <button class="scheduled-btn approve" onclick="approveScheduledRequest('${task.id}', '${request.helperUid}', '${request.helperName}', ${request.scheduledTime})">
-                                        Approve
-                                    </button>
-                                    <button class="scheduled-btn decline" onclick="declineScheduledRequest('${task.id}', '${request.helperUid}')">
-                                        Decline
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // Get icon class for task
-                const taskInfo = taskIconsFlaticon[task.category?.toLowerCase()] || { iClass: "fi fi-tr-clipboard" };
-                
+                // Build detail HTML
                 detailContent.innerHTML = `
-                    <!-- Helper info row - profile icon removed -->
+                    <!-- Helper info row -->
                     <div class="helper-info-row">
                         <div class="helper-info-left">
+                            <div class="helper-icon">
+                                <i class="fi fi-rr-briefcase"></i>
+                            </div>
                             <div class="helper-details">
                                 <span class="helper-label">Task with</span>
                                 <span class="helper-name">${helperName}</span>
@@ -2824,10 +2568,10 @@
                         </div>
                     </div>
                     
-                    <!-- Mini map showing task location -->
+                    <!-- Mini map showing task location - using actual task coordinates -->
                     <div class="detail-map-container" id="taskDetailMap"></div>
                     
-                    <!-- Timeline -->
+                    <!-- Timeline with smaller dots and icons -->
                     <div class="task-timeline">
                         <div class="timeline-item">
                             <div class="timeline-dot-small"></div>
@@ -2840,7 +2584,7 @@
                         
                         <div class="timeline-item">
                             <div class="timeline-icon-small">
-                                <i class="${taskInfo.iClass}"></i>
+                                <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
                             </div>
                             <div class="timeline-content">
                                 <div class="timeline-title">${task.category || 'Task'}</div>
@@ -2850,12 +2594,10 @@
                         </div>
                     </div>
                     
-                    ${scheduledHtml}
-                    
                     <!-- Action buttons -->
                     <div class="task-action-buttons">
+                        <button class="action-btn primary" onclick="alert('Get help feature coming soon')">Get help with task</button>
                         <button class="action-btn secondary" onclick="repostTask('${task.taskId || task.id}')">Rebook</button>
-                        ${actionButtons}
                     </div>
                 `;
                 
@@ -2903,24 +2645,21 @@
                 setActivePage('taskDetail');
             }
 
-            function getTaskIconClass(category) {
-                const lowerCategory = category?.toLowerCase() || '';
-                return taskIconsFlaticon[lowerCategory]?.iClass || "fi fi-tr-clipboard";
-            }
-
             function displayTasksByCategory() {
                 const tasksContainer = document.getElementById('tasksListContainer');
                 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
-                // Filter tasks based on category using taskState if available
+                // Filter tasks based on category using taskState if available, fallback to old logic
                 let filteredTasks = [];
                 
                 if (currentCategory === 'current') {
                     filteredTasks = allTasks.filter(task => {
+                        // Use taskState if available
                         if (task.taskState === 'current') return true;
-                        if (task.status === 'assigned' || task.status === 'traveling' || task.status === 'in_progress') return true;
+                        // Fallback to old logic
+                        if (task.status !== 'open' && task.status !== 'in-progress') return false;
                         if (task.date === 'now') return true;
                         const taskDate = getTaskDateObj(task);
                         if (taskDate) {
@@ -2943,8 +2682,10 @@
                     }
                 } else if (currentCategory === 'future') {
                     filteredTasks = allTasks.filter(task => {
+                        // Use taskState if available
                         if (task.taskState === 'future') return true;
-                        if (task.status === 'scheduled') return true;
+                        // Fallback to old logic
+                        if (task.status !== 'open' && task.status !== 'in-progress') return false;
                         if (task.date === 'now') return false;
                         const taskDate = getTaskDateObj(task);
                         if (taskDate) {
@@ -2967,6 +2708,7 @@
                     }
                 } else {
                     filteredTasks = allTasks.filter(task => {
+                        // Past: completed, cancelled, OR taskState 'past'
                         if (task.taskState === 'past') return true;
                         if (task.status === 'completed' || task.status === 'cancelled') return true;
                         if (task.date && task.date !== 'now') {
@@ -3018,20 +2760,11 @@
                         const formattedTime = formatTimeFromTimestamp(task.createdAt);
                         const budgetDisplay = getFormattedBudget(task);
                         
-                        let statusClass = '';
-                        if (task.status === 'assigned') statusClass = 'assigned';
-                        else if (task.status === 'traveling') statusClass = 'traveling';
-                        else if (task.status === 'in_progress') statusClass = 'in-progress';
-                        else if (task.status === 'completed') statusClass = 'completed';
-                        else if (task.status === 'scheduled') statusClass = 'scheduled';
-                        
-                        const iconClass = getTaskIconClass(task.category);
-                        
                         html += `
                             <div class="task-card" data-task-id="${task.taskId || task.id}">
                                 <div class="task-card-main">
                                     <div class="task-icon">
-                                        <i class="${iconClass}" style="font-size: 2rem;"></i>
+                                        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/clipboard.png" alt="Task">
                                     </div>
                                     <div class="task-content">
                                         <div class="task-date-time">
@@ -3039,7 +2772,6 @@
                                         </div>
                                         <div class="task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
                                         <div class="task-amount">${budgetDisplay}</div>
-                                        ${task.status ? `<div class="task-status-badge ${statusClass}">${task.status.replace('_', ' ')}</div>` : ''}
                                     </div>
                                     <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')">
                                         <i class="fi fi-sr-arrows-retweet"></i>
@@ -3093,7 +2825,7 @@
                 }
             };
 
-            // Search suggestions
+            // Search suggestions with improved UI/UX
             const mainSuggestionsList = document.getElementById('mainSuggestionsList');
             const searchIconBtn = document.getElementById('searchIconBtn');
             const createTaskContainer = document.getElementById('createTaskContainer');
@@ -3121,27 +2853,34 @@
                 return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
             }
             
-            // Capitalize first letter of each sentence
+            // Capitalize first letter of each sentence (not just first word)
             function capitalizeSentence(str) {
                 if (!str) return '';
                 return str.replace(/(^\w|\.\s+\w)/g, letter => letter.toUpperCase());
             }
 
             if (mainSearchInput) {
+                // Show suggestions when input is focused or user types
                 mainSearchInput.addEventListener('focus', function() {
                     if (!this.value.trim()) {
-                        mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
-                            `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                        ).join('');
+                        // Show top suggestions when focused empty with helpful message
+                        mainSuggestionsList.innerHTML = `
+                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
+                            ${taskSuggestions.slice(0, 7).map(t => 
+                                `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                            ).join('')}
+                        `;
                         mainSuggestionsList.classList.add('active');
                         
-                        document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
+                        // Reattach click handlers
+                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
                                 mainSearchInput.value = task;
                                 taskInput.value = capitalizeSentence(task);
                                 mainSuggestionsList.classList.remove('active');
                                 validateForm();
+                                updatePriceEstimate();
                                 if (currentUser) {
                                     createTaskContainer.style.display = 'flex';
                                 } else {
@@ -3155,18 +2894,24 @@
                 mainSearchInput.addEventListener('input', function() {
                     const q = this.value.trim().toLowerCase();
                     if (q.length < 1) { 
-                        mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
-                            `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                        ).join('');
+                        // Show top suggestions when empty with helpful message
+                        mainSuggestionsList.innerHTML = `
+                            <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
+                            ${taskSuggestions.slice(0, 7).map(t => 
+                                `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                            ).join('')}
+                        `;
                         mainSuggestionsList.classList.add('active');
                         
-                        document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
+                        // Reattach click handlers
+                        document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
                             el.addEventListener('click', function() {
                                 const task = this.dataset.task;
                                 mainSearchInput.value = task;
                                 taskInput.value = capitalizeSentence(task);
                                 mainSuggestionsList.classList.remove('active');
                                 validateForm();
+                                updatePriceEstimate();
                                 if (currentUser) {
                                     createTaskContainer.style.display = 'flex';
                                 } else {
@@ -3196,9 +2941,11 @@
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
                             mainSearchInput.value = task;
+                            // Capitalize sentence properly
                             taskInput.value = capitalizeSentence(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
+                            updatePriceEstimate();
                             if (currentUser) {
                                 createTaskContainer.style.display = 'flex';
                             } else {
@@ -3215,6 +2962,7 @@
                 });
             }
 
+            // Search icon click handler with improved error handling
             searchIconBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -3224,26 +2972,34 @@
                     return;
                 }
                 
+                // If search input is empty, show suggestions with helpful message
                 if (!mainSearchInput.value.trim()) {
-                    mainSuggestionsList.innerHTML = taskSuggestions.slice(0, 8).map(t => 
-                        `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                    ).join('');
+                    mainSuggestionsList.innerHTML = `
+                        <div class="suggestion-item" style="background: #f0f0f0; cursor: default; font-weight: 500;">Please select a task:</div>
+                        ${taskSuggestions.slice(0, 7).map(t => 
+                            `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
+                        ).join('')}
+                    `;
                     mainSuggestionsList.classList.add('active');
                     
-                    document.querySelectorAll('#mainSuggestionsList .suggestion-item').forEach(el => {
+                    // Reattach click handlers
+                    document.querySelectorAll('#mainSuggestionsList .suggestion-item[data-task]').forEach(el => {
                         el.addEventListener('click', function() {
                             const task = this.dataset.task;
                             mainSearchInput.value = task;
                             taskInput.value = capitalizeSentence(task);
                             mainSuggestionsList.classList.remove('active');
                             validateForm();
+                            updatePriceEstimate();
                             createTaskContainer.style.display = 'flex';
                         });
                     });
                 } else {
+                    // If there's text, capitalize it properly and open create task
                     taskInput.value = capitalizeSentence(mainSearchInput.value.trim());
                     createTaskContainer.style.display = 'flex';
                     mainSuggestionsList.classList.remove('active');
+                    updatePriceEstimate();
                 }
             });
 
@@ -3257,6 +3013,7 @@
                 taskCharCount.textContent = this.value.length + '/50';
                 mainSearchInput.value = this.value;
                 validateForm();
+                updatePriceEstimate();
             });
 
             function validateForm() {
@@ -3280,10 +3037,76 @@
                     whenValid = dateDisplay.textContent !== 'Pick date' && timeDisplay.textContent !== 'Pick time';
                 }
                 nextBtn.disabled = !(taskFilled && streetFilled && budgetValid && whenValid);
+                
+                // Show price breakdown when form is partially filled
+                if (taskFilled && streetFilled) {
+                    document.getElementById('priceBreakdownSection').style.display = 'block';
+                } else {
+                    document.getElementById('priceBreakdownSection').style.display = 'none';
+                }
+            }
+
+            // Update price estimate in real-time
+            function updatePriceEstimate() {
+                const category = taskInput.value.trim();
+                if (!category || !currentLat || !currentLng) return;
+                
+                // Sample answers based on category (in real app, these would come from question inputs)
+                const answers = {};
+                if (category.toLowerCase().includes('clean')) {
+                    answers.rooms = '2'; // Default, would come from question input
+                    answers.fullness = 'moderate';
+                } else if (category.toLowerCase().includes('laundry')) {
+                    answers.items = 'some';
+                }
+                
+                // Calculate distance (example: 5km)
+                const distance = 5;
+                
+                const price = pricingEngine.calculatePrice(category, answers, distance);
+                
+                document.getElementById('basePrice').textContent = price.basePrice;
+                document.getElementById('multiplierAdd').textContent = price.multipliedPrice - price.basePrice;
+                document.getElementById('distanceFee').textContent = price.distanceFee;
+                document.getElementById('totalPrice').textContent = price.total;
+                document.getElementById('estimatedPrice').textContent = `Estimated: R ${price.total}`;
             }
 
             streetInput.addEventListener('input', validateForm);
             budgetAmount.addEventListener('input', validateForm);
+            
+            // Add listeners for question changes (simplified - in real app would be dynamic)
+            setTimeout(() => {
+                // Simulate question inputs for demo
+                const questionContainer = document.createElement('div');
+                questionContainer.id = 'dynamicQuestions';
+                questionContainer.style.marginTop = '1rem';
+                
+                const questions = pricingEngine.generateQuestions(taskInput.value);
+                if (questions.length > 0) {
+                    let html = '<div class="section-label">Additional details</div>';
+                    questions.forEach(q => {
+                        html += `
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 0.85rem; margin-bottom: 0.3rem;">${q.text}</div>
+                                <select class="question-select" data-key="${q.key}" style="width:100%; padding:0.8rem; background:#f0f0f0; border:none; border-radius:5px;">
+                                    ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    });
+                    questionContainer.innerHTML = html;
+                    
+                    // Insert before price breakdown
+                    const priceSection = document.getElementById('priceBreakdownSection');
+                    collapsibleSection.appendChild(questionContainer);
+                    
+                    // Add change listeners
+                    document.querySelectorAll('.question-select').forEach(select => {
+                        select.addEventListener('change', updatePriceEstimate);
+                    });
+                }
+            }, 500);
 
             moreDetailsBtn.addEventListener('click', () => {
                 if (collapsibleSection.style.display === 'none') {
@@ -3484,8 +3307,111 @@
                 validateForm(); 
             });
 
-            // ===== POST TASK =====
-            document.getElementById('nextBtn').addEventListener('click', async (e) => {
+            // ===== START SEARCHING FOR HELPERS (POST-TASK MAP) =====
+            function startSearchingForHelpers(taskCategory, taskLat, taskLng) {
+                isSearchingForHelpers = true;
+                
+                // Show searching UI
+                document.getElementById('searchingLabel').style.display = 'block';
+                document.getElementById('helperCountToast').style.display = 'block';
+                
+                // Change pin animation to fast beeping
+                if (userLocationMarker) {
+                    const pinElement = userLocationMarker.getElement();
+                    pinElement.className = 'pulsing-pin'; // Fast beeping
+                }
+                
+                // Query for helpers near task location
+                const radius = 10; // km
+                
+                // Simple query - in production use GeoFire or similar
+                if (helperListener) {
+                    helperListener.off();
+                }
+                
+                helperListener = database.ref('users')
+                    .orderByChild('role')
+                    .equalTo('helper')
+                    .on('value', (snapshot) => {
+                        const helpers = [];
+                        snapshot.forEach(child => {
+                            const helper = child.val();
+                            if (helper.location && helper.location.lat && helper.location.lng) {
+                                // Calculate distance
+                                const R = 6371;
+                                const dLat = (helper.location.lat - taskLat) * Math.PI/180;
+                                const dLon = (helper.location.lng - taskLng) * Math.PI/180;
+                                const a = 
+                                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                    Math.cos(taskLat * Math.PI/180) * Math.cos(helper.location.lat * Math.PI/180) * 
+                                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                                const distance = R * c;
+                                
+                                if (distance <= radius) {
+                                    helpers.push({
+                                        ...helper,
+                                        uid: child.key,
+                                        distance: distance
+                                    });
+                                }
+                            }
+                        });
+                        
+                        // Update helper markers on map
+                        updateHelperMarkers(helpers);
+                        
+                        // Update helper count toast
+                        document.getElementById('helperCountToast').textContent = 
+                            `${helpers.length} helper${helpers.length !== 1 ? 's' : ''} found nearby`;
+                        
+                        // Slow down pin animation if helpers found
+                        if (helpers.length > 0 && userLocationMarker) {
+                            const pinElement = userLocationMarker.getElement();
+                            pinElement.classList.add('slow-pulse');
+                        }
+                    });
+            }
+            
+            function updateHelperMarkers(helpers) {
+                // Remove old markers
+                helperMarkers.forEach(m => m.remove());
+                helperMarkers = [];
+                
+                // Add new markers
+                helpers.forEach(helper => {
+                    const el = document.createElement('div');
+                    el.className = 'helper-marker';
+                    
+                    // Use helper photo or default
+                    if (helper.photoURL) {
+                        el.style.backgroundImage = `url(${helper.photoURL})`;
+                    } else {
+                        // Default helper icon
+                        el.style.backgroundColor = '#A6CBE3';
+                        el.style.display = 'flex';
+                        el.style.alignItems = 'center';
+                        el.style.justifyContent = 'center';
+                        el.style.color = 'white';
+                        el.style.fontWeight = 'bold';
+                        el.textContent = helper.name?.charAt(0) || 'H';
+                    }
+                    
+                    const marker = new mapboxgl.Marker({ element: el })
+                        .setLngLat([helper.location.lng, helper.location.lat])
+                        .setPopup(new mapboxgl.Popup().setHTML(`
+                            <strong>${helper.name || 'Helper'}</strong><br>
+                            ${helper.skills?.slice(0, 3).join(', ') || 'Various skills'}<br>
+                            <small>${helper.distance.toFixed(1)} km away</small>
+                        `))
+                        .addTo(map);
+                    
+                    helperMarkers.push(marker);
+                });
+            }
+
+            // ===== NEW TASK SAVING STRUCTURE =====
+            document.getElementById('nextBtn').addEventListener('click', (e) => {
                 e.preventDefault();
                 
                 if (!currentUser) {
@@ -3499,6 +3425,14 @@
                 const taskInputValue = document.getElementById('taskInput').value;
                 const extraNotesValue = document.getElementById('extraNotes').value;
                 const budgetAmountValue = parseFloat(document.getElementById('budgetAmount').value) || 0;
+
+                // Collect answers from dynamic questions with proper keys
+                const answers = {};
+                document.querySelectorAll('.question-select').forEach(select => {
+                    const key = select.dataset.key;
+                    const value = select.value;
+                    answers[key] = value;
+                });
 
                 // Date and time
                 const whenLaterBtn = document.getElementById('whenLaterBtn');
@@ -3517,39 +3451,51 @@
                 // Compute taskState
                 let taskState = (taskDateTime > now) ? 'future' : 'current';
 
+                // Calculate price using pricing engine
+                const distance = 5; // Example distance - in production calculate from task location
+                const price = pricingEngine.calculatePrice(taskInputValue, answers, distance);
+
                 // Generate taskId
-                const taskRef = database.ref('tasks/' + currentUser.uid).push();
+                const taskRef = firebase.database().ref('tasks/' + currentUser.uid).push();
                 const taskId = taskRef.key;
 
-                // Build full task object
+                // Build full task object with proper structure
                 const task = {
                     taskId: taskId,
                     posterId: currentUser.uid,
                     posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-                    posterEmail: currentUser.email || '',
                     category: taskInputValue,
-                    description: extraNotesValue || '',
                     address: streetInputValue,
                     location: {
-                        city: locationInputValue,
-                        province: '',
-                        postalCode: '',
                         lat: currentLat || -26.195246,
-                        lng: currentLng || 28.034088
+                        lng: currentLng || 28.034088,
+                        city: locationInputValue
                     },
-                    budget: budgetAmountValue,
-                    date: nativeDatePicker.value || now.toISOString().split('T')[0],
-                    time: nativeTimePicker.value || now.toTimeString().split(' ')[0].substring(0, 5),
+                    answers: answers, // Store answers with proper keys
+                    calculatedPrice: price.total,
+                    priceBreakdown: price.breakdown,
+                    notes: extraNotesValue || '',
                     status: 'open',
                     taskState: taskState,
-                    assignedHelperId: null,
-                    assignedHelperName: null,
-                    completedAt: null,
                     createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    notes: extraNotesValue || '',
                     images: uploadedImages
                 };
+
+                // Add budget info if fixed
+                if (fixedBudgetBtn.classList.contains('active')) {
+                    task.budget = budgetAmountValue;
+                } else {
+                    task.budget = 'open';
+                }
+
+                // Add date/time if later
+                if (whenLaterBtn.classList.contains('active')) {
+                    task.date = nativeDatePicker.value;
+                    task.time = nativeTimePicker.value;
+                } else {
+                    task.date = 'now';
+                    task.time = now.toTimeString().split(' ')[0].substring(0, 5);
+                }
 
                 // Show loading state
                 const originalText = nextBtn.textContent;
@@ -3557,51 +3503,60 @@
                 nextBtn.disabled = true;
 
                 // Save to Firebase
-                try {
-                    await taskRef.set(task);
-                    debugLog('✅ Task posted successfully', 'success');
-                    
-                    // Show success toast
-                    const toast = document.getElementById('successToast');
-                    toast.textContent = 'Task posted! Searching for helpers...';
-                    toast.style.display = 'block';
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 3000);
-                    
-                    // Reset form and close
-                    setTimeout(() => {
-                        createTaskContainer.style.display = 'none';
+                taskRef.set(task)
+                    .then(() => {
+                        console.log('Task posted successfully:', task);
                         
-                        taskInput.value = ''; 
-                        mainSearchInput.value = ''; 
-                        streetInput.value = ''; 
-                        budgetAmount.value = ''; 
-                        taskCharCount.textContent = '0/50';
-                        uploadedImages = []; 
-                        displayPreviews(); 
-                        whenNowBtn.click(); 
-                        fixedBudgetBtn.click(); 
-                        dateDisplay.textContent = 'Pick date'; 
-                        timeDisplay.textContent = 'Pick time';
+                        // Show success toast
+                        const toast = document.getElementById('successToast');
+                        toast.textContent = 'Task posted successfully!';
+                        toast.style.display = 'block';
+                        setTimeout(() => {
+                            toast.style.display = 'none';
+                        }, 3000);
                         
+                        // Reset form and close
+                        setTimeout(() => {
+                            createTaskContainer.style.display = 'none';
+                            
+                            // Clear form
+                            taskInput.value = ''; 
+                            mainSearchInput.value = ''; 
+                            streetInput.value = ''; 
+                            budgetAmount.value = ''; 
+                            taskCharCount.textContent = '0/50';
+                            uploadedImages = []; 
+                            displayPreviews(); 
+                            whenNowBtn.click(); 
+                            fixedBudgetBtn.click(); 
+                            dateDisplay.textContent = 'Pick date'; 
+                            timeDisplay.textContent = 'Pick time';
+                            
+                            nextBtn.textContent = originalText;
+                            nextBtn.disabled = false;
+                            
+                            // Transition to map screen with searching
+                            setActivePage('home');
+                            
+                            // Fly to task location
+                            map.flyTo({
+                                center: [task.location.lng, task.location.lat],
+                                zoom: 16
+                            });
+                            
+                            // Start searching for helpers
+                            startSearchingForHelpers(task.category, task.location.lat, task.location.lng);
+                            
+                            // Show searching UI
+                            document.getElementById('searchingLabel').style.display = 'block';
+                        }, 1500);
+                    })
+                    .catch(err => {
+                        console.error('Error posting task:', err);
+                        alert('Error posting task: ' + err.message);
                         nextBtn.textContent = originalText;
                         nextBtn.disabled = false;
-                    }, 1500);
-                    
-                    // Find matching helpers
-                    await findMatchingHelpers(taskId, taskInputValue, task.location);
-                    
-                    // Go to tasks page
-                    setActivePage('tasks');
-                    loadUserTasks();
-                    
-                } catch (err) {
-                    debugLog(`❌ Error posting task: ${err.message}`, 'error');
-                    alert('Error posting task: ' + err.message);
-                    nextBtn.textContent = originalText;
-                    nextBtn.disabled = false;
-                }
+                    });
             });
 
             // Keep original validation
