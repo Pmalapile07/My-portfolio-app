@@ -172,27 +172,47 @@
         /* === HOME SHEET === */
         .home-sheet {
             position: absolute;
-            bottom: 57px; /* Increased by 1px to account for taller nav */
+            bottom: 57px;
             left: 0;
             width: 100%;
             background: white;
             z-index: 10;
-            padding: 24px 20px 20px;
-            transition: padding-bottom 0.3s ease;
-            border-radius: 15px 15px 0 0;
+            padding: 12px 20px 20px;
+            transition: transform 0.3s ease;
+            border-radius: 20px 20px 0 0;
             box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            transform: translateY(0);
+            will-change: transform;
         }
 
-        /* When keyboard opens, give more space */
-        .home-sheet.keyboard-open {
-            padding-bottom: 160px;
+        .home-sheet.dragging {
+            transition: none;
+        }
+
+        .home-sheet.collapsed .service-cards {
+            display: none;
+        }
+
+        /* Grabber / Drag Handle */
+        .grabber {
+            width: 40px;
+            height: 5px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: 0 auto 12px;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .grabber:active {
+            cursor: grabbing;
         }
 
         .sheet-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             height: auto;
         }
 
@@ -216,9 +236,9 @@
         
         .service-card {
             flex: 1;
-            background-color: #f0f0f0; /* Matches search bar background */
+            background-color: #f0f0f0;
             border-radius: 12px;
-            padding: 16px 12px;
+            padding: 12px 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -227,11 +247,9 @@
         }
         
         .service-card.coming-soon {
-            opacity: 0.5;
-            filter: grayscale(0.5);
             position: relative;
             cursor: default;
-            background-color: #f0f0f0; /* Same background */
+            background-color: #f0f0f0;
         }
         
         .service-card.coming-soon::after {
@@ -239,8 +257,8 @@
             position: absolute;
             top: -8px;
             right: 8px;
-            background: #000;
-            color: white;
+            background: #e0f2fe; /* Baby blue */
+            color: #000000;
             font-size: 0.6rem;
             padding: 2px 8px;
             border-radius: 12px;
@@ -249,9 +267,9 @@
         }
         
         .service-image {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 12px;
+            width: 48px;
+            height: 48px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -264,31 +282,32 @@
         }
         
         .service-small-text {
-            font-size: 0.7rem;
-            font-weight: 400;
+            font-size: 0.65rem;
+            font-weight: 300; /* Light instead of bold */
             color: #666;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             text-transform: uppercase;
             letter-spacing: 0.02em;
         }
         
         .service-main-text {
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.85rem;
+            font-weight: 400; /* Regular instead of bold */
             color: #000;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            line-height: 1.3;
         }
         
         .service-sub-text {
-            font-size: 0.75rem;
-            font-weight: 400;
+            font-size: 0.7rem;
+            font-weight: 300; /* Light */
             color: #666;
         }
         
         .service-card.coming-soon .service-main-text,
         .service-card.coming-soon .service-sub-text,
         .service-card.coming-soon .service-small-text {
-            color: #999;
+            color: #666;
         }
 
         /* Search container */
@@ -357,7 +376,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 57px; /* Increased by 1px */
+            height: 57px;
             background: white;
             display: flex;
             justify-content: space-around;
@@ -372,7 +391,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0px; /* Reduced gap */
+            gap: 0px;
             cursor: pointer;
             color: #999;
             transition: color 0.2s;
@@ -381,7 +400,7 @@
             border: none;
             font-family: 'Manrope', sans-serif;
             position: relative;
-            margin-top: -2px; /* Move icons up by 2px */
+            margin-top: -2px;
         }
         .nav-item:hover {
             color: #000000;
@@ -392,7 +411,7 @@
         .nav-item i {
             font-size: 1.5rem;
             transition: color 0.2s;
-            margin-bottom: 0px; /* Reduced margin */
+            margin-bottom: 0px;
         }
         .nav-item span:last-child {
             font-size: 0.65rem;
@@ -430,7 +449,7 @@
             overflow-y: auto;
             display: none;
             padding: 20px;
-            padding-bottom: 77px; /* Adjusted for taller nav */
+            padding-bottom: 77px;
         }
         .page-container.active {
             display: block;
@@ -1676,29 +1695,31 @@
 
     <!-- HOME SHEET -->
     <div class="home-sheet" id="homeSheet">
+        <!-- Grabber / Drag Handle -->
+        <div class="grabber" id="grabber"></div>
+        
         <div class="sheet-header">
             <h2 class="static-header">Let's make it happen.</h2>
         </div>
         
         <!-- Service Cards -->
-        <div class="service-cards">
+        <div class="service-cards" id="serviceCards">
             <!-- First Service Card - Active -->
             <div class="service-card">
                 <div class="service-image">
-                    <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/1F0BD690-167A-413C-B014-038FCA4B304D.png" alt="Help us">
+                    <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/1F0BD690-167A-413C-B014-038FCA4B304D.png" alt="Helpers">
                 </div>
-                <div class="service-small-text">help us</div>
-                <div class="service-main-text">let's get it done</div>
+                <div class="service-small-text">Helpers</div>
+                <div class="service-main-text">Let's get it done</div>
             </div>
             
-            <!-- Second Service Card - Coming Soon (faint gray) -->
+            <!-- Second Service Card - Coming Soon (baby blue badge) -->
             <div class="service-card coming-soon">
                 <div class="service-image">
-                    <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/CF7B50B9-11E4-414E-86C0-EFC50B182095.png" alt="Deliver">
+                    <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/CF7B50B9-11E4-414E-86C0-EFC50B182095.png" alt="Delivery">
                 </div>
-                <div class="service-small-text">deliver</div>
-                <div class="service-main-text">taskmart delivery</div>
-                <div class="service-sub-text">package delivery</div>
+                <div class="service-small-text">Delivery</div>
+                <div class="service-main-text">Package delivery</div>
             </div>
         </div>
         
@@ -1980,6 +2001,119 @@
                 setTimeout(() => {
                     toast.style.display = 'none';
                 }, 3000);
+            }
+
+            // ===== DRAG TO COLLAPSE FUNCTIONALITY =====
+            const homeSheet = document.getElementById('homeSheet');
+            const grabber = document.getElementById('grabber');
+            const serviceCards = document.getElementById('serviceCards');
+            
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+            let isCollapsed = false;
+            const maxDragDistance = 150; // Maximum drag distance to trigger collapse
+            
+            // Touch events for drag handle
+            grabber.addEventListener('touchstart', handleTouchStart, { passive: false });
+            grabber.addEventListener('touchmove', handleTouchMove, { passive: false });
+            grabber.addEventListener('touchend', handleTouchEnd);
+            
+            // Mouse events for desktop testing
+            grabber.addEventListener('mousedown', handleMouseDown);
+            
+            function handleTouchStart(e) {
+                e.preventDefault();
+                startY = e.touches[0].clientY;
+                isDragging = true;
+                homeSheet.classList.add('dragging');
+            }
+            
+            function handleTouchMove(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                currentY = e.touches[0].clientY;
+                const diffY = currentY - startY;
+                
+                // Only allow dragging downward (positive diffY)
+                if (diffY > 0) {
+                    const translateY = Math.min(diffY, maxDragDistance);
+                    homeSheet.style.transform = `translateY(${translateY}px)`;
+                }
+            }
+            
+            function handleTouchEnd(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const diffY = currentY - startY;
+                homeSheet.classList.remove('dragging');
+                homeSheet.style.transform = '';
+                
+                // If dragged more than 50px, toggle collapse state
+                if (diffY > 50) {
+                    if (!isCollapsed) {
+                        homeSheet.classList.add('collapsed');
+                        isCollapsed = true;
+                    } else {
+                        homeSheet.classList.remove('collapsed');
+                        isCollapsed = false;
+                    }
+                }
+                
+                isDragging = false;
+                startY = 0;
+                currentY = 0;
+            }
+            
+            function handleMouseDown(e) {
+                e.preventDefault();
+                startY = e.clientY;
+                isDragging = true;
+                homeSheet.classList.add('dragging');
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            }
+            
+            function handleMouseMove(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                currentY = e.clientY;
+                const diffY = currentY - startY;
+                
+                if (diffY > 0) {
+                    const translateY = Math.min(diffY, maxDragDistance);
+                    homeSheet.style.transform = `translateY(${translateY}px)`;
+                }
+            }
+            
+            function handleMouseUp(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const diffY = currentY - startY;
+                homeSheet.classList.remove('dragging');
+                homeSheet.style.transform = '';
+                
+                if (diffY > 50) {
+                    if (!isCollapsed) {
+                        homeSheet.classList.add('collapsed');
+                        isCollapsed = true;
+                    } else {
+                        homeSheet.classList.remove('collapsed');
+                        isCollapsed = false;
+                    }
+                }
+                
+                isDragging = false;
+                startY = 0;
+                currentY = 0;
+                
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
             }
 
             // ===== DISPLAY HELPERS ON MAP FUNCTION =====
