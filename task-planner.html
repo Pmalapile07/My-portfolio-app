@@ -235,7 +235,7 @@
         .static-header {
             font-family: 'Manrope', sans-serif;
             font-weight: 800;
-            font-size: 1.45rem; /* Reduced by 2px from 1.5rem to 1.45rem (approx 23.2px instead of 24px) */
+            font-size: 1.45rem;
             color: #000000;
             line-height: 1.2;
             letter-spacing: -0.02em;
@@ -1522,6 +1522,95 @@
             padding: 2rem;
             color: #666;
         }
+
+        /* Helper marker styling */
+        .helper-marker {
+            transition: transform 0.2s ease;
+            animation: marker-appear 0.3s ease-out;
+            cursor: pointer;
+        }
+        
+        .helper-marker:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        
+        @keyframes marker-appear {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Helper marker popup styling */
+        .mapboxgl-popup-content {
+            padding: 12px !important;
+            border-radius: 8px !important;
+            background: white !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            font-family: 'Manrope', sans-serif !important;
+            border: 1px solid #f0f0f0 !important;
+        }
+        
+        .mapboxgl-popup-tip {
+            border-top-color: white !important;
+            border-bottom-color: white !important;
+        }
+        
+        .helper-popup {
+            min-width: 180px;
+        }
+        
+        .helper-popup-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #000;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 4px;
+        }
+        
+        .helper-popup-distance {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .helper-popup-distance i {
+            font-size: 0.8rem;
+        }
+        
+        .helper-popup-skills {
+            font-size: 0.8rem;
+        }
+        
+        .helper-popup-skills-title {
+            font-weight: 500;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        
+        .helper-popup-skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .helper-skill-tag {
+            background: #f0f0f0;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 400;
+        }
     </style>
 </head>
 <body>
@@ -1754,6 +1843,9 @@
                 measurementId: "G-Z8SPLR0HSL"
             };
 
+            // Global array to store helper markers
+            let helperMarkers = [];
+
             // ===== TASK DATA =====
             const taskData = {
                 // Household
@@ -1810,6 +1902,91 @@
 
             function debugLog(message, type = 'info') {
                 console.log(`[${type}] ${message}`);
+            }
+
+            // ===== DISPLAY HELPERS ON MAP FUNCTION =====
+            function displayHelpersOnMap(helpers) {
+                // Remove existing helper markers
+                if (helperMarkers.length > 0) {
+                    helperMarkers.forEach(marker => marker.remove());
+                    helperMarkers = [];
+                }
+                
+                if (!helpers || helpers.length === 0) {
+                    debugLog('No helpers to display on map', 'info');
+                    return;
+                }
+                
+                debugLog(`Displaying ${helpers.length} helpers on map`, 'info');
+                
+                helpers.forEach(helper => {
+                    if (!helper.lat || !helper.lng) {
+                        debugLog(`Helper ${helper.name} missing coordinates`, 'warn');
+                        return;
+                    }
+                    
+                    // Create marker element with helper profile picture
+                    const markerElement = document.createElement('div');
+                    markerElement.className = 'helper-marker';
+                    
+                    // Style the marker as a circular image
+                    markerElement.style.width = '40px';
+                    markerElement.style.height = '40px';
+                    markerElement.style.borderRadius = '50%';
+                    markerElement.style.backgroundSize = 'cover';
+                    markerElement.style.backgroundPosition = 'center';
+                    markerElement.style.backgroundRepeat = 'no-repeat';
+                    markerElement.style.border = '2px solid white';
+                    markerElement.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                    markerElement.style.cursor = 'pointer';
+                    
+                    // Set background image (profile picture or fallback)
+                    if (helper.photoURL) {
+                        markerElement.style.backgroundImage = `url(${helper.photoURL})`;
+                    } else {
+                        // Use UI Avatars as fallback
+                        const encodedName = encodeURIComponent(helper.name);
+                        markerElement.style.backgroundImage = `url(https://ui-avatars.com/api/?name=${encodedName}&background=000000&color=fff&size=80)`;
+                    }
+                    
+                    // Create popup content
+                    const popupContent = document.createElement('div');
+                    popupContent.className = 'helper-popup';
+                    
+                    // Get top 3 skills
+                    const topSkills = helper.skills && helper.skills.length > 0 
+                        ? helper.skills.slice(0, 3).map(skill => 
+                            `<span class="helper-skill-tag">${skill}</span>`
+                          ).join('')
+                        : '<span class="helper-skill-tag">No skills listed</span>';
+                    
+                    popupContent.innerHTML = `
+                        <div class="helper-popup-name">${helper.name}</div>
+                        <div class="helper-popup-distance">
+                            <i class="ph ph-map-pin"></i>
+                            ${helper.distance} km away
+                        </div>
+                        <div class="helper-popup-skills">
+                            <div class="helper-popup-skills-title">Top skills</div>
+                            <div class="helper-popup-skills-list">
+                                ${topSkills}
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Create and add marker to map
+                    const marker = new mapboxgl.Marker({ 
+                        element: markerElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([helper.lng, helper.lat])
+                    .setPopup(new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupContent))
+                    .addTo(map);
+                    
+                    helperMarkers.push(marker);
+                });
+                
+                debugLog(`Successfully added ${helperMarkers.length} helper markers to map`, 'success');
             }
 
             // Initialize Firebase
@@ -2430,10 +2607,14 @@
                             const hasMatchingSkill = helperSkills.some(skill => 
                                 skill.toLowerCase().includes(taskLower) || taskLower.includes(skill.toLowerCase())
                             );
+                            
                             if (hasMatchingSkill) {
                                 matchingHelpers.push({
                                     uid: uid,
                                     name: user.name || 'Helper',
+                                    lat: user.location.lat,
+                                    lng: user.location.lng,
+                                    photoURL: user.photoURL || null,
                                     distance: Math.round(distance * 10) / 10,
                                     skills: helperSkills
                                 });
@@ -2443,6 +2624,10 @@
                     
                     debugLog(`✅ Found ${matchingHelpers.length} matching helpers within 10km`, 'success');
                     
+                    // Display helpers on map BEFORE creating notifications
+                    displayHelpersOnMap(matchingHelpers);
+                    
+                    // Then create notifications for each helper
                     for (let helper of matchingHelpers) {
                         await createHelperNotification(helper.uid, taskId, taskCategory, helper.distance);
                     }
