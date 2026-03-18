@@ -13,17 +13,6 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
     
-    <!-- Custom Fonts from GitHub -->
-    <style>
-        @font-face {
-            font-family: 'Codec Cold News';
-            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-    </style>
-    
     <!-- Mapbox GL JS -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
@@ -32,9 +21,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     
     <!-- Config -->
     <script src="/config.js"></script>
@@ -56,28 +42,6 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
-        }
-
-        /* Debug Panel - Hidden by default */
-        .debug-panel {
-            position: absolute;
-            top: 80px;
-            left: 16px;
-            right: 16px;
-            background: rgba(0,0,0,0.9);
-            color: #0f0;
-            padding: 12px;
-            border-radius: 5px;
-            z-index: 10000;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .debug-panel.visible {
-            display: none;
         }
 
         /* === FULLSCREEN MAP === */
@@ -1614,11 +1578,6 @@
     </style>
 </head>
 <body>
-    <!-- Debug Panel - Hidden -->
-    <div class="debug-panel" id="debugPanel">
-        <div id="debugContent">Waiting for Firebase auth...</div>
-    </div>
-
     <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="splash-logo">TASKMART</div>
@@ -1902,6 +1861,15 @@
 
             function debugLog(message, type = 'info') {
                 console.log(`[${type}] ${message}`);
+            }
+
+            function showToast(message) {
+                const toast = document.getElementById('successToast');
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
             }
 
             // ===== DISPLAY HELPERS ON MAP FUNCTION =====
@@ -2603,7 +2571,6 @@
                             
                             const helperSkills = Object.values(user.skills || {});
                             const taskLower = taskCategory.toLowerCase();
-                            
                             const hasMatchingSkill = helperSkills.some(skill => 
                                 skill.toLowerCase().includes(taskLower) || taskLower.includes(skill.toLowerCase())
                             );
@@ -2660,31 +2627,6 @@
                     
                 } catch (error) {
                     debugLog(`❌ Error creating notification: ${error.message}`, 'error');
-                }
-            }
-
-            // ===== HANDLE SCHEDULED REQUEST =====
-            async function handleScheduledRequest(taskId, helperUid, helperName, scheduledTime) {
-                if (!currentUser) return;
-                
-                try {
-                    const requestRef = database.ref('scheduled_requests/' + currentUser.uid + '/' + taskId + '_' + helperUid);
-                    
-                    await requestRef.set({
-                        taskId: taskId,
-                        helperUid: helperUid,
-                        helperName: helperName,
-                        scheduledTime: scheduledTime,
-                        status: 'pending',
-                        createdAt: Date.now()
-                    });
-                    
-                    debugLog(`📅 Scheduled request created for helper: ${helperName}`, 'success');
-                    
-                    loadScheduledRequests();
-                    
-                } catch (error) {
-                    debugLog(`❌ Error creating scheduled request: ${error.message}`, 'error');
                 }
             }
 
@@ -3174,11 +3116,6 @@
                 if (!s) return '';
                 return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
             }
-            
-            function capitalizeSentence(str) {
-                if (!str) return '';
-                return str.replace(/(^\w|\.\s+\w)/g, letter => letter.toUpperCase());
-            }
 
             // Open create task when search is clicked
             function openCreateTask() {
@@ -3254,7 +3191,7 @@
                 document.querySelectorAll('.create-suggestion-item').forEach(el => {
                     el.addEventListener('click', function() {
                         const task = this.dataset.task;
-                        createTaskInput.value = capitalizeSentence(task);
+                        createTaskInput.value = capitalizeFirstLetter(task);
                         createTaskSuggestions.classList.remove('active');
                         validateForm();
                     });
@@ -3553,12 +3490,7 @@
                     await taskRef.set(task);
                     debugLog('✅ Task posted successfully', 'success');
                     
-                    const toast = document.getElementById('successToast');
-                    toast.textContent = 'Task posted! Searching for helpers...';
-                    toast.style.display = 'block';
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 3000);
+                    showToast('Task posted! Searching for helpers...');
                     
                     setTimeout(() => {
                         createTaskContainer.style.display = 'none';
