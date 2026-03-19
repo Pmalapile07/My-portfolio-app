@@ -1903,6 +1903,7 @@
             
             let startY = 0;
             let currentY = 0;
+            let startHeight = 0; // Store the actual starting height
             let isDragging = false;
             let isCollapsed = false;
             const maxDragDistance = 250;
@@ -1921,6 +1922,7 @@
             function handleTouchStart(e) {
                 e.preventDefault();
                 startY = e.touches[0].clientY;
+                startHeight = homeSheet.getBoundingClientRect().height; // Capture actual height
                 isDragging = true;
                 homeSheet.classList.add('dragging');
             }
@@ -1932,10 +1934,9 @@
                 currentY = e.touches[0].clientY;
                 let diffY = currentY - startY;
                 
-                // When dragging UP (negative diffY), calculate new max-height
+                // When dragging UP (negative diffY), calculate new max-height using startHeight
                 if (diffY < 0) {
-                    let currentMaxHeight = parseInt(homeSheet.style.maxHeight) || 500;
-                    let newMaxHeight = Math.max(80, 500 + diffY); // Min 80px, start from 500px
+                    let newMaxHeight = Math.max(80, startHeight - diffY); // Use startHeight - diffY instead of 500 + diffY
                     homeSheet.style.maxHeight = newMaxHeight + 'px';
                     
                     // Check if sheet is close to icon
@@ -2003,11 +2004,13 @@
                 isDragging = false;
                 startY = 0;
                 currentY = 0;
+                startHeight = 0;
             }
             
             function handleMouseDown(e) {
                 e.preventDefault();
                 startY = e.clientY;
+                startHeight = homeSheet.getBoundingClientRect().height; // Capture actual height
                 isDragging = true;
                 homeSheet.classList.add('dragging');
                 
@@ -2023,8 +2026,7 @@
                 let diffY = currentY - startY;
                 
                 if (diffY < 0) {
-                    let currentMaxHeight = parseInt(homeSheet.style.maxHeight) || 500;
-                    let newMaxHeight = Math.max(80, 500 + diffY);
+                    let newMaxHeight = Math.max(80, startHeight - diffY); // Use startHeight - diffY instead of 500 + diffY
                     homeSheet.style.maxHeight = newMaxHeight + 'px';
                     
                     let sheetRect = homeSheet.getBoundingClientRect();
@@ -2087,6 +2089,7 @@
                 isDragging = false;
                 startY = 0;
                 currentY = 0;
+                startHeight = 0;
                 
                 document.removeEventListener('mousemove', handleMouseMove);
                 document.removeEventListener('mouseup', handleMouseUp);
