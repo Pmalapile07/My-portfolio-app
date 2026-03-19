@@ -1,4 +1,4 @@
-Without changing the layout, the aesthetic, and the functionality of this code, look at the image that I provided. It is of the code that I'm giving you right now. When I click on the drag handler, it drags the whole container of Let's Get It Done, the sheet. I drag that up, literally separating it from the bottom navigation menu. I had thought that the sheet container is stagnant from where it is placed. And when you click on the drag handler, it is supposed to sort of extend and increase the width that is under the search bar without moving the container. That's what I want it to do. And when you click on the drag handler again, when you click it down, it must collapse the content that is on the container, basically closing the two images along with the text that says Let's Get It Done. And then we are left with just the search bar and the bottom navigation menu. In fact, the bottom navigation menu should not be involved in this. It is supposed to be its own element. And maybe... I don't know, maybe here is a suggestion. I was thinking, maybe the container of Let's get it done must start exactly where the bottom menu navigation menu thing starts. And then we make sure that the position is exactly there. It doesn't move. It only, when you do the drag handler, it sort of stretches itself, you know. And this drag handler, when the container, when you drag it up, it mustn't touch the icon that is on the map, the one that is on the top left of the map. It must always stay 1px under it, please. Also provide the full fixed code on one page. Please also get rid of all task suggestions. Not the functionality, just the task suggestions. Just remove it and return full fixed code on one page. Full code. Don't give me comments to say, I kept this short for brevity, whatever. I want the full code.: <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -169,7 +169,7 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             }
         }
 
-        /* === NEW TOP LEFT ICON (white bg, 50% radius) === */
+        /* === TOP LEFT ICON === */
         .map-top-left-icon {
             position: absolute;
             top: 16px;
@@ -191,13 +191,12 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             font-size: 26px;
             color: #000;
         }
-        /* when sheet covers icon, background becomes sheet's white (already white, but we keep same) */
         .map-top-left-icon.sheet-bg {
             background: white; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        /* === HOME SHEET === */
+        /* === HOME SHEET - FIXED POSITION AT BOTTOM === */
         .home-sheet {
             position: absolute;
             bottom: 57px;
@@ -206,22 +205,39 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             background: white;
             z-index: 10;
             padding: 8px 20px 20px;
-            transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
             border-radius: 17px 17px 0 0;
             box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
-            transform: translateY(0);
-            will-change: transform;
             max-height: calc(100% - 57px - 20px);
             display: flex;
             flex-direction: column;
+            /* Fixed position - doesn't move */
+            transform: none !important;
+            transition: max-height 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+            overflow: hidden;
         }
 
         .home-sheet.dragging {
             transition: none;
         }
 
+        .home-sheet.collapsed {
+            max-height: 80px !important;
+        }
+
         .home-sheet.collapsed .service-cards {
-            display: none;
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .home-sheet.collapsed .sheet-header {
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            margin: 0;
+            padding: 0;
         }
 
         .grabber {
@@ -233,6 +249,8 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             cursor: grab;
             touch-action: none;
             flex-shrink: 0;
+            position: relative;
+            z-index: 15;
         }
 
         .grabber:active {
@@ -246,6 +264,7 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             margin-bottom: 16px;
             height: auto;
             flex-shrink: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease, height 0.2s ease, margin 0.2s ease;
         }
 
         .static-header {
@@ -264,6 +283,7 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             margin-bottom: 20px;
             margin-top: 8px;
             flex-shrink: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease, height 0.2s ease, margin 0.2s ease;
         }
         
         .service-card {
@@ -419,10 +439,6 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
             transition: box-shadow 0.2s ease;
-        }
-        
-        .home-sheet.dragging ~ .bottom-nav {
-            box-shadow: none;
         }
         
         .nav-item {
@@ -1276,38 +1292,6 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             outline: 2px solid rgba(0,0,0,0.2);
         }
 
-        .create-task-suggestions {
-            margin-top: 2px;
-            max-height: 300px;
-            overflow-y: auto;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            display: none;
-        }
-        
-        .create-task-suggestions.active {
-            display: block;
-        }
-        
-        .create-suggestion-item {
-            padding: 15px 20px;
-            cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-            font-weight: 400;
-            color: #333;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.2s;
-        }
-        
-        .create-suggestion-item:last-child {
-            border-bottom: none;
-        }
-        
-        .create-suggestion-item:hover {
-            background-color: #f5f5f5;
-        }
-
         .budget-input, .extra-notes {
             width: 100%;
             padding: 1rem 1.2rem;
@@ -1656,7 +1640,7 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
 
     <div id="map"></div>
 
-    <!-- NEW TOP LEFT ICON (white bg, 50% radius) -->
+    <!-- TOP LEFT ICON -->
     <div class="map-top-left-icon" id="mapTopIcon">
         <i class="ph ph-list"></i>
     </div>
@@ -1780,8 +1764,6 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 </div>
                 
                 <input type="text" class="task-suggestion-input" id="createTaskInput" placeholder="Laundry, cleaning, plumbing..." autocomplete="off">
-                
-                <div class="create-task-suggestions" id="createTaskSuggestions"></div>
                 
                 <div class="more-details-btn-container">
                     <button class="more-details-btn" id="moreDetailsBtn">More details</button>
@@ -1914,19 +1896,22 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 }, 3000);
             }
 
-            // ===== DRAG TO COLLAPSE FUNCTIONALITY (STRETCH UP) =====
+            // ===== DRAG TO COLLAPSE/EXPAND FUNCTIONALITY =====
             const homeSheet = document.getElementById('homeSheet');
             const grabber = document.getElementById('grabber');
-            const serviceCards = document.getElementById('serviceCards');
             const mapTopIcon = document.getElementById('mapTopIcon');
             
             let startY = 0;
             let currentY = 0;
             let isDragging = false;
             let isCollapsed = false;
-            const maxDragDistance = 250; // allow pulling up more
+            const maxDragDistance = 250;
             const collapseThreshold = 50;
-            let baseTransform = 0; // track pulled amount
+            const expandedHeight = 'auto';
+            const collapsedHeight = '80px';
+            
+            // Initial max-height for expanded state
+            homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
             
             grabber.addEventListener('touchstart', handleTouchStart, { passive: false });
             grabber.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -1947,18 +1932,35 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 currentY = e.touches[0].clientY;
                 let diffY = currentY - startY;
                 
-                // Allow dragging UP only (negative diffY) to stretch sheet upward
+                // When dragging UP (negative diffY), calculate new max-height
                 if (diffY < 0) {
-                    let translateY = Math.max(diffY, -maxDragDistance);
-                    homeSheet.style.transform = `translateY(${translateY}px)`;
+                    let currentMaxHeight = parseInt(homeSheet.style.maxHeight) || 500;
+                    let newMaxHeight = Math.max(80, 500 + diffY); // Min 80px, start from 500px
+                    homeSheet.style.maxHeight = newMaxHeight + 'px';
                     
-                    // when pulled up enough to reach icon (approx 60px from top of sheet), change icon background to sheet's bg
+                    // Check if sheet is close to icon
                     let sheetRect = homeSheet.getBoundingClientRect();
                     let iconRect = mapTopIcon.getBoundingClientRect();
+                    
+                    // Ensure sheet stays 1px below icon
+                    if (sheetRect.top < iconRect.bottom + 1) {
+                        let overflow = iconRect.bottom + 1 - sheetRect.top;
+                        homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - overflow) + 'px';
+                    }
+                    
                     if (sheetRect.top <= iconRect.bottom + 10) {
                         mapTopIcon.classList.add('sheet-bg');
                     } else {
                         mapTopIcon.classList.remove('sheet-bg');
+                    }
+                    
+                    // Check if we're collapsed enough
+                    if (newMaxHeight <= 120) {
+                        homeSheet.classList.add('collapsed');
+                        isCollapsed = true;
+                    } else {
+                        homeSheet.classList.remove('collapsed');
+                        isCollapsed = false;
                     }
                 }
             }
@@ -1970,16 +1972,31 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 let diffY = currentY - startY;
                 homeSheet.classList.remove('dragging');
                 
-                if (diffY < -collapseThreshold) {
-                    // keep pulled up state
-                    let finalY = Math.max(diffY, -maxDragDistance);
-                    homeSheet.style.transform = `translateY(${finalY}px)`;
-                    isCollapsed = true; // treat as "stretched"
-                    // ensure icon gets sheet background
+                // Snap to fully expanded or collapsed based on threshold
+                if (diffY < -collapseThreshold && !isCollapsed) {
+                    homeSheet.style.maxHeight = collapsedHeight;
+                    homeSheet.classList.add('collapsed');
+                    isCollapsed = true;
+                } else if (isCollapsed && diffY > collapseThreshold) {
+                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                    homeSheet.classList.remove('collapsed');
+                    isCollapsed = false;
+                } else if (isCollapsed) {
+                    homeSheet.style.maxHeight = collapsedHeight;
+                } else {
+                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                }
+                
+                // Ensure sheet stays 1px below icon
+                let sheetRect = homeSheet.getBoundingClientRect();
+                let iconRect = mapTopIcon.getBoundingClientRect();
+                if (sheetRect.top < iconRect.bottom + 1) {
+                    homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - 10) + 'px';
+                }
+                
+                if (sheetRect.top <= iconRect.bottom + 10) {
                     mapTopIcon.classList.add('sheet-bg');
                 } else {
-                    homeSheet.style.transform = '';
-                    isCollapsed = false;
                     mapTopIcon.classList.remove('sheet-bg');
                 }
                 
@@ -2006,15 +2023,30 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 let diffY = currentY - startY;
                 
                 if (diffY < 0) {
-                    let translateY = Math.max(diffY, -maxDragDistance);
-                    homeSheet.style.transform = `translateY(${translateY}px)`;
+                    let currentMaxHeight = parseInt(homeSheet.style.maxHeight) || 500;
+                    let newMaxHeight = Math.max(80, 500 + diffY);
+                    homeSheet.style.maxHeight = newMaxHeight + 'px';
                     
                     let sheetRect = homeSheet.getBoundingClientRect();
                     let iconRect = mapTopIcon.getBoundingClientRect();
+                    
+                    if (sheetRect.top < iconRect.bottom + 1) {
+                        let overflow = iconRect.bottom + 1 - sheetRect.top;
+                        homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - overflow) + 'px';
+                    }
+                    
                     if (sheetRect.top <= iconRect.bottom + 10) {
                         mapTopIcon.classList.add('sheet-bg');
                     } else {
                         mapTopIcon.classList.remove('sheet-bg');
+                    }
+                    
+                    if (newMaxHeight <= 120) {
+                        homeSheet.classList.add('collapsed');
+                        isCollapsed = true;
+                    } else {
+                        homeSheet.classList.remove('collapsed');
+                        isCollapsed = false;
                     }
                 }
             }
@@ -2026,14 +2058,29 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 let diffY = currentY - startY;
                 homeSheet.classList.remove('dragging');
                 
-                if (diffY < -collapseThreshold) {
-                    let finalY = Math.max(diffY, -maxDragDistance);
-                    homeSheet.style.transform = `translateY(${finalY}px)`;
+                if (diffY < -collapseThreshold && !isCollapsed) {
+                    homeSheet.style.maxHeight = collapsedHeight;
+                    homeSheet.classList.add('collapsed');
                     isCollapsed = true;
+                } else if (isCollapsed && diffY > collapseThreshold) {
+                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                    homeSheet.classList.remove('collapsed');
+                    isCollapsed = false;
+                } else if (isCollapsed) {
+                    homeSheet.style.maxHeight = collapsedHeight;
+                } else {
+                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                }
+                
+                let sheetRect = homeSheet.getBoundingClientRect();
+                let iconRect = mapTopIcon.getBoundingClientRect();
+                if (sheetRect.top < iconRect.bottom + 1) {
+                    homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - 10) + 'px';
+                }
+                
+                if (sheetRect.top <= iconRect.bottom + 10) {
                     mapTopIcon.classList.add('sheet-bg');
                 } else {
-                    homeSheet.style.transform = '';
-                    isCollapsed = false;
                     mapTopIcon.classList.remove('sheet-bg');
                 }
                 
@@ -3233,7 +3280,6 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
             const searchIconBtn = document.getElementById('searchIconBtn');
             const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
             const createTaskInput = document.getElementById('createTaskInput');
-            const createTaskSuggestions = document.getElementById('createTaskSuggestions');
             const budgetAmount = document.getElementById('budgetAmount');
             const nextBtn = document.getElementById('nextBtn');
             const moreDetailsBtn = document.getElementById('moreDetailsBtn');
@@ -3282,60 +3328,8 @@ Without changing the layout, the aesthetic, and the functionality of this code, 
                 nativeDatePicker.value = '';
                 nativeTimePicker.value = '';
                 document.getElementById('extraNotes').value = '';
-                createTaskSuggestions.classList.remove('active');
                 validateForm();
             }
-
-            createTaskInput.addEventListener('focus', function() {
-                showSuggestions(this.value);
-            });
-
-            createTaskInput.addEventListener('input', function() {
-                if (this.value.length > 50) this.value = this.value.slice(0,50);
-                showSuggestions(this.value);
-                validateForm();
-            });
-
-            function showSuggestions(query) {
-                const q = query.trim().toLowerCase();
-                
-                if (q.length === 0) {
-                    createTaskSuggestions.innerHTML = taskSuggestions.slice(0, 8).map(t => 
-                        `<div class="create-suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                    ).join('');
-                    createTaskSuggestions.classList.add('active');
-                } else {
-                    const matches = taskSuggestions.filter(t => 
-                        t.toLowerCase().includes(q)
-                    ).slice(0, 8);
-                    
-                    if (matches.length === 0) {
-                        createTaskSuggestions.classList.remove('active');
-                        return;
-                    }
-                    
-                    createTaskSuggestions.innerHTML = matches.map(t => 
-                        `<div class="create-suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
-                    ).join('');
-                    
-                    createTaskSuggestions.classList.add('active');
-                }
-                
-                document.querySelectorAll('.create-suggestion-item').forEach(el => {
-                    el.addEventListener('click', function() {
-                        const task = this.dataset.task;
-                        createTaskInput.value = capitalizeFirstLetter(task);
-                        createTaskSuggestions.classList.remove('active');
-                        validateForm();
-                    });
-                });
-            }
-
-            document.addEventListener('click', (e) => {
-                if (!createTaskInput.contains(e.target) && !createTaskSuggestions.contains(e.target)) {
-                    createTaskSuggestions.classList.remove('active');
-                }
-            });
 
             function validateForm() {
                 const taskFilled = createTaskInput.value.trim() !== '';
