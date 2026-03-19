@@ -1950,271 +1950,212 @@
                 }, 3000);
             }
 
-            // ===== DRAG TO COLLAPSE/EXPAND + FULLSCREEN FUNCTIONALITY =====
+            // ===== FIXED DRAG SYSTEM =====
             const homeSheet = document.getElementById('homeSheet');
             const grabber = document.getElementById('grabber');
             const mapTopIcon = document.getElementById('mapTopIcon');
             const mapReturnBtn = document.getElementById('mapReturnBtn');
+            const bottomNav = document.getElementById('bottomNav');
             
             let startY = 0;
-            let currentY = 0;
             let startHeight = 0;
             let isDragging = false;
-            let isCollapsed = false;
-            const maxDragDistance = 250;
-            const collapseThreshold = 50;
-            const expandedHeight = 'auto';
-            const collapsedHeight = '80px';
-            const fullscreenHeight = 'calc(100% - 57px)';
+            const collapseThreshold = 50; // drag distance to toggle collapse
             
+            // Remove any inline maxHeight from HTML (keep default)
             homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
             
-            grabber.addEventListener('touchstart', handleTouchStart, { passive: false });
-            grabber.addEventListener('touchmove', handleTouchMove, { passive: false });
-            grabber.addEventListener('touchend', handleTouchEnd);
-            grabber.addEventListener('mousedown', handleMouseDown);
-            mapReturnBtn.addEventListener('click', collapseFromFullscreen);
-            
-            function handleTouchStart(e) {
-                e.preventDefault();
-                startY = e.touches[0].clientY;
-                startHeight = homeSheet.getBoundingClientRect().height;
-                isDragging = true;
-                homeSheet.classList.add('dragging');
+            // ----- helpers -----
+            function getMaxAllowedHeight() {
+                const iconRect = mapTopIcon.getBoundingClientRect();
+                // sheet bottom is fixed at 57px above bottom, so max height = window.innerHeight - 57 - (iconRect.bottom + 2)
+                return window.innerHeight - 57 - (iconRect.bottom + 2);
             }
-            
-            function handleTouchMove(e) {
-                if (!isDragging) return;
-                e.preventDefault();
-                
-                currentY = e.touches[0].clientY;
-                let diffY = currentY - startY;
-                
-                if (diffY < 0) {
-                    let newMaxHeight = Math.max(80, startHeight - diffY);
-                    
-                    let sheetRect = homeSheet.getBoundingClientRect();
-                    let iconRect = mapTopIcon.getBoundingClientRect();
-                    let maxAllowedHeight = window.innerHeight - 57 - iconRect.bottom - 2;
-                    
-                    newMaxHeight = Math.min(newMaxHeight, maxAllowedHeight);
-                    
-                    homeSheet.style.maxHeight = newMaxHeight + 'px';
-                    
-                    if (sheetRect.top < iconRect.bottom + 1) {
-                        let overflow = iconRect.bottom + 1 - sheetRect.top;
-                        homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - overflow) + 'px';
-                    }
-                    
-                    if (sheetRect.top <= iconRect.bottom + 10) {
-                        mapTopIcon.classList.add('sheet-bg');
-                    } else {
-                        mapTopIcon.classList.remove('sheet-bg');
-                    }
-                    
-                    if (newMaxHeight <= 120) {
-                        homeSheet.classList.add('collapsed');
-                        isCollapsed = true;
-                    } else {
-                        homeSheet.classList.remove('collapsed');
-                        isCollapsed = false;
-                    }
-                    
-                    // Check for fullscreen state (reached top limit)
-                    if (sheetRect.top <= iconRect.bottom + 2) {
-                        if (!homeSheet.classList.contains('fullscreen')) {
-                            homeSheet.classList.add('fullscreen');
-                            mapTopIcon.classList.add('floating');
-                            mapReturnBtn.classList.add('visible');
-                            homeSheet.style.overflowY = 'auto';
-                        }
-                    } else {
-                        if (homeSheet.classList.contains('fullscreen')) {
-                            homeSheet.classList.remove('fullscreen');
-                            mapTopIcon.classList.remove('floating');
-                            mapReturnBtn.classList.remove('visible');
-                            homeSheet.style.overflowY = 'hidden';
-                        }
-                    }
-                }
-            }
-            
-            function handleTouchEnd(e) {
-                if (!isDragging) return;
-                e.preventDefault();
-                
-                let diffY = currentY - startY;
-                homeSheet.classList.remove('dragging');
-                
-                if (diffY < -collapseThreshold && !isCollapsed) {
-                    homeSheet.style.maxHeight = collapsedHeight;
-                    homeSheet.classList.add('collapsed');
-                    isCollapsed = true;
-                } else if (isCollapsed && diffY > collapseThreshold) {
-                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
-                    homeSheet.classList.remove('collapsed');
-                    isCollapsed = false;
-                } else if (isCollapsed) {
-                    homeSheet.style.maxHeight = collapsedHeight;
-                } else if (!homeSheet.classList.contains('fullscreen')) {
-                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
-                }
-                
-                let sheetRect = homeSheet.getBoundingClientRect();
-                let iconRect = mapTopIcon.getBoundingClientRect();
-                if (sheetRect.top < iconRect.bottom + 1) {
-                    homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - 10) + 'px';
-                }
-                
-                if (sheetRect.top <= iconRect.bottom + 10) {
-                    mapTopIcon.classList.add('sheet-bg');
-                } else {
-                    mapTopIcon.classList.remove('sheet-bg');
-                }
-                
-                if (homeSheet.classList.contains('fullscreen')) {
+
+            function applyFullscreenState(enable) {
+                if (enable) {
+                    homeSheet.classList.add('fullscreen');
                     mapTopIcon.classList.add('floating');
                     mapReturnBtn.classList.add('visible');
                     homeSheet.style.overflowY = 'auto';
                 } else {
+                    homeSheet.classList.remove('fullscreen');
                     mapTopIcon.classList.remove('floating');
                     mapReturnBtn.classList.remove('visible');
                     homeSheet.style.overflowY = 'hidden';
                 }
-                
-                isDragging = false;
-                startY = 0;
-                currentY = 0;
-                startHeight = 0;
             }
-            
-            function handleMouseDown(e) {
-                e.preventDefault();
-                startY = e.clientY;
-                startHeight = homeSheet.getBoundingClientRect().height;
-                isDragging = true;
-                homeSheet.classList.add('dragging');
-                
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-            }
-            
-            function handleMouseMove(e) {
-                if (!isDragging) return;
-                e.preventDefault();
-                
-                currentY = e.clientY;
-                let diffY = currentY - startY;
-                
-                if (diffY < 0) {
-                    let newMaxHeight = Math.max(80, startHeight - diffY);
-                    
-                    let sheetRect = homeSheet.getBoundingClientRect();
-                    let iconRect = mapTopIcon.getBoundingClientRect();
-                    let maxAllowedHeight = window.innerHeight - 57 - iconRect.bottom - 2;
-                    
-                    newMaxHeight = Math.min(newMaxHeight, maxAllowedHeight);
-                    
-                    homeSheet.style.maxHeight = newMaxHeight + 'px';
-                    
-                    if (sheetRect.top < iconRect.bottom + 1) {
-                        let overflow = iconRect.bottom + 1 - sheetRect.top;
-                        homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - overflow) + 'px';
-                    }
-                    
-                    if (sheetRect.top <= iconRect.bottom + 10) {
-                        mapTopIcon.classList.add('sheet-bg');
-                    } else {
-                        mapTopIcon.classList.remove('sheet-bg');
-                    }
-                    
-                    if (newMaxHeight <= 120) {
-                        homeSheet.classList.add('collapsed');
-                        isCollapsed = true;
-                    } else {
-                        homeSheet.classList.remove('collapsed');
-                        isCollapsed = false;
-                    }
-                    
-                    if (sheetRect.top <= iconRect.bottom + 2) {
-                        if (!homeSheet.classList.contains('fullscreen')) {
-                            homeSheet.classList.add('fullscreen');
-                            mapTopIcon.classList.add('floating');
-                            mapReturnBtn.classList.add('visible');
-                            homeSheet.style.overflowY = 'auto';
-                        }
-                    } else {
-                        if (homeSheet.classList.contains('fullscreen')) {
-                            homeSheet.classList.remove('fullscreen');
-                            mapTopIcon.classList.remove('floating');
-                            mapReturnBtn.classList.remove('visible');
-                            homeSheet.style.overflowY = 'hidden';
-                        }
-                    }
-                }
-            }
-            
-            function handleMouseUp(e) {
-                if (!isDragging) return;
-                e.preventDefault();
-                
-                let diffY = currentY - startY;
-                homeSheet.classList.remove('dragging');
-                
-                if (diffY < -collapseThreshold && !isCollapsed) {
-                    homeSheet.style.maxHeight = collapsedHeight;
+
+            function applyCollapsedState(enable) {
+                if (enable) {
                     homeSheet.classList.add('collapsed');
-                    isCollapsed = true;
-                } else if (isCollapsed && diffY > collapseThreshold) {
-                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                    bottomNav.classList.add('no-shadow'); // toggles shadow off
+                } else {
                     homeSheet.classList.remove('collapsed');
-                    isCollapsed = false;
-                } else if (isCollapsed) {
-                    homeSheet.style.maxHeight = collapsedHeight;
-                } else if (!homeSheet.classList.contains('fullscreen')) {
-                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                    bottomNav.classList.remove('no-shadow');
                 }
-                
-                let sheetRect = homeSheet.getBoundingClientRect();
-                let iconRect = mapTopIcon.getBoundingClientRect();
-                if (sheetRect.top < iconRect.bottom + 1) {
-                    homeSheet.style.maxHeight = (parseInt(homeSheet.style.maxHeight) - 10) + 'px';
-                }
-                
-                if (sheetRect.top <= iconRect.bottom + 10) {
-                    mapTopIcon.classList.add('sheet-bg');
-                } else {
-                    mapTopIcon.classList.remove('sheet-bg');
-                }
-                
-                if (homeSheet.classList.contains('fullscreen')) {
-                    mapTopIcon.classList.add('floating');
-                    mapReturnBtn.classList.add('visible');
-                    homeSheet.style.overflowY = 'auto';
-                } else {
-                    mapTopIcon.classList.remove('floating');
-                    mapReturnBtn.classList.remove('visible');
-                    homeSheet.style.overflowY = 'hidden';
-                }
-                
-                isDragging = false;
-                startY = 0;
-                currentY = 0;
-                startHeight = 0;
-                
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
             }
-            
-            function collapseFromFullscreen() {
-                homeSheet.classList.remove('fullscreen');
+
+            // map return click -> collapse to default (non-fullscreen, non-collapsed)
+            mapReturnBtn.addEventListener('click', () => {
+                homeSheet.classList.remove('fullscreen', 'collapsed');
                 mapTopIcon.classList.remove('floating');
                 mapReturnBtn.classList.remove('visible');
                 homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
                 homeSheet.style.overflowY = 'hidden';
-                homeSheet.classList.remove('collapsed');
-                isCollapsed = false;
+                bottomNav.classList.remove('no-shadow');
+            });
+
+            // ----- drag start -----
+            function dragStart(clientY) {
+                startY = clientY;
+                startHeight = homeSheet.getBoundingClientRect().height; // stable base
+                isDragging = true;
+                homeSheet.classList.add('dragging');
             }
+
+            // ----- drag move -----
+            function dragMove(clientY) {
+                if (!isDragging) return;
+
+                const diffY = clientY - startY;
+                // No directional restriction: diffY can be positive (down) or negative (up)
+
+                // new height based on drag delta (subtract diffY because moving up reduces height)
+                let newHeight = startHeight - diffY;
+                // clamp min 80
+                newHeight = Math.max(80, newHeight);
+
+                // clamp max based on icon position
+                const maxAllowed = getMaxAllowedHeight();
+                newHeight = Math.min(newHeight, maxAllowed);
+
+                // apply new height
+                homeSheet.style.maxHeight = newHeight + 'px';
+
+                // Update UI classes based on current height and top position
+                const sheetRect = homeSheet.getBoundingClientRect();
+                const iconRect = mapTopIcon.getBoundingClientRect();
+
+                // collapsed if height ≤ 120
+                if (newHeight <= 120) {
+                    applyCollapsedState(true);
+                } else {
+                    applyCollapsedState(false);
+                }
+
+                // fullscreen if sheet top reaches 2px below icon
+                const isFullscreenNow = sheetRect.top <= iconRect.bottom + 2;
+                if (isFullscreenNow) {
+                    applyFullscreenState(true);
+                } else {
+                    applyFullscreenState(false);
+                }
+
+                // sheet-bg class for icon (visual feedback when sheet near top)
+                if (sheetRect.top <= iconRect.bottom + 10) {
+                    mapTopIcon.classList.add('sheet-bg');
+                } else {
+                    mapTopIcon.classList.remove('sheet-bg');
+                }
+            }
+
+            // ----- drag end (snap) -----
+            function dragEnd() {
+                if (!isDragging) return;
+
+                homeSheet.classList.remove('dragging');
+
+                const sheetRect = homeSheet.getBoundingClientRect();
+                const iconRect = mapTopIcon.getBoundingClientRect();
+                const currentHeight = sheetRect.height;
+                const diffY = (startY ? startY - (window.innerHeight - sheetRect.bottom) : 0); // rough drag distance, but we use thresholds
+
+                // Determine snap target based on thresholds and states
+                const isNearFullscreen = sheetRect.top <= iconRect.bottom + 30; // within 30px of fullscreen
+                const isNearCollapsed = currentHeight <= 120 + 30; // within 30px of collapsed
+
+                if (isNearFullscreen) {
+                    // snap to fullscreen (top limit)
+                    homeSheet.style.maxHeight = getMaxAllowedHeight() + 'px';
+                    applyFullscreenState(true);
+                    applyCollapsedState(false);
+                } else if (isNearCollapsed) {
+                    // snap to collapsed 80px
+                    homeSheet.style.maxHeight = '80px';
+                    applyCollapsedState(true);
+                    applyFullscreenState(false);
+                } else {
+                    // snap to default expanded height
+                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                    applyCollapsedState(false);
+                    applyFullscreenState(false);
+                }
+
+                // Re-check fullscreen after snap (edge case)
+                const newSheetRect = homeSheet.getBoundingClientRect();
+                const newIconRect = mapTopIcon.getBoundingClientRect();
+                if (newSheetRect.top <= newIconRect.bottom + 2) {
+                    applyFullscreenState(true);
+                } else {
+                    applyFullscreenState(false);
+                }
+
+                isDragging = false;
+                startY = 0;
+                startHeight = 0;
+            }
+
+            // ----- event handlers -----
+            function handleTouchStart(e) {
+                e.preventDefault();
+                dragStart(e.touches[0].clientY);
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                dragMove(e.touches[0].clientY);
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                dragEnd();
+            }
+
+            function handleMouseDown(e) {
+                e.preventDefault();
+                dragStart(e.clientY);
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            }
+
+            function handleMouseMove(e) {
+                e.preventDefault();
+                dragMove(e.clientY);
+            }
+
+            function handleMouseUp(e) {
+                e.preventDefault();
+                dragEnd();
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            }
+
+            // Attach listeners
+            grabber.addEventListener('touchstart', handleTouchStart, { passive: false });
+            grabber.addEventListener('touchmove', handleTouchMove, { passive: false });
+            grabber.addEventListener('touchend', handleTouchEnd);
+            grabber.addEventListener('mousedown', handleMouseDown);
+
+            // ---- bottom nav shadow class (no-shadow) added/removed via collapsed state ----
+            // Add a small CSS rule for no-shadow
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .bottom-nav.no-shadow {
+                    box-shadow: none !important;
+                }
+            `;
+            document.head.appendChild(style);
 
             document.getElementById('helpersCard').addEventListener('click', function() {
                 if (!currentUser) {
