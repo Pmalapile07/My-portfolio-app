@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TaskMart · Complete</title>
+    <title>TaskMart · Home</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +21,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Config -->
+    <script src="/config.js"></script>
     
     <style>
         * {
@@ -166,7 +169,7 @@
             }
         }
 
-        /* === TOP LEFT ICON - ENHANCED TRANSITIONS === */
+        /* === TOP LEFT ICON === */
         .map-top-left-icon {
             position: absolute;
             top: 16px;
@@ -181,7 +184,7 @@
             z-index: 20;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             cursor: pointer;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
             pointer-events: auto;
         }
         .map-top-left-icon i {
@@ -189,22 +192,15 @@
             color: #000;
         }
         .map-top-left-icon.sheet-bg {
-            background: rgba(255, 255, 255, 0.95);
+            background: white; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .map-top-left-icon.floating {
             background: transparent;
             box-shadow: none;
         }
-        .map-top-left-icon.floating i {
-            color: #000;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .map-top-left-icon:active {
-            transform: scale(0.95);
-        }
 
-        /* === TOP RIGHT MAP BUTTON - ENHANCED TRANSITIONS === */
+        /* === TOP RIGHT MAP BUTTON (visible only in fullscreen) === */
         .map-return-btn {
             position: absolute;
             top: 16px;
@@ -219,24 +215,20 @@
             z-index: 20;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             cursor: pointer;
+            transition: opacity 0.2s ease;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.2s ease, background-color 0.2s ease;
-        }
-        .map-return-btn.visible {
-            opacity: 1;
-            pointer-events: auto;
         }
         .map-return-btn i {
             font-size: 26px;
             color: #000;
         }
-        .map-return-btn:active {
-            transform: scale(0.95);
-            background: #f5f5f5;
+        .map-return-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
-        /* === HOME SHEET - ENHANCED TRANSITIONS === */
+        /* === HOME SHEET - FIXED POSITION AT BOTTOM === */
         .home-sheet {
             position: absolute;
             bottom: 57px;
@@ -251,7 +243,7 @@
             display: flex;
             flex-direction: column;
             transform: none !important;
-            transition: max-height 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.3s ease;
+            transition: max-height 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.3s ease;
             overflow: hidden;
         }
 
@@ -263,9 +255,15 @@
             max-height: 80px !important;
         }
 
-        .home-sheet.collapsed .service-cards,
-        .home-sheet.collapsed .sheet-header,
-        .home-sheet.collapsed .search-container {
+        .home-sheet.collapsed .service-cards {
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .home-sheet.collapsed .sheet-header {
             opacity: 0;
             visibility: hidden;
             height: 0;
@@ -298,11 +296,10 @@
             flex-shrink: 0;
             position: relative;
             z-index: 15;
-            transition: background-color 0.2s ease;
         }
+
         .grabber:active {
             cursor: grabbing;
-            background: #bbb;
         }
 
         .sheet-header {
@@ -486,11 +483,11 @@
             z-index: 2000000; 
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
-            transition: box-shadow 0.3s ease;
+            transition: box-shadow 0.2s ease;
         }
         
-        .bottom-nav.no-shadow {
-            box-shadow: none !important;
+        .home-sheet.dragging ~ .bottom-nav {
+            box-shadow: none;
         }
         
         .nav-item {
@@ -1953,7 +1950,7 @@
                 }, 3000);
             }
 
-            // ===== ENHANCED DRAG HANDLER WITH FULLSCREEN FEATURES =====
+            // ===== FIXED DRAG SYSTEM =====
             const homeSheet = document.getElementById('homeSheet');
             const grabber = document.getElementById('grabber');
             const mapTopIcon = document.getElementById('mapTopIcon');
@@ -1963,19 +1960,19 @@
             let startY = 0;
             let startHeight = 0;
             let isDragging = false;
-            const collapseThreshold = 50;
+            const collapseThreshold = 50; // drag distance to toggle collapse
             
-            // Set initial height
+            // Remove any inline maxHeight from HTML (keep default)
             homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
             
-            // Helper: get maximum allowed height (2px below icon)
+            // ----- helpers -----
             function getMaxAllowedHeight() {
                 const iconRect = mapTopIcon.getBoundingClientRect();
+                // sheet bottom is fixed at 57px above bottom, so max height = window.innerHeight - 57 - (iconRect.bottom + 2)
                 return window.innerHeight - 57 - (iconRect.bottom + 2);
             }
 
-            // Apply fullscreen state with smooth transitions
-            function setFullscreen(enable) {
+            function applyFullscreenState(enable) {
                 if (enable) {
                     homeSheet.classList.add('fullscreen');
                     mapTopIcon.classList.add('floating');
@@ -1989,105 +1986,73 @@
                 }
             }
 
-            // Apply collapsed state with bottom nav shadow
-            function setCollapsed(enable) {
+            function applyCollapsedState(enable) {
                 if (enable) {
                     homeSheet.classList.add('collapsed');
-                    bottomNav.classList.add('no-shadow');
+                    bottomNav.classList.add('no-shadow'); // toggles shadow off
                 } else {
                     homeSheet.classList.remove('collapsed');
                     bottomNav.classList.remove('no-shadow');
                 }
             }
 
-            // Map return button click handler
-            mapReturnBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // Exit fullscreen and collapse to default
+            // map return click -> collapse to default (non-fullscreen, non-collapsed)
+            mapReturnBtn.addEventListener('click', () => {
                 homeSheet.classList.remove('fullscreen', 'collapsed');
                 mapTopIcon.classList.remove('floating');
                 mapReturnBtn.classList.remove('visible');
                 homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
                 homeSheet.style.overflowY = 'hidden';
                 bottomNav.classList.remove('no-shadow');
-                
-                // Update sheet-bg class
-                const sheetRect = homeSheet.getBoundingClientRect();
-                const iconRect = mapTopIcon.getBoundingClientRect();
-                if (sheetRect.top <= iconRect.bottom + 10) {
-                    mapTopIcon.classList.add('sheet-bg');
-                } else {
-                    mapTopIcon.classList.remove('sheet-bg');
-                }
             });
 
-            // Top left icon click handler
-            mapTopIcon.addEventListener('click', () => {
-                // If sheet is fullscreen, exit fullscreen first
-                if (homeSheet.classList.contains('fullscreen')) {
-                    homeSheet.classList.remove('fullscreen');
-                    mapTopIcon.classList.remove('floating');
-                    mapReturnBtn.classList.remove('visible');
-                    homeSheet.style.overflowY = 'hidden';
-                }
-                
-                // Toggle between collapsed and default
-                if (homeSheet.classList.contains('collapsed')) {
-                    // Expand to default
-                    homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
-                    homeSheet.classList.remove('collapsed');
-                    bottomNav.classList.remove('no-shadow');
-                } else {
-                    // Collapse to 80px
-                    homeSheet.style.maxHeight = '80px';
-                    homeSheet.classList.add('collapsed');
-                    bottomNav.classList.add('no-shadow');
-                }
-                
-                // Update sheet-bg class
-                const sheetRect = homeSheet.getBoundingClientRect();
-                const iconRect = mapTopIcon.getBoundingClientRect();
-                if (sheetRect.top <= iconRect.bottom + 10) {
-                    mapTopIcon.classList.add('sheet-bg');
-                } else {
-                    mapTopIcon.classList.remove('sheet-bg');
-                }
-            });
-
-            // Drag start
+            // ----- drag start -----
             function dragStart(clientY) {
                 startY = clientY;
-                startHeight = homeSheet.getBoundingClientRect().height;
+                startHeight = homeSheet.getBoundingClientRect().height; // stable base
                 isDragging = true;
                 homeSheet.classList.add('dragging');
             }
 
-            // Drag move
+            // ----- drag move -----
             function dragMove(clientY) {
                 if (!isDragging) return;
 
                 const diffY = clientY - startY;
-                // Calculate new height (subtract diffY because moving up reduces height)
-                let newHeight = startHeight - diffY;
-                
-                // Clamp between 80px and max allowed
-                newHeight = Math.max(80, Math.min(newHeight, getMaxAllowedHeight()));
+                // No directional restriction: diffY can be positive (down) or negative (up)
 
-                // Apply new height
+                // new height based on drag delta (subtract diffY because moving up reduces height)
+                let newHeight = startHeight - diffY;
+                // clamp min 80
+                newHeight = Math.max(80, newHeight);
+
+                // clamp max based on icon position
+                const maxAllowed = getMaxAllowedHeight();
+                newHeight = Math.min(newHeight, maxAllowed);
+
+                // apply new height
                 homeSheet.style.maxHeight = newHeight + 'px';
 
-                // Get current positions
+                // Update UI classes based on current height and top position
                 const sheetRect = homeSheet.getBoundingClientRect();
                 const iconRect = mapTopIcon.getBoundingClientRect();
 
-                // Update collapsed state
-                setCollapsed(newHeight <= 120);
+                // collapsed if height ≤ 120
+                if (newHeight <= 120) {
+                    applyCollapsedState(true);
+                } else {
+                    applyCollapsedState(false);
+                }
 
-                // Update fullscreen state (top reaches 2px below icon)
+                // fullscreen if sheet top reaches 2px below icon
                 const isFullscreenNow = sheetRect.top <= iconRect.bottom + 2;
-                setFullscreen(isFullscreenNow);
+                if (isFullscreenNow) {
+                    applyFullscreenState(true);
+                } else {
+                    applyFullscreenState(false);
+                }
 
-                // Update sheet-bg class for top-left icon (smooth background fade)
+                // sheet-bg class for icon (visual feedback when sheet near top)
                 if (sheetRect.top <= iconRect.bottom + 10) {
                     mapTopIcon.classList.add('sheet-bg');
                 } else {
@@ -2095,7 +2060,7 @@
                 }
             }
 
-            // Drag end with snap logic
+            // ----- drag end (snap) -----
             function dragEnd() {
                 if (!isDragging) return;
 
@@ -2104,51 +2069,44 @@
                 const sheetRect = homeSheet.getBoundingClientRect();
                 const iconRect = mapTopIcon.getBoundingClientRect();
                 const currentHeight = sheetRect.height;
+                const diffY = (startY ? startY - (window.innerHeight - sheetRect.bottom) : 0); // rough drag distance, but we use thresholds
 
-                // Snap thresholds
-                const isNearFullscreen = sheetRect.top <= iconRect.bottom + 30;
-                const isNearCollapsed = currentHeight <= 120 + 30;
+                // Determine snap target based on thresholds and states
+                const isNearFullscreen = sheetRect.top <= iconRect.bottom + 30; // within 30px of fullscreen
+                const isNearCollapsed = currentHeight <= 120 + 30; // within 30px of collapsed
 
                 if (isNearFullscreen) {
-                    // Snap to fullscreen
+                    // snap to fullscreen (top limit)
                     homeSheet.style.maxHeight = getMaxAllowedHeight() + 'px';
-                    setFullscreen(true);
-                    setCollapsed(false);
+                    applyFullscreenState(true);
+                    applyCollapsedState(false);
                 } else if (isNearCollapsed) {
-                    // Snap to collapsed
+                    // snap to collapsed 80px
                     homeSheet.style.maxHeight = '80px';
-                    setCollapsed(true);
-                    setFullscreen(false);
+                    applyCollapsedState(true);
+                    applyFullscreenState(false);
                 } else {
-                    // Snap to default expanded height
+                    // snap to default expanded height
                     homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
-                    setCollapsed(false);
-                    setFullscreen(false);
+                    applyCollapsedState(false);
+                    applyFullscreenState(false);
                 }
 
-                // Final check after snap
+                // Re-check fullscreen after snap (edge case)
                 const newSheetRect = homeSheet.getBoundingClientRect();
                 const newIconRect = mapTopIcon.getBoundingClientRect();
-                
-                // Ensure fullscreen state is correct
                 if (newSheetRect.top <= newIconRect.bottom + 2) {
-                    setFullscreen(true);
-                }
-                
-                // Update sheet-bg class
-                if (newSheetRect.top <= newIconRect.bottom + 10) {
-                    mapTopIcon.classList.add('sheet-bg');
+                    applyFullscreenState(true);
                 } else {
-                    mapTopIcon.classList.remove('sheet-bg');
+                    applyFullscreenState(false);
                 }
 
-                // Reset drag state
                 isDragging = false;
                 startY = 0;
                 startHeight = 0;
             }
 
-            // Touch event handlers
+            // ----- event handlers -----
             function handleTouchStart(e) {
                 e.preventDefault();
                 dragStart(e.touches[0].clientY);
@@ -2164,47 +2122,33 @@
                 dragEnd();
             }
 
-            // Mouse event handlers
             function handleMouseDown(e) {
                 e.preventDefault();
                 dragStart(e.clientY);
-                
-                function onMouseMove(e) {
-                    e.preventDefault();
-                    dragMove(e.clientY);
-                }
-                
-                function onMouseUp(e) {
-                    e.preventDefault();
-                    dragEnd();
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                }
-                
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
             }
 
-            // Attach event listeners
+            function handleMouseMove(e) {
+                e.preventDefault();
+                dragMove(e.clientY);
+            }
+
+            function handleMouseUp(e) {
+                e.preventDefault();
+                dragEnd();
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            }
+
+            // Attach listeners
             grabber.addEventListener('touchstart', handleTouchStart, { passive: false });
             grabber.addEventListener('touchmove', handleTouchMove, { passive: false });
             grabber.addEventListener('touchend', handleTouchEnd);
             grabber.addEventListener('mousedown', handleMouseDown);
 
-            // Add visual feedback for buttons
-            [mapTopIcon, mapReturnBtn].forEach(btn => {
-                btn.addEventListener('mousedown', () => btn.style.transform = 'scale(0.95)');
-                btn.addEventListener('mouseup', () => btn.style.transform = 'scale(1)');
-                btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
-                btn.addEventListener('touchstart', () => btn.style.transform = 'scale(0.95)', { passive: true });
-                btn.addEventListener('touchend', () => btn.style.transform = 'scale(1)');
-            });
-
-            // Initialize state
-            setCollapsed(false);
-            setFullscreen(false);
-
-            // Add no-shadow style
+            // ---- bottom nav shadow class (no-shadow) added/removed via collapsed state ----
+            // Add a small CSS rule for no-shadow
             const style = document.createElement('style');
             style.innerHTML = `
                 .bottom-nav.no-shadow {
