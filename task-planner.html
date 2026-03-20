@@ -22,6 +22,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
+    <!-- Config -->
+    <script src="/config.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -178,28 +181,32 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 30;
+            z-index: 30; /* stays above sheet */
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             cursor: pointer;
-            transition: background-color 0.25s ease, box-shadow 0.25s ease;
+            transition: background-color 0.25s ease, box-shadow 0.25s ease, color 0.2s ease;
             pointer-events: auto;
+            /* ensure it never moves */
+            transform: translate3d(0,0,0);
             will-change: background-color, box-shadow;
         }
         .map-top-left-icon i {
             font-size: 26px;
             color: #000;
+            transition: color 0.2s ease;
         }
 
-        /* state: sheet is near top → icon blends into sheet */
+        /* state: sheet is near top → icon blends into sheet (white bg, subtle shadow) */
         .map-top-left-icon.sheet-bg {
             background: white;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-        /* state: fullscreen active → icon becomes part of sheet, shadow disappears */
+        /* state: fullscreen active → icon becomes part of sheet (white bg, no float shadow) */
         .map-top-left-icon.floating {
-            background: white;
-            box-shadow: none;
+            background: white;      /* same as sheet */
+            box-shadow: none;        /* shadow disappears */
         }
+        /* optional: if fullscreen and sheet-bg combined, we prefer floating */
         .map-top-left-icon.floating.sheet-bg {
             background: white;
             box-shadow: none;
@@ -217,10 +224,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 30;
+            z-index: 30; /* same as left icon */
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             cursor: pointer;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.25s ease, background-color 0.25s ease;
             opacity: 0;
             pointer-events: none;
         }
@@ -240,12 +247,13 @@
             left: 0;
             width: 100%;
             background: white;
-            z-index: 10;
+            z-index: 10; /* below icons (z-index 30) */
             padding: 8px 20px 20px;
             border-radius: 17px 17px 0 0;
             box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
+            transform: none !important;
             transition: max-height 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.3s ease;
             overflow: hidden;
         }
@@ -311,7 +319,7 @@
             margin-bottom: 16px;
             height: auto;
             flex-shrink: 0;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease, height 0.2s ease, margin 0.2s ease;
         }
 
         .static-header {
@@ -330,7 +338,7 @@
             margin-bottom: 20px;
             margin-top: 8px;
             flex-shrink: 0;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease, height 0.2s ease, margin 0.2s ease;
         }
         
         .service-card {
@@ -350,6 +358,7 @@
             position: relative;
             cursor: default;
             background-color: #f0f0f0;
+            border-radius: 5px;
         }
         
         .service-card.coming-soon::after {
@@ -481,7 +490,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 2000000;
+            z-index: 2000000; 
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom, 0);
             transition: box-shadow 0.2s ease;
@@ -1682,20 +1691,25 @@
             font-weight: 400;
         }
 
+        /* small additional rule for bottom nav no-shadow */
         .bottom-nav.no-shadow {
             box-shadow: none !important;
         }
     </style>
 </head>
 <body>
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">TASKMART</div>
+    </div>
+
     <div id="map"></div>
 
-    <!-- TOP LEFT ICON -->
+    <!-- TOP LEFT ICON (fixed position, no movement) -->
     <div class="map-top-left-icon" id="mapTopIcon">
         <i class="ph ph-list"></i>
     </div>
 
-    <!-- TOP RIGHT MAP BUTTON -->
+    <!-- TOP RIGHT MAP BUTTON (visible only in fullscreen) -->
     <div class="map-return-btn" id="mapReturnBtn">
         <i class="ph ph-map-trifold"></i>
     </div>
@@ -1901,14 +1915,6 @@
             };
 
             let helperMarkers = [];
-            let database;
-            let currentUser = null;
-            let userProfile = null;
-            let map;
-            let currentLat = null, currentLng = null;
-            let uploadedImages = [];
-            let allTasks = [];
-            let scheduledRequests = {};
 
             const taskData = {
                 "laundry": { minPrice: 80, questions: ["How full is the basket? (small/medium/full)"] },
@@ -1959,7 +1965,7 @@
                 }, 3000);
             }
 
-            // ===== DRAG SYSTEM WITH FULLSCREEN ON DRAG UP =====
+            // ===== DRAG SYSTEM (unchanged logic, only visual enhancements) =====
             const homeSheet = document.getElementById('homeSheet');
             const grabber = document.getElementById('grabber');
             const mapTopIcon = document.getElementById('mapTopIcon');
@@ -1969,18 +1975,23 @@
             let startY = 0;
             let startHeight = 0;
             let isDragging = false;
+            const collapseThreshold = 50; // drag distance to toggle collapse
             
+            // Remove any inline maxHeight from HTML (keep default)
             homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
             
+            // ----- helpers -----
             function getMaxAllowedHeight() {
-                return window.innerHeight - 57;
+                const iconRect = mapTopIcon.getBoundingClientRect();
+                // sheet bottom is fixed at 57px above bottom, so max height = window.innerHeight - 57 - (iconRect.bottom + 2)
+                return window.innerHeight - 57 - (iconRect.bottom + 2);
             }
 
             function applyFullscreenState(enable) {
                 if (enable) {
                     homeSheet.classList.add('fullscreen');
-                    mapTopIcon.classList.add('floating');
-                    mapReturnBtn.classList.add('visible');
+                    mapTopIcon.classList.add('floating');   // background becomes white, shadow none
+                    mapReturnBtn.classList.add('visible');  // fade in
                     homeSheet.style.overflowY = 'auto';
                 } else {
                     homeSheet.classList.remove('fullscreen');
@@ -2000,35 +2011,64 @@
                 }
             }
 
+            // map return click -> collapse to default (non-fullscreen, non-collapsed)
+            mapReturnBtn.addEventListener('click', () => {
+                homeSheet.classList.remove('fullscreen', 'collapsed');
+                mapTopIcon.classList.remove('floating', 'sheet-bg');
+                mapReturnBtn.classList.remove('visible');
+                homeSheet.style.height = newHeight + 'px';
+                homeSheet.style.overflowY = 'hidden';
+                bottomNav.classList.remove('no-shadow');
+            });
+
+            // ----- drag start -----
             function dragStart(clientY) {
                 startY = clientY;
-                startHeight = homeSheet.getBoundingClientRect().height;
+                startHeight = homeSheet.getBoundingClientRect().height; // stable base
                 isDragging = true;
                 homeSheet.classList.add('dragging');
             }
 
+            // ----- drag move -----
             function dragMove(clientY) {
                 if (!isDragging) return;
+
+                const diffY = clientY - startY;
+                // new height based on drag delta (subtract diffY because moving up reduces height)
                 let newHeight = startHeight + (startY - clientY);
-                newHeight = Math.max(70, Math.min(newHeight, getMaxAllowedHeight()));
+                newHeight = Math.max(80, newHeight);
+                function handleTouchStart(e) {
+    dragStart(e.touches[0].clientY);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+}
+function handleTouchEnd(e) {
+    dragEnd();
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
+}
                 homeSheet.style.maxHeight = newHeight + 'px';
 
+                // Update UI classes based on current height and top position
                 const sheetRect = homeSheet.getBoundingClientRect();
                 const iconRect = mapTopIcon.getBoundingClientRect();
 
-                if (newHeight <= 110) {
+                // collapsed if height ≤ 120
+                if (newHeight <= 120) {
                     applyCollapsedState(true);
                 } else {
                     applyCollapsedState(false);
                 }
 
-                const isFullscreenNow = sheetRect.top <= 20;
+                // fullscreen if sheet top reaches 2px below icon
+                const isFullscreenNow = sheetRect.top <= iconRect.bottom + 2;
                 if (isFullscreenNow) {
                     applyFullscreenState(true);
                 } else {
                     applyFullscreenState(false);
                 }
 
+                // sheet-bg class for icon (when sheet top is within 10px of icon bottom)
                 if (sheetRect.top <= iconRect.bottom + 10) {
                     mapTopIcon.classList.add('sheet-bg');
                 } else {
@@ -2036,17 +2076,24 @@
                 }
             }
 
+            // ----- drag end (snap) -----
             function dragEnd() {
                 if (!isDragging) return;
+
                 homeSheet.classList.remove('dragging');
+
                 const sheetRect = homeSheet.getBoundingClientRect();
+                const iconRect = mapTopIcon.getBoundingClientRect();
                 const currentHeight = sheetRect.height;
 
-                if (sheetRect.top <= 30 || currentHeight >= getMaxAllowedHeight() - 50) {
+                const isNearFullscreen = sheetRect.top <= iconRect.bottom + 30; // within 30px of fullscreen
+                const isNearCollapsed = currentHeight <= 120 + 30; // within 30px of collapsed
+
+                if (isNearFullscreen) {
                     homeSheet.style.maxHeight = getMaxAllowedHeight() + 'px';
                     applyFullscreenState(true);
                     applyCollapsedState(false);
-                } else if (currentHeight <= 120) {
+                } else if (isNearCollapsed) {
                     homeSheet.style.maxHeight = '80px';
                     applyCollapsedState(true);
                     applyFullscreenState(false);
@@ -2055,128 +2102,160 @@
                     applyCollapsedState(false);
                     applyFullscreenState(false);
                 }
+
+                // Re-check fullscreen after snap
+                const newSheetRect = homeSheet.getBoundingClientRect();
+                const newIconRect = mapTopIcon.getBoundingClientRect();
+                if (newSheetRect.top <= newIconRect.bottom + 2) {
+                    applyFullscreenState(true);
+                } else {
+                    applyFullscreenState(false);
+                }
+
                 isDragging = false;
+                startY = 0;
+                startHeight = 0;
             }
 
-            grabber.addEventListener('touchstart', (e) => { e.preventDefault(); dragStart(e.touches[0].clientY); }, { passive: false });
-            grabber.addEventListener('touchmove', (e) => { e.preventDefault(); dragMove(e.touches[0].clientY); }, { passive: false });
-            grabber.addEventListener('touchend', (e) => { e.preventDefault(); dragEnd(); });
-            grabber.addEventListener('mousedown', (e) => {
+            // ----- event handlers -----
+            function handleTouchStart(e) {
+                e.preventDefault();
+                dragStart(e.touches[0].clientY);
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                dragMove(e.touches[0].clientY);
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                dragEnd();
+            }
+
+            function handleMouseDown(e) {
                 e.preventDefault();
                 dragStart(e.clientY);
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            });
-            
-            function onMouseMove(e) { dragMove(e.clientY); }
-            function onMouseUp(e) { dragEnd(); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-            
-            mapReturnBtn.addEventListener('click', () => {
-                homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
-                applyFullscreenState(false);
-                applyCollapsedState(false);
-                mapTopIcon.classList.remove('floating', 'sheet-bg');
-                homeSheet.style.overflowY = 'hidden';
-            });
-
-            // ===== MAP INITIALIZATION =====
-            if (window.MAPBOX_TOKEN) {
-                mapboxgl.accessToken = window.MAPBOX_TOKEN;
-            } else {
-                mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
             }
 
-            map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/pmalapile07/cmmwfxan9004001s8h9ph8z6v',
-                center: [28.034088, -26.195246],
-                zoom: 0.5
-            });
+            function handleMouseMove(e) {
+                e.preventDefault();
+                dragMove(e.clientY);
+            }
 
-            let userLocationMarker = null;
-            let userLocationRadius = null;
-            const locationInput = document.getElementById('locationInput');
-            const DESIRED_ZOOM = 14;
+            function handleMouseUp(e) {
+                e.preventDefault();
+                dragEnd();
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            }
 
-            map.on('load', () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            currentLat = pos.coords.latitude;
-                            currentLng = pos.coords.longitude;
-                            
-                            map.flyTo({
-                                center: [currentLng, currentLat],
-                                zoom: DESIRED_ZOOM,
-                                speed: 2.5
-                            });
-                            
-                            const pinElement = document.createElement('div');
-                            pinElement.className = 'pulsing-pin';
-                            
-                            userLocationMarker = new mapboxgl.Marker({ element: pinElement, anchor: 'center' })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                            
-                            const radiusElement = document.createElement('div');
-                            radiusElement.className = 'user-location-radius';
-                            
-                            userLocationRadius = new mapboxgl.Marker({ element: radiusElement, anchor: 'center' })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                            
-                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-                                .then(r => r.json())
-                                .then(data => {
-                                    if (data.features && data.features[0]) {
-                                        let fullAddress = data.features[0].place_name;
-                                        let parts = fullAddress.split(', ');
-                                        if (parts.length > 1) {
-                                            parts.pop();
-                                            locationInput.value = parts.join(', ');
-                                        } else {
-                                            locationInput.value = fullAddress;
-                                        }
-                                    }
-                                });
-                        },
-                        (err) => {
-                            currentLat = -26.195246;
-                            currentLng = 28.034088;
-                            map.flyTo({ center: [currentLng, currentLat], zoom: DESIRED_ZOOM });
-                            const pinElement = document.createElement('div');
-                            pinElement.className = 'pulsing-pin';
-                            userLocationMarker = new mapboxgl.Marker({ element: pinElement, anchor: 'center' })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                            const radiusElement = document.createElement('div');
-                            radiusElement.className = 'user-location-radius';
-                            userLocationRadius = new mapboxgl.Marker({ element: radiusElement, anchor: 'center' })
-                                .setLngLat([currentLng, currentLat])
-                                .addTo(map);
-                            locationInput.value = 'Johannesburg';
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                    );
-                } else {
-                    currentLat = -26.195246;
-                    currentLng = 28.034088;
-                    map.flyTo({ center: [currentLng, currentLat], zoom: DESIRED_ZOOM });
-                    const pinElement = document.createElement('div');
-                    pinElement.className = 'pulsing-pin';
-                    userLocationMarker = new mapboxgl.Marker({ element: pinElement, anchor: 'center' })
-                        .setLngLat([currentLng, currentLat])
-                        .addTo(map);
-                    const radiusElement = document.createElement('div');
-                    radiusElement.className = 'user-location-radius';
-                    userLocationRadius = new mapboxgl.Marker({ element: radiusElement, anchor: 'center' })
-                        .setLngLat([currentLng, currentLat])
-                        .addTo(map);
-                    locationInput.value = 'Johannesburg';
+            // Attach listeners
+            grabber.addEventListener('touchstart', handleTouchStart, { passive: false });
+            grabber.addEventListener('touchmove', handleTouchMove, { passive: false });
+            grabber.addEventListener('touchend', handleTouchEnd);
+            grabber.addEventListener('mousedown', handleMouseDown);
+
+            // ---- bottom nav shadow class ----
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .bottom-nav.no-shadow {
+                    box-shadow: none !important;
                 }
+            `;
+            document.head.appendChild(style);
+
+            document.getElementById('helpersCard').addEventListener('click', function() {
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                createTaskContainer.style.display = 'flex';
+                createTaskInput.focus();
             });
 
-            // ===== FIREBASE INITIALIZATION =====
+            function displayHelpersOnMap(helpers) {
+                if (helperMarkers.length > 0) {
+                    helperMarkers.forEach(marker => marker.remove());
+                    helperMarkers = [];
+                }
+                
+                if (!helpers || helpers.length === 0) {
+                    debugLog('No helpers to display on map', 'info');
+                    return;
+                }
+                
+                debugLog(`Displaying ${helpers.length} helpers on map`, 'info');
+                
+                helpers.forEach(helper => {
+                    if (!helper.lat || !helper.lng) {
+                        debugLog(`Helper ${helper.name} missing coordinates`, 'warn');
+                        return;
+                    }
+                    
+                    const markerElement = document.createElement('div');
+                    markerElement.className = 'helper-marker';
+                    
+                    markerElement.style.width = '40px';
+                    markerElement.style.height = '40px';
+                    markerElement.style.borderRadius = '50%';
+                    markerElement.style.backgroundSize = 'cover';
+                    markerElement.style.backgroundPosition = 'center';
+                    markerElement.style.backgroundRepeat = 'no-repeat';
+                    markerElement.style.border = '2px solid white';
+                    markerElement.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                    markerElement.style.cursor = 'pointer';
+                    
+                    if (helper.photoURL) {
+                        markerElement.style.backgroundImage = `url(${helper.photoURL})`;
+                    } else {
+                        const encodedName = encodeURIComponent(helper.name);
+                        markerElement.style.backgroundImage = `url(https://ui-avatars.com/api/?name=${encodedName}&background=000000&color=fff&size=80)`;
+                    }
+                    
+                    const popupContent = document.createElement('div');
+                    popupContent.className = 'helper-popup';
+                    
+                    const topSkills = helper.skills && helper.skills.length > 0 
+                        ? helper.skills.slice(0, 3).map(skill => 
+                            `<span class="helper-skill-tag">${skill}</span>`
+                          ).join('')
+                        : '<span class="helper-skill-tag">No skills listed</span>';
+                    
+                    popupContent.innerHTML = `
+                        <div class="helper-popup-name">${helper.name}</div>
+                        <div class="helper-popup-distance">
+                            <i class="ph ph-map-pin"></i>
+                            ${helper.distance} km away
+                        </div>
+                        <div class="helper-popup-skills">
+                            <div class="helper-popup-skills-title">Top skills</div>
+                            <div class="helper-popup-skills-list">
+                                ${topSkills}
+                            </div>
+                        </div>
+                    `;
+                    
+                    const marker = new mapboxgl.Marker({ 
+                        element: markerElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([helper.lng, helper.lat])
+                    .setPopup(new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupContent))
+                    .addTo(map);
+                    
+                    helperMarkers.push(marker);
+                });
+                
+                debugLog(`Successfully added ${helperMarkers.length} helper markers to map`, 'success');
+            }
+
+            let database;
+            let currentUser = null;
+            let userProfile = null;
+            
             try {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
@@ -2199,18 +2278,30 @@
                             isAnonymous: false
                         };
                         
+                        debugLog(`User signed in: ${user.email}`, 'success');
+                        
                         database.ref('users/' + user.uid).once('value')
                             .then((snapshot) => {
                                 userProfile = snapshot.val() || {};
+                                
                                 const displayName = userProfile.name || user.displayName || user.email?.split('@')[0] || 'User';
+                                
                                 document.getElementById('accountName').textContent = displayName;
                                 document.getElementById('accountEmail').textContent = user.email || 'No email';
                                 document.getElementById('accountUid').textContent = user.uid.substring(0, 8) + '...';
+                                
                                 if (document.getElementById('tasksPage').classList.contains('active')) {
                                     loadUserTasks();
                                 } else {
                                     checkNotificationDot();
                                 }
+                            })
+                            .catch((error) => {
+                                debugLog(`Error loading user profile: ${error.message}`, 'error');
+                                document.getElementById('accountName').textContent = user.displayName || user.email?.split('@')[0] || 'User';
+                                document.getElementById('accountEmail').textContent = user.email || 'No email';
+                                document.getElementById('accountUid').textContent = user.uid.substring(0, 8) + '...';
+                                checkNotificationDot();
                             });
                         
                         accountLogoutBtn.style.display = 'block';
@@ -2222,15 +2313,21 @@
                         document.getElementById('accountName').textContent = 'Guest User';
                         document.getElementById('accountEmail').textContent = 'Not signed in';
                         document.getElementById('accountUid').textContent = 'Guest';
+                        
                         accountLogoutBtn.style.display = 'none';
                         accountLoginBtn.style.display = 'block';
                         accountLoginBtn.onclick = () => window.location.href = 'login.html';
+                        
+                        debugLog('Anonymous user', 'info');
+                        document.getElementById('taskNotificationDot').classList.remove('visible');
                     } else {
                         currentUser = null;
                         userProfile = null;
+                        debugLog('No user, signing in anonymously...', 'info');
                         firebase.auth().signInAnonymously().catch(error => {
                             debugLog(`Anonymous sign in error: ${error.message}`, 'error');
                         });
+                        document.getElementById('taskNotificationDot').classList.remove('visible');
                     }
                 });
                 
@@ -2243,6 +2340,7 @@
                     document.getElementById('taskNotificationDot').classList.remove('visible');
                     return;
                 }
+                
                 database.ref('tasks/' + currentUser.uid).once('value')
                     .then((snapshot) => {
                         const tasksData = snapshot.val() || {};
@@ -2268,81 +2366,484 @@
                 }
             });
 
-            // ===== HELPER FUNCTIONS =====
-            function displayHelpersOnMap(helpers) {
-                if (helperMarkers.length > 0) {
-                    helperMarkers.forEach(marker => marker.remove());
-                    helperMarkers = [];
-                }
-                if (!helpers || helpers.length === 0) return;
+            if (window.MAPBOX_TOKEN) {
+                mapboxgl.accessToken = window.MAPBOX_TOKEN;
+                debugLog('Mapbox token loaded from config', 'success');
+            } else {
+                mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
+                debugLog('Using fallback Mapbox token', 'info');
+            }
+
+            const splashScreen = document.getElementById('splashScreen');
+            const splashShown = localStorage.getItem('splashShown');
+            if (!splashShown) {
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    localStorage.setItem('splashShown', 'true');
+                }, 2000);
+            } else {
+                splashScreen.style.display = 'none';
+            }
+
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/pmalapile07/cmmwfxan9004001s8h9ph8z6v',
+                center: [28.034088, -26.195246],
+                zoom: 0.5
+            });
+
+            let userLocationMarker = null;
+            let userLocationRadius = null;
+            let currentLat = null, currentLng = null, uploadedImages = [], currentTaskId = null;
+            let originalLat = null, originalLng = null;
+            const locationInput = document.getElementById('locationInput');
+            const DESIRED_ZOOM = 14;
+
+            map.on('load', () => {
+                debugLog('Map loaded successfully', 'success');
                 
-                helpers.forEach(helper => {
-                    if (!helper.lat || !helper.lng) return;
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            currentLat = pos.coords.latitude;
+                            currentLng = pos.coords.longitude;
+                            originalLat = currentLat;
+                            originalLng = currentLng;
+                            
+                            map.flyTo({
+                                center: [currentLng, currentLat],
+                                zoom: DESIRED_ZOOM,
+                                speed: 2.5,
+                                curve: 1,
+                                easing: (t) => t
+                            });
+                            
+                            if (userLocationMarker) userLocationMarker.remove();
+                            if (userLocationRadius) userLocationRadius.remove();
+                            
+                            const pinElement = document.createElement('div');
+                            pinElement.className = 'pulsing-pin';
+                            
+                            userLocationMarker = new mapboxgl.Marker({ 
+                                element: pinElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            const radiusElement = document.createElement('div');
+                            radiusElement.className = 'user-location-radius';
+                            
+                            userLocationRadius = new mapboxgl.Marker({ 
+                                element: radiusElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.features && data.features[0]) {
+                                        let fullAddress = data.features[0].place_name;
+                                        let parts = fullAddress.split(', ');
+                                        if (parts.length > 1) {
+                                            parts.pop();
+                                            locationInput.value = parts.join(', ');
+                                        } else {
+                                            locationInput.value = fullAddress;
+                                        }
+                                    }
+                                });
+                            
+                            debugLog(`Geolocation successful: ${currentLat}, ${currentLng}`, 'success');
+                        },
+                        (err) => {
+                            debugLog(`Geolocation error: ${err.message}`, 'error');
+                            currentLat = -26.195246;
+                            currentLng = 28.034088;
+                            originalLat = currentLat;
+                            originalLng = currentLng;
+                            
+                            map.flyTo({
+                                center: [currentLng, currentLat],
+                                zoom: DESIRED_ZOOM,
+                                speed: 2.5
+                            });
+                            
+                            const pinElement = document.createElement('div');
+                            pinElement.className = 'pulsing-pin';
+                            
+                            userLocationMarker = new mapboxgl.Marker({ 
+                                element: pinElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            const radiusElement = document.createElement('div');
+                            radiusElement.className = 'user-location-radius';
+                            
+                            userLocationRadius = new mapboxgl.Marker({ 
+                                element: radiusElement,
+                                anchor: 'center'
+                            })
+                            .setLngLat([currentLng, currentLat])
+                            .addTo(map);
+                            
+                            locationInput.value = 'Johannesburg';
+                        },
+                        { 
+                            enableHighAccuracy: true, 
+                            timeout: 10000,
+                            maximumAge: 0
+                        }
+                    );
+                } else {
+                    debugLog('Geolocation not supported', 'error');
+                    currentLat = -26.195246;
+                    currentLng = 28.034088;
+                    originalLat = currentLat;
+                    originalLng = currentLng;
                     
-                    const markerElement = document.createElement('div');
-                    markerElement.className = 'helper-marker';
-                    markerElement.style.width = '40px';
-                    markerElement.style.height = '40px';
-                    markerElement.style.borderRadius = '50%';
-                    markerElement.style.backgroundSize = 'cover';
-                    markerElement.style.backgroundPosition = 'center';
-                    markerElement.style.border = '2px solid white';
-                    markerElement.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-                    markerElement.style.cursor = 'pointer';
+                    map.flyTo({
+                        center: [currentLng, currentLat],
+                        zoom: DESIRED_ZOOM,
+                        speed: 2.5
+                    });
                     
-                    if (helper.photoURL) {
-                        markerElement.style.backgroundImage = `url(${helper.photoURL})`;
+                    const pinElement = document.createElement('div');
+                    pinElement.className = 'pulsing-pin';
+                    
+                    userLocationMarker = new mapboxgl.Marker({ 
+                        element: pinElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([currentLng, currentLat])
+                    .addTo(map);
+                    
+                    const radiusElement = document.createElement('div');
+                    radiusElement.className = 'user-location-radius';
+                    
+                    userLocationRadius = new mapboxgl.Marker({ 
+                        element: radiusElement,
+                        anchor: 'center'
+                    })
+                    .setLngLat([currentLng, currentLat])
+                    .addTo(map);
+                    
+                    locationInput.value = 'Johannesburg';
+                }
+            });
+
+            map.on('error', (e) => {
+                debugLog(`Map error: ${e.error}`, 'error');
+            });
+
+            const navHome = document.getElementById('navHome');
+            const navTasks = document.getElementById('navTasks');
+            const navAccount = document.getElementById('navAccount');
+            const tasksPage = document.getElementById('tasksPage');
+            const accountPage = document.getElementById('accountPage');
+            const taskDetailPage = document.getElementById('taskDetailPage');
+            const mapEl = document.getElementById('map');
+            const homeSheetEl = document.getElementById('homeSheet');
+            const createTaskContainer = document.getElementById('createTaskContainer');
+            
+            function updateNavIcons(activePage) {
+                navHome.innerHTML = '<i class="ph ph-house-simple"></i><span>Home</span>';
+                navTasks.innerHTML = '<div style="position: relative; display: inline-block;"><i class="ph ph-check-square-offset"></i><span class="notification-dot" id="taskNotificationDot"></span></div><span>Tasks</span>';
+                navAccount.innerHTML = '<i class="ph ph-user"></i><span>Account</span>';
+                
+                if (activePage === 'home') {
+                    navHome.innerHTML = '<i class="ph-fill ph-house-simple"></i><span>Home</span>';
+                } else if (activePage === 'tasks') {
+                    navTasks.innerHTML = '<div style="position: relative; display: inline-block;"><i class="ph-fill ph-check-square-offset"></i><span class="notification-dot" id="taskNotificationDot"></span></div><span>Tasks</span>';
+                } else if (activePage === 'account') {
+                    navAccount.innerHTML = '<i class="ph-fill ph-user"></i><span>Account</span>';
+                }
+                
+                const dot = document.getElementById('taskNotificationDot');
+                if (dot) {
+                    checkNotificationDot();
+                }
+            }
+
+            let currentCategory = 'upcoming';
+            let allTasks = [];
+            let scheduledRequests = {};
+
+            function setActivePage(page) {
+                [navHome, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
+                
+                if (page === 'home') {
+                    navHome.classList.add('active');
+                    updateNavIcons('home');
+                    tasksPage.classList.remove('active');
+                    accountPage.classList.remove('active');
+                    taskDetailPage.classList.remove('active');
+                    createTaskContainer.style.display = 'none';
+                    mapEl.style.display = 'block';
+                    homeSheetEl.style.display = 'block';
+                    
+                    setTimeout(() => map.resize(), 100);
+                } else if (page === 'tasks') {
+                    navTasks.classList.add('active');
+                    updateNavIcons('tasks');
+                    tasksPage.classList.add('active');
+                    accountPage.classList.remove('active');
+                    taskDetailPage.classList.remove('active');
+                    createTaskContainer.style.display = 'none';
+                    mapEl.style.display = 'none';
+                    homeSheetEl.style.display = 'none';
+                    
+                    if (currentUser) {
+                        loadUserTasks();
                     } else {
-                        const encodedName = encodeURIComponent(helper.name);
-                        markerElement.style.backgroundImage = `url(https://ui-avatars.com/api/?name=${encodedName}&background=000000&color=fff&size=80)`;
+                        document.getElementById('tasksListContainer').innerHTML = '<div class="empty-state"><h3>Please log in</h3><p>Log in to see your tasks</p><button class="post-btn" onclick="window.location.href=\'login.html\'">Log in</button></div>';
+                        document.getElementById('tasksCount').textContent = '0';
                     }
-                    
-                    const popupContent = document.createElement('div');
-                    popupContent.className = 'helper-popup';
-                    const topSkills = helper.skills && helper.skills.length > 0 
-                        ? helper.skills.slice(0, 3).map(skill => `<span class="helper-skill-tag">${skill}</span>`).join('')
-                        : '<span class="helper-skill-tag">No skills listed</span>';
-                    
-                    popupContent.innerHTML = `
-                        <div class="helper-popup-name">${helper.name}</div>
-                        <div class="helper-popup-distance"><i class="ph ph-map-pin"></i>${helper.distance} km away</div>
-                        <div class="helper-popup-skills"><div class="helper-popup-skills-title">Top skills</div><div class="helper-popup-skills-list">${topSkills}</div></div>
-                    `;
-                    
-                    const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'center' })
-                        .setLngLat([helper.lng, helper.lat])
-                        .setPopup(new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupContent))
-                        .addTo(map);
-                    
-                    helperMarkers.push(marker);
+                } else if (page === 'account') {
+                    navAccount.classList.add('active');
+                    updateNavIcons('account');
+                    accountPage.classList.add('active');
+                    tasksPage.classList.remove('active');
+                    taskDetailPage.classList.remove('active');
+                    createTaskContainer.style.display = 'none';
+                    mapEl.style.display = 'none';
+                    homeSheetEl.style.display = 'none';
+                } else if (page === 'taskDetail') {
+                    navTasks.classList.add('active');
+                    updateNavIcons('tasks');
+                    tasksPage.classList.remove('active');
+                    accountPage.classList.remove('active');
+                    taskDetailPage.classList.add('active');
+                    createTaskContainer.style.display = 'none';
+                    mapEl.style.display = 'none';
+                    homeSheetEl.style.display = 'none';
+                }
+            }
+
+            navHome.addEventListener('click', () => setActivePage('home'));
+            navTasks.addEventListener('click', () => setActivePage('tasks'));
+            navAccount.addEventListener('click', () => setActivePage('account'));
+
+            document.getElementById('taskDetailBackBtn').addEventListener('click', () => {
+                setActivePage('tasks');
+            });
+
+            setActivePage('home');
+
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCategory = this.dataset.category;
+                    displayTasksByCategory();
                 });
+            });
+
+            function loadUserTasks() {
+                const tasksContainer = document.getElementById('tasksListContainer');
+                const tasksCount = document.getElementById('tasksCount');
+                
+                if (!currentUser) {
+                    tasksContainer.innerHTML = '<div class="empty-state"><h3>Please log in</h3><p>Log in to see your tasks</p><button class="post-btn" onclick="window.location.href=\'login.html\'">Log in</button></div>';
+                    tasksCount.textContent = '0';
+                    document.getElementById('taskNotificationDot').classList.remove('visible');
+                    return;
+                }
+                
+                tasksContainer.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
+                
+                database.ref('tasks/' + currentUser.uid).once('value')
+                    .then((snapshot) => {
+                        const tasksData = snapshot.val() || {};
+                        
+                        allTasks = Object.entries(tasksData).map(([id, data]) => ({
+                            id: id,
+                            ...data
+                        }));
+                        
+                        tasksCount.textContent = allTasks.length.toString();
+                        
+                        displayCurrentTasks();
+                        
+                        displayTasksByCategory();
+                        
+                        const hasOpenTasks = allTasks.some(task => task.status === 'open');
+                        const dot = document.getElementById('taskNotificationDot');
+                        if (hasOpenTasks) {
+                            dot.classList.add('visible');
+                        } else {
+                            dot.classList.remove('visible');
+                        }
+                        
+                        loadScheduledRequests();
+                    })
+                    .catch((error) => {
+                        debugLog(`Error loading tasks: ${error.message}`, 'error');
+                        tasksContainer.innerHTML = '<div class="empty-state"><h3>Error loading tasks</h3><p>Please try again</p><button class="post-btn" onclick="location.reload()">Try again</button></div>';
+                        tasksCount.textContent = '0';
+                        document.getElementById('taskNotificationDot').classList.remove('visible');
+                    });
+            }
+            
+            function displayCurrentTasks() {
+                const currentTasksContainer = document.getElementById('currentTasksContainer');
+                const currentTasksGrid = document.getElementById('currentTasksGrid');
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const currentTasks = allTasks.filter(task => {
+                    if (task.taskState === 'current') return true;
+                    if (task.status === 'assigned' || task.status === 'traveling' || task.status === 'in_progress') return true;
+                    if (task.date === 'now') return true;
+                    const taskDate = getTaskDateObj(task);
+                    if (taskDate) {
+                        const taskDay = new Date(taskDate);
+                        taskDay.setHours(0, 0, 0, 0);
+                        return taskDay.getTime() === today.getTime();
+                    }
+                    return false;
+                });
+                
+                if (currentTasks.length === 0) {
+                    currentTasksContainer.style.display = 'none';
+                    return;
+                }
+                
+                currentTasksContainer.style.display = 'block';
+                
+                let gridHtml = '';
+                currentTasks.slice(0, 4).forEach(task => {
+                    const taskDate = task.createdAt ? new Date(task.createdAt) : new Date();
+                    const formattedTime = formatTimeFromTimestamp(task.createdAt);
+                    const budgetDisplay = getFormattedBudget(task);
+                    
+                    gridHtml += `
+                        <div class="current-task-card" data-task-id="${task.taskId || task.id}">
+                            <div class="current-task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
+                            <div class="current-task-amount">${budgetDisplay}</div>
+                            <div class="current-task-time">${formattedTime}</div>
+                        </div>
+                    `;
+                });
+                
+                currentTasksGrid.innerHTML = gridHtml;
+                
+                document.querySelectorAll('.current-task-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        const taskId = this.dataset.taskId;
+                        const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
+                        if (task) {
+                            showTaskDetail(task);
+                        }
+                    });
+                });
+            }
+            
+            function loadScheduledRequests() {
+                if (!currentUser) return;
+                
+                database.ref('scheduled_requests/' + currentUser.uid).once('value')
+                    .then((snapshot) => {
+                        scheduledRequests = snapshot.val() || {};
+                    })
+                    .catch((error) => {
+                        debugLog(`Error loading scheduled requests: ${error.message}`, 'error');
+                    });
+            }
+            
+            function formatDateWithOrdinal(date) {
+                const d = date.getDate();
+                const month = date.toLocaleDateString('en-US', { month: 'long' });
+                const year = date.getFullYear();
+                
+                let ordinal = 'th';
+                if (d === 1 || d === 21 || d === 31) ordinal = 'st';
+                else if (d === 2 || d === 22) ordinal = 'nd';
+                else if (d === 3 || d === 23) ordinal = 'rd';
+                
+                return `${d}${ordinal} ${month} ${year}`;
+            }
+            
+            function formatTimeFromTimestamp(timestamp) {
+                if (!timestamp) return 'Just now';
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            }
+
+            function getFormattedBudget(task) {
+                if (task.budget === 'open') {
+                    return 'Open to offers';
+                }
+                return `R ${task.budget}`;
+            }
+
+            function getTaskDateObj(task) {
+                if (task.date === 'now') return new Date();
+                if (task.date) {
+                    try {
+                        const parts = task.date.split('/');
+                        if (parts.length === 3) {
+                            return new Date(parts[2], parts[1]-1, parts[0]);
+                        }
+                    } catch (e) {
+                        return null;
+                    }
+                }
+                return null;
             }
 
             function calculateDistance(lat1, lon1, lat2, lon2) {
                 const R = 6371;
                 const dLat = (lat2 - lat1) * Math.PI / 180;
                 const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c;
+                const distance = R * c;
+                return distance;
             }
 
             async function findMatchingHelpers(taskId, taskCategory, taskLocation) {
+                debugLog(`🔍 Searching for helpers for task: ${taskId}`, 'info');
+                
                 try {
                     const usersSnapshot = await database.ref('users').once('value');
                     const users = usersSnapshot.val() || {};
+                    
                     let matchingHelpers = [];
                     
                     for (let uid in users) {
                         const user = users[uid];
-                        if (user.role === 'helper' && user.location && user.location.lat && user.location.lng) {
-                            const distance = calculateDistance(taskLocation.lat, taskLocation.lng, user.location.lat, user.location.lng);
+                        
+                        if (user.role === 'helper') {
+                            if (!user.location || !user.location.lat || !user.location.lng) continue;
+                            
+                            const distance = calculateDistance(
+                                taskLocation.lat, taskLocation.lng,
+                                user.location.lat, user.location.lng
+                            );
+                            
                             if (distance > 10) continue;
                             
                             const helperSkills = Object.values(user.skills || {});
                             const taskLower = taskCategory.toLowerCase();
+                            
                             const hasMatchingSkill = helperSkills.some(skill => 
                                 skill.toLowerCase().includes(taskLower) || taskLower.includes(skill.toLowerCase())
                             );
@@ -2361,171 +2862,428 @@
                         }
                     }
                     
+                    debugLog(`✅ Found ${matchingHelpers.length} matching helpers within 10km`, 'success');
+                    
                     displayHelpersOnMap(matchingHelpers);
+                    
+                    for (let helper of matchingHelpers) {
+                        await createHelperNotification(helper.uid, taskId, taskCategory, helper.distance);
+                    }
+                    
                     return matchingHelpers;
+                    
                 } catch (error) {
-                    debugLog(`Error finding matching helpers: ${error.message}`, 'error');
+                    debugLog(`❌ Error finding matching helpers: ${error.message}`, 'error');
                     return [];
                 }
             }
 
-            // ===== TASKS FUNCTIONS =====
-            function loadUserTasks() {
-                const tasksContainer = document.getElementById('tasksListContainer');
-                const tasksCount = document.getElementById('tasksCount');
-                
-                if (!currentUser) {
-                    tasksContainer.innerHTML = '<div class="empty-state"><h3>Please log in</h3><p>Log in to see your tasks</p><button class="post-btn" onclick="window.location.href=\'login.html\'">Log in</button></div>';
-                    tasksCount.textContent = '0';
-                    document.getElementById('taskNotificationDot').classList.remove('visible');
-                    return;
-                }
-                
-                tasksContainer.innerHTML = '<div class="loading-tasks">Loading your tasks...</div>';
-                
-                database.ref('tasks/' + currentUser.uid).once('value')
-                    .then((snapshot) => {
-                        const tasksData = snapshot.val() || {};
-                        allTasks = Object.entries(tasksData).map(([id, data]) => ({ id, ...data }));
-                        tasksCount.textContent = allTasks.length.toString();
-                        displayCurrentTasks();
-                        displayTasksByCategory();
-                        
-                        const hasOpenTasks = allTasks.some(task => task.status === 'open');
-                        const dot = document.getElementById('taskNotificationDot');
-                        if (hasOpenTasks) dot.classList.add('visible');
-                        else dot.classList.remove('visible');
-                        
-                        loadScheduledRequests();
-                    })
-                    .catch((error) => {
-                        tasksContainer.innerHTML = '<div class="empty-state"><h3>Error loading tasks</h3><p>Please try again</p><button class="post-btn" onclick="location.reload()">Try again</button></div>';
-                        tasksCount.textContent = '0';
+            async function createHelperNotification(helperUid, taskId, taskCategory, distance) {
+                try {
+                    const notificationRef = database.ref('notifications/' + helperUid).push();
+                    
+                    await notificationRef.set({
+                        taskId: taskId,
+                        posterId: currentUser.uid,
+                        posterName: userProfile?.name || currentUser.displayName || 'Someone',
+                        category: taskCategory,
+                        distance: distance,
+                        status: 'pending',
+                        createdAt: Date.now(),
+                        type: 'new_task'
                     });
-            }
-            
-            function displayCurrentTasks() {
-                const currentTasksContainer = document.getElementById('currentTasksContainer');
-                const currentTasksGrid = document.getElementById('currentTasksGrid');
-                
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                const currentTasks = allTasks.filter(task => {
-                    if (task.taskState === 'current') return true;
-                    if (task.status === 'assigned' || task.status === 'traveling' || task.status === 'in_progress') return true;
-                    if (task.date === 'now') return true;
-                    return false;
-                });
-                
-                if (currentTasks.length === 0) {
-                    currentTasksContainer.style.display = 'none';
-                    return;
+                    
+                    debugLog(`📢 Notification sent to helper: ${helperUid}`, 'success');
+                    
+                } catch (error) {
+                    debugLog(`❌ Error creating notification: ${error.message}`, 'error');
                 }
-                
-                currentTasksContainer.style.display = 'block';
-                let gridHtml = '';
-                currentTasks.slice(0, 4).forEach(task => {
-                    const formattedTime = formatTimeFromTimestamp(task.createdAt);
-                    const budgetDisplay = getFormattedBudget(task);
-                    gridHtml += `
-                        <div class="current-task-card" data-task-id="${task.taskId || task.id}">
-                            <div class="current-task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
-                            <div class="current-task-amount">${budgetDisplay}</div>
-                            <div class="current-task-time">${formattedTime}</div>
-                        </div>
-                    `;
-                });
-                
-                currentTasksGrid.innerHTML = gridHtml;
-                document.querySelectorAll('.current-task-card').forEach(card => {
-                    card.addEventListener('click', function() {
-                        const taskId = this.dataset.taskId;
-                        const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
-                        if (task) showTaskDetail(task);
-                    });
-                });
-            }
-            
-            function loadScheduledRequests() {
-                if (!currentUser) return;
-                database.ref('scheduled_requests/' + currentUser.uid).once('value')
-                    .then((snapshot) => { scheduledRequests = snapshot.val() || {}; })
-                    .catch(() => {});
-            }
-            
-            function formatDateWithOrdinal(date) {
-                const d = date.getDate();
-                const month = date.toLocaleDateString('en-US', { month: 'long' });
-                const year = date.getFullYear();
-                let ordinal = 'th';
-                if (d === 1 || d === 21 || d === 31) ordinal = 'st';
-                else if (d === 2 || d === 22) ordinal = 'nd';
-                else if (d === 3 || d === 23) ordinal = 'rd';
-                return `${d}${ordinal} ${month} ${year}`;
-            }
-            
-            function formatTimeFromTimestamp(timestamp) {
-                if (!timestamp) return 'Just now';
-                const date = new Date(timestamp);
-                const now = new Date();
-                const diffMins = Math.floor((now - date) / 60000);
-                const diffHours = Math.floor(diffMins / 60);
-                const diffDays = Math.floor(diffHours / 24);
-                if (diffMins < 1) return 'Just now';
-                if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
             }
 
-            function getFormattedBudget(task) {
-                if (task.budget === 'open') return 'Open to offers';
-                return `R ${task.budget}`;
+            window.approveScheduledRequest = async function(taskId, helperUid, helperName, scheduledTime) {
+                if (!currentUser) return;
+                
+                try {
+                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
+                        assignedHelperId: helperUid,
+                        assignedHelperName: helperName,
+                        status: 'scheduled',
+                        scheduledStart: scheduledTime,
+                        assignedAt: Date.now()
+                    });
+                    
+                    await database.ref('scheduled_requests/' + currentUser.uid + '/' + taskId + '_' + helperUid).remove();
+                    
+                    const notificationRef = database.ref('notifications/' + helperUid).push();
+                    await notificationRef.set({
+                        taskId: taskId,
+                        posterId: currentUser.uid,
+                        posterName: userProfile?.name || currentUser.displayName || 'Someone',
+                        category: 'scheduled_accepted',
+                        status: 'accepted',
+                        scheduledTime: scheduledTime,
+                        createdAt: Date.now(),
+                        type: 'schedule_accepted'
+                    });
+                    
+                    debugLog(`✅ Scheduled request approved for helper: ${helperName}`, 'success');
+                    
+                    loadUserTasks();
+                    showToast(`Helper ${helperName} has been scheduled`);
+                    
+                } catch (error) {
+                    debugLog(`❌ Error approving scheduled request: ${error.message}`, 'error');
+                }
+            };
+
+            window.declineScheduledRequest = async function(taskId, helperUid) {
+                if (!currentUser) return;
+                
+                try {
+                    await database.ref('scheduled_requests/' + currentUser.uid + '/' + taskId + '_' + helperUid).remove();
+                    
+                    const notificationRef = database.ref('notifications/' + helperUid).push();
+                    await notificationRef.set({
+                        taskId: taskId,
+                        posterId: currentUser.uid,
+                        posterName: userProfile?.name || currentUser.displayName || 'Someone',
+                        status: 'rejected',
+                        createdAt: Date.now(),
+                        type: 'schedule_rejected'
+                    });
+                    
+                    debugLog(`❌ Scheduled request declined for helper`, 'info');
+                    
+                    loadScheduledRequests();
+                    showToast('Scheduled request declined');
+                    
+                } catch (error) {
+                    debugLog(`❌ Error declining scheduled request: ${error.message}`, 'error');
+                }
+            };
+
+            window.confirmHelperArrival = async function(taskId) {
+                if (!currentUser) return;
+                
+                try {
+                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
+                        status: 'in_progress',
+                        startedAt: Date.now()
+                    });
+                    
+                    debugLog(`✅ Helper arrival confirmed, task in progress`, 'success');
+                    
+                    const task = allTasks.find(t => t.id === taskId);
+                    if (task && task.assignedHelperId) {
+                        const notificationRef = database.ref('notifications/' + task.assignedHelperId).push();
+                        await notificationRef.set({
+                            taskId: taskId,
+                            posterId: currentUser.uid,
+                            posterName: userProfile?.name || currentUser.displayName || 'Someone',
+                            status: 'started',
+                            createdAt: Date.now(),
+                            type: 'task_started'
+                        });
+                    }
+                    
+                    loadUserTasks();
+                    showToast('Task started!');
+                    
+                } catch (error) {
+                    debugLog(`❌ Error confirming arrival: ${error.message}`, 'error');
+                }
+            };
+
+            window.completeTask = async function(taskId) {
+                if (!currentUser) return;
+                
+                try {
+                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({
+                        status: 'completed',
+                        completedAt: Date.now(),
+                        taskState: 'past'
+                    });
+                    
+                    debugLog(`✅ Task completed`, 'success');
+                    
+                    const task = allTasks.find(t => t.id === taskId);
+                    if (task && task.assignedHelperId) {
+                        const notificationRef = database.ref('notifications/' + task.assignedHelperId).push();
+                        await notificationRef.set({
+                            taskId: taskId,
+                            posterId: currentUser.uid,
+                            posterName: userProfile?.name || currentUser.displayName || 'Someone',
+                            status: 'completed',
+                            createdAt: Date.now(),
+                            type: 'task_completed',
+                            budget: task.budget
+                        });
+                    }
+                    
+                    loadUserTasks();
+                    showToast('Task completed!');
+                    
+                } catch (error) {
+                    debugLog(`❌ Error completing task: ${error.message}`, 'error');
+                }
+            };
+
+            function showTaskDetail(task) {
+                const detailContent = document.getElementById('taskDetailContent');
+                const headerSpacer = document.querySelector('.task-detail-header-spacer');
+                
+                const createdDate = task.createdAt ? new Date(task.createdAt) : new Date();
+                const createdDateStr = formatDateWithOrdinal(createdDate);
+                const createdTimeStr = task.createdAt ? formatTimeFromTimestamp(task.createdAt) : 'Just now';
+                
+                const isAssigned = task.assignedHelperName && task.assignedHelperName !== 'Not assigned' && task.assignedHelperName !== null;
+                const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
+                const helperInitial = helperName.charAt(0).toUpperCase();
+                
+                let stateText = '';
+                let stateClass = '';
+                
+                if (task.status === 'scheduled') {
+                    stateText = `Scheduled for ${new Date(task.scheduledStart).toLocaleString()}`;
+                    stateClass = 'scheduled';
+                } else if (task.status === 'assigned') {
+                    stateText = 'Helper assigned';
+                    stateClass = 'assigned';
+                } else if (task.status === 'traveling') {
+                    stateText = 'Helper on the way';
+                    stateClass = 'traveling';
+                } else if (task.status === 'in_progress') {
+                    stateText = 'Task in progress';
+                    stateClass = 'in-progress';
+                } else if (task.status === 'completed') {
+                    stateText = 'Task completed';
+                    stateClass = 'completed';
+                } else if (task.taskState === 'future') {
+                    stateText = `Scheduled to start on ${task.date || 'future date'}`;
+                    stateClass = 'future';
+                } else {
+                    stateText = 'Searching for helpers';
+                    stateClass = 'current';
+                }
+                
+                const taskStateSpan = document.createElement('span');
+                taskStateSpan.className = `task-state-badge ${stateClass}`;
+                taskStateSpan.textContent = stateText;
+                
+                const existingBadge = document.querySelector('.task-state-badge');
+                if (existingBadge) existingBadge.remove();
+                headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
+                
+                let actionButtons = '';
+                
+                if (task.status === 'assigned' || task.status === 'traveling') {
+                    actionButtons = `
+                        <div class="arrival-confirmation">
+                            <div class="arrival-header">Confirm helper arrival</div>
+                            <div class="helper-photo">${helperInitial}</div>
+                            <button class="confirm-arrival-btn" onclick="confirmHelperArrival('${task.id}')">
+                                Helper has arrived
+                            </button>
+                        </div>
+                    `;
+                } else if (task.status === 'in_progress') {
+                    actionButtons = `
+                        <button class="action-btn primary" onclick="completeTask('${task.id}')">
+                            Mark as completed
+                        </button>
+                    `;
+                }
+                
+                let scheduledHtml = '';
+                const requestKey = task.id + '_' + (task.pendingHelperUid || '');
+                if (scheduledRequests[requestKey]) {
+                    const request = scheduledRequests[requestKey];
+                    scheduledHtml = `
+                        <div class="scheduled-section">
+                            <div class="scheduled-header">Scheduled request</div>
+                            <div class="scheduled-request">
+                                <div class="scheduled-helper">${request.helperName}</div>
+                                <div class="scheduled-time">Requested for: ${new Date(request.scheduledTime).toLocaleString()}</div>
+                                <div class="scheduled-actions">
+                                    <button class="scheduled-btn approve" onclick="approveScheduledRequest('${task.id}', '${request.helperUid}', '${request.helperName}', ${request.scheduledTime})">
+                                        Approve
+                                    </button>
+                                    <button class="scheduled-btn decline" onclick="declineScheduledRequest('${task.id}', '${request.helperUid}')">
+                                        Decline
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                detailContent.innerHTML = `
+                    <div class="helper-info-row">
+                        <div class="helper-info-left">
+                            <div class="helper-details">
+                                <span class="helper-label">Task with</span>
+                                <span class="helper-name">${helperName}</span>
+                            </div>
+                        </div>
+                        <div class="helper-info-right">
+                            ${helperInitial}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-map-container" id="taskDetailMap"></div>
+                    
+                    <div class="task-timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-dot-small"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Task location</div>
+                                <div class="timeline-subtitle">${task.address || 'Location set'}</div>
+                                <div class="timeline-time">${createdDateStr} · ${createdTimeStr}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-content">
+                                <div class="timeline-title">${task.category || 'Task'}</div>
+                                <div class="timeline-subtitle">${task.notes || 'No additional notes'}</div>
+                                <div class="timeline-time">${task.taskState === 'past' ? 'Completed' : 'Posted'} on ${createdDateStr}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${scheduledHtml}
+                    
+                    <div class="task-action-buttons">
+                        <button class="action-btn secondary" onclick="repostTask('${task.taskId || task.id}')">Rebook</button>
+                        ${actionButtons}
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    const mapContainer = document.getElementById('taskDetailMap');
+                    if (mapContainer && task.location) {
+                        const lat = task.location.lat || currentLat || -26.195246;
+                        const lng = task.location.lng || currentLng || 28.034088;
+                        
+                        const detailMap = new mapboxgl.Map({
+                            container: 'taskDetailMap',
+                            style: 'mapbox://styles/mapbox/light-v11',
+                            center: [lng, lat],
+                            zoom: 14,
+                            interactive: false
+                        });
+                        
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'pulsing-pin';
+                        
+                        new mapboxgl.Marker({ element: pinElement })
+                            .setLngLat([lng, lat])
+                            .addTo(detailMap);
+                    } else {
+                        const detailMap = new mapboxgl.Map({
+                            container: 'taskDetailMap',
+                            style: 'mapbox://styles/mapbox/light-v11',
+                            center: [currentLng || 28.034088, currentLat || -26.195246],
+                            zoom: 14,
+                            interactive: false
+                        });
+                        
+                        const pinElement = document.createElement('div');
+                        pinElement.className = 'pulsing-pin';
+                        
+                        new mapboxgl.Marker({ element: pinElement })
+                            .setLngLat([currentLng || 28.034088, currentLat || -26.195246])
+                            .addTo(detailMap);
+                    }
+                }, 100);
+                
+                setActivePage('taskDetail');
             }
 
             function displayTasksByCategory() {
                 const tasksContainer = document.getElementById('tasksListContainer');
-                let currentCategory = document.querySelector('.category-tab.active')?.dataset.category || 'upcoming';
+                
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 
                 let filteredTasks = [];
+                
                 if (currentCategory === 'upcoming') {
                     filteredTasks = allTasks.filter(task => {
                         if (task.taskState === 'future') return true;
                         if (task.status === 'scheduled') return true;
+                        if (task.date && task.date !== 'now') {
+                            const taskDate = getTaskDateObj(task);
+                            if (taskDate) {
+                                const taskDay = new Date(taskDate);
+                                taskDay.setHours(0, 0, 0, 0);
+                                return taskDay > today;
+                            }
+                        }
                         return false;
                     });
+                    
+                    if (filteredTasks.length === 0) {
+                        tasksContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>No upcoming tasks</h3>
+                                <p>Tasks scheduled for future dates will appear here.</p>
+                                <button class="post-btn" onclick="document.getElementById('navHome').click()">Post a task</button>
+                            </div>
+                        `;
+                        return;
+                    }
                 } else {
                     filteredTasks = allTasks.filter(task => {
                         if (task.taskState === 'past') return true;
-                        if (task.status === 'completed') return true;
+                        if (task.status === 'completed' || task.status === 'cancelled') return true;
+                        if (task.date && task.date !== 'now') {
+                            const taskDate = getTaskDateObj(task);
+                            if (taskDate) {
+                                const taskDay = new Date(taskDate);
+                                taskDay.setHours(0, 0, 0, 0);
+                                return taskDay < today;
+                            }
+                        }
                         return false;
                     });
-                }
-                
-                if (filteredTasks.length === 0) {
-                    tasksContainer.innerHTML = `<div class="empty-state"><h3>No ${currentCategory} tasks</h3><p>Your ${currentCategory} tasks will appear here.</p><button class="post-btn" onclick="document.getElementById('navHome').click()">Post a task</button></div>`;
-                    return;
+                    
+                    if (filteredTasks.length === 0) {
+                        tasksContainer.innerHTML = `
+                            <div class="empty-state">
+                                <h3>No past tasks</h3>
+                                <p>Your completed and past tasks will appear here.</p>
+                                <button class="post-btn" onclick="document.getElementById('navHome').click()">Post a task</button>
+                            </div>
+                        `;
+                        return;
+                    }
                 }
                 
                 filteredTasks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                
                 const groupedTasks = {};
                 filteredTasks.forEach(task => {
                     const date = task.createdAt ? new Date(task.createdAt) : new Date();
                     const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                    if (!groupedTasks[monthYear]) groupedTasks[monthYear] = [];
+                    
+                    if (!groupedTasks[monthYear]) {
+                        groupedTasks[monthYear] = [];
+                    }
                     groupedTasks[monthYear].push(task);
                 });
                 
                 let html = '';
                 for (const [monthYear, tasks] of Object.entries(groupedTasks)) {
-                    html += `<div class="task-month-group"><div class="month-header">${monthYear}</div>`;
+                    html += `<div class="task-month-group">`;
+                    html += `<div class="month-header">${monthYear}</div>`;
+                    
                     tasks.forEach(task => {
                         const taskDate = task.createdAt ? new Date(task.createdAt) : new Date();
                         const formattedDate = formatDateWithOrdinal(taskDate);
                         const formattedTime = formatTimeFromTimestamp(task.createdAt);
                         const budgetDisplay = getFormattedBudget(task);
+                        
                         let statusClass = '';
                         if (task.status === 'assigned') statusClass = 'assigned';
                         else if (task.status === 'traveling') statusClass = 'traveling';
@@ -2537,20 +3295,24 @@
                             <div class="task-card" data-task-id="${task.taskId || task.id}">
                                 <div class="task-card-main">
                                     <div class="task-content">
-                                        <div class="task-date-time"><span class="task-date">${formattedDate}</span> · <span class="task-time">${formattedTime}</span></div>
+                                        <div class="task-date-time">
+                                            <span class="task-date">${formattedDate}</span> · <span class="task-time">${formattedTime}</span>
+                                        </div>
                                         <div class="task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
                                         <div class="task-amount">${budgetDisplay}</div>
                                         ${task.status ? `<div class="task-status-badge ${statusClass}">${task.status.replace('_', ' ')}</div>` : ''}
                                     </div>
                                     <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')">
-                                        <i class="ph ph-arrows-clockwise"></i>
+                                        <i class="fi fi-sr-arrows-retweet"></i>
                                     </button>
                                 </div>
                             </div>
                         `;
                     });
+                    
                     html += `</div>`;
                 }
+                
                 tasksContainer.innerHTML = html;
                 
                 document.querySelectorAll('.task-card').forEach(card => {
@@ -2558,71 +3320,11 @@
                         if (e.target.closest('.task-repost-btn')) return;
                         const taskId = this.dataset.taskId;
                         const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
-                        if (task) showTaskDetail(task);
+                        if (task) {
+                            showTaskDetail(task);
+                        }
                     });
                 });
-            }
-
-            function showTaskDetail(task) {
-                const detailContent = document.getElementById('taskDetailContent');
-                const headerSpacer = document.querySelector('.task-detail-header-spacer');
-                
-                const createdDate = task.createdAt ? new Date(task.createdAt) : new Date();
-                const createdDateStr = formatDateWithOrdinal(createdDate);
-                
-                const isAssigned = task.assignedHelperName && task.assignedHelperName !== 'Not assigned';
-                const helperName = isAssigned ? task.assignedHelperName : 'Not assigned';
-                const helperInitial = helperName.charAt(0).toUpperCase();
-                
-                let stateText = '', stateClass = '';
-                if (task.status === 'scheduled') { stateText = `Scheduled for ${new Date(task.scheduledStart).toLocaleString()}`; stateClass = 'scheduled'; }
-                else if (task.status === 'assigned') { stateText = 'Helper assigned'; stateClass = 'assigned'; }
-                else if (task.status === 'traveling') { stateText = 'Helper on the way'; stateClass = 'traveling'; }
-                else if (task.status === 'in_progress') { stateText = 'Task in progress'; stateClass = 'in-progress'; }
-                else if (task.status === 'completed') { stateText = 'Task completed'; stateClass = 'completed'; }
-                else { stateText = 'Searching for helpers'; stateClass = 'current'; }
-                
-                const taskStateSpan = document.createElement('span');
-                taskStateSpan.className = `task-state-badge ${stateClass}`;
-                taskStateSpan.textContent = stateText;
-                const existingBadge = document.querySelector('.task-state-badge');
-                if (existingBadge) existingBadge.remove();
-                if (headerSpacer) headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
-                
-                let actionButtons = '';
-                if (task.status === 'assigned' || task.status === 'traveling') {
-                    actionButtons = `<div class="arrival-confirmation"><div class="arrival-header">Confirm helper arrival</div><div class="helper-photo">${helperInitial}</div><button class="confirm-arrival-btn" onclick="confirmHelperArrival('${task.id}')">Helper has arrived</button></div>`;
-                } else if (task.status === 'in_progress') {
-                    actionButtons = `<button class="action-btn primary" onclick="completeTask('${task.id}')">Mark as completed</button>`;
-                }
-                
-                detailContent.innerHTML = `
-                    <div class="helper-info-row"><div class="helper-info-left"><div class="helper-details"><span class="helper-label">Task with</span><span class="helper-name">${helperName}</span></div></div><div class="helper-info-right">${helperInitial}</div></div>
-                    <div class="detail-map-container" id="taskDetailMap"></div>
-                    <div class="task-timeline"><div class="timeline-item"><div class="timeline-dot-small"></div><div class="timeline-content"><div class="timeline-title">Task location</div><div class="timeline-subtitle">${task.address || 'Location set'}</div><div class="timeline-time">${createdDateStr}</div></div></div>
-                    <div class="timeline-item"><div class="timeline-content"><div class="timeline-title">${task.category || 'Task'}</div><div class="timeline-subtitle">${task.notes || 'No additional notes'}</div><div class="timeline-time">Posted on ${createdDateStr}</div></div></div></div>
-                    <div class="task-action-buttons"><button class="action-btn secondary" onclick="repostTask('${task.taskId || task.id}')">Rebook</button>${actionButtons}</div>
-                `;
-                
-                setTimeout(() => {
-                    const mapContainer = document.getElementById('taskDetailMap');
-                    if (mapContainer) {
-                        const lat = task.location?.lat || currentLat || -26.195246;
-                        const lng = task.location?.lng || currentLng || 28.034088;
-                        const detailMap = new mapboxgl.Map({
-                            container: 'taskDetailMap',
-                            style: 'mapbox://styles/mapbox/light-v11',
-                            center: [lng, lat],
-                            zoom: 14,
-                            interactive: false
-                        });
-                        const pinElement = document.createElement('div');
-                        pinElement.className = 'pulsing-pin';
-                        new mapboxgl.Marker({ element: pinElement }).setLngLat([lng, lat]).addTo(detailMap);
-                    }
-                }, 100);
-                
-                setActivePage('taskDetail');
             }
 
             window.repostTask = function(taskId) {
@@ -2643,99 +3345,13 @@
                         if (task.time) timeDisplay.textContent = task.time;
                     }
                     document.getElementById('extraNotes').value = task.notes || task.description || '';
+                    
                     createTaskContainer.style.display = 'flex';
                     setActivePage('home');
                     validateForm();
                 }
             };
 
-            window.confirmHelperArrival = async function(taskId) {
-                if (!currentUser) return;
-                try {
-                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({ status: 'in_progress', startedAt: Date.now() });
-                    const task = allTasks.find(t => t.id === taskId);
-                    if (task && task.assignedHelperId) {
-                        await database.ref('notifications/' + task.assignedHelperId).push({
-                            taskId: taskId, posterId: currentUser.uid, status: 'started', createdAt: Date.now(), type: 'task_started'
-                        });
-                    }
-                    loadUserTasks();
-                    showToast('Task started!');
-                } catch (error) { debugLog(`Error confirming arrival: ${error.message}`, 'error'); }
-            };
-
-            window.completeTask = async function(taskId) {
-                if (!currentUser) return;
-                try {
-                    await database.ref('tasks/' + currentUser.uid + '/' + taskId).update({ status: 'completed', completedAt: Date.now(), taskState: 'past' });
-                    const task = allTasks.find(t => t.id === taskId);
-                    if (task && task.assignedHelperId) {
-                        await database.ref('notifications/' + task.assignedHelperId).push({
-                            taskId: taskId, posterId: currentUser.uid, status: 'completed', createdAt: Date.now(), type: 'task_completed', budget: task.budget
-                        });
-                    }
-                    loadUserTasks();
-                    showToast('Task completed!');
-                } catch (error) { debugLog(`Error completing task: ${error.message}`, 'error'); }
-            };
-
-            // ===== NAVIGATION =====
-            const navHome = document.getElementById('navHome');
-            const navTasks = document.getElementById('navTasks');
-            const navAccount = document.getElementById('navAccount');
-            const tasksPage = document.getElementById('tasksPage');
-            const accountPage = document.getElementById('accountPage');
-            const taskDetailPage = document.getElementById('taskDetailPage');
-            const mapEl = document.getElementById('map');
-            const homeSheetEl = document.getElementById('homeSheet');
-            const createTaskContainerEl = document.getElementById('createTaskContainer');
-            
-            function setActivePage(page) {
-                [navHome, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
-                tasksPage.classList.remove('active');
-                accountPage.classList.remove('active');
-                taskDetailPage.classList.remove('active');
-                createTaskContainerEl.style.display = 'none';
-                
-                if (page === 'home') {
-                    navHome.classList.add('active');
-                    mapEl.style.display = 'block';
-                    homeSheetEl.style.display = 'block';
-                    setTimeout(() => map.resize(), 100);
-                } else if (page === 'tasks') {
-                    navTasks.classList.add('active');
-                    tasksPage.classList.add('active');
-                    mapEl.style.display = 'none';
-                    homeSheetEl.style.display = 'none';
-                    if (currentUser) loadUserTasks();
-                } else if (page === 'account') {
-                    navAccount.classList.add('active');
-                    accountPage.classList.add('active');
-                    mapEl.style.display = 'none';
-                    homeSheetEl.style.display = 'none';
-                } else if (page === 'taskDetail') {
-                    navTasks.classList.add('active');
-                    taskDetailPage.classList.add('active');
-                    mapEl.style.display = 'none';
-                    homeSheetEl.style.display = 'none';
-                }
-            }
-
-            navHome.addEventListener('click', () => setActivePage('home'));
-            navTasks.addEventListener('click', () => setActivePage('tasks'));
-            navAccount.addEventListener('click', () => setActivePage('account'));
-            document.getElementById('taskDetailBackBtn').addEventListener('click', () => setActivePage('tasks'));
-            setActivePage('home');
-
-            document.querySelectorAll('.category-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    displayTasksByCategory();
-                });
-            });
-
-            // ===== CREATE TASK FORM =====
             const searchIconBtn = document.getElementById('searchIconBtn');
             const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
             const createTaskInput = document.getElementById('createTaskInput');
@@ -2754,15 +3370,23 @@
             const openBudgetBtn = document.getElementById('openBudgetBtn');
             const fixedBudgetInput = document.getElementById('fixedBudgetInput');
 
+            function capitalizeFirstLetter(s) { 
+                if (!s) return '';
+                return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); 
+            }
+
             function openCreateTask() {
-                if (!currentUser) { window.location.href = 'login.html'; return; }
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
                 createTaskContainer.style.display = 'flex';
                 createTaskInput.focus();
             }
 
             document.getElementById('mainSearchInput').addEventListener('click', openCreateTask);
             searchIconBtn.addEventListener('click', openCreateTask);
-            document.getElementById('helpersCard').addEventListener('click', openCreateTask);
+
             closeCreateTaskBtn.addEventListener('click', () => {
                 createTaskContainer.style.display = 'none';
                 resetCreateTaskForm();
@@ -2789,8 +3413,13 @@
                     const amount = budgetAmount.value.trim();
                     const amountNum = parseFloat(amount);
                     budgetValid = amount !== '' && !isNaN(amountNum) && amountNum > 0;
-                    if (!budgetValid && amount !== '') budgetAmount.classList.add('error');
-                    else budgetAmount.classList.remove('error');
+                    if (!budgetValid && amount !== '') {
+                        budgetAmount.classList.add('error');
+                    } else {
+                        budgetAmount.classList.remove('error');
+                    }
+                } else {
+                    budgetAmount.classList.remove('error');
                 }
                 let whenValid = true;
                 if (whenLaterBtn.classList.contains('active')) {
@@ -2800,7 +3429,6 @@
             }
 
             budgetAmount.addEventListener('input', validateForm);
-            createTaskInput.addEventListener('input', validateForm);
 
             moreDetailsBtn.addEventListener('click', () => {
                 if (collapsibleSection.style.display === 'none') {
@@ -2881,9 +3509,15 @@
                 input.multiple = true;
                 input.onchange = (e) => {
                     Array.from(e.target.files).forEach(file => {
-                        if (file.size > 5*1024*1024) { alert('File too large (max 5MB)'); return; }
+                        if (file.size > 5*1024*1024) { 
+                            alert('File too large (max 5MB)'); 
+                            return; 
+                        }
                         const reader = new FileReader();
-                        reader.onload = (ev) => { uploadedImages.push(ev.target.result); displayPreviews(); };
+                        reader.onload = (ev) => { 
+                            uploadedImages.push(ev.target.result); 
+                            displayPreviews(); 
+                        };
                         reader.readAsDataURL(file);
                     });
                 };
@@ -2897,26 +3531,37 @@
                     const w = document.createElement('div');
                     w.className = 'image-preview-wrapper';
                     w.innerHTML = `<img src="${url}" class="image-preview"><button class="remove-image" data-idx="${idx}"><img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/close%202.png" alt="Remove"></button>`;
-                    w.querySelector('.remove-image').onclick = () => { uploadedImages.splice(idx,1); displayPreviews(); };
+                    w.querySelector('.remove-image').onclick = () => { 
+                        uploadedImages.splice(idx,1); 
+                        displayPreviews();
+                    };
                     container.appendChild(w);
                 });
             }
 
-            nextBtn.addEventListener('click', async (e) => {
+            document.getElementById('nextBtn').addEventListener('click', async (e) => {
                 e.preventDefault();
-                if (!currentUser) { window.location.href = 'login.html'; return; }
+                
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
                 
                 const locationInputValue = document.getElementById('locationInput').value;
                 const taskInputValue = document.getElementById('createTaskInput').value;
                 const extraNotesValue = document.getElementById('extraNotes').value;
                 const budgetAmountValue = parseFloat(document.getElementById('budgetAmount').value) || 0;
-                const isOpenBudget = openBudgetBtn.classList.contains('active');
 
-                let taskDateTime = new Date();
+                let taskDateTime;
+                const now = new Date();
+
                 if (whenLaterBtn.classList.contains('active')) {
                     taskDateTime = new Date(`${nativeDatePicker.value} ${nativeTimePicker.value}`);
+                } else {
+                    taskDateTime = now;
                 }
-                let taskState = (taskDateTime > new Date()) ? 'future' : 'current';
+
+                let taskState = (taskDateTime > now) ? 'future' : 'current';
 
                 const taskRef = database.ref('tasks/' + currentUser.uid).push();
                 const taskId = taskRef.key;
@@ -2928,15 +3573,17 @@
                     posterEmail: currentUser.email || '',
                     category: taskInputValue,
                     description: extraNotesValue || '',
-                    address: locationInputValue,
+                    address: '',
                     location: {
                         city: locationInputValue,
+                        province: '',
+                        postalCode: '',
                         lat: currentLat || -26.195246,
                         lng: currentLng || 28.034088
                     },
-                    budget: isOpenBudget ? 'open' : budgetAmountValue,
-                    date: nativeDatePicker.value || new Date().toISOString().split('T')[0],
-                    time: nativeTimePicker.value || new Date().toTimeString().split(' ')[0].substring(0, 5),
+                    budget: budgetAmountValue,
+                    date: nativeDatePicker.value || now.toISOString().split('T')[0],
+                    time: nativeTimePicker.value || now.toTimeString().split(' ')[0].substring(0, 5),
                     status: 'open',
                     taskState: taskState,
                     assignedHelperId: null,
@@ -2948,30 +3595,41 @@
                     images: uploadedImages
                 };
 
+                const originalText = nextBtn.textContent;
                 nextBtn.textContent = 'Posting...';
                 nextBtn.disabled = true;
 
                 try {
                     await taskRef.set(task);
+                    debugLog('✅ Task posted successfully', 'success');
+                    
                     showToast('Task posted! Searching for helpers...');
+                    
                     setTimeout(() => {
                         createTaskContainer.style.display = 'none';
                         resetCreateTaskForm();
-                        nextBtn.textContent = 'Post task';
+                        nextBtn.textContent = originalText;
                         nextBtn.disabled = false;
                     }, 1500);
+                    
                     await findMatchingHelpers(taskId, taskInputValue, task.location);
+                    
                     setActivePage('tasks');
                     loadUserTasks();
+                    
                 } catch (err) {
+                    debugLog(`❌ Error posting task: ${err.message}`, 'error');
                     alert('Error posting task: ' + err.message);
-                    nextBtn.textContent = 'Post task';
+                    nextBtn.textContent = originalText;
                     nextBtn.disabled = false;
                 }
             });
 
             validateForm();
-            setTimeout(() => checkNotificationDot(), 2000);
+            
+            setTimeout(() => {
+                checkNotificationDot();
+            }, 2000);
         })();
     </script>
 </body>
