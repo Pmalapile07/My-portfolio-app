@@ -48,116 +48,171 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.3s ease;
         }
 
-        /* Top left icon */
-        .map-top-left-icon {
+        /* Top icons container */
+        .top-icons {
             position: absolute;
             top: 16px;
-            left: 16px;
-            width: 44px;
-            height: 44px;
-            background: white;
-            border-radius: 50%;
+            left: 0;
+            right: 0;
+            padding: 0 16px;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             z-index: 30;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: box-shadow 0.2s ease;
-        }
-        .map-top-left-icon i { font-size: 26px; color: #000; }
-        .map-top-left-icon.floating { box-shadow: none; }
-
-        /* Top right return button */
-        .map-return-btn {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 44px;
-            height: 44px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 30;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-            opacity: 0;
             pointer-events: none;
         }
-        .map-return-btn i { font-size: 26px; color: #000; }
-        .map-return-btn.visible { opacity: 1; pointer-events: auto; }
-
-        /* HOME SHEET - CONTENT MOVES WITH THE SHEET */
-        .home-sheet {
-            position: absolute;
-            bottom: 57px;
-            left: 0;
-            width: 100%;
-            background: white;
-            z-index: 10;
-            border-radius: 20px 20px 0 0;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+        
+        .map-top-left-icon,
+        .map-return-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
             display: flex;
-            flex-direction: column;
-            transition: height 0.25s ease-out, border-radius 0.2s ease;
-            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            pointer-events: auto;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .home-sheet.dragging {
+        .map-top-left-icon i,
+        .map-return-btn i {
+            font-size: 24px;
+            color: #000;
+            transition: color 0.2s ease;
+        }
+        
+        /* Fullscreen icon styles - blended into app */
+        .top-icons.fullscreen .map-top-left-icon,
+        .top-icons.fullscreen .map-return-btn {
+            background: transparent;
+            box-shadow: none;
+        }
+        
+        .top-icons.fullscreen .map-top-left-icon i,
+        .top-icons.fullscreen .map-return-btn i {
+            color: #000;
+        }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 57px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.2s;
+            font-size: 0.7rem;
+            background: transparent;
+            border: none;
+            font-family: 'Manrope', sans-serif;
+        }
+        
+        .nav-item.active { color: #000; }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
+        
+        /* BOTTOM SHEET - FLEX COLUMN LAYOUT */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 57px;
+            left: 0;
+            right: 0;
+            background: white;
+            z-index: 15;
+            border-radius: 24px 24px 0 0;
+            display: flex;
+            flex-direction: column;
+            transition: height 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), border-radius 0.2s ease;
+            overflow: hidden;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .bottom-sheet.dragging {
             transition: none;
         }
         
-        .home-sheet.fullscreen {
+        .bottom-sheet.fullscreen {
             border-radius: 0;
             height: calc(100% - 57px) !important;
         }
         
-        /* Grabber */
-        .grabber {
+        /* Grabber - hides in fullscreen */
+        .sheet-grabber {
             width: 48px;
             height: 5px;
             background: #ddd;
             border-radius: 3px;
-            margin: 12px auto 8px;
+            margin: 12px auto;
             cursor: grab;
             touch-action: none;
             flex-shrink: 0;
-            position: relative;
-            z-index: 5;
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
-        .grabber:active { cursor: grabbing; }
         
-        /* Sheet inner content - flows with height */
-        .sheet-inner {
+        .bottom-sheet.fullscreen .sheet-grabber {
+            opacity: 0;
+            pointer-events: none;
+            transform: scaleY(0);
+            margin: 0 auto;
+        }
+        
+        .sheet-grabber:active { cursor: grabbing; }
+        
+        /* Sheet content - proper flex column stacking */
+        .sheet-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             padding: 0 20px 24px;
-            flex-shrink: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
-        .static-header {
+        .bottom-sheet.fullscreen .sheet-content {
+            padding-top: 8px;
+        }
+        
+        /* Header */
+        .sheet-header {
             font-family: 'Manrope', sans-serif;
             font-weight: 700;
-            font-size: 1.35rem;
+            font-size: 1.5rem;
             color: #1a1a1a;
-            margin-bottom: 20px;
-            transition: opacity 0.2s ease, margin 0.2s ease;
+            margin-bottom: 24px;
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
         
-        /* Service cards container - will hide when collapsed */
-        .service-cards-wrapper {
-            transition: opacity 0.2s ease, transform 0.2s ease, height 0.2s ease;
+        /* Service cards container */
+        .services-container {
+            margin-bottom: 24px;
+            transition: opacity 0.25s ease, transform 0.25s ease, height 0.25s ease;
             overflow: hidden;
         }
         
         .service-cards {
             display: flex;
             gap: 12px;
-            margin-bottom: 24px;
         }
         
         .service-card {
@@ -220,14 +275,11 @@
             color: #888;
         }
         
-        /* Search container - always visible */
-        .search-container {
-            width: 100%;
-        }
-        
+        /* Search bar - always visible, never overlapped */
         .search-wrapper {
             position: relative;
             width: 100%;
+            margin-top: 4px;
         }
         
         .search-input {
@@ -268,39 +320,6 @@
             height: 16px;
         }
         
-        /* Bottom nav */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 57px;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 200;
-            box-shadow: 0 -2px 12px rgba(0,0,0,0.05);
-        }
-        
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #999;
-            transition: color 0.2s;
-            font-size: 0.7rem;
-            background: transparent;
-            border: none;
-            font-family: 'Manrope', sans-serif;
-        }
-        
-        .nav-item.active { color: #000; }
-        .nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
-        
         /* Other pages */
         .page-container {
             position: fixed;
@@ -313,6 +332,7 @@
             overflow-y: auto;
             display: none;
             padding: 20px;
+            padding-bottom: 77px;
         }
         .page-container.active { display: block; }
         
@@ -332,37 +352,40 @@
         .success-toast {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             background: #28a745;
             color: white;
-            padding: 12px 20px;
-            border-radius: 12px;
+            padding: 12px 24px;
+            border-radius: 50px;
             display: none;
             z-index: 3000;
+            font-weight: 500;
+            white-space: nowrap;
         }
         
         .tasks-header, .account-header { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; }
-        .task-card { padding: 1rem 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
         .empty-state { text-align: center; padding: 3rem; color: #666; }
     </style>
 </head>
 <body>
     <div id="map"></div>
     
-    <div class="map-top-left-icon" id="mapTopIcon">
-        <i class="ph ph-list"></i>
+    <div class="top-icons" id="topIcons">
+        <div class="map-top-left-icon" id="mapTopIcon">
+            <i class="ph ph-list"></i>
+        </div>
+        <div class="map-return-btn" id="mapReturnBtn">
+            <i class="ph ph-x"></i>
+        </div>
     </div>
     
-    <div class="map-return-btn" id="mapReturnBtn">
-        <i class="ph ph-x"></i>
-    </div>
-    
-    <div class="home-sheet" id="homeSheet">
-        <div class="grabber" id="grabber"></div>
-        <div class="sheet-inner">
-            <h2 class="static-header" id="staticHeader">Let's get it done.</h2>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="sheet-grabber" id="sheetGrabber"></div>
+        <div class="sheet-content">
+            <h1 class="sheet-header">Let's get it done.</h1>
             
-            <div class="service-cards-wrapper" id="serviceCardsWrapper">
+            <div class="services-container" id="servicesContainer">
                 <div class="service-cards">
                     <div class="service-card" id="helpersCard">
                         <div class="service-image">
@@ -381,15 +404,13 @@
                 </div>
             </div>
             
-            <div class="search-container">
-                <div class="search-wrapper">
-                    <input type="text" class="search-input" id="mainSearchInput" placeholder="I need help with..." readonly>
-                    <button class="search-circle-btn" id="searchIconBtn">
-                        <svg viewBox="0 0 320 512" class="chevron-svg">
-                            <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"></path>
-                        </svg>
-                    </button>
-                </div>
+            <div class="search-wrapper">
+                <input type="text" class="search-input" id="mainSearchInput" placeholder="I need help with..." readonly>
+                <button class="search-circle-btn" id="searchIconBtn">
+                    <svg viewBox="0 0 320 512" class="chevron-svg">
+                        <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"></path>
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -408,18 +429,18 @@
     <div class="page-container" id="accountPage">
         <div class="account-header">Account</div>
         <div id="accountInfo">
-            <div>Name: <span id="accountName">Guest User</span></div>
-            <div>Email: <span id="accountEmail">Not signed in</span></div>
-            <button id="accountLogoutBtn" style="margin-top: 20px; padding: 12px; background: #000; color: white; border: none; border-radius: 12px;">Log in</button>
+            <div style="margin-bottom: 12px;">Name: <span id="accountName">Guest User</span></div>
+            <div style="margin-bottom: 12px;">Email: <span id="accountEmail">Not signed in</span></div>
+            <button id="accountLogoutBtn" style="width: 100%; padding: 14px; background: #000; color: white; border: none; border-radius: 12px; margin-top: 20px; cursor: pointer;">Log in</button>
         </div>
     </div>
     
     <div class="create-task-container" id="createTaskContainer">
         <div style="padding: 20px;">
-            <button id="closeCreateTaskBtn" style="background: none; border: none; font-size: 24px; cursor: pointer;">←</button>
-            <h3 style="margin: 20px 0">Create task</h3>
-            <input type="text" id="createTaskInput" placeholder="What do you need help with?" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 20px;">
-            <button id="nextBtn" style="width: 100%; padding: 14px; background: #000; color: white; border: none; border-radius: 12px; cursor: pointer;">Post task</button>
+            <button id="closeCreateTaskBtn" style="background: none; border: none; font-size: 24px; cursor: pointer; margin-bottom: 20px;">← Back</button>
+            <h3 style="margin: 20px 0 20px 0">Create task</h3>
+            <input type="text" id="createTaskInput" placeholder="What do you need help with?" style="width: 100%; padding: 14px; border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 20px; font-family: inherit;">
+            <button id="nextBtn" style="width: 100%; padding: 14px; background: #000; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">Post task</button>
         </div>
     </div>
     
@@ -427,61 +448,58 @@
     
     <script>
         (function() {
-            // ========== DRAG SYSTEM - CONTENT MOVES WITH SHEET ==========
-            const sheet = document.getElementById('homeSheet');
-            const grabber = document.getElementById('grabber');
-            const topIcon = document.getElementById('mapTopIcon');
+            // ========== ENHANCED BOTTOM SHEET SYSTEM ==========
+            const sheet = document.getElementById('bottomSheet');
+            const grabber = document.getElementById('sheetGrabber');
+            const topIcons = document.getElementById('topIcons');
             const returnBtn = document.getElementById('mapReturnBtn');
-            const bottomNav = document.getElementById('bottomNav');
             const mapEl = document.getElementById('map');
-            const serviceCardsWrapper = document.getElementById('serviceCardsWrapper');
-            const staticHeader = document.getElementById('staticHeader');
+            const servicesContainer = document.getElementById('servicesContainer');
             
             let startY = 0;
             let startHeight = 0;
             let isDragging = false;
             
-            // Height thresholds
-            const COLLAPSED_HEIGHT = 85;    // Only grabber + search bar visible
-            const EXPANDED_HEIGHT = 280;    // Shows header + service cards
-            const FULLSCREEN_HEIGHT = window.innerHeight - 57;  // Covers entire map
+            // Snap heights
+            const COLLAPSED_HEIGHT = 95;     // Grabber + search bar only
+            const EXPANDED_HEIGHT = 320;     // Shows header + service cards + search
+            const FULLSCREEN_HEIGHT = window.innerHeight - 57;
             
             sheet.style.height = EXPANDED_HEIGHT + 'px';
             
-            function updateContentVisibility(height) {
-                // When height is less than 160px, hide service cards and header
-                if (height < 160) {
-                    serviceCardsWrapper.style.opacity = '0';
-                    serviceCardsWrapper.style.transform = 'translateY(-10px)';
-                    serviceCardsWrapper.style.height = '0';
-                    serviceCardsWrapper.style.marginBottom = '0';
-                    staticHeader.style.opacity = '0';
-                    staticHeader.style.marginBottom = '0';
-                    staticHeader.style.height = '0';
-                } else {
-                    serviceCardsWrapper.style.opacity = '1';
-                    serviceCardsWrapper.style.transform = 'translateY(0)';
-                    serviceCardsWrapper.style.height = 'auto';
-                    serviceCardsWrapper.style.marginBottom = '0';
-                    staticHeader.style.opacity = '1';
-                    staticHeader.style.marginBottom = '20px';
-                    staticHeader.style.height = 'auto';
-                }
-            }
-            
-            function updateFullscreenState(height, sheetTop) {
-                const isFullscreen = sheetTop <= 10 || height >= FULLSCREEN_HEIGHT - 50;
+            // Update UI based on current height and state
+            function updateUIState(height) {
+                const isFullscreen = height >= FULLSCREEN_HEIGHT - 50;
                 
                 if (isFullscreen) {
                     sheet.classList.add('fullscreen');
-                    topIcon.classList.add('floating');
-                    returnBtn.classList.add('visible');
+                    topIcons.classList.add('fullscreen');
                     mapEl.style.opacity = '0.3';
+                    
+                    // Show return button in fullscreen
+                    returnBtn.style.opacity = '1';
+                    returnBtn.style.pointerEvents = 'auto';
                 } else {
                     sheet.classList.remove('fullscreen');
-                    topIcon.classList.remove('floating');
-                    returnBtn.classList.remove('visible');
+                    topIcons.classList.remove('fullscreen');
                     mapEl.style.opacity = '1';
+                    
+                    // Hide return button when not fullscreen
+                    returnBtn.style.opacity = '0';
+                    returnBtn.style.pointerEvents = 'none';
+                }
+                
+                // Show/hide services based on height
+                if (height < 180) {
+                    servicesContainer.style.opacity = '0';
+                    servicesContainer.style.transform = 'translateY(-10px)';
+                    servicesContainer.style.height = '0';
+                    servicesContainer.style.marginBottom = '0';
+                } else {
+                    servicesContainer.style.opacity = '1';
+                    servicesContainer.style.transform = 'translateY(0)';
+                    servicesContainer.style.height = 'auto';
+                    servicesContainer.style.marginBottom = '24px';
                 }
             }
             
@@ -492,6 +510,7 @@
                 sheet.style.transition = 'none';
                 sheet.classList.add('dragging');
                 document.body.style.userSelect = 'none';
+                document.body.style.cursor = 'grabbing';
             }
             
             function dragMove(clientY) {
@@ -500,48 +519,51 @@
                 let newHeight = startHeight + delta;
                 newHeight = Math.max(COLLAPSED_HEIGHT, Math.min(FULLSCREEN_HEIGHT, newHeight));
                 sheet.style.height = newHeight + 'px';
-                
-                // Update content visibility based on height
-                updateContentVisibility(newHeight);
-                
-                // Update fullscreen state
-                const sheetTop = sheet.getBoundingClientRect().top;
-                updateFullscreenState(newHeight, sheetTop);
+                updateUIState(newHeight);
             }
             
             function dragEnd() {
                 if (!isDragging) return;
                 isDragging = false;
                 sheet.classList.remove('dragging');
-                sheet.style.transition = 'height 0.25s ease-out';
+                sheet.style.transition = 'height 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1)';
                 document.body.style.userSelect = '';
+                document.body.style.cursor = '';
                 
                 const currentHeight = sheet.getBoundingClientRect().height;
                 const sheetTop = sheet.getBoundingClientRect().top;
                 
-                // Snap to nearest state
-                if (sheetTop <= 30 || currentHeight >= FULLSCREEN_HEIGHT - 60) {
-                    // Snap to FULLSCREEN - covers entire map
+                // Snap logic
+                if (sheetTop <= 20 || currentHeight >= FULLSCREEN_HEIGHT - 60) {
+                    // Fullscreen
                     sheet.style.height = FULLSCREEN_HEIGHT + 'px';
-                    updateContentVisibility(FULLSCREEN_HEIGHT);
-                    updateFullscreenState(FULLSCREEN_HEIGHT, 0);
-                } else if (currentHeight < 130) {
-                    // Snap to COLLAPSED - only search bar visible
+                    updateUIState(FULLSCREEN_HEIGHT);
+                } else if (currentHeight < 150) {
+                    // Collapsed - only grabber + search
                     sheet.style.height = COLLAPSED_HEIGHT + 'px';
-                    updateContentVisibility(COLLAPSED_HEIGHT);
-                    updateFullscreenState(COLLAPSED_HEIGHT, sheetTop);
+                    updateUIState(COLLAPSED_HEIGHT);
                 } else {
-                    // Snap to EXPANDED - shows header and cards
+                    // Expanded - show everything
                     sheet.style.height = EXPANDED_HEIGHT + 'px';
-                    updateContentVisibility(EXPANDED_HEIGHT);
-                    updateFullscreenState(EXPANDED_HEIGHT, sheet.getBoundingClientRect().top);
+                    updateUIState(EXPANDED_HEIGHT);
                 }
             }
             
             // Touch events
-            grabber.addEventListener('touchstart', (e) => { e.preventDefault(); dragStart(e.touches[0].clientY); }, { passive: false });
-            grabber.addEventListener('touchmove', (e) => { e.preventDefault(); dragMove(e.touches[0].clientY); }, { passive: false });
-            grabber.addEventListener('touchend', (e) => { e.preventDefault(); dragEnd(); });
+            grabber.addEventListener('touchstart', (e) => { 
+                e.preventDefault(); 
+                dragStart(e.touches[0].clientY); 
+            }, { passive: false });
+            
+            grabber.addEventListener('touchmove', (e) => { 
+                e.preventDefault(); 
+                dragMove(e.touches[0].clientY); 
+            }, { passive: false });
+            
+            grabber.addEventListener('touchend', (e) => { 
+                e.preventDefault(); 
+                dragEnd(); 
+            });
             
             // Mouse events
             grabber.addEventListener('mousedown', (e) => {
@@ -563,28 +585,23 @@
                 document.removeEventListener('mouseup', onMouseUp);
             }
             
-            // Return button resets to expanded state
+            // Return button - collapses from fullscreen
             returnBtn.addEventListener('click', () => {
                 sheet.style.height = EXPANDED_HEIGHT + 'px';
-                sheet.classList.remove('fullscreen');
-                topIcon.classList.remove('floating');
-                returnBtn.classList.remove('visible');
-                mapEl.style.opacity = '1';
-                updateContentVisibility(EXPANDED_HEIGHT);
+                updateUIState(EXPANDED_HEIGHT);
             });
             
             // Click grabber to toggle between collapsed and expanded
             grabber.addEventListener('click', (e) => {
                 if (isDragging) return;
                 const current = sheet.getBoundingClientRect().height;
-                if (current < 130) {
+                if (current < 150) {
                     sheet.style.height = EXPANDED_HEIGHT + 'px';
-                    updateContentVisibility(EXPANDED_HEIGHT);
-                } else {
+                    updateUIState(EXPANDED_HEIGHT);
+                } else if (current < FULLSCREEN_HEIGHT - 100) {
                     sheet.style.height = COLLAPSED_HEIGHT + 'px';
-                    updateContentVisibility(COLLAPSED_HEIGHT);
+                    updateUIState(COLLAPSED_HEIGHT);
                 }
-                updateFullscreenState(parseInt(sheet.style.height), sheet.getBoundingClientRect().top);
             });
             
             // Handle window resize
@@ -593,11 +610,12 @@
                 const current = sheet.getBoundingClientRect().height;
                 if (current > newFullscreen) {
                     sheet.style.height = newFullscreen + 'px';
+                    updateUIState(newFullscreen);
                 }
             });
             
-            // Initialize content visibility
-            updateContentVisibility(EXPANDED_HEIGHT);
+            // Initialize UI
+            updateUIState(EXPANDED_HEIGHT);
             
             // ========== NAVIGATION ==========
             const navHome = document.getElementById('navHome');
@@ -611,6 +629,7 @@
             const closeCreateTaskBtn = document.getElementById('closeCreateTaskBtn');
             const createTaskInput = document.getElementById('createTaskInput');
             const nextBtn = document.getElementById('nextBtn');
+            const toast = document.getElementById('successToast');
             
             function setActivePage(page) {
                 [navHome, navTasks, navAccount].forEach(btn => btn.classList.remove('active'));
@@ -621,13 +640,16 @@
                 if (page === 'home') {
                     navHome.classList.add('active');
                     sheet.style.display = 'flex';
+                    mapEl.style.display = 'block';
                 } else if (page === 'tasks') {
                     navTasks.classList.add('active');
                     sheet.style.display = 'none';
+                    mapEl.style.display = 'none';
                     tasksPage.classList.add('active');
                 } else if (page === 'account') {
                     navAccount.classList.add('active');
                     sheet.style.display = 'none';
+                    mapEl.style.display = 'none';
                     accountPage.classList.add('active');
                 }
             }
@@ -635,6 +657,7 @@
             function openCreateTask() {
                 createTaskContainer.classList.add('active');
                 sheet.style.display = 'none';
+                mapEl.style.display = 'none';
                 if (createTaskInput) createTaskInput.focus();
             }
             
@@ -649,26 +672,36 @@
                 closeCreateTaskBtn.addEventListener('click', () => {
                     createTaskContainer.classList.remove('active');
                     sheet.style.display = 'flex';
+                    mapEl.style.display = 'block';
                     setActivePage('home');
                 });
             }
             
             if (nextBtn) {
                 nextBtn.addEventListener('click', () => {
-                    const task = createTaskInput?.value || 'Task';
-                    const toast = document.getElementById('successToast');
-                    toast.textContent = `✅ "${task}" posted!`;
+                    const task = createTaskInput?.value.trim() || 'Task';
+                    toast.textContent = `✓ "${task}" posted!`;
                     toast.style.display = 'block';
                     setTimeout(() => { toast.style.display = 'none'; }, 2000);
+                    
                     createTaskContainer.classList.remove('active');
                     sheet.style.display = 'flex';
+                    mapEl.style.display = 'block';
                     setActivePage('home');
                     if (createTaskInput) createTaskInput.value = '';
                 });
             }
             
+            // Helpers card action
+            document.getElementById('helpersCard')?.addEventListener('click', () => {
+                openCreateTask();
+            });
+            
+            // Account actions
             document.getElementById('accountLogoutBtn')?.addEventListener('click', () => {
-                window.location.href = 'login.html';
+                toast.textContent = '🔐 Please log in to continue';
+                toast.style.display = 'block';
+                setTimeout(() => { toast.style.display = 'none'; }, 2000);
             });
             
             // Map initialization
@@ -686,12 +719,12 @@
                         const lng = pos.coords.longitude;
                         const lat = pos.coords.latitude;
                         map.flyTo({ center: [lng, lat], zoom: 14 });
-                        new mapboxgl.Marker({ color: '#000' }).setLngLat([lng, lat]).addTo(map);
-                    });
+                        new mapboxgl.Marker({ color: '#000000' }).setLngLat([lng, lat]).addTo(map);
+                    }, () => {}, { enableHighAccuracy: true });
                 }
             }
             
-            console.log('✅ Drag system ready - drag up to cover full map, drag down to collapse');
+            console.log('✅ Bottom sheet ready - fullscreen with blended icons, proper stacking, drag works both ways');
         })();
     </script>
 </body>
