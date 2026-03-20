@@ -111,7 +111,6 @@
             align-items: center;
             z-index: 20;
             box-shadow: 0 -2px 12px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease;
         }
         
         .nav-item {
@@ -167,13 +166,12 @@
             cursor: grab;
             touch-action: none;
             flex-shrink: 0;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: opacity 0.2s ease, margin 0.2s ease;
         }
         
         .bottom-sheet.fullscreen .sheet-grabber {
             opacity: 0;
             pointer-events: none;
-            transform: scaleY(0);
             margin: 0 auto;
         }
         
@@ -189,10 +187,6 @@
             -webkit-overflow-scrolling: touch;
         }
         
-        .bottom-sheet.fullscreen .sheet-content {
-            padding-top: 8px;
-        }
-        
         /* Header */
         .sheet-header {
             font-family: 'Manrope', sans-serif;
@@ -200,13 +194,13 @@
             font-size: 1.5rem;
             color: #1a1a1a;
             margin-bottom: 24px;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: opacity 0.2s ease, margin 0.2s ease;
         }
         
         /* Service cards container */
         .services-container {
             margin-bottom: 24px;
-            transition: opacity 0.25s ease, transform 0.25s ease, height 0.25s ease;
+            transition: opacity 0.25s ease, transform 0.25s ease, height 0.25s ease, margin 0.25s ease;
             overflow: hidden;
         }
         
@@ -275,11 +269,10 @@
             color: #888;
         }
         
-        /* Search bar - always visible, never overlapped */
+        /* Search bar - always visible */
         .search-wrapper {
             position: relative;
             width: 100%;
-            margin-top: 4px;
         }
         
         .search-input {
@@ -462,9 +455,10 @@
             
             // Snap heights
             const COLLAPSED_HEIGHT = 95;     // Grabber + search bar only
-            const EXPANDED_HEIGHT = 320;     // Shows header + service cards + search
+            const EXPANDED_HEIGHT = 320;     // Shows header + service cards + search (START HERE)
             const FULLSCREEN_HEIGHT = window.innerHeight - 57;
             
+            // IMPORTANT: Start at EXPANDED state, NOT fullscreen
             sheet.style.height = EXPANDED_HEIGHT + 'px';
             
             // Update UI based on current height and state
@@ -475,21 +469,17 @@
                     sheet.classList.add('fullscreen');
                     topIcons.classList.add('fullscreen');
                     mapEl.style.opacity = '0.3';
-                    
-                    // Show return button in fullscreen
                     returnBtn.style.opacity = '1';
                     returnBtn.style.pointerEvents = 'auto';
                 } else {
                     sheet.classList.remove('fullscreen');
                     topIcons.classList.remove('fullscreen');
                     mapEl.style.opacity = '1';
-                    
-                    // Hide return button when not fullscreen
                     returnBtn.style.opacity = '0';
                     returnBtn.style.pointerEvents = 'none';
                 }
                 
-                // Show/hide services based on height
+                // Show/hide services based on height (hide when collapsed)
                 if (height < 180) {
                     servicesContainer.style.opacity = '0';
                     servicesContainer.style.transform = 'translateY(-10px)';
@@ -533,17 +523,17 @@
                 const currentHeight = sheet.getBoundingClientRect().height;
                 const sheetTop = sheet.getBoundingClientRect().top;
                 
-                // Snap logic
+                // Snap logic - prioritize expanded state as default
                 if (sheetTop <= 20 || currentHeight >= FULLSCREEN_HEIGHT - 60) {
-                    // Fullscreen
+                    // DRAG UP → Fullscreen
                     sheet.style.height = FULLSCREEN_HEIGHT + 'px';
                     updateUIState(FULLSCREEN_HEIGHT);
                 } else if (currentHeight < 150) {
-                    // Collapsed - only grabber + search
+                    // DRAG DOWN → Collapsed (only grabber + search)
                     sheet.style.height = COLLAPSED_HEIGHT + 'px';
                     updateUIState(COLLAPSED_HEIGHT);
                 } else {
-                    // Expanded - show everything
+                    // DEFAULT → Expanded (shows everything)
                     sheet.style.height = EXPANDED_HEIGHT + 'px';
                     updateUIState(EXPANDED_HEIGHT);
                 }
@@ -585,7 +575,7 @@
                 document.removeEventListener('mouseup', onMouseUp);
             }
             
-            // Return button - collapses from fullscreen
+            // Return button - collapses from fullscreen back to expanded
             returnBtn.addEventListener('click', () => {
                 sheet.style.height = EXPANDED_HEIGHT + 'px';
                 updateUIState(EXPANDED_HEIGHT);
@@ -596,9 +586,11 @@
                 if (isDragging) return;
                 const current = sheet.getBoundingClientRect().height;
                 if (current < 150) {
+                    // Currently collapsed → expand
                     sheet.style.height = EXPANDED_HEIGHT + 'px';
                     updateUIState(EXPANDED_HEIGHT);
-                } else if (current < FULLSCREEN_HEIGHT - 100) {
+                } else if (current < FULLSCREEN_HEIGHT - 100 && current > 200) {
+                    // Currently expanded → collapse
                     sheet.style.height = COLLAPSED_HEIGHT + 'px';
                     updateUIState(COLLAPSED_HEIGHT);
                 }
@@ -614,8 +606,10 @@
                 }
             });
             
-            // Initialize UI
+            // Initialize UI at EXPANDED state
             updateUIState(EXPANDED_HEIGHT);
+            
+            console.log('✅ Bottom sheet ready - starts at EXPANDED state, drag UP for fullscreen, drag DOWN for collapsed');
             
             // ========== NAVIGATION ==========
             const navHome = document.getElementById('navHome');
@@ -692,12 +686,10 @@
                 });
             }
             
-            // Helpers card action
             document.getElementById('helpersCard')?.addEventListener('click', () => {
                 openCreateTask();
             });
             
-            // Account actions
             document.getElementById('accountLogoutBtn')?.addEventListener('click', () => {
                 toast.textContent = '🔐 Please log in to continue';
                 toast.style.display = 'block';
@@ -723,8 +715,6 @@
                     }, () => {}, { enableHighAccuracy: true });
                 }
             }
-            
-            console.log('✅ Bottom sheet ready - fullscreen with blended icons, proper stacking, drag works both ways');
         })();
     </script>
 </body>
