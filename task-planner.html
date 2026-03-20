@@ -22,9 +22,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
-    <!-- Config -->
-    <script src="/config.js"></script>
-    
     <style>
         * {
             margin: 0;
@@ -39,11 +36,9 @@
             font-size: 16px;
             background: #f5f5f5;
             height: 100vh;
-            height: 100dvh;
             overflow: hidden;
             position: fixed;
             width: 100%;
-            -webkit-font-smoothing: antialiased;
         }
 
         #map {
@@ -98,7 +93,7 @@
         .map-return-btn i { font-size: 26px; color: #000; }
         .map-return-btn.visible { opacity: 1; pointer-events: auto; }
 
-        /* HOME SHEET - PROPERLY CONTAINED */
+        /* HOME SHEET - CONTENT MOVES WITH THE SHEET */
         .home-sheet {
             position: absolute;
             bottom: 57px;
@@ -106,14 +101,12 @@
             width: 100%;
             background: white;
             z-index: 10;
-            border-radius: 24px 24px 0 0;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
-            transition: height 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), border-radius 0.2s ease;
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
+            transition: height 0.25s ease-out, border-radius 0.2s ease;
+            overflow: hidden;
         }
         
         .home-sheet.dragging {
@@ -122,9 +115,10 @@
         
         .home-sheet.fullscreen {
             border-radius: 0;
+            height: calc(100% - 57px) !important;
         }
         
-        /* Grabber - always visible */
+        /* Grabber */
         .grabber {
             width: 48px;
             height: 5px;
@@ -134,25 +128,32 @@
             cursor: grab;
             touch-action: none;
             flex-shrink: 0;
+            position: relative;
+            z-index: 5;
         }
         .grabber:active { cursor: grabbing; }
         
-        /* Sheet content - flows naturally */
-        .sheet-content {
-            padding: 0 20px 20px;
+        /* Sheet inner content - flows with height */
+        .sheet-inner {
+            padding: 0 20px 24px;
             flex-shrink: 0;
         }
         
         .static-header {
             font-family: 'Manrope', sans-serif;
             font-weight: 700;
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             color: #1a1a1a;
             margin-bottom: 20px;
-            letter-spacing: -0.3px;
+            transition: opacity 0.2s ease, margin 0.2s ease;
         }
         
-        /* Service cards */
+        /* Service cards container - will hide when collapsed */
+        .service-cards-wrapper {
+            transition: opacity 0.2s ease, transform 0.2s ease, height 0.2s ease;
+            overflow: hidden;
+        }
+        
         .service-cards {
             display: flex;
             gap: 12px;
@@ -219,10 +220,9 @@
             color: #888;
         }
         
-        /* Search input */
+        /* Search container - always visible */
         .search-container {
             width: 100%;
-            margin-top: 4px;
         }
         
         .search-wrapper {
@@ -281,7 +281,6 @@
             align-items: center;
             z-index: 200;
             box-shadow: 0 -2px 12px rgba(0,0,0,0.05);
-            padding-bottom: env(safe-area-inset-bottom, 0);
         }
         
         .nav-item {
@@ -302,19 +301,7 @@
         .nav-item.active { color: #000; }
         .nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
         
-        .notification-dot {
-            position: absolute;
-            top: -2px;
-            right: -4px;
-            width: 8px;
-            height: 8px;
-            background: #000;
-            border-radius: 50%;
-            display: none;
-        }
-        .notification-dot.visible { display: block; }
-        
-        /* Other pages container (tasks, account) */
+        /* Other pages */
         .page-container {
             position: fixed;
             top: 0;
@@ -326,7 +313,6 @@
             overflow-y: auto;
             display: none;
             padding: 20px;
-            padding-bottom: 77px;
         }
         .page-container.active { display: block; }
         
@@ -343,12 +329,21 @@
         }
         .create-task-container.active { display: flex; }
         
-        /* Quick styles for other elements */
+        .success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: none;
+            z-index: 3000;
+        }
+        
         .tasks-header, .account-header { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; }
         .task-card { padding: 1rem 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-        .empty-state { text-align: center; padding: 3rem; }
-        .success-toast { position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 12px 20px; border-radius: 12px; display: none; z-index: 3000; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 4000; }
+        .empty-state { text-align: center; padding: 3rem; color: #666; }
     </style>
 </head>
 <body>
@@ -364,23 +359,25 @@
     
     <div class="home-sheet" id="homeSheet">
         <div class="grabber" id="grabber"></div>
-        <div class="sheet-content">
-            <h2 class="static-header">Let's get it done.</h2>
+        <div class="sheet-inner">
+            <h2 class="static-header" id="staticHeader">Let's get it done.</h2>
             
-            <div class="service-cards">
-                <div class="service-card" id="helpersCard">
-                    <div class="service-image">
-                        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/IMG_5400.png" alt="Helpers">
+            <div class="service-cards-wrapper" id="serviceCardsWrapper">
+                <div class="service-cards">
+                    <div class="service-card" id="helpersCard">
+                        <div class="service-image">
+                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/IMG_5400.png" alt="Helpers">
+                        </div>
+                        <div class="service-small-text">Helpers</div>
+                        <div class="service-main-text">Verified helpers</div>
                     </div>
-                    <div class="service-small-text">Helpers</div>
-                    <div class="service-main-text">Verified helpers</div>
-                </div>
-                <div class="service-card coming-soon" id="deliveryCard">
-                    <div class="service-image">
-                        <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/CF7B50B9-11E4-414E-86C0-EFC50B182095.png" alt="Delivery">
+                    <div class="service-card coming-soon" id="deliveryCard">
+                        <div class="service-image">
+                            <img src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/CF7B50B9-11E4-414E-86C0-EFC50B182095.png" alt="Delivery">
+                        </div>
+                        <div class="service-small-text">Delivery</div>
+                        <div class="service-main-text">Coming soon</div>
                     </div>
-                    <div class="service-small-text">Delivery</div>
-                    <div class="service-main-text">Coming soon</div>
                 </div>
             </div>
             
@@ -411,49 +408,69 @@
     <div class="page-container" id="accountPage">
         <div class="account-header">Account</div>
         <div id="accountInfo">
-            <div>Name: <span id="accountName">Loading...</span></div>
-            <div>Email: <span id="accountEmail">Loading...</span></div>
-            <button id="accountLogoutBtn" style="margin-top: 20px; padding: 12px; background: #000; color: white; border: none; border-radius: 12px;">Log out</button>
+            <div>Name: <span id="accountName">Guest User</span></div>
+            <div>Email: <span id="accountEmail">Not signed in</span></div>
+            <button id="accountLogoutBtn" style="margin-top: 20px; padding: 12px; background: #000; color: white; border: none; border-radius: 12px;">Log in</button>
         </div>
     </div>
     
     <div class="create-task-container" id="createTaskContainer">
         <div style="padding: 20px;">
-            <button id="closeCreateTaskBtn" style="background: none; border: none; font-size: 24px;">←</button>
+            <button id="closeCreateTaskBtn" style="background: none; border: none; font-size: 24px; cursor: pointer;">←</button>
             <h3 style="margin: 20px 0">Create task</h3>
             <input type="text" id="createTaskInput" placeholder="What do you need help with?" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; margin-bottom: 20px;">
-            <button id="nextBtn" style="width: 100%; padding: 14px; background: #000; color: white; border: none; border-radius: 12px;">Post task</button>
+            <button id="nextBtn" style="width: 100%; padding: 14px; background: #000; color: white; border: none; border-radius: 12px; cursor: pointer;">Post task</button>
         </div>
     </div>
     
-    <div class="loading-overlay" id="loadingOverlay"><div style="background: white; padding: 20px; border-radius: 12px;">Loading...</div></div>
     <div class="success-toast" id="successToast"></div>
     
     <script>
         (function() {
-            // ========== DRAG SYSTEM - SHEET COVERS FULL MAP, CONTENT FLOWS NATURALLY ==========
+            // ========== DRAG SYSTEM - CONTENT MOVES WITH SHEET ==========
             const sheet = document.getElementById('homeSheet');
             const grabber = document.getElementById('grabber');
             const topIcon = document.getElementById('mapTopIcon');
             const returnBtn = document.getElementById('mapReturnBtn');
             const bottomNav = document.getElementById('bottomNav');
             const mapEl = document.getElementById('map');
+            const serviceCardsWrapper = document.getElementById('serviceCardsWrapper');
+            const staticHeader = document.getElementById('staticHeader');
             
             let startY = 0;
             let startHeight = 0;
             let isDragging = false;
             
-            // Height constants
-            const MIN_HEIGHT = 100;      // Just shows grabber + part of header
-            const MID_HEIGHT = 280;      // Shows header and cards
-            const MAX_HEIGHT = window.innerHeight - 57;  // Full screen minus bottom nav
+            // Height thresholds
+            const COLLAPSED_HEIGHT = 85;    // Only grabber + search bar visible
+            const EXPANDED_HEIGHT = 280;    // Shows header + service cards
+            const FULLSCREEN_HEIGHT = window.innerHeight - 57;  // Covers entire map
             
-            // Set initial height
-            sheet.style.height = MID_HEIGHT + 'px';
+            sheet.style.height = EXPANDED_HEIGHT + 'px';
             
-            function updateUIForHeight(height) {
-                const sheetRect = sheet.getBoundingClientRect();
-                const isFullscreen = sheetRect.top <= 10;
+            function updateContentVisibility(height) {
+                // When height is less than 160px, hide service cards and header
+                if (height < 160) {
+                    serviceCardsWrapper.style.opacity = '0';
+                    serviceCardsWrapper.style.transform = 'translateY(-10px)';
+                    serviceCardsWrapper.style.height = '0';
+                    serviceCardsWrapper.style.marginBottom = '0';
+                    staticHeader.style.opacity = '0';
+                    staticHeader.style.marginBottom = '0';
+                    staticHeader.style.height = '0';
+                } else {
+                    serviceCardsWrapper.style.opacity = '1';
+                    serviceCardsWrapper.style.transform = 'translateY(0)';
+                    serviceCardsWrapper.style.height = 'auto';
+                    serviceCardsWrapper.style.marginBottom = '0';
+                    staticHeader.style.opacity = '1';
+                    staticHeader.style.marginBottom = '20px';
+                    staticHeader.style.height = 'auto';
+                }
+            }
+            
+            function updateFullscreenState(height, sheetTop) {
+                const isFullscreen = sheetTop <= 10 || height >= FULLSCREEN_HEIGHT - 50;
                 
                 if (isFullscreen) {
                     sheet.classList.add('fullscreen');
@@ -481,34 +498,43 @@
                 if (!isDragging) return;
                 let delta = startY - clientY;
                 let newHeight = startHeight + delta;
-                newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, newHeight));
+                newHeight = Math.max(COLLAPSED_HEIGHT, Math.min(FULLSCREEN_HEIGHT, newHeight));
                 sheet.style.height = newHeight + 'px';
-                updateUIForHeight(newHeight);
+                
+                // Update content visibility based on height
+                updateContentVisibility(newHeight);
+                
+                // Update fullscreen state
+                const sheetTop = sheet.getBoundingClientRect().top;
+                updateFullscreenState(newHeight, sheetTop);
             }
             
             function dragEnd() {
                 if (!isDragging) return;
                 isDragging = false;
                 sheet.classList.remove('dragging');
-                sheet.style.transition = 'height 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1)';
+                sheet.style.transition = 'height 0.25s ease-out';
                 document.body.style.userSelect = '';
                 
                 const currentHeight = sheet.getBoundingClientRect().height;
                 const sheetTop = sheet.getBoundingClientRect().top;
                 
-                // Snap logic
-                if (sheetTop <= 40) {
-                    // Snap to fullscreen
-                    sheet.style.height = MAX_HEIGHT + 'px';
-                    updateUIForHeight(MAX_HEIGHT);
-                } else if (currentHeight < 180) {
-                    // Snap to collapsed/minimal
-                    sheet.style.height = MIN_HEIGHT + 'px';
-                    updateUIForHeight(MIN_HEIGHT);
+                // Snap to nearest state
+                if (sheetTop <= 30 || currentHeight >= FULLSCREEN_HEIGHT - 60) {
+                    // Snap to FULLSCREEN - covers entire map
+                    sheet.style.height = FULLSCREEN_HEIGHT + 'px';
+                    updateContentVisibility(FULLSCREEN_HEIGHT);
+                    updateFullscreenState(FULLSCREEN_HEIGHT, 0);
+                } else if (currentHeight < 130) {
+                    // Snap to COLLAPSED - only search bar visible
+                    sheet.style.height = COLLAPSED_HEIGHT + 'px';
+                    updateContentVisibility(COLLAPSED_HEIGHT);
+                    updateFullscreenState(COLLAPSED_HEIGHT, sheetTop);
                 } else {
-                    // Snap to mid/default
-                    sheet.style.height = MID_HEIGHT + 'px';
-                    updateUIForHeight(MID_HEIGHT);
+                    // Snap to EXPANDED - shows header and cards
+                    sheet.style.height = EXPANDED_HEIGHT + 'px';
+                    updateContentVisibility(EXPANDED_HEIGHT);
+                    updateFullscreenState(EXPANDED_HEIGHT, sheet.getBoundingClientRect().top);
                 }
             }
             
@@ -537,40 +563,43 @@
                 document.removeEventListener('mouseup', onMouseUp);
             }
             
-            // Return button resets to mid height
+            // Return button resets to expanded state
             returnBtn.addEventListener('click', () => {
-                sheet.style.height = MID_HEIGHT + 'px';
+                sheet.style.height = EXPANDED_HEIGHT + 'px';
                 sheet.classList.remove('fullscreen');
                 topIcon.classList.remove('floating');
                 returnBtn.classList.remove('visible');
                 mapEl.style.opacity = '1';
+                updateContentVisibility(EXPANDED_HEIGHT);
             });
             
-            // Click grabber to toggle between collapsed and mid
+            // Click grabber to toggle between collapsed and expanded
             grabber.addEventListener('click', (e) => {
                 if (isDragging) return;
                 const current = sheet.getBoundingClientRect().height;
-                if (current < 150) {
-                    sheet.style.height = MID_HEIGHT + 'px';
-                    updateUIForHeight(MID_HEIGHT);
-                } else if (current > MAX_HEIGHT - 100) {
-                    sheet.style.height = MIN_HEIGHT + 'px';
-                    updateUIForHeight(MIN_HEIGHT);
+                if (current < 130) {
+                    sheet.style.height = EXPANDED_HEIGHT + 'px';
+                    updateContentVisibility(EXPANDED_HEIGHT);
                 } else {
-                    sheet.style.height = MIN_HEIGHT + 'px';
-                    updateUIForHeight(MIN_HEIGHT);
+                    sheet.style.height = COLLAPSED_HEIGHT + 'px';
+                    updateContentVisibility(COLLAPSED_HEIGHT);
                 }
+                updateFullscreenState(parseInt(sheet.style.height), sheet.getBoundingClientRect().top);
             });
             
             // Handle window resize
             window.addEventListener('resize', () => {
-                const newMax = window.innerHeight - 57;
-                if (sheet.getBoundingClientRect().height > newMax) {
-                    sheet.style.height = newMax + 'px';
+                const newFullscreen = window.innerHeight - 57;
+                const current = sheet.getBoundingClientRect().height;
+                if (current > newFullscreen) {
+                    sheet.style.height = newFullscreen + 'px';
                 }
             });
             
-            // ========== SIMPLE NAVIGATION (keep original functionality) ==========
+            // Initialize content visibility
+            updateContentVisibility(EXPANDED_HEIGHT);
+            
+            // ========== NAVIGATION ==========
             const navHome = document.getElementById('navHome');
             const navTasks = document.getElementById('navTasks');
             const navAccount = document.getElementById('navAccount');
@@ -626,19 +655,23 @@
             
             if (nextBtn) {
                 nextBtn.addEventListener('click', () => {
-                    alert('Task posted: ' + (createTaskInput?.value || 'Task'));
+                    const task = createTaskInput?.value || 'Task';
+                    const toast = document.getElementById('successToast');
+                    toast.textContent = `✅ "${task}" posted!`;
+                    toast.style.display = 'block';
+                    setTimeout(() => { toast.style.display = 'none'; }, 2000);
                     createTaskContainer.classList.remove('active');
                     sheet.style.display = 'flex';
                     setActivePage('home');
+                    if (createTaskInput) createTaskInput.value = '';
                 });
             }
             
-            // Mock account logout
             document.getElementById('accountLogoutBtn')?.addEventListener('click', () => {
-                alert('Logged out');
+                window.location.href = 'login.html';
             });
             
-            // Map initialization (basic)
+            // Map initialization
             if (typeof mapboxgl !== 'undefined') {
                 mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
                 const map = new mapboxgl.Map({
@@ -648,7 +681,6 @@
                     zoom: 12
                 });
                 
-                // Add user location marker
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition((pos) => {
                         const lng = pos.coords.longitude;
@@ -659,7 +691,7 @@
                 }
             }
             
-            console.log('✅ Drag system ready - sheet covers full map, content flows naturally');
+            console.log('✅ Drag system ready - drag up to cover full map, drag down to collapse');
         })();
     </script>
 </body>
