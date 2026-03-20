@@ -2016,7 +2016,7 @@
                 homeSheet.classList.remove('fullscreen', 'collapsed');
                 mapTopIcon.classList.remove('floating', 'sheet-bg');
                 mapReturnBtn.classList.remove('visible');
-                homeSheet.style.maxHeight = 'calc(100% - 57px - 20px)';
+                homeSheet.style.height = newHeight + 'px';
                 homeSheet.style.overflowY = 'hidden';
                 bottomNav.classList.remove('no-shadow');
             });
@@ -2037,9 +2037,15 @@
                 // new height based on drag delta (subtract diffY because moving up reduces height)
                 let newHeight = startHeight + (startY - clientY);
                 newHeight = Math.max(80, newHeight);
-                function getMaxAllowedHeight() {
-    const iconRect = mapTopIcon.getBoundingClientRect();
-    return window.innerHeight - iconRect.bottom - 8; // clean spacing
+                function handleTouchStart(e) {
+    dragStart(e.touches[0].clientY);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+}
+function handleTouchEnd(e) {
+    dragEnd();
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
 }
                 homeSheet.style.maxHeight = newHeight + 'px';
 
