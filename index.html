@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;800&display=block">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <!-- Phosphor Icons -->
 
 <style>
@@ -376,23 +378,43 @@
         box-sizing: border-box;
     }
 
-    /* Navigation arrow icon — flipped horizontally, right side of location field */
+    /* "Task location" label above the location field */
+    .flow-field-label {
+        display: block;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: rgba(0,0,0,0.45);
+        margin-bottom: 8px;
+    }
+
+    /* Navigation arrow — now a clickable button, right side of location field */
     .flow-location-icon {
         position: absolute;
-        right: 12px;
+        right: 10px;
         top: 50%;
         transform: translateY(-50%);
-        pointer-events: none;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px;
         display: flex;
         align-items: center;
+        justify-content: center;
+        z-index: 5;
+        line-height: 1;
     }
-    .flow-location-icon svg {
-        color: rgba(0,0,0,0.5);
-        /* flip so arrow points away (mirrored) */
+    .flow-location-icon i {
+        font-size: 18px;
+        color: #000;
+        /* flip so arrow points the other way */
         transform: scaleX(-1);
         display: block;
-        flex-shrink: 0;
+        line-height: 1;
     }
+    .flow-location-icon:hover i { opacity: 0.6; }
 
     /* X-circle clear button — hidden until location is set */
     .flow-location-clear {
@@ -403,7 +425,7 @@
         background: transparent;
         border: none;
         cursor: pointer;
-        padding: 0;
+        padding: 2px;
         display: none;
         align-items: center;
         justify-content: center;
@@ -413,15 +435,35 @@
     .flow-location-clear.visible {
         display: flex;
     }
-    .flow-location-clear svg {
-        color: rgba(0,0,0,0.4);
-        transition: color 0.15s;
-        display: block;
-        flex-shrink: 0;
-    }
-    .flow-location-clear:hover svg {
+    .flow-location-clear i {
+        font-size: 18px;
         color: #000;
+        transition: opacity 0.15s;
+        display: block;
+        line-height: 1;
     }
+    .flow-location-clear:hover i { opacity: 0.6; }
+
+    /* Find taskers button */
+    .find-taskers-btn {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        padding: 1rem;
+        background: #000;
+        color: #fff;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500;
+        font-size: 1rem;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background 0.2s;
+        cursor: pointer;
+        border: none;
+        letter-spacing: 0.01em;
+    }
+    .find-taskers-btn:hover { background: #222; }
 
     /* Task field suggestions */
     .flow-suggestions-list {
@@ -719,8 +761,7 @@
 ```
         <!-- RIGHT SIDE: Log in · Sign up · Hamburger -->
         <div class="header-right">
-            <button class="header-login-btn" id="headerLoginBtn">Log in</button>
-            <button class="header-signup-btn" id="headerSignupBtn">Sign up</button>
+            <button class="header-signup-btn" id="headerSignupBtn">Log in</button>
             <label class="hamburger" id="menuBtn" aria-label="Menu">
                 <input type="checkbox" id="menuCheckbox">
                 <div class="checkmark">
@@ -738,6 +779,7 @@
 
     <!-- Flow-based search UI -->
     <div class="search-container">
+        <span class="flow-field-label">Task location</span>
         <div class="flow-inputs">
 
             <!-- Black vertical line: dot centre to dot centre -->
@@ -754,21 +796,13 @@
                     aria-label="Your location"
                     readonly
                 >
-                <!-- Flipped navigation arrow — visible when no location -->
-                <span class="flow-location-icon" id="locationArrowIcon">
-                    <!-- ph-fill ph-navigation-arrow, mirrored via CSS scaleX(-1) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor">
-                        <path d="M234.35,114.22l-168-95.89A16,16,0,0,0,43.82,37.64l29.28,84.36H208a8,8,0,0,1,0,16H73.1L43.82,218.36a16,16,0,0,0,22.53,19.31l168-95.89a16,16,0,0,0,0-27.56Z"/>
-                    </svg>
-                </span>
+                <!-- Navigation arrow — clickable to re-detect location -->
+                <button class="flow-location-icon" id="locationArrowIcon" aria-label="Detect location" title="Detect my location">
+                    <i class="ph-fill ph-navigation-arrow"></i>
+                </button>
                 <!-- X-circle — visible once location is set -->
                 <button class="flow-location-clear" id="locationClearBtn" aria-label="Clear location" tabindex="0">
-                    <!-- ph ph-x-circle outline -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="128" cy="128" r="96"/>
-                        <line x1="160" y1="96" x2="96" y2="160"/>
-                        <line x1="96" y1="96" x2="160" y2="160"/>
-                    </svg>
+                    <i class="ph ph-x-circle"></i>
                 </button>
             </div>
 
@@ -787,6 +821,7 @@
             </div>
 
         </div>
+        <a href="task-planner.html" class="find-taskers-btn">Find taskers</a>
     </div>
 </section>
 
@@ -936,6 +971,14 @@
             });
         }
 
+        // Arrow button re-triggers geolocation
+        if (locationArrowIcon) {
+            locationArrowIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                detectLocation();
+            });
+        }
+
         function detectLocation() {
             if (!locationInputField) return;
             if (navigator.geolocation) {
@@ -1036,14 +1079,12 @@
             if (navOverlay && navOverlay.classList.contains('active')) closeMenu();
         }
 
+        // "Log in" button → login.html
         const headerSignupBtn = document.getElementById('headerSignupBtn');
-        if (headerSignupBtn) headerSignupBtn.addEventListener('click', openModalA);
-
-        const headerLoginBtn = document.getElementById('headerLoginBtn');
-        if (headerLoginBtn) {
-            headerLoginBtn.addEventListener('click', function(e) {
+        if (headerSignupBtn) {
+            headerSignupBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                alert('Login coming soon!');
+                window.location.href = 'login.html';
             });
         }
 
