@@ -1875,7 +1875,12 @@
                 measurementId: "G-Z8SPLR0HSL"
             };
 
+            // ===== FIXED: Mapbox token =====
+            mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sc2RveHpmMDRxODNlczdvaHlreGR3NSJ9.JcBPUfASVkZEHx8K9psySg';
+            
             let helperMarkers = [];
+            let map; // Global map reference
+            
             const taskData = {
                 "laundry": { minPrice: 80, questions: ["How full is the basket? (small/medium/full)"] },
                 "ironing": { minPrice: 70, questions: ["How many items need ironing?"] },
@@ -2086,10 +2091,7 @@
             document.getElementById('accountLogoutBtn').addEventListener('click', () => { if (currentUser) firebase.auth().signOut(); });
 
             // ===== MAP SETUP =====
-            if (window.MAPBOX_TOKEN) mapboxgl.accessToken = window.MAPBOX_TOKEN;
-            else mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
-
-            const map = new mapboxgl.Map({
+            map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/pmalapile07/cmmwfxan9004001s8h9ph8z6v',
                 center: [28.034088, -26.195246],
@@ -2216,6 +2218,24 @@
 
             // ===== TASKS LOGIC =====
             let allTasks = [], scheduledRequests = {}, currentCategory = 'upcoming';
+            
+            // FIXED: Implement getTaskDateObj function
+            function getTaskDateObj(task) {
+                if (task.date === 'now') return new Date();
+                if (task.date) {
+                    try {
+                        const parts = task.date.split('/');
+                        if (parts.length === 3) {
+                            const dateObj = new Date(parts[2], parts[1]-1, parts[0]);
+                            if (!isNaN(dateObj.getTime())) return dateObj;
+                        }
+                        const dateObj = new Date(task.date);
+                        if (!isNaN(dateObj.getTime())) return dateObj;
+                    } catch(e) {}
+                }
+                return null;
+            }
+            
             function loadUserTasks() {
                 if (!currentUser) return;
                 database.ref('tasks/' + currentUser.uid).once('value').then(snapshot => {
@@ -2228,7 +2248,7 @@
                     const dot = document.getElementById('taskNotificationDot');
                     if (hasOpenTasks) dot.classList.add('visible'); else dot.classList.remove('visible');
                     loadScheduledRequests();
-                }).catch(() => {});
+                }).catch((err) => { debugLog(`Error loading tasks: ${err.message}`, 'error'); showToast('Failed to load tasks'); });
             }
 
             function displayCurrentTasks() {
@@ -2247,7 +2267,7 @@
                 container.style.display = 'block';
                 let html = '';
                 currentTasks.slice(0,4).forEach(task => {
-                    html += `<div class="current-task-card" data-task-id="${task.taskId || task.id}">
+                    html += `<div class="current-task-card" data-task-id="${task.id}">
                         <div class="current-task-title">${task.category ? task.category.charAt(0).toUpperCase() + task.category.slice(1).toLowerCase() : 'Task'}</div>
                         <div class="current-task-amount">${getFormattedBudget(task)}</div>
                         <div class="current-task-time">${formatTimeFromTimestamp(task.createdAt)}</div>
@@ -2257,7 +2277,7 @@
                 document.querySelectorAll('.current-task-card').forEach(card => {
                     card.addEventListener('click', function() {
                         const taskId = this.dataset.taskId;
-                        const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
+                        const task = allTasks.find(t => t.id === taskId);
                         if (task) showTaskDetail(task);
                     });
                 });
@@ -2269,11 +2289,12 @@
                 let filteredTasks = [];
                 if (currentCategory === 'upcoming') {
                     filteredTasks = allTasks.filter(task => {
+                        if (task.status === 'open' && task.taskState !== 'past') return true;
                         if (task.taskState === 'future') return true;
                         if (task.status === 'scheduled') return true;
                         if (task.date && task.date !== 'now') {
                             const taskDate = getTaskDateObj(task);
-                            if (taskDate) { const taskDay = new Date(taskDate); taskDay.setHours(0,0,0,0); return taskDay > today; }
+                            if (taskDate) { const taskDay = new Date(taskDate); taskDay.setHours(0,0,0,0); return taskDay >= today; }
                         }
                         return false;
                     });
@@ -2312,7 +2333,7 @@
                         else if (task.status === 'in_progress') statusClass = 'in-progress';
                         else if (task.status === 'completed') statusClass = 'completed';
                         else if (task.status === 'scheduled') statusClass = 'scheduled';
-                        html += `<div class="task-card" data-task-id="${task.taskId || task.id}">
+                        html += `<div class="task-card" data-task-id="${task.id}">
                             <div class="task-card-main">
                                 <div class="task-content">
                                     <div class="task-date-time"><span class="task-date">${formattedDate}</span> · <span class="task-time">${formatTimeFromTimestamp(task.createdAt)}</span></div>
@@ -2320,7 +2341,7 @@
                                     <div class="task-amount">${budgetDisplay}</div>
                                     ${task.status ? `<div class="task-status-badge ${statusClass}">${task.status.replace('_',' ')}</div>` : ''}
                                 </div>
-                                <button class="task-repost-btn" onclick="event.stopPropagation(); repostTask('${task.taskId || task.id}')"><i class="ph ph-arrows-counter-clockwise"></i></button>
+                                <button class="task-repost-btn" onclick="event.stopPropagation(); window.repostTask('${task.id}')"><i class="ph ph-arrows-counter-clockwise"></i></button>
                             </div>
                         </div>`;
                     });
@@ -2331,7 +2352,7 @@
                     card.addEventListener('click', function(e) {
                         if (e.target.closest('.task-repost-btn')) return;
                         const taskId = this.dataset.taskId;
-                        const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
+                        const task = allTasks.find(t => t.id === taskId);
                         if (task) showTaskDetail(task);
                     });
                 });
@@ -2340,12 +2361,6 @@
             function loadScheduledRequests() {
                 if (!currentUser) return;
                 database.ref('scheduled_requests/' + currentUser.uid).once('value').then(snapshot => { scheduledRequests = snapshot.val() || {}; }).catch(()=>{});
-            }
-
-            function getTaskDateObj(task) {
-                if (task.date === 'now') return new Date();
-                if (task.date) { try { const parts = task.date.split('/'); if (parts.length===3) return new Date(parts[2], parts[1]-1, parts[0]); } catch(e){} }
-                return null;
             }
 
             function formatDateWithOrdinal(date) {
@@ -2377,6 +2392,7 @@
                 return `R ${task.budget}`;
             }
 
+            // FIXED: Task detail map with proper marker addition
             function showTaskDetail(task) {
                 const detailContent = document.getElementById('taskDetailContent');
                 const headerSpacer = document.querySelector('.task-detail-header-spacer');
@@ -2393,44 +2409,49 @@
                 else if (task.status === 'completed') { stateText = 'Task completed'; stateClass = 'completed'; }
                 else if (task.taskState === 'future') { stateText = `Scheduled to start on ${task.date || 'future date'}`; stateClass = 'future'; }
                 else { stateText = 'Searching for helpers'; stateClass = 'current'; }
-                const taskStateSpan = document.createElement('span'); taskStateSpan.className = `task-state-badge ${stateClass}`; taskStateSpan.textContent = stateText;
-                const existingBadge = document.querySelector('.task-state-badge'); if (existingBadge) existingBadge.remove();
-                headerSpacer.parentNode.insertBefore(taskStateSpan, headerSpacer.nextSibling);
-                let actionButtons = '';
-                if (task.status === 'assigned' || task.status === 'traveling') actionButtons = `<div class="arrival-confirmation"><div class="arrival-header">Confirm helper arrival</div><div class="helper-photo">${helperInitial}</div><button class="confirm-arrival-btn" onclick="confirmHelperArrival('${task.id}')">Helper has arrived</button></div>`;
-                else if (task.status === 'in_progress') actionButtons = `<button class="action-btn primary" onclick="completeTask('${task.id}')">Mark as completed</button>`;
+                
                 let scheduledHtml = '';
                 const requestKey = task.id + '_' + (task.pendingHelperUid || '');
                 if (scheduledRequests[requestKey]) {
                     const req = scheduledRequests[requestKey];
-                    scheduledHtml = `<div class="scheduled-section"><div class="scheduled-header">Scheduled request</div><div class="scheduled-request"><div class="scheduled-helper">${req.helperName}</div><div class="scheduled-time">Requested for: ${new Date(req.scheduledTime).toLocaleString()}</div><div class="scheduled-actions"><button class="scheduled-btn approve" onclick="approveScheduledRequest('${task.id}', '${req.helperUid}', '${req.helperName}', ${req.scheduledTime})">Approve</button><button class="scheduled-btn decline" onclick="declineScheduledRequest('${task.id}', '${req.helperUid}')">Decline</button></div></div></div>`;
+                    scheduledHtml = `<div class="scheduled-section"><div class="scheduled-header">Scheduled request</div><div class="scheduled-request"><div class="scheduled-helper">${req.helperName}</div><div class="scheduled-time">Requested for: ${new Date(req.scheduledTime).toLocaleString()}</div><div class="scheduled-actions"><button class="scheduled-btn approve" onclick="window.approveScheduledRequest('${task.id}', '${req.helperUid}', '${req.helperName}', ${req.scheduledTime})">Approve</button><button class="scheduled-btn decline" onclick="window.declineScheduledRequest('${task.id}', '${req.helperUid}')">Decline</button></div></div></div>`;
                 }
-                detailContent.innerHTML = `<div class="helper-info-row"><div class="helper-info-left"><div class="helper-details"><span class="helper-label">Task with</span><span class="helper-name">${helperName}</span></div></div><div class="helper-info-right">${helperInitial}</div></div><div class="detail-map-container" id="taskDetailMap"></div><div class="task-timeline"><div class="timeline-item"><div class="timeline-dot-small"></div><div class="timeline-content"><div class="timeline-title">Task location</div><div class="timeline-subtitle">${task.address || 'Location set'}</div><div class="timeline-time">${createdDateStr} · ${formatTimeFromTimestamp(task.createdAt)}</div></div></div><div class="timeline-item"><div class="timeline-content"><div class="timeline-title">${task.category || 'Task'}</div><div class="timeline-subtitle">${task.notes || 'No additional notes'}</div><div class="timeline-time">${task.taskState === 'past' ? 'Completed' : 'Posted'} on ${createdDateStr}</div></div></div></div>${scheduledHtml}<div class="task-action-buttons"><button class="action-btn secondary" onclick="repostTask('${task.taskId || task.id}')">Rebook</button>${actionButtons}</div>`;
+                
+                let actionButtons = '';
+                if (task.status === 'assigned' || task.status === 'traveling') actionButtons = `<div class="arrival-confirmation"><div class="arrival-header">Confirm helper arrival</div><div class="helper-photo">${helperInitial}</div><button class="confirm-arrival-btn" onclick="window.confirmHelperArrival('${task.id}')">Helper has arrived</button></div>`;
+                else if (task.status === 'in_progress') actionButtons = `<button class="action-btn primary" onclick="window.completeTask('${task.id}')">Mark as completed</button>`;
+                
+                detailContent.innerHTML = `<div class="helper-info-row"><div class="helper-info-left"><div class="helper-details"><span class="helper-label">Task with</span><span class="helper-name">${helperName}</span></div></div><div class="helper-info-right">${helperInitial}</div></div><div class="detail-map-container" id="taskDetailMap"></div><div class="task-timeline"><div class="timeline-item"><div class="timeline-dot-small"></div><div class="timeline-content"><div class="timeline-title">Task location</div><div class="timeline-subtitle">${task.address || 'Location set'}</div><div class="timeline-time">${createdDateStr} · ${formatTimeFromTimestamp(task.createdAt)}</div></div></div><div class="timeline-item"><div class="timeline-content"><div class="timeline-title">${task.category || 'Task'}</div><div class="timeline-subtitle">${task.notes || 'No additional notes'}</div><div class="timeline-time">${task.taskState === 'past' ? 'Completed' : 'Posted'} on ${createdDateStr}</div></div></div></div>${scheduledHtml}<div class="task-action-buttons"><button class="action-btn secondary" onclick="window.repostTask('${task.id}')">Rebook</button>${actionButtons}</div>`;
+                
                 setTimeout(() => {
                     const mapContainer = document.getElementById('taskDetailMap');
-                    if (mapContainer && task.location) {
-                        const lat = task.location.lat || currentLat || -26.195246;
-                        const lng = task.location.lng || currentLng || 28.034088;
-                        new mapboxgl.Map({ container: 'taskDetailMap', style: 'mapbox://styles/mapbox/light-v11', center: [lng, lat], zoom: 14, interactive: false });
+                    if (mapContainer) {
+                        const lat = (task.location && task.location.lat) || currentLat || -26.195246;
+                        const lng = (task.location && task.location.lng) || currentLng || 28.034088;
+                        const detailMap = new mapboxgl.Map({ container: 'taskDetailMap', style: 'mapbox://styles/mapbox/light-v11', center: [lng, lat], zoom: 14, interactive: false });
                         const pin = document.createElement('div'); pin.className = 'pulsing-pin';
-                        new mapboxgl.Marker({ element: pin }).setLngLat([lng, lat]).addTo(map);
-                    } else {
-                        new mapboxgl.Map({ container: 'taskDetailMap', style: 'mapbox://styles/mapbox/light-v11', center: [currentLng || 28.034088, currentLat || -26.195246], zoom: 14, interactive: false });
-                        const pin = document.createElement('div'); pin.className = 'pulsing-pin';
-                        new mapboxgl.Marker({ element: pin }).setLngLat([currentLng || 28.034088, currentLat || -26.195246]).addTo(map);
+                        new mapboxgl.Marker({ element: pin, anchor: 'center' }).setLngLat([lng, lat]).addTo(detailMap);
                     }
                 }, 100);
                 setActivePage('taskDetail');
             }
 
             window.repostTask = function(taskId) {
-                const task = allTasks.find(t => (t.taskId === taskId || t.id === taskId));
+                const task = allTasks.find(t => t.id === taskId);
                 if (task) {
                     document.getElementById('createTaskInput').value = task.category || '';
-                    if (task.budget !== 'open') { fixedBudgetBtn.click(); budgetAmount.value = task.budget; }
-                    else { openBudgetBtn.click(); }
-                    if (task.date === 'now') whenNowBtn.click();
-                    else { whenLaterBtn.click(); if (task.date) dateDisplay.textContent = task.date; if (task.time) timeDisplay.textContent = task.time; }
+                    if (task.budget !== 'open' && typeof task.budget === 'number') { 
+                        document.getElementById('fixedBudgetBtn').click(); 
+                        document.getElementById('budgetAmount').value = task.budget; 
+                    } else if (task.budget === 'open') { 
+                        document.getElementById('openBudgetBtn').click(); 
+                    }
+                    if (task.date === 'now') document.getElementById('whenNowBtn').click();
+                    else { 
+                        document.getElementById('whenLaterBtn').click(); 
+                        if (task.date) document.getElementById('dateDisplay').textContent = task.date; 
+                        if (task.time) document.getElementById('timeDisplay').textContent = task.time; 
+                    }
                     document.getElementById('extraNotes').value = task.notes || task.description || '';
                     createTaskContainer.style.display = 'flex';
                     setActivePage('home');
@@ -2446,7 +2467,7 @@
                     const notificationRef = database.ref('notifications/' + helperUid).push();
                     await notificationRef.set({ taskId, posterId: currentUser.uid, posterName: userProfile?.name || currentUser.displayName || 'Someone', category: 'scheduled_accepted', status: 'accepted', scheduledTime, createdAt: Date.now(), type: 'schedule_accepted' });
                     loadUserTasks(); showToast(`Helper ${helperName} has been scheduled`);
-                } catch(error) { debugLog(`Error approving scheduled request: ${error.message}`, 'error'); }
+                } catch(error) { debugLog(`Error approving scheduled request: ${error.message}`, 'error'); showToast('Error approving request'); }
             };
 
             window.declineScheduledRequest = async function(taskId, helperUid) {
@@ -2456,7 +2477,7 @@
                     const notificationRef = database.ref('notifications/' + helperUid).push();
                     await notificationRef.set({ taskId, posterId: currentUser.uid, posterName: userProfile?.name || currentUser.displayName || 'Someone', status: 'rejected', createdAt: Date.now(), type: 'schedule_rejected' });
                     loadScheduledRequests(); showToast('Scheduled request declined');
-                } catch(error) { debugLog(`Error declining scheduled request: ${error.message}`, 'error'); }
+                } catch(error) { debugLog(`Error declining scheduled request: ${error.message}`, 'error'); showToast('Error declining request'); }
             };
 
             window.confirmHelperArrival = async function(taskId) {
@@ -2469,7 +2490,7 @@
                         await notificationRef.set({ taskId, posterId: currentUser.uid, posterName: userProfile?.name || currentUser.displayName || 'Someone', status: 'started', createdAt: Date.now(), type: 'task_started' });
                     }
                     loadUserTasks(); showToast('Task started!');
-                } catch(error) { debugLog(`Error confirming arrival: ${error.message}`, 'error'); }
+                } catch(error) { debugLog(`Error confirming arrival: ${error.message}`, 'error'); showToast('Error confirming arrival'); }
             };
 
             window.completeTask = async function(taskId) {
@@ -2482,7 +2503,7 @@
                         await notificationRef.set({ taskId, posterId: currentUser.uid, posterName: userProfile?.name || currentUser.displayName || 'Someone', status: 'completed', createdAt: Date.now(), type: 'task_completed', budget: task.budget });
                     }
                     loadUserTasks(); showToast('Task completed!');
-                } catch(error) { debugLog(`Error completing task: ${error.message}`, 'error'); }
+                } catch(error) { debugLog(`Error completing task: ${error.message}`, 'error'); showToast('Error completing task'); }
             };
 
             document.querySelectorAll('.category-tab').forEach(tab => {
@@ -2516,9 +2537,23 @@
             document.getElementById('mainSearchInput').addEventListener('click', openCreateTask);
             document.getElementById('searchIconBtn').addEventListener('click', openCreateTask);
             document.getElementById('helpersCard').addEventListener('click', openCreateTask);
+            
+            // FIXED: Reset form function
+            function resetCreateTaskForm() { 
+                createTaskInput.value=''; 
+                uploadedImages=[]; 
+                displayPreviews(); 
+                whenNowBtn.click(); 
+                fixedBudgetBtn.click(); 
+                dateDisplay.textContent='Pick date'; 
+                timeDisplay.textContent='Pick time'; 
+                nativeDatePicker.value=''; 
+                nativeTimePicker.value=''; 
+                document.getElementById('extraNotes').value=''; 
+                validateForm(); 
+            }
+            
             document.getElementById('closeCreateTaskBtn').addEventListener('click', () => { createTaskContainer.style.display='none'; resetCreateTaskForm(); });
-
-            function resetCreateTaskForm() { createTaskInput.value=''; uploadedImages=[]; displayPreviews(); whenNowBtn.click(); fixedBudgetBtn.click(); dateDisplay.textContent='Pick date'; timeDisplay.textContent='Pick time'; nativeDatePicker.value=''; nativeTimePicker.value=''; document.getElementById('extraNotes').value=''; validateForm(); }
 
             function validateForm() {
                 const taskFilled = createTaskInput.value.trim() !== '';
@@ -2527,8 +2562,7 @@
                     const amount = budgetAmount.value.trim();
                     const amountNum = parseFloat(amount);
                     budgetValid = amount !== '' && !isNaN(amountNum) && amountNum > 0;
-                    if (!budgetValid && amount !== '') budgetAmount.classList.add('error'); else budgetAmount.classList.remove('error');
-                } else budgetAmount.classList.remove('error');
+                }
                 let whenValid = true;
                 if (whenLaterBtn.classList.contains('active')) whenValid = dateDisplay.textContent !== 'Pick date' && timeDisplay.textContent !== 'Pick time';
                 nextBtn.disabled = !(taskFilled && budgetValid && whenValid);
@@ -2562,8 +2596,8 @@
                 const taskRef = database.ref('tasks/' + currentUser.uid).push();
                 const taskId = taskRef.key;
                 const task = {
-                    taskId, posterId: currentUser.uid, posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User', posterEmail: currentUser.email || '',
-                    category: taskInputValue, description: extraNotesValue || '', address: '', location: { city: locationInputValue, province: '', postalCode: '', lat: currentLat || -26.195246, lng: currentLng || 28.034088 },
+                    id: taskId, posterId: currentUser.uid, posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User', posterEmail: currentUser.email || '',
+                    category: taskInputValue, description: extraNotesValue || '', address: locationInputValue, location: { city: locationInputValue, province: '', postalCode: '', lat: currentLat || -26.195246, lng: currentLng || 28.034088 },
                     budget: budgetAmountValue, date: nativeDatePicker.value || new Date().toISOString().split('T')[0], time: nativeTimePicker.value || new Date().toTimeString().split(' ')[0].substring(0,5),
                     status: 'open', taskState, assignedHelperId: null, assignedHelperName: null, completedAt: null, createdAt: Date.now(), updatedAt: Date.now(), notes: extraNotesValue || '', images: uploadedImages
                 };
