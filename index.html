@@ -28,7 +28,6 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
-        /* FIX: flex-start so hero never floats above sticky header */
         align-items: flex-start;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -153,7 +152,6 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        /* isolation: isolate prevents children from bleeding over content below */
         isolation: isolate;
     }
     .header-container {
@@ -177,23 +175,50 @@
         width: auto;
         object-fit: contain;
     }
-    .desktop-cta {
+
+    /* ========= HEADER RIGHT: Login + Sign Up + Hamburger ========= */
+    .header-right {
         display: flex;
         align-items: center;
+        gap: 0.5rem;
     }
-    /* Desktop nav links removed — only the CTA button remains */
-    .desktop-cta-btn {
+
+    /* Login — no border, ghost style */
+    .header-login-btn {
+        background: transparent;
+        border: none !important;
+        color: white;
+        font-family: 'Manrope', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 400;
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        outline: none;
+        transition: opacity 0.2s;
+        border-radius: 0 !important;
+        white-space: nowrap;
+    }
+    .header-login-btn:hover { opacity: 0.7; }
+
+    /* Sign Up — white bg, black text */
+    .header-signup-btn {
         background: white;
-        padding: 0.6rem 1.8rem;
+        border: none !important;
         color: #000000;
-        font-size: 1rem;
+        font-family: 'Manrope', sans-serif;
+        font-size: 0.95rem;
         font-weight: 500;
         cursor: pointer;
-        border: 1px solid white;
+        padding: 0.5rem 1.1rem;
+        outline: none;
         transition: background 0.2s;
-        border-radius: 0;
+        border-radius: 5px !important;
+        white-space: nowrap;
     }
-    .desktop-cta-btn:hover { background: #e6e6e6; }
+    .header-signup-btn:hover { background: #e6e6e6; }
+
+    /* Desktop: show login+signup, hide hamburger */
+    /* Mobile: show hamburger, optionally hide or keep login+signup */
 
     /* ========= HAMBURGER – 2 bars, animates to X on click ========= */
     .hamburger {
@@ -229,12 +254,10 @@
         transition: all 0.3s ease-in-out;
         left: 0;
     }
-    /* 2-bar look: only top and bottom bars shown */
     .checkmark span:nth-child(1) { top: 30%; }
     .checkmark span:nth-child(2) { display: none; }
     .checkmark span:nth-child(3) { top: 70%; }
 
-    /* Checked: both bars rotate into an X */
     .hamburger input:checked + .checkmark span:nth-child(1) {
         top: 50%;
         transform: translateY(-50%) rotate(45deg);
@@ -243,7 +266,6 @@
         top: 50%;
         transform: translateY(-50%) rotate(-45deg);
     }
-    /* ============================================================== */
 
     /* ========= CHEVRON ========= */
     .search-circle-btn {
@@ -278,7 +300,6 @@
     .search-circle-btn input:checked ~ .chevron-svg {
         transform: rotate(180deg);
     }
-    /* =========================== */
 
     /* ========= AUTOCOMPLETE SUGGESTIONS ========= */
     .suggestions-wrapper { position: relative; width: 100%; }
@@ -306,9 +327,8 @@
     }
     .suggestion-item:last-child { border-bottom: none; }
     .suggestion-item:hover { background-color: #f5f5f5; }
-    /* ============================================= */
 
-    /* FIX: hero in normal doc flow, z-index:1 so it never bleeds above header */
+    /* ========= HERO ========= */
     .hero {
         width: 100%;
         max-width: 1200px;
@@ -321,16 +341,6 @@
         margin-top: 12px;
         position: relative;
         z-index: 1;
-    }
-
-    .button-group {
-        display: flex;
-        gap: 0.35rem;
-        justify-content: flex-start;
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-        width: 100%;
-        max-width: 800px;
     }
 
     .btn {
@@ -363,36 +373,165 @@
         35%, 100%   { transform: translateX(0); }
     }
 
+    /* ========= FLOW SEARCH UI ========= */
     .search-container {
         width: 100%;
-        max-width: 750px;
+        max-width: 480px;
         margin-bottom: 0.5rem;
         position: relative;
         display: flex;
         flex-direction: column;
-        align-items: center;
-    }
-    .search-wrapper { position: relative; width: 100%; }
-    .search-input.error {
-        background-color: rgba(0,0,0,0.1) !important;
-        animation: shake 0.5s ease;
+        align-items: flex-start;
     }
 
-    .location-link {
-        display: inline-flex;
+    /*
+      Single column layout — inputs are full width.
+      Dots sit inside each field on the left edge (absolute).
+      The connecting line lives between the two fields (absolute, in the gap).
+    */
+    .flow-inputs {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        position: relative;
+    }
+
+    /* The black vertical line — from centre of top dot to centre of bottom dot.
+       Top dot centre: 54px/2 = 27px from top of .flow-inputs
+       Line height spans the gap between the two field centres = 54px + 14px gap */
+    .flow-connector-line {
+        position: absolute;
+        left: 19px;           /* 14px left offset + 6px (half of 12px dot) - 1px (half line width) */
+        top: 27px;            /* centre of top dot */
+        height: calc(54px + 14px);
+        width: 2px;
+        background: #000;
+        z-index: 3;           /* above the inputs */
+        pointer-events: none;
+    }
+
+    /* Input rows — position:relative so dots can be absolute inside */
+    .flow-row-top,
+    .flow-row-bottom {
+        position: relative;
+        width: 100%;
+    }
+
+    /* Shared input styles — left padding makes room for the dot (14px) + dot(12px) + gap(10px) */
+    .flow-input-location,
+    .flow-input-task {
+        width: 100%;
+        border: none !important;
+        background-color: #f0f0f0 !important;
+        color: rgba(0,0,0,0.8);
+        padding: 1rem 3rem 1rem 2.4rem;
+        outline: none;
+        font-family: 'Manrope', sans-serif !important;
+        font-weight: 200 !important;
+        font-size: 1rem !important;
+        transition: outline 0.2s ease;
+        height: 54px;
+        border-radius: 5px !important;
+    }
+    .flow-input-location::placeholder,
+    .flow-input-task::placeholder {
+        color: rgba(0,0,0,0.35);
+        font-weight: 200;
+    }
+    .flow-input-location:focus,
+    .flow-input-task:focus {
+        outline: 2px solid rgba(0,0,0,0.18);
+    }
+
+    /* Top dot — thick black ring, white centre, circle */
+    .flow-dot-top {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3.5px solid #000;
+        z-index: 4;
+        pointer-events: none;
+        box-sizing: border-box;
+    }
+
+    /* Bottom dot — thick black border, white centre, SQUARE (cube) */
+    .flow-dot-bottom {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 12px;
+        height: 12px;
+        border-radius: 0;
+        background: #fff;
+        border: 3.5px solid #000;
+        z-index: 4;
+        pointer-events: none;
+        box-sizing: border-box;
+    }
+
+    /* Location pin icon — right side of top field */
+    .flow-location-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+    }
+    .flow-location-icon .material-symbols-outlined {
+        font-size: 20px !important;
+        color: rgba(0,0,0,0.38) !important;
+    }
+
+    /* Suggestions for task field */
+    .flow-suggestions-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: white;
+        border: 1px solid #e0e0e0;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-radius: 4px;
+    }
+    .flow-suggestions-list.active { display: block; }
+
+    /* Submit chevron — right side of bottom field */
+    .flow-submit-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        color: black;
-        font-size: 1.1rem;
-        font-weight: 300;
-        text-decoration: none;
-        margin-top: 0.25rem;
-        padding: 8px 8px 8px 0;
-        cursor: pointer;
-        background: transparent;
-        align-self: center;
-        font-family: 'Manrope', sans-serif;
-        border: none;
+        padding: 0;
+    }
+    .flow-submit-btn .chevron-svg {
+        fill: #000;
+        width: 16px;
+        height: 16px;
+    }
+
+    .flow-input-task.error {
+        background-color: rgba(0,0,0,0.1) !important;
+        animation: shake 0.5s ease;
     }
 
     /* ========= MODALS ========= */
@@ -547,10 +686,7 @@
     }
     .success-close-btn:hover { background: rgba(0,0,0,0.05); }
 
-    /* ========= NAV OVERLAY =========
-       z-index:99 keeps it under the sticky header (z-index:100)
-       so the header bar always sits on top — no duplicate header inside the overlay
-    */
+    /* ========= NAV OVERLAY ========= */
     .nav-overlay {
         position: fixed;
         top: 0; left: 0;
@@ -577,11 +713,9 @@
         min-height: 100vh;
         position: relative;
         z-index: 101;
-        /* push content below the sticky header */
         margin-top: 90px;
     }
 
-    /* ========= NAV LINKS — match hero heading style ========= */
     .nav-links {
         display: flex;
         flex-direction: column;
@@ -599,7 +733,6 @@
         transition: opacity 0.2s;
     }
     .nav-link:hover { opacity: 0.4; }
-    /* ========================================================= */
 
     /* Planner iframe */
     #taskPlannerFrame {
@@ -617,33 +750,15 @@
     #taskPlannerFrame.active { display: block; opacity: 1; visibility: visible; }
     body.planner-open { overflow: hidden; position: fixed; width: 100%; height: 100%; }
 
-    .search-loading {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0; right: 0;
-        background: white;
-        border: 1px solid #e0e0e0;
-        padding: 12px 20px;
-        font-family: 'Manrope', sans-serif;
-        font-weight: 300;
-        font-size: 0.9rem;
-        color: #999;
-        display: none;
-    }
-    .search-loading.visible { display: block; }
-
+    /* ========= RESPONSIVE ========= */
     @media (min-width: 1024px) {
         .hero h1 { font-size: 4.8rem; }
         .hero-subhead { font-size: 1.35rem; }
         .btn { padding: 1.1rem 2.2rem; font-size: 1.3rem; min-width: 190px; }
-        .search-input { padding: 1.3rem 2.4rem; }
-        .search-circle-btn { width: 32px; height: 32px; right: 10px; }
         .hamburger { display: none; }
-        .desktop-cta { display: flex; }
     }
 
     @media (max-width: 768px) {
-        .desktop-cta { display: none; }
         .hamburger { display: flex; }
         .header-container { height: 70px; padding: 0 8px; }
         .brand-logo { max-height: 42px; }
@@ -651,26 +766,24 @@
         .hero h1 { font-size: clamp(2.8rem, 7vw, 3.5rem); margin-top: 1.5rem; }
         .hero-subhead { font-size: 1.1rem; }
         .btn { padding: 0.85rem 1.5rem; font-size: 1.1rem; min-width: 150px; }
-        .search-input { padding: 1rem 1.8rem; }
-        .search-circle-btn { width: 32px; height: 32px; right: 6px; }
-        .location-link { font-size: 0.9rem; }
         .modal-card { max-width: 400px; padding: 1.5rem 1.2rem; }
         .modal-icon { width: 56px; height: 56px; }
         .modal-icon .material-symbols-outlined { font-size: 30px !important; }
         .nav-container { margin-top: 70px; }
         .nav-link { font-size: clamp(2.2rem, 7vw, 3.5rem); }
+        /* On small screens, shrink login/signup text slightly */
+        .header-login-btn { font-size: 0.85rem; padding: 0.4rem 0.5rem; }
+        .header-signup-btn { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
     }
 
     @media (max-width: 480px) {
         .hero { padding: 20px 16px 10px; }
         .hero h1 { font-size: clamp(2.5rem, 6vw, 2.8rem); margin-top: 1rem; }
         .hero-subhead { font-size: 1rem; }
-        .btn { padding: 0.75rem 1rem; font-size: 1rem; min-width: 130px; }
-        .search-input { padding: 0.9rem 1.3rem; }
-        .search-circle-btn { width: 28px; height: 28px; right: 5px; }
-        .location-link { font-size: 0.85rem; }
         .nav-container { margin-top: 70px; }
         .nav-link { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+        .header-login-btn { font-size: 0.8rem; padding: 0.35rem 0.4rem; }
+        .header-signup-btn { font-size: 0.8rem; padding: 0.35rem 0.65rem; }
     }
 </style>
 
@@ -678,6 +791,7 @@
 <body>
     <header class="site-header">
         <div class="header-container">
+            <!-- LOGO -->
             <div class="logo-container">
                 <img class="brand-logo"
                      src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Cream%20Black%20Typography%20Loop%20Brand%20Logo%20(500%20x%20180%20px).png"
@@ -686,20 +800,23 @@
                      onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22200%22%20height%3D%2265%22%20viewBox%3D%220%200%20200%2065%22%3E%3Crect%20width%3D%22200%22%20height%3D%2265%22%20fill%3D%22%23000000%22%2F%3E%3Ctext%20x%3D%2212%22%20y%3D%2244%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2224%22%20font-weight%3D%22500%22%20fill%3D%22white%22%3ECream%20Black%3C%2Ftext%3E%3C%2Fsvg%3E';">
             </div>
 
-        <!-- Desktop: CTA button only, nav links removed -->
-        <div class="desktop-cta">
-            <button class="desktop-cta-btn" id="desktopJoinBtn">Join the waitlist</button>
+```
+        <!-- RIGHT SIDE: Login · Sign Up · Hamburger -->
+        <div class="header-right">
+            <!-- Login — no border -->
+            <button class="header-login-btn" id="headerLoginBtn">Login</button>
+            <!-- Sign Up — white bg, black text -->
+            <button class="header-signup-btn" id="headerSignupBtn">Sign up</button>
+            <!-- Mobile hamburger -->
+            <label class="hamburger" id="menuBtn" aria-label="Menu">
+                <input type="checkbox" id="menuCheckbox">
+                <div class="checkmark">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </label>
         </div>
-
-        <!-- Mobile hamburger: 2 bars → X -->
-        <label class="hamburger" id="menuBtn" aria-label="Menu">
-            <input type="checkbox" id="menuCheckbox">
-            <div class="checkmark">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </label>
     </div>
 </header>
 
@@ -707,23 +824,49 @@
     <h1>Need a hand? <br>Someone is close by.</h1>
     <p class="hero-subhead">Connect with verified helpers near you.</p>
 
-    <div class="button-group">
-        <button class="btn btn-primary shake-btn" id="joinWaitlistBtn">Get started</button>
-        <button class="btn btn-outline" id="learnMoreBtn">Learn more</button>
-    </div>
-
+    <!-- Flow-based search UI -->
     <div class="search-container">
-        <div class="search-wrapper">
-            <input type="text" class="search-input" placeholder="I need help with..." aria-label="Search tasks" id="searchInputField" autocomplete="off">
-            <div id="suggestionsList" class="suggestions-list"></div>
-            <label class="search-circle-btn" id="searchIconBtn" aria-label="Search">
-                <input type="checkbox" id="chevronToggle">
-                <svg viewBox="0 0 320 512" class="chevron-svg">
-                    <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/>
-                </svg>
-            </label>
+        <div class="flow-inputs">
+
+            <!-- Black vertical line connecting dot centres -->
+            <div class="flow-connector-line"></div>
+
+            <!-- Top field: location -->
+            <div class="flow-row-top">
+                <div class="flow-dot-top"></div>
+                <input
+                    type="text"
+                    class="flow-input-location"
+                    id="locationInputField"
+                    placeholder="Detecting location…"
+                    aria-label="Your location"
+                    readonly
+                >
+                <span class="flow-location-icon">
+                    <span class="material-symbols-outlined">location_on</span>
+                </span>
+            </div>
+
+            <!-- Bottom field: task -->
+            <div class="flow-row-bottom">
+                <div class="flow-dot-bottom"></div>
+                <input
+                    type="text"
+                    class="flow-input-task"
+                    id="taskInputField"
+                    placeholder="What do you need help with?"
+                    aria-label="Describe your task"
+                    autocomplete="off"
+                >
+                <div id="flowSuggestionsList" class="flow-suggestions-list"></div>
+                <button class="flow-submit-btn" id="flowSubmitBtn" aria-label="Submit">
+                    <svg viewBox="0 0 320 512" class="chevron-svg">
+                        <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/>
+                    </svg>
+                </button>
+            </div>
+
         </div>
-        <button class="location-link" id="currentLocationLink">use current location</button>
     </div>
 </section>
 
@@ -792,12 +935,7 @@
     </div>
 </div>
 
-<!--
-    Mobile nav overlay
-    • No header inside — the sticky site header shows above it (z-index:100 vs 99)
-    • No join button — removed per request
-    • 4 new links in hero heading font/weight
--->
+<!-- Mobile nav overlay -->
 <div class="nav-overlay" id="navOverlay" aria-hidden="true">
     <div class="nav-container">
         <nav class="nav-links">
@@ -808,6 +946,7 @@
         </nav>
     </div>
 </div>
+```
 
 <script>
     (function() {
@@ -832,7 +971,6 @@
             }
         }
         loadTasks();
-        // ======================================
 
         let currentCoordinates = '', currentLocationName = '', taskDescription = '';
 
@@ -848,6 +986,36 @@
                 return null;
             } catch { return null; }
         }
+
+        // ========= AUTO-DETECT LOCATION ON LOAD =========
+        const locationInputField = document.getElementById('locationInputField');
+
+        function detectLocation() {
+            if (!locationInputField) return;
+            if (navigator.geolocation) {
+                locationInputField.placeholder = 'Detecting location…';
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    currentCoordinates = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                    const name = await getLocationName(pos.coords.latitude, pos.coords.longitude);
+                    if (name) {
+                        currentLocationName = name;
+                        locationInputField.value = name;
+                        locationInputField.placeholder = '';
+                    } else {
+                        currentLocationName = 'your location';
+                        locationInputField.value = 'your location';
+                    }
+                }, () => {
+                    locationInputField.placeholder = 'Location unavailable';
+                });
+            } else {
+                locationInputField.placeholder = 'Location unavailable';
+            }
+        }
+
+        // Trigger geolocation on page load
+        detectLocation();
+        // =================================================
 
         // ========= TASK PLANNER IFRAME =========
         const plannerFrame = document.getElementById('taskPlannerFrame');
@@ -877,10 +1045,8 @@
         window.addEventListener('message', (e) => {
             if (e.data?.type === 'CLOSE_PLANNER') closeTaskPlanner();
         });
-        // ========================================
 
         // ========= MOBILE MENU =========
-        // Declared before openModalA so closeMenu is in scope when called from it
         const menuCheckbox = document.getElementById('menuCheckbox');
         const navOverlay   = document.getElementById('navOverlay');
 
@@ -911,12 +1077,9 @@
                 if (e.key === 'Escape' && navOverlay.classList.contains('active')) closeMenu();
             });
         }
-        // ================================
 
         // ========= MODAL A =========
         const modalA           = document.getElementById('waitlistModal');
-        const joinBtn          = document.getElementById('joinWaitlistBtn');
-        const desktopJoinBtn   = document.getElementById('desktopJoinBtn');
         const closeA           = document.getElementById('closeModalBtn');
         const formA            = document.getElementById('formA');
         const successA         = document.getElementById('modalASuccess');
@@ -936,8 +1099,20 @@
             if (navOverlay && navOverlay.classList.contains('active')) closeMenu();
         }
 
-        if (joinBtn)        joinBtn.addEventListener('click', openModalA);
-        if (desktopJoinBtn) desktopJoinBtn.addEventListener('click', openModalA);
+        // Header Sign Up triggers Modal A
+        const headerSignupBtn = document.getElementById('headerSignupBtn');
+        if (headerSignupBtn) headerSignupBtn.addEventListener('click', openModalA);
+
+        // Header Login (placeholder — wire up your own login logic here)
+        const headerLoginBtn = document.getElementById('headerLoginBtn');
+        if (headerLoginBtn) {
+            headerLoginBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // TODO: open login modal or redirect
+                alert('Login coming soon!');
+            });
+        }
+
         if (closeA)           closeA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
         if (closeSuccessA)    closeSuccessA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
         if (closeSuccessBtnA) closeSuccessBtnA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
@@ -954,7 +1129,6 @@
         if (modalA) modalA.addEventListener('click', (e) => {
             if (e.target === modalA) { modalA.classList.remove('active'); resetModalA(); }
         });
-        // ===========================
 
         // ========= MODAL B =========
         const modalB           = document.getElementById('areaModal');
@@ -985,83 +1159,54 @@
         if (modalB) modalB.addEventListener('click', (e) => {
             if (e.target === modalB) { modalB.classList.remove('active'); resetModalB(); }
         });
-        // ===========================
 
-        // ========= SEARCH & SUGGESTIONS =========
-        const searchInput     = document.getElementById('searchInputField');
-        const searchIconBtn   = document.getElementById('searchIconBtn');
-        const chevronToggle   = document.getElementById('chevronToggle');
-        const suggestionsList = document.getElementById('suggestionsList');
+        // ========= FLOW SEARCH (task field) =========
+        const taskInput         = document.getElementById('taskInputField');
+        const flowSuggestions   = document.getElementById('flowSuggestionsList');
+        const flowSubmitBtn     = document.getElementById('flowSubmitBtn');
 
-        if (searchInput && suggestionsList) {
-            searchInput.addEventListener('input', function() {
+        if (taskInput && flowSuggestions) {
+            taskInput.addEventListener('input', function() {
                 const query = this.value.trim().toLowerCase();
-                if (query.length < 1 || tasks.length === 0) { suggestionsList.classList.remove('active'); return; }
+                if (query.length < 1 || tasks.length === 0) { flowSuggestions.classList.remove('active'); return; }
                 const matches = tasks.filter(t => t.toLowerCase().includes(query)).slice(0, 8);
-                if (matches.length === 0) { suggestionsList.classList.remove('active'); return; }
-                suggestionsList.innerHTML = matches.map(t =>
+                if (matches.length === 0) { flowSuggestions.classList.remove('active'); return; }
+                flowSuggestions.innerHTML = matches.map(t =>
                     `<div class="suggestion-item" data-task="${t}">${capitalizeFirstLetter(t)}</div>`
                 ).join('');
-                suggestionsList.classList.add('active');
-                document.querySelectorAll('.suggestion-item').forEach(el => {
+                flowSuggestions.classList.add('active');
+                flowSuggestions.querySelectorAll('.suggestion-item').forEach(el => {
                     el.addEventListener('click', function() {
-                        searchInput.value = this.dataset.task.toLowerCase();
-                        suggestionsList.classList.remove('active');
+                        taskInput.value = this.dataset.task.toLowerCase();
+                        flowSuggestions.classList.remove('active');
                     });
                 });
             });
 
             document.addEventListener('click', function(e) {
-                if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
-                    suggestionsList.classList.remove('active');
+                if (!taskInput.contains(e.target) && !flowSuggestions.contains(e.target)) {
+                    flowSuggestions.classList.remove('active');
                 }
             });
         }
 
-        if (searchIconBtn && chevronToggle) {
-            searchIconBtn.addEventListener('click', function(e) {
+        if (flowSubmitBtn) {
+            flowSubmitBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                chevronToggle.checked = true;
-                setTimeout(() => { chevronToggle.checked = false; }, 300);
-                taskDescription = searchInput ? searchInput.value.trim() : '';
+                taskDescription = taskInput ? taskInput.value.trim() : '';
                 if (taskDescription) {
                     openTaskPlanner();
                 } else {
-                    if (searchInput) {
-                        searchInput.classList.add('error');
-                        setTimeout(() => searchInput.classList.remove('error'), 500);
+                    if (taskInput) {
+                        taskInput.classList.add('error');
+                        setTimeout(() => taskInput.classList.remove('error'), 500);
                     }
                 }
             });
         }
-        // =========================================
-
-        // ========= LOCATION LINK =========
-        const locationLink = document.getElementById('currentLocationLink');
-        if (locationLink) {
-            locationLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(async (pos) => {
-                        currentCoordinates = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
-                        currentLocationName = await getLocationName(pos.coords.latitude, pos.coords.longitude) || 'your location';
-                        if (searchInput) searchInput.value = currentLocationName;
-                        openTaskPlanner();
-                    }, () => openTaskPlanner());
-                } else {
-                    openTaskPlanner();
-                }
-            });
-        }
-        // ==================================
-
-        // Learn More
-        const learnMoreBtn = document.getElementById('learnMoreBtn');
-        if (learnMoreBtn) {
-            learnMoreBtn.addEventListener('click', () => { window.location.href = 'learn-more.html'; });
-        }
 
     })();
 </script>
+
 </body>
 </html>
