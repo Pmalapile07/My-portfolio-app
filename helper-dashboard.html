@@ -1,2718 +1,1692 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TaskMart · Helper</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap">
-    
-    <!-- Custom Fonts -->
-    <style>
-        @font-face {
-            font-family: 'Codec Cold News';
-            src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-    </style>
-    
-    <!-- Mapbox GL JS -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-    
-    <!-- Firebase SDK (v10.8.0) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    
-    <!-- Flaticon Icons - Fixed duplicates -->
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 400;
-            font-size: 16px;
-            background: #fff;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-        }
-
-        /* Splash Screen */
-        .splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            transition: opacity 0.5s ease;
-        }
-
-        .splash-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .splash-logo {
-            font-family: 'Codec Cold News', 'Manrope', sans-serif;
-            font-size: 3rem;
-            font-weight: normal;
-            color: #000;
-            text-transform: lowercase;
-            letter-spacing: -1px;
-        }
-
-        .splash-subtitle {
-            font-family: 'Manrope', sans-serif;
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 10px;
-            font-weight: 400;
-        }
-
-        #map {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            will-change: transform;
-            transform: translateZ(0);
-        }
-
-        /* Map top icons - perfectly centered */
-        .map-top-left, .map-top-right {
-            position: absolute;
-            top: max(20px, env(safe-area-inset-top));
-            width: 44px;
-            height: 44px;
-            background: white;
-            border-radius: 50%;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 10;
-            cursor: pointer;
-        }
-        
-        .map-top-left i, .map-top-right i {
-            font-size: 1.3rem;
-            color: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-        }
-        
-        .map-top-left { left: max(20px, env(safe-area-inset-left)); }
-        .map-top-right { right: max(20px, env(safe-area-inset-right)); }
-
-        .mapboxgl-ctrl-top-right .mapboxgl-ctrl {
-            display: none !important;
-        }
-
-        /* Helper marker */
-        .helper-pulsing-pin {
-            position: relative;
-            width: 16px;
-            height: 16px;
-            background: #000;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 0 0 12px rgba(74, 144, 226, 0.4);
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            animation: pulse-helper 2s infinite ease-out;
-        }
-        
-        @keyframes pulse-helper {
-            0% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.6); }
-            70% { box-shadow: 0 0 0 22px rgba(74, 144, 226, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
-        }
-
-        /* Task markers */
-        .task-pin {
-            position: relative;
-            transform: translate(-50%, -50%);
-            pointer-events: auto;
-            cursor: pointer;
-        }
-        
-        .task-marker-container {
-            display: inline-flex;
-            align-items: center;
-            width: fit-content;
-            max-width: 200px;
-            background: white;
-            border-radius: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            border: 1px solid rgba(0,0,0,0.1);
-            overflow: hidden;
-            height: 36px;
-            transition: transform 0.1s ease;
-        }
-
-        .task-marker-container:hover {
-            transform: scale(1.05);
-        }
-
-        .task-marker-icon {
-            width: 36px;
-            height: 36px;
-            background: #000000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .task-marker-icon i {
-            color: white;
-            background: #000;
-            font-size: 1rem;
-        }
-
-        .task-marker-name {
-            padding: 0 14px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #000;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .task-pin.assigned .task-marker-icon {
-            background: #000;
-        }
-        
-        .task-pin.taken .task-marker-icon {
-            background: #666;
-        }
-
-        /* Loading spinner */
-        .tasks-loading {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .tasks-loading .spinner {
-            width: 30px;
-            height: 30px;
-            border: 2px solid #f0f0f0;
-            border-top: 2px solid #000;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Floating distance card */
-        .floating-distance-card {
-            position: fixed;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            z-index: 5000;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            border: none;
-            animation: slideUp 0.3s ease;
-        }
-
-        .floating-distance-card.visible {
-            display: flex;
-        }
-
-        .distance-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-        }
-
-        .distance-info i {
-            font-size: 1.2rem;
-            color: #000;
-        }
-
-        .distance-text {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #000;
-        }
-
-        .route-toggle {
-            display: flex;
-            gap: 8px;
-        }
-
-        .route-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid #e0e0e0;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .route-btn.active {
-            background: #000;
-            color: white;
-            border-color: #000;
-        }
-
-        /* Task preview card */
-        .task-preview-card {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 400px;
-            margin: 0;
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            z-index: 100000;
-            display: none;
-            border: 1px solid rgba(0,0,0,0.05);
-            cursor: pointer;
-        }
-
-        .task-preview-card.visible {
-            display: block;
-        }
-
-        .task-preview-card.fade-out {
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .preview-category {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #000;
-            text-transform: capitalize;
-        }
-
-        .preview-budget {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #10b981;
-        }
-
-        .preview-budget.open {
-            color: #666;
-            font-size: 0.8rem;
-        }
-
-        .preview-poster {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .preview-poster-avatar {
-            width: 48px;
-            height: 48px;
-            background: #A6CBE3;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.3rem;
-        }
-
-        .preview-poster-name {
-            font-weight: 600;
-            color: #333;
-            font-size: 1rem;
-        }
-
-        .preview-details {
-            margin-bottom: 20px;
-        }
-
-        .preview-notes {
-            background: #f8f8f8;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            color: #333;
-            line-height: 1.5;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
-            cursor: pointer;
-        }
-
-        .preview-notes i {
-            color: #000;
-            font-size: 1.1rem;
-        }
-
-        .preview-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .preview-btn {
-            padding: 14px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            font-family: 'Manrope', sans-serif;
-            transition: all 0.2s;
-        }
-
-        .preview-btn:active {
-            transform: scale(0.98);
-        }
-
-        .preview-btn.accept {
-            flex: 1;
-            background: #000;
-            color: white;
-        }
-
-        .preview-btn.ring {
-            flex: 1;
-            background: white;
-            color: #000;
-            border: 2px solid #000;
-        }
-
-        .preview-btn.taken {
-            flex: 1;
-            background: #f0f0f0;
-            color: #999;
-            cursor: not-allowed;
-        }
-
-        .preview-btn.close {
-            background: transparent;
-            color: #999;
-            padding: 8px;
-            font-size: 0.85rem;
-            width: 100%;
-            margin-top: 15px;
-        }
-
-        .preview-chat-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #f0f0f0;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #000;
-            font-size: 1.2rem;
-            margin-left: auto;
-        }
-
-        .preview-chat-btn:hover {
-            background: #000;
-            color: white;
-        }
-
-        /* Chat fullscreen */
-        .chat-fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 1000000;
-            display: none;
-            flex-direction: column;
-        }
-
-        .chat-fullscreen.active {
-            display: flex;
-        }
-
-        .chat-fullscreen-header {
-            display: flex;
-            align-items: center;
-            padding: max(16px, env(safe-area-inset-top)) 20px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            background: white;
-            justify-content: space-between;
-        }
-
-        .chat-fullscreen-poster {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
-
-        .chat-fullscreen-avatar {
-            width: 48px;
-            height: 48px;
-            background: #A6CBE3;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-
-        .chat-fullscreen-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-fullscreen-name {
-            font-weight: 700;
-            font-size: 1rem;
-            color: #000;
-        }
-
-        .chat-fullscreen-role {
-            font-size: 0.8rem;
-            color: #666;
-        }
-
-        .chat-fullscreen-minimize {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 50%;
-            color: #666;
-            transition: background 0.2s;
-        }
-
-        .chat-fullscreen-minimize:hover {
-            background: #f0f0f0;
-        }
-
-        .chat-fullscreen-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .chat-disclaimer {
-            background: #f8f8f8;
-            padding: 16px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            color: #666;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            border-left: 3px solid #000;
-            margin-bottom: 10px;
-        }
-
-        .chat-fullscreen-message {
-            display: flex;
-            flex-direction: column;
-            max-width: 80%;
-        }
-
-        .chat-fullscreen-message.own {
-            align-self: flex-end;
-            align-items: flex-end;
-        }
-
-        .message-bubble-full {
-            background: #f0f0f0;
-            padding: 12px 16px;
-            border-radius: 18px;
-            border-bottom-left-radius: 5px;
-            word-wrap: break-word;
-        }
-
-        .chat-fullscreen-message.own .message-bubble-full {
-            background: #A6CBE3;
-            color: white;
-            border-bottom-right-radius: 5px;
-            border-bottom-left-radius: 18px;
-        }
-
-        .message-text-full {
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
-
-        .message-time-full {
-            font-size: 0.65rem;
-            color: #999;
-            margin-top: 4px;
-            text-align: right;
-        }
-
-        .chat-fullscreen-input-area {
-            display: flex;
-            padding: 16px 20px;
-            padding-bottom: max(16px, env(safe-area-inset-bottom));
-            background: white;
-            border-top: 1px solid #f0f0f0;
-        }
-
-        .chat-fullscreen-input-wrapper {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            background: #f0f0f0;
-            border-radius: 30px;
-            padding: 4px 4px 4px 16px;
-        }
-
-        .chat-fullscreen-input {
-            width: 100%;
-            padding: 12px 0;
-            border: none;
-            border-radius: 30px;
-            font-size: 0.95rem;
-            font-family: 'Manrope', sans-serif;
-            outline: none;
-            background: transparent;
-        }
-
-        .chat-fullscreen-send {
-            width: 44px;
-            height: 44px;
-            background: #000;
-            border: none;
-            border-radius: 50%;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 4px;
-            transition: opacity 0.2s;
-        }
-
-        .chat-fullscreen-send:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Bottom navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: calc(66px + env(safe-area-inset-bottom));
-            padding-bottom: env(safe-area-inset-bottom);
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 200000;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
-        }
-        
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            cursor: pointer;
-            color: #999;
-            transition: color 0.2s;
-            font-size: 0.7rem;
-            background: transparent;
-            border: none;
-            font-family: 'Manrope', sans-serif;
-            position: relative;
-            padding: 8px 0;
-        }
-        
-        .nav-item.active {
-            color: #000;
-        }
-        
-        .nav-item i {
-            font-size: 1.4rem;
-            color: currentColor;
-        }
-        
-        .nav-notification-dot {
-            position: absolute;
-            top: 6px;
-            right: 50%;
-            transform: translateX(15px);
-            width: 8px;
-            height: 8px;
-            background: #A6CBE3;
-            border-radius: 50%;
-            display: none;
-            border: 2px solid white;
-        }
-        
-        .nav-notification-dot.visible {
-            display: block;
-        }
-
-        .page-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 100000;
-            overflow-y: auto;
-            display: none;
-            padding: max(20px, env(safe-area-inset-top)) 20px calc(86px + env(safe-area-inset-bottom));
-        }
-        
-        .page-container.active {
-            display: block;
-        }
-        
-        .tasks-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            margin-top: 1rem;
-        }
-        
-        .tasks-header h2 {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: #000;
-        }
-        
-        .tasks-header span {
-            font-size: 0.85rem;
-            color: #666;
-            background: #f0f0f0;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-        
-        .task-categories-horizontal {
-            display: flex;
-            overflow-x: auto;
-            gap: 8px;
-            padding-bottom: 8px;
-            margin-bottom: 1.5rem;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .category-tab-horizontal {
-            padding: 10px 20px;
-            background: #f0f0f0;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
-            border: none;
-        }
-        
-        .category-tab-horizontal.active {
-            background: #000;
-            color: white;
-        }
-        
-        .tasks-list-container {
-            margin-top: 1rem;
-        }
-        
-        .task-card {
-            background: white;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border: 1px solid #f0f0f0;
-        }
-        
-        .task-card:active {
-            transform: scale(0.99);
-            background: #fafafa;
-        }
-        
-        .task-card.incoming {
-            border-left: 4px solid #4A90E2;
-        }
-        
-        .task-card.current {
-            border-left: 4px solid #10b981;
-        }
-        
-        .task-card.past {
-            opacity: 0.7;
-            border-left: 4px solid #999;
-        }
-        
-        .task-card-main {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .task-icon {
-            width: 48px;
-            height: 48px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f0f0f0;
-            border-radius: 50%;
-        }
-        
-        .task-icon i {
-            font-size: 1.4rem;
-            color: #666;
-        }
-        
-        .task-content {
-            flex: 1;
-        }
-        
-        .task-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
-        
-        .task-date-time {
-            font-size: 0.75rem;
-            color: #999;
-            font-weight: 400;
-        }
-        
-        .task-distance-row {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75rem;
-            color: #555;
-        }
-        
-        .task-distance-row i {
-            font-size: 0.8rem;
-            color: #000;
-        }
-        
-        .task-title {
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 0.2rem;
-            color: #000;
-            text-transform: capitalize;
-        }
-        
-        .task-amount {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: #10b981;
-            margin-top: 2px;
-        }
-        
-        .task-status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: #f0f0f0;
-            color: #333;
-            border-radius: 20px;
-            margin-top: 8px;
-        }
-        
-        .task-status-badge.incoming {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .task-status-badge.assigned {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .task-status-badge.in-progress {
-            background: #fff3e0;
-            color: #e67e22;
-        }
-        
-        .task-status-badge.completed {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-
-        .task-status-badge.cancelled {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            max-width: 400px;
-            margin: 0 auto;
-            background: #000;
-            color: white;
-            padding: 16px 24px;
-            z-index: 9000;
-            display: none;
-            font-size: 0.9rem;
-            text-align: center;
-            border-radius: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .toast.show {
-            display: block;
-            animation: fadeIn 0.3s;
-        }
-
-        .notification-panel {
-            position: absolute;
-            top: calc(70px + env(safe-area-inset-top));
-            right: max(20px, env(safe-area-inset-right));
-            width: 300px;
-            max-width: calc(100% - 40px);
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-            z-index: 1000000;
-            display: none;
-            padding: 16px;
-        }
-
-        .notification-panel.active {
-            display: block;
-        }
-
-        .notification-header {
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 12px;
-            color: #000;
-        }
-
-        .notification-item {
-            padding: 12px 0;
-            font-size: 0.9rem;
-            color: #333;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .notification-item:last-child {
-            border-bottom: none;
-        }
-
-        .notification-empty {
-            text-align: center;
-            padding: 20px;
-            color: #999;
-            font-size: 0.9rem;
-        }
-
-        .task-detail-page {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            z-index: 3000000;
-            display: none;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-        
-        .task-detail-page.active {
-            display: flex;
-        }
-        
-        .task-detail-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: max(20px, env(safe-area-inset-top)) 1.25rem 0.75rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        }
-        
-        .task-detail-back-btn {
-            background: transparent;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #000;
-            border-radius: 50%;
-            transition: background 0.2s;
-        }
-
-        .task-detail-back-btn:hover {
-            background: #f0f0f0;
-        }
-
-        .task-detail-tooltip {
-            position: relative;
-        }
-
-        .tooltip-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: transparent;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #666;
-            font-size: 1.2rem;
-            transition: background 0.2s;
-        }
-
-        .tooltip-btn:hover {
-            background: #f0f0f0;
-        }
-
-        .tooltip-menu {
-            position: absolute;
-            top: 50px;
-            right: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 8px 0;
-            min-width: 200px;
-            z-index: 10;
-            display: none;
-        }
-
-        .tooltip-menu.active {
-            display: block;
-        }
-
-        .tooltip-menu-item {
-            padding: 12px 16px;
-            font-size: 0.9rem;
-            color: #333;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .tooltip-menu-item:hover {
-            background: #f8f8f8;
-        }
-
-        .tooltip-menu-item:first-child {
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .task-detail-content {
-            flex: 1;
-            padding: 1.5rem;
-        }
-
-        .timeline-item {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            align-items: flex-start;
-        }
-
-        .timeline-dot {
-            width: 12px;
-            height: 12px;
-            background: #000;
-            border: 2px solid white;
-            outline: 2px solid #A6CBE3;
-            border-radius: 50%;
-            margin-top: 4px;
-            flex-shrink: 0;
-        }
-
-        .timeline-content {
-            flex: 1;
-        }
-
-        .timeline-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-        }
-
-        .timeline-subtitle {
-            color: #666;
-            margin: 4px 0;
-            font-size: 0.9rem;
-        }
-
-        .timeline-time {
-            font-size: 0.8rem;
-            color: #999;
-        }
-
-        .status-text {
-            padding: 6px 12px;
-            border-radius: 20px;
-            display: inline-block;
-            font-weight: 600;
-            font-size: 0.8rem;
-        }
-        
-        .status-text.assigned {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .status-text.in-progress {
-            background: #fff3e0;
-            color: #e67e22;
-        }
-        
-        .status-text.completed {
-            background: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .status-text.cancelled {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .detail-action-btn.primary {
-            padding: 16px;
-            background: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1rem;
-            transition: opacity 0.2s;
-        }
-
-        .detail-action-btn.primary:active {
-            opacity: 0.8;
-        }
-
-        .detail-action-btn.primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .detail-action-btn.secondary {
-            padding: 16px;
-            background: transparent;
-            color: #000;
-            border: 1px solid #000;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1rem;
-        }
-
-        .detail-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .detail-map-container {
-            height: 150px;
-            background: #f0f0f0;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-
-        @media (max-width: 320px) {
-            .task-marker-name {
-                max-width: 100px;
-            }
-        }
-    </style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap">
+
+<style>
+    @font-face {
+        font-family: 'Codec Cold News';
+        src: url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Codec-Cold-News-trial.woff2') format('woff2');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+    }
+</style>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-solid-rounded/css/uicons-solid-rounded.css'>
+<link rel='stylesheet' href='https://cdn-uicons.flaticon.com/3.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+<link rel='stylesheet' href='https://cdn-uicons.flaticon.com/4.0.0/uicons-thin-rounded/css/uicons-thin-rounded.css'>
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 400;
+        font-size: 16px;
+        background: #fff;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+    }
+
+    /* ── SPLASH ── */
+    .splash-screen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: white;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition: opacity 0.5s ease;
+    }
+    .splash-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .splash-logo {
+        font-family: 'Codec Cold News', 'Manrope', sans-serif;
+        font-size: 3rem;
+        font-weight: normal;
+        color: #000;
+        text-transform: lowercase;
+        letter-spacing: -1px;
+    }
+    .splash-subtitle {
+        font-family: 'Manrope', sans-serif;
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 10px;
+        font-weight: 400;
+    }
+
+    /* ── MAP ── */
+    #map {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 1;
+        will-change: transform;
+        transform: translateZ(0);
+    }
+
+    .map-top-left, .map-top-right {
+        position: absolute;
+        top: max(20px, env(safe-area-inset-top));
+        width: 44px; height: 44px;
+        background: white;
+        border-radius: 50%;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 10;
+        cursor: pointer;
+    }
+    .map-top-left i, .map-top-right i {
+        font-size: 1.3rem;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+    .map-top-left { left: max(20px, env(safe-area-inset-left)); }
+    .map-top-right { right: max(20px, env(safe-area-inset-right)); }
+    .mapboxgl-ctrl-top-right .mapboxgl-ctrl { display: none !important; }
+
+    /* ── HELPER MARKER ── */
+    .helper-pulsing-pin {
+        position: relative;
+        width: 16px; height: 16px;
+        background: #000;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 0 12px rgba(74,144,226,0.4);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        animation: pulse-helper 2s infinite ease-out;
+    }
+    @keyframes pulse-helper {
+        0%   { box-shadow: 0 0 0 0   rgba(74,144,226,0.6); }
+        70%  { box-shadow: 0 0 0 22px rgba(74,144,226,0); }
+        100% { box-shadow: 0 0 0 0   rgba(74,144,226,0); }
+    }
+
+    /* ── TASK MARKERS ── */
+    .task-pin {
+        position: relative;
+        transform: translate(-50%, -50%);
+        pointer-events: auto;
+        cursor: pointer;
+    }
+    .task-marker-container {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        max-width: 200px;
+        background: white;
+        border-radius: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        border: 1px solid rgba(0,0,0,0.1);
+        overflow: hidden;
+        height: 36px;
+        transition: transform 0.1s ease;
+    }
+    .task-marker-container:hover { transform: scale(1.05); }
+    .task-marker-icon {
+        width: 36px; height: 36px;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .task-marker-icon i { color: white; font-size: 1rem; }
+    .task-marker-name {
+        padding: 0 14px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .task-pin.taken .task-marker-icon { background: #666; }
+
+    /* ── SPINNER ── */
+    .tasks-loading { text-align: center; padding: 40px 20px; color: #666; font-size: 0.9rem; }
+    .tasks-loading .spinner {
+        width: 30px; height: 30px;
+        border: 2px solid #f0f0f0;
+        border-top: 2px solid #000;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ── FLOATING DISTANCE CARD ── */
+    .floating-distance-card {
+        position: fixed;
+        bottom: 100px;
+        left: 20px; right: 20px;
+        max-width: 400px;
+        margin: 0 auto;
+        background: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        border: none;
+    }
+    .floating-distance-card.visible { display: flex; }
+    .distance-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .distance-info i { font-size: 1.2rem; color: #000; }
+    .distance-text { font-size: 0.9rem; font-weight: 600; color: #000; }
+    .route-toggle { display: flex; gap: 8px; }
+    .route-btn {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        border: 1px solid #e0e0e0;
+        background: white;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .route-btn.active { background: #000; color: white; border-color: #000; }
+
+    /* ── TASK PREVIEW CARD ── */
+    .task-preview-card {
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%; max-width: 400px;
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        z-index: 100000;
+        display: none;
+        border: 1px solid rgba(0,0,0,0.05);
+        cursor: pointer;
+    }
+    .task-preview-card.visible { display: block; }
+    .task-preview-card.fade-out { opacity: 0; transition: opacity 0.2s ease; }
+
+    .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .preview-category { font-size: 1.2rem; font-weight: 700; color: #000; text-transform: capitalize; }
+    .preview-budget { font-size: 0.9rem; font-weight: 600; color: #10b981; }
+    .preview-budget.open { color: #666; font-size: 0.8rem; }
+
+    .preview-poster {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 20px; padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .preview-poster-avatar {
+        width: 48px; height: 48px;
+        background: #A6CBE3;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 1.3rem;
+    }
+    .preview-poster-name { font-weight: 600; color: #333; font-size: 1rem; }
+
+    .preview-details { margin-bottom: 20px; }
+    .preview-notes {
+        background: #f8f8f8;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 0.9rem; color: #333; line-height: 1.5;
+        display: flex; gap: 10px; align-items: flex-start;
+        cursor: pointer;
+    }
+    .preview-notes i { color: #000; font-size: 1.1rem; }
+
+    .preview-actions { display: flex; gap: 10px; align-items: center; }
+    .preview-btn {
+        padding: 14px 20px;
+        border: none; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem;
+        cursor: pointer;
+        font-family: 'Manrope', sans-serif;
+        transition: all 0.2s;
+    }
+    .preview-btn:active { transform: scale(0.98); }
+    .preview-btn.accept { flex: 1; background: #000; color: white; }
+    .preview-btn.ring { flex: 1; background: white; color: #000; border: 2px solid #000; }
+    .preview-btn.taken { flex: 1; background: #f0f0f0; color: #999; cursor: not-allowed; }
+    .preview-btn.close { background: transparent; color: #999; padding: 8px; font-size: 0.85rem; width: 100%; margin-top: 15px; }
+    .preview-chat-btn {
+        width: 48px; height: 48px;
+        border-radius: 50%;
+        background: #f0f0f0; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s;
+        color: #000; font-size: 1.2rem;
+        margin-left: auto;
+    }
+    .preview-chat-btn:hover { background: #000; color: white; }
+
+    /* ── CHAT FULLSCREEN ── */
+    .chat-fullscreen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: white;
+        z-index: 1000000;
+        display: none;
+        flex-direction: column;
+    }
+    .chat-fullscreen.active { display: flex; }
+
+    .chat-fullscreen-header {
+        display: flex; align-items: center;
+        padding: max(16px, env(safe-area-inset-top)) 20px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        background: white;
+        justify-content: space-between;
+    }
+    .chat-fullscreen-poster { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .chat-fullscreen-avatar {
+        width: 48px; height: 48px;
+        background: #A6CBE3; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 1.2rem;
+    }
+    .chat-fullscreen-info { display: flex; flex-direction: column; }
+    .chat-fullscreen-name { font-weight: 700; font-size: 1rem; color: #000; }
+    .chat-fullscreen-role { font-size: 0.8rem; color: #666; }
+    .chat-fullscreen-minimize {
+        width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; border-radius: 50%; color: #666;
+        transition: background 0.2s;
+    }
+    .chat-fullscreen-minimize:hover { background: #f0f0f0; }
+
+    .chat-fullscreen-messages {
+        flex: 1; overflow-y: auto;
+        padding: 20px;
+        display: flex; flex-direction: column; gap: 16px;
+    }
+    .chat-disclaimer {
+        background: #f8f8f8; padding: 16px; border-radius: 10px;
+        font-size: 0.85rem; line-height: 1.5; color: #666;
+        display: flex; gap: 12px; align-items: flex-start;
+        border-left: 3px solid #000; margin-bottom: 10px;
+    }
+    .chat-fullscreen-message { display: flex; flex-direction: column; max-width: 80%; }
+    .chat-fullscreen-message.own { align-self: flex-end; align-items: flex-end; }
+    .message-bubble-full {
+        background: #f0f0f0; padding: 12px 16px;
+        border-radius: 18px; border-bottom-left-radius: 5px;
+        word-wrap: break-word;
+    }
+    .chat-fullscreen-message.own .message-bubble-full {
+        background: #A6CBE3; color: white;
+        border-bottom-right-radius: 5px; border-bottom-left-radius: 18px;
+    }
+    .message-text-full { font-size: 0.95rem; line-height: 1.4; }
+    .message-time-full { font-size: 0.65rem; color: #999; margin-top: 4px; }
+
+    .chat-fullscreen-input-area {
+        display: flex;
+        padding: 16px 20px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+        background: white; border-top: 1px solid #f0f0f0;
+    }
+    .chat-fullscreen-input-wrapper {
+        flex: 1; display: flex; align-items: center;
+        background: #f0f0f0; border-radius: 30px;
+        padding: 4px 4px 4px 16px;
+    }
+    .chat-fullscreen-input {
+        width: 100%; padding: 12px 0;
+        border: none; border-radius: 30px;
+        font-size: 0.95rem; font-family: 'Manrope', sans-serif;
+        outline: none; background: transparent;
+    }
+    .chat-fullscreen-send {
+        width: 44px; height: 44px;
+        background: #000; border: none; border-radius: 50%;
+        color: white; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        margin-left: 4px; transition: opacity 0.2s;
+    }
+    .chat-fullscreen-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        height: calc(66px + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+        background: white;
+        display: flex; justify-content: space-around; align-items: center;
+        z-index: 200000;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+    }
+    .nav-item {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 4px; cursor: pointer; color: #999;
+        transition: color 0.2s; font-size: 0.7rem;
+        background: transparent; border: none;
+        font-family: 'Manrope', sans-serif;
+        position: relative; padding: 8px 0;
+    }
+    .nav-item.active { color: #000; }
+    .nav-item i { font-size: 1.4rem; color: currentColor; }
+    .nav-notification-dot {
+        position: absolute; top: 6px; right: 50%;
+        transform: translateX(15px);
+        width: 8px; height: 8px;
+        background: #A6CBE3; border-radius: 50%;
+        display: none; border: 2px solid white;
+    }
+    .nav-notification-dot.visible { display: block; }
+
+    /* ── PAGE CONTAINERS ── */
+    .page-container {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: white; z-index: 100000;
+        overflow-y: auto; display: none;
+        padding: max(20px, env(safe-area-inset-top)) 20px calc(86px + env(safe-area-inset-bottom));
+    }
+    .page-container.active { display: block; }
+
+    .tasks-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 1.5rem; margin-top: 1rem;
+    }
+    .tasks-header h2 { font-weight: 700; font-size: 1.5rem; color: #000; }
+    .tasks-header span {
+        font-size: 0.85rem; color: #666;
+        background: #f0f0f0; padding: 0.25rem 0.75rem;
+        border-radius: 20px; font-weight: 600;
+    }
+
+    .task-categories-horizontal {
+        display: flex; overflow-x: auto; gap: 8px;
+        padding-bottom: 8px; margin-bottom: 1.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    .category-tab-horizontal {
+        padding: 10px 20px; background: #f0f0f0; border-radius: 30px;
+        font-size: 0.85rem; font-weight: 600; color: #666;
+        cursor: pointer; white-space: nowrap; transition: all 0.2s; border: none;
+    }
+    .category-tab-horizontal.active { background: #000; color: white; }
+
+    .tasks-list-container { margin-top: 1rem; }
+
+    .task-card {
+        background: white; padding: 1rem; margin-bottom: 1rem;
+        cursor: pointer; transition: all 0.2s;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid #f0f0f0;
+    }
+    .task-card:active { transform: scale(0.99); background: #fafafa; }
+    .task-card.incoming { border-left: 4px solid #4A90E2; }
+    .task-card.current  { border-left: 4px solid #10b981; }
+    .task-card.past     { opacity: 0.7; border-left: 4px solid #999; }
+
+    .task-card-main { display: flex; align-items: center; gap: 1rem; }
+    .task-icon {
+        width: 48px; height: 48px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: #f0f0f0; border-radius: 50%;
+    }
+    .task-icon i { font-size: 1.4rem; color: #666; }
+    .task-content { flex: 1; }
+    .task-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .task-date-time { font-size: 0.75rem; color: #999; font-weight: 400; }
+    .task-distance-row { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #555; }
+    .task-distance-row i { font-size: 0.8rem; color: #000; }
+    .task-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.2rem; color: #000; text-transform: capitalize; }
+    .task-amount { font-weight: 600; font-size: 0.8rem; color: #10b981; margin-top: 2px; }
+    .task-status-badge {
+        display: inline-block; padding: 6px 12px;
+        font-size: 0.75rem; font-weight: 600;
+        background: #f0f0f0; color: #333;
+        border-radius: 20px; margin-top: 8px;
+    }
+    .task-status-badge.incoming  { background: #e3f2fd; color: #1976d2; }
+    .task-status-badge.assigned  { background: #e3f2fd; color: #1976d2; }
+    .task-status-badge.in-progress { background: #fff3e0; color: #e67e22; }
+    .task-status-badge.completed { background: #e8f5e9; color: #388e3c; }
+    .task-status-badge.cancelled { background: #fee2e2; color: #dc2626; }
+
+    /* ── TOAST ── */
+    .toast {
+        position: fixed; bottom: 30px; left: 20px; right: 20px;
+        max-width: 400px; margin: 0 auto;
+        background: #000; color: white;
+        padding: 16px 24px; z-index: 9000;
+        display: none; font-size: 0.9rem; text-align: center;
+        border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .toast.show { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── NOTIFICATION PANEL ── */
+    .notification-panel {
+        position: absolute;
+        top: calc(70px + env(safe-area-inset-top));
+        right: max(20px, env(safe-area-inset-right));
+        width: 300px; max-width: calc(100% - 40px);
+        background: white; border-radius: 16px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        z-index: 1000000; display: none; padding: 16px;
+    }
+    .notification-panel.active { display: block; }
+    .notification-header { font-weight: 700; font-size: 1rem; margin-bottom: 12px; color: #000; }
+    .notification-item { padding: 12px 0; font-size: 0.9rem; color: #333; border-bottom: 1px solid #f0f0f0; }
+    .notification-item:last-child { border-bottom: none; }
+    .notification-empty { text-align: center; padding: 20px; color: #999; font-size: 0.9rem; }
+
+    /* ── TASK DETAIL PAGE ── */
+    .task-detail-page {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: white; z-index: 3000000;
+        display: none; flex-direction: column; overflow-y: auto;
+    }
+    .task-detail-page.active { display: flex; }
+
+    .task-detail-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: max(20px, env(safe-area-inset-top)) 1.25rem 0.75rem;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .task-detail-back-btn {
+        background: transparent; border: none;
+        font-size: 1.5rem; cursor: pointer;
+        width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        color: #000; border-radius: 50%; transition: background 0.2s;
+    }
+    .task-detail-back-btn:hover { background: #f0f0f0; }
+
+    .task-detail-tooltip { position: relative; }
+    .tooltip-btn {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: transparent; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; color: #666; font-size: 1.2rem;
+        transition: background 0.2s;
+    }
+    .tooltip-btn:hover { background: #f0f0f0; }
+    .tooltip-menu {
+        position: absolute; top: 50px; right: 0;
+        background: white; border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        padding: 8px 0; min-width: 200px; z-index: 10; display: none;
+    }
+    .tooltip-menu.active { display: block; }
+    .tooltip-menu-item { padding: 12px 16px; font-size: 0.9rem; color: #333; cursor: pointer; transition: background 0.2s; }
+    .tooltip-menu-item:hover { background: #f8f8f8; }
+    .tooltip-menu-item:first-child { border-bottom: 1px solid #f0f0f0; }
+
+    .task-detail-content { flex: 1; padding: 1.5rem; }
+
+    .status-text {
+        padding: 6px 12px; border-radius: 20px;
+        display: inline-block; font-weight: 600; font-size: 0.8rem;
+    }
+    .status-text.assigned   { background: #e3f2fd; color: #1976d2; }
+    .status-text.in-progress { background: #fff3e0; color: #e67e22; }
+    .status-text.completed  { background: #e8f5e9; color: #388e3c; }
+    .status-text.cancelled  { background: #fee2e2; color: #dc2626; }
+
+    .detail-action-btn.primary {
+        padding: 16px; background: #dc2626; color: white;
+        border: none; border-radius: 10px; font-weight: 700;
+        cursor: pointer; width: 100%; font-size: 1rem;
+        font-family: 'Manrope', sans-serif;
+        transition: opacity 0.2s;
+    }
+    .detail-action-btn.primary:active { opacity: 0.8; }
+    .detail-action-btn.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .detail-action-btn.secondary {
+        padding: 16px; background: transparent; color: #000;
+        border: 1px solid #000; border-radius: 10px; font-weight: 600;
+        cursor: pointer; width: 100%; font-size: 1rem;
+        font-family: 'Manrope', sans-serif;
+    }
+
+    .detail-map-container { height: 150px; background: #f0f0f0; border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+
+    /* ── CONFIRM MODAL (replaces confirm()) ── */
+    .confirm-modal-overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999999; display: none;
+        align-items: center; justify-content: center;
+    }
+    .confirm-modal-overlay.active { display: flex; }
+    .confirm-modal {
+        background: white; border-radius: 16px;
+        padding: 24px; width: 90%; max-width: 360px;
+        text-align: center;
+    }
+    .confirm-modal h3 { font-size: 1.1rem; margin-bottom: 10px; }
+    .confirm-modal p { color: #666; font-size: 0.9rem; margin-bottom: 24px; }
+    .confirm-modal-actions { display: flex; gap: 12px; }
+    .confirm-modal-cancel {
+        flex: 1; padding: 14px; border: 1px solid #e0e0e0;
+        background: white; border-radius: 10px;
+        font-family: 'Manrope', sans-serif; font-weight: 600;
+        cursor: pointer; font-size: 0.95rem;
+    }
+    .confirm-modal-confirm {
+        flex: 1; padding: 14px; border: none;
+        background: #dc2626; color: white; border-radius: 10px;
+        font-family: 'Manrope', sans-serif; font-weight: 700;
+        cursor: pointer; font-size: 0.95rem;
+    }
+
+    @media (max-width: 320px) { .task-marker-name { max-width: 100px; } }
+</style>
+```
+
 </head>
 <body>
-    <!-- Splash Screen -->
-    <div class="splash-screen" id="splashScreen">
-        <div class="splash-logo">taskmart</div>
-        <div class="splash-subtitle">helper</div>
-    </div>
 
-    <div class="map-top-left" id="mapMenuIcon">
-        <i class="fi fi-rr-menu-burger"></i>
+```
+<!-- Splash -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo">taskmart</div>
+    <div class="splash-subtitle">helper</div>
+</div>
+
+<!-- Map overlays -->
+<div class="map-top-left" id="mapMenuIcon"><i class="fi fi-rr-menu-burger"></i></div>
+<div class="map-top-right" id="mapNotificationBell"><i class="fi fi-rr-bell"></i></div>
+
+<div class="notification-panel" id="notificationPanel">
+    <div class="notification-header">Notifications</div>
+    <div id="notificationList"><div class="notification-empty">No new notifications</div></div>
+</div>
+
+<div id="map"></div>
+
+<!-- Floating Distance Card -->
+<div class="floating-distance-card" id="floatingDistanceCard">
+    <div class="distance-info">
+        <div class="route-toggle">
+            <button class="route-btn active" id="routeWalkingBtn"><i class="fi fi-tr-walking"></i></button>
+            <button class="route-btn" id="routeDrivingBtn"><i class="fi fi-tr-car"></i></button>
+        </div>
+        <span class="distance-text" id="routeDistance">Calculating...</span>
     </div>
-    <div class="map-top-right" id="mapNotificationBell">
-        <i class="fi fi-rr-bell"></i>
+</div>
+
+<!-- Task Preview Card -->
+<div class="task-preview-card" id="taskPreviewCard">
+    <div class="preview-header">
+        <span class="preview-category" id="previewCategory">Loading...</span>
+        <span class="preview-budget" id="previewBudget">R0</span>
     </div>
-    
-    <div class="notification-panel" id="notificationPanel">
-        <div class="notification-header">Notifications</div>
-        <div id="notificationList">
-            <div class="notification-empty">No new notifications</div>
+    <div class="preview-poster">
+        <div class="preview-poster-avatar" id="previewAvatar">?</div>
+        <span class="preview-poster-name" id="previewPosterName">Someone</span>
+    </div>
+    <div class="preview-details">
+        <div class="preview-notes" id="previewNotesArea">
+            <i class="fi fi-rr-comment"></i>
+            <span id="previewNotesText">No additional notes</span>
         </div>
     </div>
+    <div class="preview-actions" id="previewActions"></div>
+    <button class="preview-btn close" id="previewCloseBtn">Close</button>
+</div>
 
-    <div id="map"></div>
-
-    <!-- Floating Distance Card -->
-    <div class="floating-distance-card" id="floatingDistanceCard">
-        <div class="distance-info">
-            <div class="route-toggle">
-                <button class="route-btn active" id="routeWalkingBtn">
-                    <i class="fi fi-tr-walking"></i>
-                </button>
-                <button class="route-btn" id="routeDrivingBtn">
-                    <i class="fi fi-tr-car"></i>
-                </button>
-            </div>
-            <span class="distance-text" id="routeDistance">Calculating...</span>
-        </div>
-    </div>
-
-    <!-- Task Preview Card -->
-    <div class="task-preview-card" id="taskPreviewCard">
-        <div class="preview-header">
-            <span class="preview-category" id="previewCategory">Loading...</span>
-            <span class="preview-budget" id="previewBudget">R0</span>
-        </div>
-        <div class="preview-poster">
-            <div class="preview-poster-avatar" id="previewAvatar">?</div>
-            <span class="preview-poster-name" id="previewPosterName">Someone</span>
-        </div>
-        
-        <div class="preview-details">
-            <div class="preview-notes" id="previewNotesArea">
-                <i class="fi fi-rr-comment"></i>
-                <span id="previewNotesText">No additional notes</span>
-            </div>
-        </div>
-        
-        <div class="preview-actions" id="previewActions"></div>
-        <button class="preview-btn close" id="previewCloseBtn">Close</button>
-    </div>
-
-    <!-- Chat Fullscreen -->
-    <div class="chat-fullscreen" id="chatFullscreen">
-        <div class="chat-fullscreen-header">
-            <div class="chat-fullscreen-poster" id="chatPosterInfo">
-                <div class="chat-fullscreen-avatar" id="chatFullscreenAvatar">?</div>
-                <div class="chat-fullscreen-info">
-                    <span class="chat-fullscreen-name" id="chatFullscreenName">Loading...</span>
-                    <span class="chat-fullscreen-role" id="chatFullscreenRole">Poster</span>
-                </div>
-            </div>
-            <div class="chat-fullscreen-minimize" id="chatMinimizeBtn">
-                <i class="fi fi-rr-window-minimize"></i>
+<!-- Chat Fullscreen -->
+<div class="chat-fullscreen" id="chatFullscreen">
+    <div class="chat-fullscreen-header">
+        <div class="chat-fullscreen-poster" id="chatPosterInfo">
+            <div class="chat-fullscreen-avatar" id="chatFullscreenAvatar">?</div>
+            <div class="chat-fullscreen-info">
+                <span class="chat-fullscreen-name" id="chatFullscreenName">Loading...</span>
+                <span class="chat-fullscreen-role" id="chatFullscreenRole">Poster</span>
             </div>
         </div>
-        <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
-        <div class="chat-fullscreen-input-area">
-            <div class="chat-fullscreen-input-wrapper">
-                <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message" maxlength="500">
-                <button class="chat-fullscreen-send" id="chatFullscreenSend">
-                    <i class="fi fi-ts-arrow-small-up"></i>
-                </button>
+        <div class="chat-fullscreen-minimize" id="chatMinimizeBtn">
+            <i class="fi fi-rr-window-minimize"></i>
+        </div>
+    </div>
+    <div class="chat-fullscreen-messages" id="chatFullscreenMessages"></div>
+    <div class="chat-fullscreen-input-area">
+        <div class="chat-fullscreen-input-wrapper">
+            <input type="text" class="chat-fullscreen-input" id="chatFullscreenInput" placeholder="Type a message" maxlength="500">
+            <button class="chat-fullscreen-send" id="chatFullscreenSend">
+                <i class="fi fi-ts-arrow-small-up"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" id="navMap" data-page="map">
+        <i class="fi fi-rr-map"></i>
+        <span>Map</span>
+    </button>
+    <button class="nav-item" id="navTasks" data-page="tasks">
+        <i class="fi fi-rr-clipboard"></i>
+        <span>Tasks</span>
+        <span class="nav-notification-dot" id="tasksNotificationDot"></span>
+    </button>
+    <button class="nav-item" id="navAccount" data-page="account">
+        <i class="fi fi-rr-user"></i>
+        <span>Account</span>
+    </button>
+</div>
+
+<!-- Tasks Page -->
+<div class="page-container" id="tasksPage">
+    <div class="tasks-header">
+        <h2>Your tasks</h2>
+        <span id="tasksCount">0</span>
+    </div>
+    <div class="task-categories-horizontal" id="horizontalCategories">
+        <button class="category-tab-horizontal active" data-category="all">All</button>
+        <button class="category-tab-horizontal" data-category="incoming">Incoming</button>
+        <button class="category-tab-horizontal" data-category="current">Current</button>
+        <button class="category-tab-horizontal" data-category="past">Past</button>
+    </div>
+    <div class="tasks-list-container" id="tasksListContainer">
+        <div class="tasks-loading" id="tasksLoading">
+            <div class="spinner"></div>
+            <div>Loading your tasks...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Detail Page -->
+<div class="task-detail-page" id="taskDetailPage">
+    <div class="task-detail-header">
+        <button class="task-detail-back-btn" id="taskDetailBackBtn">←</button>
+        <div class="task-detail-tooltip">
+            <button class="tooltip-btn" id="tooltipBtn"><i class="fi fi-rr-menu-dots"></i></button>
+            <div class="tooltip-menu" id="tooltipMenu">
+                <div class="tooltip-menu-item" id="reportTaskBtn">Report Task</div>
+                <div class="tooltip-menu-item" id="reportUserBtn">Report User</div>
             </div>
         </div>
     </div>
+    <div class="task-detail-content" id="taskDetailContent"></div>
+</div>
 
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav" id="bottomNav">
-        <button class="nav-item active" id="navMap" data-page="map">
-            <i class="fi fi-rr-map"></i>
-            <span>Map</span>
-        </button>
-        <button class="nav-item" id="navTasks" data-page="tasks">
-            <i class="fi fi-rr-clipboard"></i>
-            <span>Tasks</span>
-            <span class="nav-notification-dot" id="tasksNotificationDot"></span>
-        </button>
-        <button class="nav-item" id="navAccount" data-page="account">
-            <i class="fi fi-rr-user"></i>
-            <span>Account</span>
-        </button>
-    </div>
-
-    <!-- Tasks Page -->
-    <div class="page-container" id="tasksPage">
-        <div class="tasks-header">
-            <h2>Your tasks</h2>
-            <span id="tasksCount">0</span>
-        </div>
-        <div class="task-categories-horizontal" id="horizontalCategories">
-            <button class="category-tab-horizontal active" data-category="all">All</button>
-            <button class="category-tab-horizontal" data-category="incoming">Incoming</button>
-            <button class="category-tab-horizontal" data-category="current">Current</button>
-            <button class="category-tab-horizontal" data-category="past">Past</button>
-        </div>
-        <div class="tasks-list-container" id="tasksListContainer">
-            <div class="tasks-loading" id="tasksLoading">
-                <div class="spinner"></div>
-                <div>Loading your tasks...</div>
-            </div>
+<!-- Confirm Modal -->
+<div class="confirm-modal-overlay" id="confirmModalOverlay">
+    <div class="confirm-modal">
+        <h3 id="confirmModalTitle">Are you sure?</h3>
+        <p id="confirmModalMessage">This action cannot be undone.</p>
+        <div class="confirm-modal-actions">
+            <button class="confirm-modal-cancel" id="confirmModalCancel">Cancel</button>
+            <button class="confirm-modal-confirm" id="confirmModalConfirm">Confirm</button>
         </div>
     </div>
+</div>
 
-    <!-- Task Detail Page -->
-    <div class="task-detail-page" id="taskDetailPage">
-        <div class="task-detail-header">
-            <button class="task-detail-back-btn" id="taskDetailBackBtn">←</button>
-            <div class="task-detail-tooltip">
-                <button class="tooltip-btn" id="tooltipBtn">
-                    <i class="fi fi-rr-menu-dots"></i>
-                </button>
-                <div class="tooltip-menu" id="tooltipMenu">
-                    <div class="tooltip-menu-item" id="reportTaskBtn">Report Task</div>
-                    <div class="tooltip-menu-item" id="reportUserBtn">Report User</div>
-                </div>
-            </div>
-        </div>
-        <div class="task-detail-content" id="taskDetailContent"></div>
-    </div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
+<!-- Audio -->
+<audio id="notificationSound" preload="auto">
+    <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
+</audio>
+<audio id="doorbellSound" preload="auto">
+    <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/doorbell.mp3" type="audio/mpeg">
+</audio>
+```
 
-    <!-- Audio -->
-    <audio id="notificationSound" preload="auto">
-        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/freesound_community-rotary-phone-ring-medium-103869%202.mp3" type="audio/mpeg">
-    </audio>
+<script>
+(function () {
+    'use strict';
 
-    <audio id="doorbellSound" preload="auto">
-        <source src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/doorbell.mp3" type="audio/mpeg">
-    </audio>
+    /* ─────────────────────────────────────────
+       UTILITIES
+    ───────────────────────────────────────── */
+    function sanitizeHTML(str) {
+        if (str == null) return '';
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
 
-    <script>
-        (function() {
-            'use strict';
+    // FIX #1 — Single RateLimiter class used for both message and accept limiting
+    class RateLimiter {
+        constructor(maxCalls, timeWindow) {
+            this.maxCalls = maxCalls;
+            this.timeWindow = timeWindow;
+            this.calls = [];
+        }
+        canCall() {
+            const now = Date.now();
+            this.calls = this.calls.filter(t => now - t < this.timeWindow);
+            if (this.calls.length >= this.maxCalls) return false;
+            this.calls.push(now);
+            return true;
+        }
+    }
 
-            // Simple XSS sanitizer
-            function sanitizeHTML(str) {
-                if (!str) return '';
-                const div = document.createElement('div');
-                div.textContent = str;
-                return div.innerHTML;
+    const messageRateLimiter = new RateLimiter(10, 60000);
+    const acceptRateLimiter  = new RateLimiter(5,  60000);
+
+    // FIX #15 — Custom confirm modal instead of blocking confirm()
+    function showConfirm(title, message) {
+        return new Promise((resolve) => {
+            const overlay  = document.getElementById('confirmModalOverlay');
+            const titleEl  = document.getElementById('confirmModalTitle');
+            const msgEl    = document.getElementById('confirmModalMessage');
+            const cancelBtn  = document.getElementById('confirmModalCancel');
+            const confirmBtn = document.getElementById('confirmModalConfirm');
+            titleEl.textContent = title;
+            msgEl.textContent   = message;
+            overlay.classList.add('active');
+            function cleanup(result) {
+                overlay.classList.remove('active');
+                cancelBtn.removeEventListener('click', onCancel);
+                confirmBtn.removeEventListener('click', onConfirm);
+                resolve(result);
             }
+            function onCancel()  { cleanup(false); }
+            function onConfirm() { cleanup(true);  }
+            cancelBtn.addEventListener('click', onCancel);
+            confirmBtn.addEventListener('click', onConfirm);
+        });
+    }
 
-            // Rate limiter for messages
-            class RateLimiter {
-                constructor(maxCalls, timeWindow) {
-                    this.maxCalls = maxCalls;
-                    this.timeWindow = timeWindow;
-                    this.calls = [];
-                }
+    /* ─────────────────────────────────────────
+       INIT ON DOM READY
+    ───────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', function () {
 
-                canCall() {
-                    const now = Date.now();
-                    this.calls = this.calls.filter(time => now - time < this.timeWindow);
-                    if (this.calls.length >= this.maxCalls) {
-                        return false;
-                    }
-                    this.calls.push(now);
-                    return true;
-                }
+        // Splash — FIX #7: properly hide after transition
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            if (splash) {
+                splash.classList.add('hidden');
+                setTimeout(() => { splash.style.display = 'none'; }, 500);
             }
+        }, 1500);
 
-            // Rate limiter for task acceptance
-            class AcceptRateLimiter {
-                constructor(maxCalls, timeWindow) {
-                    this.maxCalls = maxCalls;
-                    this.timeWindow = timeWindow;
-                    this.calls = [];
-                }
+        const toastEl = document.getElementById('toast');
 
-                canAccept() {
-                    const now = Date.now();
-                    this.calls = this.calls.filter(time => now - time < this.timeWindow);
-                    if (this.calls.length >= this.maxCalls) {
-                        return false;
-                    }
-                    this.calls.push(now);
-                    return true;
-                }
+        if (typeof firebase === 'undefined') {
+            console.error('Firebase SDK not loaded');
+            if (toastEl) { toastEl.textContent = 'Error loading app. Please refresh.'; toastEl.classList.add('show'); }
+            return;
+        }
+
+        /* Firebase */
+        const firebaseConfig = {
+            apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+            authDomain: "taskmartapp-74d6b.firebaseapp.com",
+            databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+            projectId: "taskmartapp-74d6b",
+            storageBucket: "taskmartapp-74d6b.firebasestorage.app",
+            messagingSenderId: "52910279328",
+            appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth     = firebase.auth();
+        const database = firebase.database();
+
+        /* ── State ── */
+        let currentUser           = null;
+        let currentLat            = -26.195246;
+        let currentLng            =  28.034088;
+        let incomingTasks         = [];
+        let currentTasks          = [];
+        let pastTasks             = [];
+        let allTasks              = [];
+        let taskMarkers           = [];
+        let startMarker           = null;
+        let map                   = null;
+        let selectedTask          = null;
+        let isShaking             = false;
+        // FIX #5 — track both listener ref and callback
+        let chatListener          = null;
+        let chatListenerRef       = null;
+        let currentChatTask       = null;
+        let currentHorizontalCategory = 'all';
+        let ringTriggeredTasks    = new Set();
+        let currentRouteProfile   = 'walking';
+        let notifications         = [];
+        let isNotificationPanelOpen = false;
+        let shownTaskIds          = new Set();
+        let currentDetailTask     = null;
+        let geolocationWatchId    = null;
+        let lastGeolocationUpdate = 0;
+        let isAcceptingTask       = false;
+
+        const notificationSound = document.getElementById('notificationSound');
+        const doorbellSound     = document.getElementById('doorbellSound');
+
+        /* ── DOM refs ── */
+        const navMap               = document.getElementById('navMap');
+        const navTasks             = document.getElementById('navTasks');
+        const navAccount           = document.getElementById('navAccount');
+        const tasksPage            = document.getElementById('tasksPage');
+        const taskDetailPage       = document.getElementById('taskDetailPage');
+        const mapEl                = document.getElementById('map');
+        const floatingDistanceCard = document.getElementById('floatingDistanceCard');
+        const routeDistance        = document.getElementById('routeDistance');
+        const routeWalkingBtn      = document.getElementById('routeWalkingBtn');
+        const routeDrivingBtn      = document.getElementById('routeDrivingBtn');
+        const tasksCount           = document.getElementById('tasksCount');
+        const tasksListContainer   = document.getElementById('tasksListContainer');
+        const tasksLoading         = document.getElementById('tasksLoading');
+        const toast                = document.getElementById('toast');
+        const tasksNotificationDot = document.getElementById('tasksNotificationDot');
+        const taskDetailBackBtn    = document.getElementById('taskDetailBackBtn');
+        const taskDetailContent    = document.getElementById('taskDetailContent');
+        const horizontalCategoryTabs = document.querySelectorAll('.category-tab-horizontal');
+        const notificationBell     = document.getElementById('mapNotificationBell');
+        const notificationPanel    = document.getElementById('notificationPanel');
+        const notificationList     = document.getElementById('notificationList');
+        const chatFullscreen       = document.getElementById('chatFullscreen');
+        const chatFullscreenAvatar = document.getElementById('chatFullscreenAvatar');
+        const chatFullscreenName   = document.getElementById('chatFullscreenName');
+        const chatFullscreenRole   = document.getElementById('chatFullscreenRole');
+        const chatFullscreenMessages = document.getElementById('chatFullscreenMessages');
+        const chatFullscreenInput  = document.getElementById('chatFullscreenInput');
+        const chatFullscreenSend   = document.getElementById('chatFullscreenSend');
+        const chatMinimizeBtn      = document.getElementById('chatMinimizeBtn');
+        const chatPosterInfo       = document.getElementById('chatPosterInfo');
+        const taskPreviewCard      = document.getElementById('taskPreviewCard');
+        const previewCategory      = document.getElementById('previewCategory');
+        const previewBudget        = document.getElementById('previewBudget');
+        const previewAvatar        = document.getElementById('previewAvatar');
+        const previewPosterName    = document.getElementById('previewPosterName');
+        const previewNotesText     = document.getElementById('previewNotesText');
+        const previewActions       = document.getElementById('previewActions');
+        const previewCloseBtn      = document.getElementById('previewCloseBtn');
+        const previewNotesArea     = document.getElementById('previewNotesArea');
+        const tooltipBtn           = document.getElementById('tooltipBtn');
+        const tooltipMenu          = document.getElementById('tooltipMenu');
+        const reportTaskBtn        = document.getElementById('reportTaskBtn');
+        const reportUserBtn        = document.getElementById('reportUserBtn');
+
+        const JOBURG_LAT = -26.195246;
+        const JOBURG_LNG =  28.034088;
+
+        /* ─────────────────────────────────────────
+           HELPERS
+        ───────────────────────────────────────── */
+        function showToast(message) {
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function addNotification(message, type = 'info') {
+            try {
+                notifications.push({
+                    id: Date.now() + Math.random(),
+                    message: sanitizeHTML(message),
+                    type,
+                    timestamp: new Date().toLocaleTimeString()
+                });
+                if (notifications.length > 10) notifications = notifications.slice(-10);
+                updateNotificationPanel();
+            } catch (e) { console.error('Notification error:', e); }
+        }
+
+        function updateNotificationPanel() {
+            if (!notificationList) return;
+            if (notifications.length === 0) {
+                notificationList.innerHTML = '<div class="notification-empty">No new notifications</div>';
+                return;
             }
+            notificationList.innerHTML = notifications.map(n =>
+                `<div class="notification-item">
+                    <div>${n.message}</div>
+                    <div style="font-size:0.7rem;color:#999;margin-top:4px;">${n.timestamp}</div>
+                </div>`
+            ).join('');
+        }
 
-            const messageRateLimiter = new RateLimiter(10, 60000);
-            const acceptRateLimiter = new AcceptRateLimiter(5, 60000); // 5 accepts per minute
+        function toggleNotificationPanel() {
+            if (!notificationPanel) return;
+            isNotificationPanelOpen = !isNotificationPanelOpen;
+            notificationPanel.classList.toggle('active', isNotificationPanelOpen);
+        }
 
-            document.addEventListener('DOMContentLoaded', function() {
-                // Hide splash screen after 1.5 seconds
+        // FIX #11 — clean distance calculation returning km directly
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R    = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a    = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                         Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // km
+        }
+
+        function isTaskMine(task) {
+            return task && task.assignedHelperId === currentUser?.uid;
+        }
+
+        /* ─────────────────────────────────────────
+           DOORBELL & PROXIMITY
+        ───────────────────────────────────────── */
+        function ringDoorbell(task) {
+            if (!task) return;
+            if (doorbellSound) {
+                doorbellSound.currentTime = 0;
+                doorbellSound.play().catch(e => console.log('Doorbell error:', e));
+            }
+            addNotification(`Doorbell rung for ${task.posterName || 'poster'}`, 'doorbell');
+            showToast('Doorbell rung!');
+            ringTriggeredTasks.add(task.id);
+            if (task.status === 'assigned') updateTaskStatus(task.id, 'in_progress');
+        }
+
+        function checkProximityAndRing() {
+            if (!currentChatTask?.location) return;
+            if (ringTriggeredTasks.has(currentChatTask.id)) return;
+            const dist = calculateDistance(currentLat, currentLng, currentChatTask.location.lat, currentChatTask.location.lng);
+            if (dist <= 0.01) {
+                ringTriggeredTasks.add(currentChatTask.id);
+                addNotification(`You've arrived at ${currentChatTask.posterName || 'the poster'}'s location`, 'arrival');
+                showToast('You have arrived');
+                if (currentChatTask.status === 'assigned') updateTaskStatus(currentChatTask.id, 'in_progress');
+            }
+        }
+
+        function startShakingAndSound() {
+            if (isShaking) return;
+            isShaking = true;
+            if (notificationSound) {
+                notificationSound.loop = false;
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(e => console.log('Sound error:', e));
+            }
+        }
+
+        function stopShakingAndSound() {
+            isShaking = false;
+            if (notificationSound) { notificationSound.pause(); notificationSound.currentTime = 0; }
+        }
+
+        /* ─────────────────────────────────────────
+           ROUTE CALCULATION
+        ───────────────────────────────────────── */
+        async function calculateRoute(task) {
+            if (!task?.location?.lat || !task?.location?.lng || !currentLat || !currentLng) return null;
+            if (!mapboxgl?.accessToken) return null;
+            try {
+                const token = mapboxgl.accessToken;
+                const coords = `${currentLng},${currentLat};${task.location.lng},${task.location.lat}`;
+                const [wRes, dRes] = await Promise.all([
+                    fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?geometries=geojson&access_token=${token}`),
+                    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${token}`)
+                ]);
+                if (!wRes.ok || !dRes.ok) return null;
+                const [wData, dData] = await Promise.all([wRes.json(), dRes.json()]);
+                const wRoute = wData.routes?.[0];
+                const dRoute = dData.routes?.[0];
+                if (!wRoute || !dRoute) return null;
+                const fmt = (m) => m < 1000 ? `${Math.round(m)}m` : `${(m/1000).toFixed(1)}km`;
+                return {
+                    walking: { distance: fmt(wRoute.distance), route: wRoute },
+                    driving: { distance: fmt(dRoute.distance), route: dRoute }
+                };
+            } catch (e) { console.error('Route error:', e); return null; }
+        }
+
+        /* ─────────────────────────────────────────
+           TASK PREVIEW
+        ───────────────────────────────────────── */
+        async function showTaskPreview(task) {
+            if (!task || !taskPreviewCard) return;
+            stopShakingAndSound();
+            selectedTask = task;
+            try {
+                previewCategory.textContent  = sanitizeHTML(task.category || 'Help needed');
+                previewBudget.textContent    = task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`;
+                previewBudget.className      = task.budget === 'open' ? 'preview-budget open' : 'preview-budget';
+                previewAvatar.textContent    = (task.posterName || 'P').charAt(0).toUpperCase();
+                previewPosterName.textContent = sanitizeHTML(task.posterName || 'Someone');
+                previewNotesText.textContent  = sanitizeHTML(task.notes || 'No additional notes');
+
+                let buttonsHtml = '';
+                if (task.status === 'open') {
+                    buttonsHtml = '<button class="preview-btn accept" id="previewAcceptBtn">Accept task</button>';
+                } else if ((task.status === 'assigned' || task.status === 'in_progress') && isTaskMine(task)) {
+                    buttonsHtml = '<button class="preview-btn ring" id="previewRingBtn">Ring doorbell</button>' +
+                                  '<button class="preview-chat-btn" id="previewChatBtn"><i class="fi fi-rr-comment"></i></button>';
+                } else if (task.status === 'assigned' || task.status === 'in_progress') {
+                    buttonsHtml = '<button class="preview-btn taken" disabled>Task taken</button>';
+                }
+                previewActions.innerHTML = buttonsHtml;
+
+                taskPreviewCard.classList.remove('fade-out');
+                taskPreviewCard.classList.add('visible');
+                if (task.status === 'open') startShakingAndSound();
+
+                // FIX #8 — attach listeners via addEventListener, not inline onclick
                 setTimeout(() => {
-                    const splash = document.getElementById('splashScreen');
-                    if (splash) splash.classList.add('hidden');
-                }, 1500);
+                    document.getElementById('previewAcceptBtn')?.addEventListener('click', (e) => { e.stopPropagation(); acceptTask(task); });
+                    document.getElementById('previewRingBtn')?.addEventListener('click',  (e) => { e.stopPropagation(); ringDoorbell(task); });
+                    document.getElementById('previewChatBtn')?.addEventListener('click',  (e) => { e.stopPropagation(); hideTaskPreview(); openChat(task); });
+                }, 0);
 
-                const toastEl = document.getElementById('toast');
-                
-                if (typeof firebase === 'undefined') {
-                    console.error('Firebase SDK not loaded');
-                    if (toastEl) {
-                        toastEl.textContent = 'Error loading app. Please refresh.';
-                        toastEl.classList.add('show');
-                        setTimeout(() => toastEl.classList.remove('show'), 3000);
+                await updateMainDistanceCard(task);
+            } catch (e) { console.error('showTaskPreview error:', e); }
+        }
+
+        async function updateMainDistanceCard(task) {
+            if (!task?.location || !floatingDistanceCard || !routeDistance) return;
+            try {
+                const routes = await calculateRoute(task);
+                if (routes) {
+                    routeDistance.textContent = currentRouteProfile === 'walking' ? routes.walking.distance : routes.driving.distance;
+                    floatingDistanceCard.classList.add('visible');
+                    if (map?.getSource?.('route')) {
+                        const routeData = currentRouteProfile === 'walking' ? routes.walking.route : routes.driving.route;
+                        map.getSource('route').setData({ type: 'Feature', geometry: routeData.geometry });
                     }
+                }
+            } catch (e) { console.error('Distance card error:', e); }
+        }
+
+        function hideTaskPreview() {
+            if (taskPreviewCard) taskPreviewCard.classList.remove('visible', 'fade-out');
+            stopShakingAndSound();
+            selectedTask = null;
+            // FIX #6 — use class not inline style
+            if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
+        }
+
+        /* ─────────────────────────────────────────
+           CHAT
+        ───────────────────────────────────────── */
+        function openChat(task) {
+            if (!task || !currentUser || !chatFullscreen) return;
+            try {
+                currentChatTask = task;
+                chatFullscreenName.textContent   = sanitizeHTML(task.posterName || 'Poster');
+                chatFullscreenAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
+                chatFullscreenRole.textContent   = 'Poster';
+                hideTaskPreview();
+                floatingDistanceCard?.classList.remove('visible');
+                chatFullscreen.classList.add('active');
+
+                if (chatFullscreenMessages) {
+                    chatFullscreenMessages.innerHTML = '';
+                    const disc = document.createElement('div');
+                    disc.className = 'chat-disclaimer';
+                    disc.innerHTML = '<i class="fi fi-tr-shield-check"></i><div><strong>Stay safe!</strong> Keep all communication inside TaskMart.</div>';
+                    chatFullscreenMessages.appendChild(disc);
+                }
+
+                // FIX #5 — remove old listener using stored ref + callback
+                if (chatListenerRef && chatListener) {
+                    chatListenerRef.off('child_added', chatListener);
+                }
+                chatListenerRef = database.ref('chats/' + task.id).orderByChild('timestamp');
+                chatListener    = chatListenerRef.on('child_added', (snap) => displayFullscreenMessage(snap.val()));
+
+                setTimeout(() => chatFullscreenInput?.focus(), 300);
+            } catch (e) { console.error('openChat error:', e); showToast('Error opening chat'); }
+        }
+
+        function displayFullscreenMessage(message) {
+            if (!chatFullscreenMessages || !message) return;
+            try {
+                const isOwn = message.senderId === currentUser?.uid;
+                const div   = document.createElement('div');
+                div.className = `chat-fullscreen-message ${isOwn ? 'own' : ''}`;
+                const time  = message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+                div.innerHTML = `
+                    <div class="message-bubble-full"><div class="message-text-full">${sanitizeHTML(message.text || '')}</div></div>
+                    <div class="message-time-full">${time}</div>`;
+                chatFullscreenMessages.appendChild(div);
+                chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
+            } catch (e) { console.error('displayMessage error:', e); }
+        }
+
+        async function sendFullscreenMessage(text) {
+            if (!currentChatTask || !currentUser || !text?.trim()) return;
+            if (!messageRateLimiter.canCall()) { showToast('Too many messages. Please wait.'); return; }
+            if (chatFullscreenSend) chatFullscreenSend.disabled = true;
+            try {
+                await database.ref('chats/' + currentChatTask.id).push({
+                    senderId:   currentUser.uid,
+                    senderName: currentUser.name || 'Helper',
+                    text:       sanitizeHTML(text.trim()).substring(0, 500),
+                    timestamp:  firebase.database.ServerValue.TIMESTAMP
+                });
+                if (chatFullscreenInput) chatFullscreenInput.value = '';
+            } catch (e) { console.error('sendMessage error:', e); showToast('Failed to send message'); }
+            finally { if (chatFullscreenSend) chatFullscreenSend.disabled = false; }
+        }
+
+        /* ─────────────────────────────────────────
+           TASK ACTIONS
+        ───────────────────────────────────────── */
+        async function acceptTask(task) {
+            if (!task || !currentUser || isAcceptingTask) return;
+            if (!acceptRateLimiter.canCall()) { showToast('Too many accept attempts. Please wait.'); return; }
+            isAcceptingTask = true;
+            try {
+                const taskRef = database.ref('tasks/' + task.posterId + '/' + task.id);
+                const result  = await taskRef.transaction((data) => {
+                    if (data && data.status === 'open') {
+                        return { ...data, status: 'assigned', assignedHelperId: currentUser.uid, assignedHelperName: currentUser.name || 'Helper', assignedAt: firebase.database.ServerValue.TIMESTAMP };
+                    }
+                    return data;
+                });
+                if (result.committed) {
+                    addNotification(`Task accepted: ${task.category || 'Task'}`, 'success');
+                    if (taskPreviewCard) taskPreviewCard.classList.add('fade-out');
+                    setTimeout(hideTaskPreview, 200);
+                    showToast('Task accepted!');
+                    await fetchTasks();
+                } else {
+                    showToast('Sorry, this task was just taken');
+                    await fetchTasks();
+                }
+            } catch (e) { console.error('acceptTask error:', e); showToast('Error accepting task'); }
+            finally { isAcceptingTask = false; }
+        }
+
+        // FIX #3 — search allTasks, not just currentTasks
+        async function cancelTask(taskId) {
+            const task = allTasks.find(t => t?.id === taskId);
+            if (!task) return;
+            const confirmed = await showConfirm('Cancel task?', 'Are you sure you want to cancel this task?');
+            if (!confirmed) return;
+            try {
+                await database.ref('tasks/' + task.posterId + '/' + taskId).update({
+                    status: 'cancelled',
+                    assignedHelperId: null,
+                    assignedHelperName: null,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                showToast('Task cancelled');
+                await fetchTasks();
+                setActivePage('tasks');
+            } catch (e) { console.error('cancelTask error:', e); showToast('Error cancelling task'); }
+        }
+
+        // FIX #4 — search allTasks, not just currentTasks
+        window.updateTaskStatus = async function (taskId, newStatus) {
+            const task = allTasks.find(t => t?.id === taskId);
+            if (!task) return;
+            try {
+                await database.ref('tasks/' + task.posterId + '/' + taskId).update({
+                    status: newStatus,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                showToast('Status updated');
+                await fetchTasks();
+                setActivePage('tasks');
+            } catch (e) { console.error('updateTaskStatus error:', e); showToast('Error updating status'); }
+        };
+
+        /* ─────────────────────────────────────────
+           MAP
+        ───────────────────────────────────────── */
+        function initMap() {
+            if (typeof mapboxgl === 'undefined') { console.error('Mapbox GL not loaded'); fetchTasks(); return; }
+            if (!mapboxgl.accessToken) {
+                mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sc2RveHpmMDRxODNlczdvaHlreGR3NSJ9.JcBPUfASVkZEHx8K9psySg';
+            }
+            try {
+                map = new mapboxgl.Map({
+                    container: 'map',
+                    // Updated map style
+                    style: 'mapbox://styles/pmalapile07/cmn0rlfpe00i601s95r1qa5w9',
+                    center: [JOBURG_LNG, JOBURG_LAT],
+                    zoom: 9
+                });
+
+                map.on('load', () => {
+                    try {
+                        if (!map.getSource('route')) {
+                            map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+                            map.addLayer({ id: 'route', type: 'line', source: 'route', paint: { 'line-color': '#666', 'line-width': 3, 'line-opacity': 0.6 } });
+                        }
+                    } catch (e) { console.error('Route layer error:', e); }
+
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                currentLat = pos.coords.latitude;
+                                currentLng = pos.coords.longitude;
+                                map.flyTo({ center: [currentLng, currentLat], zoom: 15, duration: 3000 });
+                                updateUserMarker();
+                                fetchTasks();
+                            },
+                            () => { updateUserMarker(); fetchTasks(); },
+                            { enableHighAccuracy: true, timeout: 10000 }
+                        );
+                    } else { updateUserMarker(); fetchTasks(); }
+                });
+
+                map.on('error', (e) => { console.error('Map error:', e); fetchTasks(); });
+            } catch (e) { console.error('Map init error:', e); fetchTasks(); }
+        }
+
+        function updateUserMarker() {
+            if (!map) return;
+            try {
+                if (startMarker) startMarker.remove();
+                const pin = document.createElement('div');
+                pin.className = 'helper-pulsing-pin';
+                startMarker = new mapboxgl.Marker({ element: pin }).setLngLat([currentLng, currentLat]).addTo(map);
+            } catch (e) { console.error('Marker error:', e); }
+        }
+
+        function createTaskMarker(task) {
+            if (!map || !task?.location) return null;
+            try {
+                const el        = document.createElement('div');
+                const isMine    = isTaskMine(task);
+                const isTakenByOther = (task.status === 'assigned' || task.status === 'in_progress') && !isMine;
+                el.className    = `task-pin${isMine ? ' assigned' : ''}${isTakenByOther ? ' taken' : ''}`;
+                const container = document.createElement('div');
+                container.className = 'task-marker-container';
+                const iconDiv   = document.createElement('div');
+                iconDiv.className = 'task-marker-icon';
+                iconDiv.innerHTML = '<i class="fi fi-rr-clipboard"></i>';
+                const nameDiv   = document.createElement('div');
+                nameDiv.className = 'task-marker-name';
+                nameDiv.textContent = task.category || 'Task';
+                container.appendChild(iconDiv);
+                container.appendChild(nameDiv);
+                el.appendChild(container);
+                const marker = new mapboxgl.Marker({ element: el }).setLngLat([task.location.lng, task.location.lat]).addTo(map);
+                el.addEventListener('click', (e) => { e.stopPropagation(); showTaskPreview(task); });
+                return marker;
+            } catch (e) { console.error('createTaskMarker error:', e); return null; }
+        }
+
+        /* ─────────────────────────────────────────
+           FETCH TASKS
+        ───────────────────────────────────────── */
+        async function fetchTasks() {
+            if (!currentUser) return;
+            if (tasksLoading) tasksLoading.style.display = 'block';
+            try {
+                const snapshot = await database.ref('tasks').once('value');
+                const raw = snapshot.val() || {};
+                allTasks = [];
+                for (const posterId in raw) {
+                    for (const taskId in raw[posterId]) {
+                        const t = raw[posterId][taskId];
+                        // FIX #17 — use != null instead of falsy check for location
+                        if (t && t.location && t.location.lat != null && t.location.lng != null) {
+                            allTasks.push({ id: taskId, posterId, ...t });
+                        }
+                    }
+                }
+
+                incomingTasks = allTasks.filter(t => t.status === 'open' && t.posterId !== currentUser.uid);
+                currentTasks  = allTasks.filter(t => (t.status === 'assigned' || t.status === 'in_progress') && t.assignedHelperId === currentUser.uid);
+                pastTasks     = allTasks.filter(t => (t.status === 'completed' || t.status === 'cancelled') && t.assignedHelperId === currentUser.uid);
+
+                if (tasksCount) tasksCount.textContent = (incomingTasks.length + currentTasks.length + pastTasks.length).toString();
+
+                taskMarkers.forEach(m => m?.remove());
+                taskMarkers = [];
+                [...incomingTasks, ...currentTasks].forEach(task => {
+                    const marker = createTaskMarker(task);
+                    if (marker) taskMarkers.push(marker);
+                });
+
+                if (tasksNotificationDot) tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
+                if (tasksLoading) tasksLoading.style.display = 'none';
+                if (tasksPage?.classList.contains('active')) renderTasksPage();
+            } catch (e) {
+                console.error('fetchTasks error:', e);
+                showToast('Error loading tasks');
+                if (tasksLoading) tasksLoading.style.display = 'none';
+            }
+        }
+
+        /* FIX #2 — simplified task listener: no nested .on() calls, no stacking */
+        function setupTaskListener() {
+            const ref = database.ref('tasks');
+            ref.off(); // remove any previous listeners on this ref
+            ref.on('value', async () => {
+                await fetchTasks();
+                // Show preview for brand-new open tasks not yet seen
+                incomingTasks.forEach(task => {
+                    if (!shownTaskIds.has(task.id) && navMap?.classList.contains('active')) {
+                        shownTaskIds.add(task.id);
+                        showTaskPreview(task);
+                    }
+                });
+            });
+        }
+
+        /* ─────────────────────────────────────────
+           PAGE NAVIGATION
+        ───────────────────────────────────────── */
+        function setActivePage(page) {
+            [navMap, navTasks, navAccount].forEach(btn => btn?.classList.remove('active'));
+
+            if (page === 'map') {
+                navMap?.classList.add('active');
+                tasksPage?.classList.remove('active');
+                taskDetailPage?.classList.remove('active');
+                if (mapEl) mapEl.style.display = 'block';
+                // FIX #6 — class-based, not inline style
+                if (selectedTask) floatingDistanceCard?.classList.add('visible');
+                else floatingDistanceCard?.classList.remove('visible');
+                setTimeout(() => map?.resize(), 100);
+
+            } else if (page === 'tasks') {
+                navTasks?.classList.add('active');
+                tasksPage?.classList.add('active');
+                taskDetailPage?.classList.remove('active');
+                if (mapEl) mapEl.style.display = 'none';
+                floatingDistanceCard?.classList.remove('visible');
+                hideTaskPreview();
+                renderTasksPage();
+
+            } else if (page === 'account') {
+                window.location.href = 'helper-account.html';
+
+            } else if (page === 'taskDetail') {
+                taskDetailPage?.classList.add('active');
+                if (mapEl) mapEl.style.display = 'none';
+                floatingDistanceCard?.classList.remove('visible');
+                hideTaskPreview();
+            }
+        }
+
+        /* ─────────────────────────────────────────
+           RENDER TASKS PAGE
+        ───────────────────────────────────────── */
+        function renderTasksPage() {
+            if (!tasksListContainer) return;
+            try {
+                const map = { all: [...incomingTasks, ...currentTasks, ...pastTasks], incoming: incomingTasks, current: currentTasks, past: pastTasks };
+                const tasksToShow = map[currentHorizontalCategory] || [];
+
+                if (tasksToShow.length === 0) {
+                    tasksListContainer.innerHTML = '<div style="text-align:center;padding:40px 20px;"><h3 style="font-weight:500;margin-bottom:10px;">No tasks in this category</h3><p style="color:#666;">Tasks will appear here when available</p></div>';
                     return;
                 }
 
-                const firebaseConfig = {
-                    apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
-                    authDomain: "taskmartapp-74d6b.firebaseapp.com",
-                    databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
-                    projectId: "taskmartapp-74d6b",
-                    storageBucket: "taskmartapp-74d6b.firebasestorage.app",
-                    messagingSenderId: "52910279328",
-                    appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
-                };
-
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                
-                const auth = firebase.auth();
-                const database = firebase.database();
-
-                // State variables
-                let currentUser = null;
-                let currentLat = -26.195246;
-                let currentLng = 28.034088;
-                let incomingTasks = [];
-                let currentTasks = [];
-                let pastTasks = [];
-                let allTasks = [];
-                let taskMarkers = [];
-                let startMarker = null;
-                let map = null;
-                let selectedTask = null;
-                let notificationSound = document.getElementById('notificationSound');
-                let doorbellSound = document.getElementById('doorbellSound');
-                let isShaking = false;
-                let chatListener = null;
-                let currentChatTask = null;
-                let currentHorizontalCategory = 'all';
-                let ringTriggeredTasks = new Set();
-                let currentRouteProfile = 'walking';
-                let notifications = [];
-                let isNotificationPanelOpen = false;
-                let shownTaskIds = new Set();
-                let isMapReady = false;
-                let currentDetailTask = null;
-                let tasksListener = null;
-                let geolocationWatchId = null;
-                let lastGeolocationUpdate = 0;
-                let isAcceptingTask = false;
-
-                // DOM Elements
-                const navMap = document.getElementById('navMap');
-                const navTasks = document.getElementById('navTasks');
-                const navAccount = document.getElementById('navAccount');
-                const tasksPage = document.getElementById('tasksPage');
-                const taskDetailPage = document.getElementById('taskDetailPage');
-                const mapEl = document.getElementById('map');
-                const floatingDistanceCard = document.getElementById('floatingDistanceCard');
-                const routeDistance = document.getElementById('routeDistance');
-                const routeWalkingBtn = document.getElementById('routeWalkingBtn');
-                const routeDrivingBtn = document.getElementById('routeDrivingBtn');
-                const tasksCount = document.getElementById('tasksCount');
-                const tasksListContainer = document.getElementById('tasksListContainer');
-                const tasksLoading = document.getElementById('tasksLoading');
-                const toast = document.getElementById('toast');
-                const tasksNotificationDot = document.getElementById('tasksNotificationDot');
-                const taskDetailBackBtn = document.getElementById('taskDetailBackBtn');
-                const taskDetailContent = document.getElementById('taskDetailContent');
-                const horizontalCategoryTabs = document.querySelectorAll('.category-tab-horizontal');
-                const notificationBell = document.getElementById('mapNotificationBell');
-                const notificationPanel = document.getElementById('notificationPanel');
-                const notificationList = document.getElementById('notificationList');
-                const chatFullscreen = document.getElementById('chatFullscreen');
-                const chatFullscreenAvatar = document.getElementById('chatFullscreenAvatar');
-                const chatFullscreenName = document.getElementById('chatFullscreenName');
-                const chatFullscreenRole = document.getElementById('chatFullscreenRole');
-                const chatFullscreenMessages = document.getElementById('chatFullscreenMessages');
-                const chatFullscreenInput = document.getElementById('chatFullscreenInput');
-                const chatFullscreenSend = document.getElementById('chatFullscreenSend');
-                const chatMinimizeBtn = document.getElementById('chatMinimizeBtn');
-                const chatPosterInfo = document.getElementById('chatPosterInfo');
-                const taskPreviewCard = document.getElementById('taskPreviewCard');
-                const previewCategory = document.getElementById('previewCategory');
-                const previewBudget = document.getElementById('previewBudget');
-                const previewAvatar = document.getElementById('previewAvatar');
-                const previewPosterName = document.getElementById('previewPosterName');
-                const previewNotesText = document.getElementById('previewNotesText');
-                const previewActions = document.getElementById('previewActions');
-                const previewCloseBtn = document.getElementById('previewCloseBtn');
-                const previewNotesArea = document.getElementById('previewNotesArea');
-                
-                // Tooltip elements
-                const tooltipBtn = document.getElementById('tooltipBtn');
-                const tooltipMenu = document.getElementById('tooltipMenu');
-                const reportTaskBtn = document.getElementById('reportTaskBtn');
-                const reportUserBtn = document.getElementById('reportUserBtn');
-
-                const JOBURG_LAT = -26.195246;
-                const JOBURG_LNG = 28.034088;
-
-                // Helper Functions
-                function showToast(message) {
-                    if (toast) {
-                        toast.textContent = message;
-                        toast.classList.add('show');
-                        setTimeout(() => toast.classList.remove('show'), 3000);
-                    }
-                }
-
-                function addNotification(message, type = 'info') {
-                    try {
-                        const safeMessage = sanitizeHTML(message);
-                        notifications.push({
-                            id: Date.now() + Math.random(),
-                            message: safeMessage,
-                            type: type,
-                            timestamp: new Date().toLocaleTimeString()
-                        });
-                        if (notifications.length > 10) notifications = notifications.slice(-10);
-                        updateNotificationPanel();
-                    } catch (error) {
-                        console.error('Error adding notification:', error);
-                    }
-                }
-
-                function updateNotificationPanel() {
-                    if (!notificationList) return;
-                    try {
-                        if (notifications.length === 0) {
-                            notificationList.innerHTML = '<div class="notification-empty">No new notifications</div>';
-                            return;
-                        }
-                        let html = '';
-                        notifications.forEach(notification => {
-                            html += `<div class="notification-item">
-                                <div>${notification.message}</div>
-                                <div style="font-size: 0.7rem; color: #999; margin-top: 4px;">${notification.timestamp}</div>
-                            </div>`;
-                        });
-                        notificationList.innerHTML = html;
-                    } catch (error) {
-                        console.error('Error updating notification panel:', error);
-                    }
-                }
-
-                function toggleNotificationPanel() {
-                    if (!notificationPanel) return;
-                    isNotificationPanelOpen = !isNotificationPanelOpen;
-                    notificationPanel.classList.toggle('active', isNotificationPanelOpen);
-                }
-
-                function calculateDistance(lat1, lon1, lat2, lon2) {
-                    const R = 6371;
-                    const dLat = (lat2 - lat1) * Math.PI / 180;
-                    const dLon = (lon2 - lon1) * Math.PI / 180;
-                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                            Math.sin(dLon/2) * Math.sin(dLon/2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                    return R * c;
-                }
-
-                function isTaskMine(task) {
-                    return task && task.assignedHelperId === currentUser?.uid;
-                }
-
-                // Doorbell function
-                function ringDoorbell(task) {
+                tasksListContainer.innerHTML = '';
+                tasksToShow.forEach(task => {
                     if (!task) return;
-                    
-                    if (doorbellSound) {
-                        doorbellSound.currentTime = 0;
-                        doorbellSound.play().catch(e => console.log('Doorbell play error:', e));
-                    }
-                    
-                    addNotification(`Doorbell rung for ${task.posterName || 'poster'}`, 'doorbell');
-                    showToast(`Doorbell rung!`);
-                    
-                    ringTriggeredTasks.add(task.id);
-                    
-                    if (task.status === 'assigned') {
-                        updateTaskStatus(task.id, 'in_progress');
-                    }
-                }
+                    let cardClass = '', statusText = '', statusClass = '';
+                    if (incomingTasks.includes(task))     { cardClass = 'incoming'; statusText = 'Available'; statusClass = 'incoming'; }
+                    else if (currentTasks.includes(task)) { cardClass = 'current';  statusText = task.status === 'assigned' ? 'On my way' : 'In progress'; statusClass = task.status === 'assigned' ? 'assigned' : 'in-progress'; }
+                    else                                   { cardClass = 'past';     statusText = task.status === 'completed' ? 'Completed' : 'Cancelled'; statusClass = task.status === 'completed' ? 'completed' : 'cancelled'; }
 
-                // Check proximity for ringing
-                function checkProximityAndRing() {
-                    if (!currentChatTask || !currentChatTask.location) return;
-                    if (ringTriggeredTasks.has(currentChatTask.id)) return;
-                    
-                    const distance = calculateDistance(
-                        currentLat, currentLng,
-                        currentChatTask.location.lat,
-                        currentChatTask.location.lng
-                    );
-                    
-                    if (distance <= 0.01) {
-                        ringTriggeredTasks.add(currentChatTask.id);
-                        addNotification(`You've arrived at ${currentChatTask.posterName || 'the poster'}'s location`, 'arrival');
-                        showToast('You have arrived');
-                        
-                        if (currentChatTask.status === 'assigned') {
-                            updateTaskStatus(currentChatTask.id, 'in_progress');
-                        }
-                    }
-                }
+                    const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently';
 
-                // Sound functions
-                function startShakingAndSound() {
-                    if (isShaking) return;
-                    isShaking = true;
-                    if (notificationSound) {
-                        notificationSound.loop = false;
-                        notificationSound.currentTime = 0;
-                        notificationSound.play().catch(e => console.log('Sound play error:', e));
+                    // FIX #11 — clean km-based distance, no double conversion
+                    let distanceHtml = '';
+                    if (task.location) {
+                        const distKm = calculateDistance(currentLat, currentLng, task.location.lat, task.location.lng);
+                        distanceHtml = distKm < 1
+                            ? `<span class="task-distance-row"><i class="fi fi-tr-walking"></i> ${Math.round(distKm * 1000)}m away</span>`
+                            : `<span class="task-distance-row"><i class="fi fi-tr-car"></i> ${distKm.toFixed(1)}km away</span>`;
                     }
-                }
 
-                function stopShakingAndSound() {
-                    isShaking = false;
-                    if (notificationSound) {
-                        notificationSound.pause();
-                        notificationSound.currentTime = 0;
-                    }
-                }
-
-                // Route calculation
-                async function calculateRoute(task) {
-                    if (!task || !task.location || !task.location.lat || !task.location.lng || 
-                        !currentLat || !currentLng) return null;
-                    
-                    if (!mapboxgl || !mapboxgl.accessToken) {
-                        console.error('Mapbox not initialized');
-                        return null;
-                    }
-                    
-                    try {
-                        const walkingRes = await fetch(
-                            `https://api.mapbox.com/directions/v5/mapbox/walking/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
-                        );
-                        
-                        const drivingRes = await fetch(
-                            `https://api.mapbox.com/directions/v5/mapbox/driving/${currentLng},${currentLat};${task.location.lng},${task.location.lat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
-                        );
-                        
-                        if (walkingRes.ok && drivingRes.ok) {
-                            const walkingData = await walkingRes.json();
-                            const drivingData = await drivingRes.json();
-                            const walkingRoute = walkingData.routes[0];
-                            const drivingRoute = drivingData.routes[0];
-                            
-                            if (!walkingRoute || !drivingRoute) return null;
-                            
-                            const walkingDist = walkingRoute.distance < 1000 ? 
-                                Math.round(walkingRoute.distance) + 'm' : 
-                                (walkingRoute.distance / 1000).toFixed(1) + 'km';
-                            
-                            const drivingDist = drivingRoute.distance < 1000 ? 
-                                Math.round(drivingRoute.distance) + 'm' : 
-                                (drivingRoute.distance / 1000).toFixed(1) + 'km';
-                            
-                            return {
-                                walking: { distance: walkingDist, route: walkingRoute },
-                                driving: { distance: drivingDist, route: drivingRoute }
-                            };
-                        }
-                    } catch (error) {
-                        console.error('Route error:', error);
-                    }
-                    return null;
-                }
-
-                // Show task preview
-                async function showTaskPreview(task) {
-                    if (!task || !taskPreviewCard) return;
-                    
-                    stopShakingAndSound();
-                    selectedTask = task;
-                    
-                    try {
-                        // Update preview content
-                        previewCategory.textContent = sanitizeHTML(task.category || 'Help needed');
-                        previewBudget.textContent = task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`;
-                        previewBudget.className = task.budget === 'open' ? 'preview-budget open' : 'preview-budget';
-                        
-                        const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
-                        previewAvatar.textContent = posterInitial;
-                        previewPosterName.textContent = sanitizeHTML(task.posterName || 'Someone');
-                        previewNotesText.textContent = sanitizeHTML(task.notes || 'No additional notes');
-                        
-                        // Create action buttons
-                        let buttonsHtml = '';
-                        if (task.status === 'open') {
-                            buttonsHtml = '<button class="preview-btn accept" id="previewAcceptBtn">Accept task</button>';
-                        } else if (task.status === 'assigned' || task.status === 'in_progress') {
-                            if (isTaskMine(task)) {
-                                buttonsHtml = '<button class="preview-btn ring" id="previewRingBtn">Ring doorbell</button>';
-                            } else {
-                                buttonsHtml = '<button class="preview-btn taken" disabled>Task taken</button>';
-                            }
-                        }
-                        
-                        // Add chat button on the right for assigned/in_progress tasks that are mine
-                        if (task.status === 'assigned' || task.status === 'in_progress') {
-                            if (isTaskMine(task)) {
-                                buttonsHtml += '<button class="preview-chat-btn" id="previewChatBtn"><i class="fi fi-rr-comment"></i></button>';
-                            }
-                        }
-                        
-                        previewActions.innerHTML = buttonsHtml;
-                        
-                        // Show card
-                        taskPreviewCard.classList.remove('fade-out');
-                        taskPreviewCard.classList.add('visible');
-                        
-                        if (task.status === 'open') startShakingAndSound();
-                        
-                        // Attach button listeners
-                        setTimeout(() => {
-                            document.getElementById('previewAcceptBtn')?.addEventListener('click', (e) => { 
-                                e.stopPropagation(); 
-                                acceptTask(task); 
-                            });
-                            
-                            document.getElementById('previewRingBtn')?.addEventListener('click', (e) => { 
-                                e.stopPropagation(); 
-                                ringDoorbell(task); 
-                            });
-                            
-                            document.getElementById('previewChatBtn')?.addEventListener('click', (e) => { 
-                                e.stopPropagation(); 
-                                hideTaskPreview(); 
-                                openChat(task); 
-                            });
-                        }, 0);
-                        
-                        // Update main distance card
-                        await updateMainDistanceCard(task);
-                    } catch (error) {
-                        console.error('Error showing task preview:', error);
-                    }
-                }
-
-                // Update main floating distance card
-                async function updateMainDistanceCard(task) {
-                    if (!task || !task.location || !floatingDistanceCard || !routeDistance) return;
-                    
-                    try {
-                        const routes = await calculateRoute(task);
-                        if (routes) {
-                            const distance = currentRouteProfile === 'walking' ? 
-                                routes.walking.distance : routes.driving.distance;
-                            routeDistance.textContent = distance;
-                            floatingDistanceCard.classList.add('visible');
-                            
-                            if (map && map.getSource && map.getSource('route')) {
-                                const routeData = currentRouteProfile === 'walking' ? 
-                                    routes.walking.route : routes.driving.route;
-                                map.getSource('route').setData({
-                                    type: 'Feature',
-                                    geometry: routeData.geometry
-                                });
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error updating distance card:', error);
-                    }
-                }
-
-                function hideTaskPreview() {
-                    if (taskPreviewCard) {
-                        taskPreviewCard.classList.remove('visible', 'fade-out');
-                    }
-                    stopShakingAndSound();
-                    selectedTask = null;
-                    if (floatingDistanceCard) {
-                        floatingDistanceCard.classList.remove('visible');
-                    }
-                }
-
-                // Chat functions
-                function openChat(task) {
-                    if (!task || !currentUser || !chatFullscreen) return;
-                    
-                    try {
-                        currentChatTask = task;
-                        chatFullscreenName.textContent = sanitizeHTML(task.posterName || 'Poster');
-                        chatFullscreenAvatar.textContent = (task.posterName || 'P').charAt(0).toUpperCase();
-                        chatFullscreenRole.textContent = 'Poster';
-                        
-                        hideTaskPreview();
-                        if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
-                        chatFullscreen.classList.add('active');
-                        
-                        if (chatFullscreenMessages) {
-                            chatFullscreenMessages.innerHTML = '';
-                            
-                            const disclaimerDiv = document.createElement('div');
-                            disclaimerDiv.className = 'chat-disclaimer';
-                            disclaimerDiv.innerHTML = '<i class="fi fi-tr-shield-check"></i><div><strong>Stay safe!</strong> Keep all communication inside TaskMart.</div>';
-                            chatFullscreenMessages.appendChild(disclaimerDiv);
-                        }
-                        
-                        // Remove old listener if exists
-                        if (chatListener) {
-                            database.ref('chats/' + task.id).off('child_added', chatListener);
-                        }
-                        
-                        chatListener = database.ref('chats/' + task.id)
-                            .orderByChild('timestamp')
-                            .on('child_added', (snapshot) => {
-                                displayFullscreenMessage(snapshot.val());
-                            });
-                        
-                        setTimeout(() => {
-                            if (chatFullscreenInput) chatFullscreenInput.focus();
-                        }, 300);
-                    } catch (error) {
-                        console.error('Error opening chat:', error);
-                        showToast('Error opening chat');
-                    }
-                }
-
-                function displayFullscreenMessage(message) {
-                    if (!chatFullscreenMessages || !message) return;
-                    
-                    try {
-                        const isOwn = message.senderId === currentUser?.uid;
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = `chat-fullscreen-message ${isOwn ? 'own' : ''}`;
-                        
-                        const time = message.timestamp ? 
-                            new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-                            'Just now';
-                        
-                        const safeText = sanitizeHTML(message.text || '');
-                        
-                        messageDiv.innerHTML = `
-                            <div class="message-bubble-full">
-                                <div class="message-text-full">${safeText}</div>
-                            </div>
-                            <div class="message-time-full">${time}</div>
-                        `;
-                        
-                        chatFullscreenMessages.appendChild(messageDiv);
-                        chatFullscreenMessages.scrollTop = chatFullscreenMessages.scrollHeight;
-                    } catch (error) {
-                        console.error('Error displaying message:', error);
-                    }
-                }
-
-                async function sendFullscreenMessage(text) {
-                    if (!currentChatTask || !currentUser || !text || !text.trim()) return;
-                    
-                    if (!messageRateLimiter.canCall()) {
-                        showToast('Too many messages. Please wait.');
-                        return;
-                    }
-                    
-                    if (chatFullscreenSend) chatFullscreenSend.disabled = true;
-                    
-                    try {
-                        const safeText = sanitizeHTML(text.trim()).substring(0, 500);
-                        
-                        const message = {
-                            senderId: currentUser.uid,
-                            senderName: currentUser.name || 'Helper',
-                            text: safeText,
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        };
-                        
-                        await database.ref('chats/' + currentChatTask.id).push(message);
-                        if (chatFullscreenInput) chatFullscreenInput.value = '';
-                    } catch (error) {
-                        console.error('Error sending message:', error);
-                        showToast('Failed to send message');
-                    } finally {
-                        if (chatFullscreenSend) chatFullscreenSend.disabled = false;
-                    }
-                }
-
-                // Accept task with rate limiting
-                async function acceptTask(task) {
-                    if (!task || !currentUser || isAcceptingTask) return;
-                    
-                    if (!acceptRateLimiter.canAccept()) {
-                        showToast('Too many accept attempts. Please wait.');
-                        return;
-                    }
-                    
-                    isAcceptingTask = true;
-                    
-                    try {
-                        const taskRef = database.ref('tasks/' + task.posterId + '/' + task.id);
-                        
-                        const result = await taskRef.transaction((currentData) => {
-                            if (currentData && currentData.status === 'open') {
-                                return {
-                                    ...currentData,
-                                    status: 'assigned',
-                                    assignedHelperId: currentUser.uid,
-                                    assignedHelperName: currentUser.name || 'Helper',
-                                    assignedAt: firebase.database.ServerValue.TIMESTAMP
-                                };
-                            }
-                            return currentData;
-                        });
-                        
-                        if (result.committed) {
-                            addNotification(`Task accepted: ${task.category || 'Task'}`, 'success');
-                            if (taskPreviewCard) taskPreviewCard.classList.add('fade-out');
-                            setTimeout(hideTaskPreview, 200);
-                            showToast('Task accepted!');
-                            await fetchTasks();
-                        } else {
-                            showToast('Sorry, this task was just taken');
-                            await fetchTasks();
-                        }
-                    } catch (error) {
-                        console.error('Error accepting task:', error);
-                        showToast('Error accepting task');
-                    } finally {
-                        isAcceptingTask = false;
-                    }
-                }
-
-                // Cancel task
-                async function cancelTask(taskId) {
-                    const task = currentTasks.find(t => t && t.id === taskId);
-                    if (!task) return;
-                    
-                    if (!confirm('Are you sure you want to cancel this task?')) return;
-                    
-                    try {
-                        await database.ref('tasks/' + task.posterId + '/' + taskId).update({ 
-                            status: 'cancelled',
-                            assignedHelperId: null,
-                            assignedHelperName: null,
-                            updatedAt: firebase.database.ServerValue.TIMESTAMP
-                        });
-                        
-                        showToast('Task cancelled');
-                        await fetchTasks();
-                        setActivePage('tasks');
-                    } catch (error) {
-                        console.error('Error cancelling task:', error);
-                        showToast('Error cancelling task');
-                    }
-                }
-
-                // Update task status
-                window.updateTaskStatus = async function(taskId, newStatus) {
-                    const task = currentTasks.find(t => t && t.id === taskId);
-                    if (!task) return;
-                    
-                    try {
-                        await database.ref('tasks/' + task.posterId + '/' + taskId).update({ 
-                            status: newStatus,
-                            updatedAt: firebase.database.ServerValue.TIMESTAMP
-                        });
-                        
-                        showToast('Status updated');
-                        await fetchTasks();
-                        setActivePage('tasks');
-                    } catch (error) {
-                        console.error('Error updating status:', error);
-                        showToast('Error updating status');
-                    }
-                };
-
-                // Map functions
-                function initMap() {
-                    if (typeof mapboxgl === 'undefined') {
-                        console.error('Mapbox GL not loaded');
-                        fetchTasks();
-                        return;
-                    }
-                    
-                    if (!mapboxgl.accessToken) {
-                        mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY21sc2RveHpmMDRxODNlczdvaHlreGR3NSJ9.JcBPUfASVkZEHx8K9psySg';
-                    }
-                    
-                    try {
-                        map = new mapboxgl.Map({
-                            container: 'map',
-                            style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                            center: [JOBURG_LNG, JOBURG_LAT],
-                            zoom: 9
-                        });
-                        
-                        map.on('load', () => {
-                            try {
-                                if (!map.getSource('route')) {
-                                    map.addSource('route', {
-                                        type: 'geojson',
-                                        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } }
-                                    });
-                                    
-                                    map.addLayer({
-                                        id: 'route',
-                                        type: 'line',
-                                        source: 'route',
-                                        paint: { 
-                                            'line-color': '#666666',
-                                            'line-width': 3,
-                                            'line-opacity': 0.6
-                                        }
-                                    });
-                                }
-                            } catch (e) {
-                                console.error('Route layer error:', e);
-                            }
-                            
-                            isMapReady = true;
-                            
-                            if (navigator.geolocation) {
-                                navigator.geolocation.getCurrentPosition(
-                                    (pos) => {
-                                        currentLat = pos.coords.latitude;
-                                        currentLng = pos.coords.longitude;
-                                        
-                                        map.flyTo({
-                                            center: [currentLng, currentLat],
-                                            zoom: 15,
-                                            duration: 3000
-                                        });
-                                        
-                                        updateUserMarker();
-                                        fetchTasks();
-                                    },
-                                    (error) => {
-                                        console.log('Geolocation error, using default');
-                                        updateUserMarker();
-                                        fetchTasks();
-                                    },
-                                    { enableHighAccuracy: true, timeout: 10000 }
-                                );
-                            } else {
-                                updateUserMarker();
-                                fetchTasks();
-                            }
-                        });
-                        
-                        map.on('error', (e) => {
-                            console.error('Map error:', e);
-                            fetchTasks();
-                        });
-                    } catch (e) {
-                        console.error('Map init error:', e);
-                        fetchTasks();
-                    }
-                }
-
-                function updateUserMarker() {
-                    if (!map) return;
-                    try {
-                        if (startMarker) startMarker.remove();
-                        
-                        const pin = document.createElement('div');
-                        pin.className = 'helper-pulsing-pin';
-                        
-                        startMarker = new mapboxgl.Marker({ element: pin })
-                            .setLngLat([currentLng, currentLat])
-                            .addTo(map);
-                    } catch (e) {
-                        console.error('Marker error:', e);
-                    }
-                }
-
-                // Create task marker
-                function createTaskMarker(task) {
-                    if (!map || !task || !task.location) return null;
-                    
-                    try {
-                        const el = document.createElement('div');
-                        el.className = `task-pin ${isTaskMine(task) ? 'assigned' : ''} ${task.status === 'assigned' && !isTaskMine(task) ? 'taken' : ''}`;
-                        
-                        const container = document.createElement('div');
-                        container.className = 'task-marker-container';
-                        
-                        const iconDiv = document.createElement('div');
-                        iconDiv.className = 'task-marker-icon';
-                        iconDiv.innerHTML = '<i class="fi fi-rr-clipboard"></i>';
-                        
-                        const nameDiv = document.createElement('div');
-                        nameDiv.className = 'task-marker-name';
-                        nameDiv.textContent = task.category || 'Task';
-                        
-                        container.appendChild(iconDiv);
-                        container.appendChild(nameDiv);
-                        el.appendChild(container);
-                        
-                        const marker = new mapboxgl.Marker({ element: el })
-                            .setLngLat([task.location.lng, task.location.lat])
-                            .addTo(map);
-                        
-                        el.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            showTaskPreview(task);
-                        });
-                        
-                        return marker;
-                    } catch (e) {
-                        console.error('Task marker error:', e);
-                        return null;
-                    }
-                }
-
-                // Fetch tasks
-                async function fetchTasks() {
-                    if (!currentUser) return;
-                    
-                    if (tasksLoading) {
-                        tasksLoading.style.display = 'block';
-                    }
-                    
-                    try {
-                        const snapshot = await database.ref('tasks').once('value');
-                        const allUsersTasks = snapshot.val() || {};
-                        allTasks = [];
-                        
-                        for (let posterId in allUsersTasks) {
-                            for (let taskId in allUsersTasks[posterId]) {
-                                const taskData = allUsersTasks[posterId][taskId];
-                                if (taskData && taskData.location) {
-                                    allTasks.push({ 
-                                        id: taskId, 
-                                        posterId: posterId, 
-                                        ...taskData 
-                                    });
-                                }
-                            }
-                        }
-                        
-                        incomingTasks = allTasks.filter(t => 
-                            t && t.status === 'open' && t.posterId !== currentUser.uid
-                        );
-                        
-                        currentTasks = allTasks.filter(t => 
-                            t && (t.status === 'assigned' || t.status === 'in_progress') && 
-                            t.assignedHelperId === currentUser.uid
-                        );
-                        
-                        pastTasks = allTasks.filter(t => 
-                            t && (t.status === 'completed' || t.status === 'cancelled') && 
-                            t.assignedHelperId === currentUser.uid
-                        );
-                        
-                        if (tasksCount) {
-                            tasksCount.textContent = (incomingTasks.length + currentTasks.length + pastTasks.length).toString();
-                        }
-                        
-                        // Update markers
-                        if (taskMarkers.length > 0) {
-                            taskMarkers.forEach(m => { if (m) m.remove(); });
-                            taskMarkers = [];
-                        }
-                        
-                        [...incomingTasks, ...currentTasks].forEach(task => {
-                            if (task && task.location && task.location.lat && task.location.lng) {
-                                const marker = createTaskMarker(task);
-                                if (marker) taskMarkers.push(marker);
-                            }
-                        });
-                        
-                        if (tasksNotificationDot) {
-                            tasksNotificationDot.classList.toggle('visible', incomingTasks.length > 0);
-                        }
-                        
-                        if (tasksLoading) {
-                            tasksLoading.style.display = 'none';
-                        }
-                        
-                        if (tasksPage && tasksPage.classList.contains('active')) {
-                            renderTasksPage();
-                        }
-                    } catch (error) {
-                        console.error('Error fetching tasks:', error);
-                        showToast('Error loading tasks');
-                        if (tasksLoading) {
-                            tasksLoading.style.display = 'none';
-                        }
-                    }
-                }
-
-                // Setup task listener
-                function setupTaskListener() {
-                    const tasksRef = database.ref('tasks');
-                    
-                    // Remove old listener if exists
-                    if (tasksListener) {
-                        tasksRef.off('child_added', tasksListener);
-                    }
-                    
-                    tasksListener = tasksRef.on('child_added', (posterSnapshot) => {
-                        const posterId = posterSnapshot.key;
-                        
-                        posterSnapshot.ref.on('child_added', (taskSnapshot) => {
-                            try {
-                                const task = { 
-                                    id: taskSnapshot.key, 
-                                    posterId: posterId, 
-                                    ...taskSnapshot.val() 
-                                };
-                                
-                                if (task && task.status === 'open' && 
-                                    task.posterId !== currentUser?.uid && 
-                                    !shownTaskIds.has(task.id) && 
-                                    navMap && navMap.classList.contains('active')) {
-                                    shownTaskIds.add(task.id);
-                                    showTaskPreview(task);
-                                }
-                                
-                                fetchTasks();
-                            } catch (error) {
-                                console.error('Error processing task:', error);
-                            }
-                        });
-                    });
-                }
-
-                // Page navigation
-                function setActivePage(page) {
-                    if (!navMap || !navTasks || !navAccount) return;
-                    
-                    [navMap, navTasks, navAccount].forEach(btn => btn?.classList.remove('active'));
-                    
-                    if (page === 'map') {
-                        navMap.classList.add('active');
-                        if (tasksPage) tasksPage.classList.remove('active');
-                        if (taskDetailPage) taskDetailPage.classList.remove('active');
-                        if (mapEl) mapEl.style.display = 'block';
-                        if (floatingDistanceCard) {
-                            floatingDistanceCard.style.display = selectedTask ? 'flex' : 'none';
-                        }
-                        setTimeout(() => { if (map) map.resize(); }, 100);
-                    } else if (page === 'tasks') {
-                        navTasks.classList.add('active');
-                        if (tasksPage) tasksPage.classList.add('active');
-                        if (taskDetailPage) taskDetailPage.classList.remove('active');
-                        if (mapEl) mapEl.style.display = 'none';
-                        if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
-                        hideTaskPreview();
-                        renderTasksPage();
-                    } else if (page === 'account') {
-                        window.location.href = 'helper-account.html';
-                    } else if (page === 'taskDetail') {
-                        if (taskDetailPage) taskDetailPage.classList.add('active');
-                        if (mapEl) mapEl.style.display = 'none';
-                        if (floatingDistanceCard) floatingDistanceCard.classList.remove('visible');
-                        hideTaskPreview();
-                    }
-                }
-
-                // Render tasks page
-                function renderTasksPage() {
-                    if (!tasksListContainer) return;
-                    
-                    try {
-                        let html = '';
-                        let tasksToShow = [];
-                        
-                        if (currentHorizontalCategory === 'all') {
-                            tasksToShow = [...incomingTasks, ...currentTasks, ...pastTasks];
-                        } else if (currentHorizontalCategory === 'incoming') {
-                            tasksToShow = incomingTasks;
-                        } else if (currentHorizontalCategory === 'current') {
-                            tasksToShow = currentTasks;
-                        } else if (currentHorizontalCategory === 'past') {
-                            tasksToShow = pastTasks;
-                        }
-                        
-                        if (tasksToShow.length === 0) {
-                            html = '<div style="text-align: center; padding: 40px 20px;">' +
-                                   '<h3 style="font-weight: 500; margin-bottom: 10px;">No tasks in this category</h3>' +
-                                   '<p style="color: #666;">Tasks will appear here when available</p>' +
-                                   '</div>';
-                        } else {
-                            tasksToShow.forEach(task => {
-                                if (!task) return;
-                                
-                                let cardClass = '', statusText = '', statusClass = '';
-                                
-                                if (incomingTasks.includes(task)) {
-                                    cardClass = 'incoming'; 
-                                    statusText = 'Available'; 
-                                    statusClass = 'incoming';
-                                } else if (currentTasks.includes(task)) {
-                                    cardClass = 'current'; 
-                                    statusText = task.status === 'assigned' ? 'On my way' : 'In progress'; 
-                                    statusClass = task.status === 'assigned' ? 'assigned' : 'in-progress';
-                                } else {
-                                    cardClass = 'past'; 
-                                    statusText = task.status === 'completed' ? 'Completed' : 'Cancelled'; 
-                                    statusClass = task.status === 'completed' ? 'completed' : 'cancelled';
-                                }
-                                
-                                const date = task.createdAt ? 
-                                    new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 
-                                    'Recently';
-                                
-                                let distanceHtml = '';
-                                if (task.location) {
-                                    const dist = calculateDistance(currentLat, currentLng, task.location.lat, task.location.lng) * 1000;
-                                    if (dist < 1000) {
-                                        distanceHtml = `<span class="task-distance-row"><i class="fi fi-tr-walking"></i> ${Math.round(dist)}m away</span>`;
-                                    } else {
-                                        distanceHtml = `<span class="task-distance-row"><i class="fi fi-tr-car"></i> ${(dist/1000).toFixed(1)}km away</span>`;
-                                    }
-                                }
-                                
-                                html += `<div class="task-card ${cardClass}" onclick="handleTaskCardClick('${task.id}')">
-                                    <div class="task-card-main">
-                                        <div class="task-icon"><i class="fi fi-rr-clipboard"></i></div>
-                                        <div class="task-content">
-                                            <div class="task-header-row">
-                                                <span class="task-date-time">${date}</span>
-                                                ${distanceHtml}
-                                            </div>
-                                            <div class="task-title">${sanitizeHTML(task.category || 'Task')}</div>
-                                            <div class="task-amount">${task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`}</div>
-                                            <span class="task-status-badge ${statusClass}">${statusText}</span>
-                                        </div>
-                                    </div>
-                                </div>`;
-                            });
-                        }
-                        
-                        tasksListContainer.innerHTML = html;
-                    } catch (error) {
-                        console.error('Error rendering tasks page:', error);
-                    }
-                }
-
-                // Show task detail
-                window.showTaskDetail = function(taskId) {
-                    if (!taskDetailContent) return;
-                    
-                    const task = [...allTasks].find(t => t && t.id === taskId);
-                    if (!task) return;
-                    
-                    try {
-                        currentDetailTask = task;
-                        
-                        const createdDate = task.createdAt ? 
-                            new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 
-                            'Unknown';
-                        
-                        const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
-                        
-                        let statusText = '', statusClass = '', actionButton = '';
-                        
-                        if (task.status === 'assigned') {
-                            statusText = 'On my way'; 
-                            statusClass = 'assigned';
-                            actionButton = `<button class="detail-action-btn primary" onclick="cancelTask('${task.id}')">Cancel Task</button>`;
-                        } else if (task.status === 'in_progress') {
-                            statusText = 'Working on task'; 
-                            statusClass = 'in-progress';
-                            actionButton = `<button class="detail-action-btn primary" onclick="cancelTask('${task.id}')">Cancel Task</button>`;
-                        } else if (task.status === 'completed') {
-                            statusText = 'Completed'; 
-                            statusClass = 'completed';
-                        } else if (task.status === 'cancelled') {
-                            statusText = 'Cancelled';
-                            statusClass = 'cancelled';
-                        } else if (task.status === 'open') {
-                            statusText = 'Available'; 
-                            statusClass = 'incoming';
-                        }
-                        
-                        taskDetailContent.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 16px; background: #f8f8f8; border-radius: 12px;">
-                                <div style="width: 48px; height: 48px; background: #A6CBE3; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: white;">${posterInitial}</div>
-                                <div>
-                                    <div style="font-size: 0.8rem; color: #666;">Task for</div>
-                                    <div style="font-weight: 700; font-size: 1rem;">${sanitizeHTML(task.posterName || 'Someone')}</div>
+                    // FIX #8 — use data attribute, attach listener after render
+                    const card = document.createElement('div');
+                    card.className = `task-card ${cardClass}`;
+                    card.dataset.taskId = task.id;
+                    card.innerHTML = `
+                        <div class="task-card-main">
+                            <div class="task-icon"><i class="fi fi-rr-clipboard"></i></div>
+                            <div class="task-content">
+                                <div class="task-header-row">
+                                    <span class="task-date-time">${date}</span>
+                                    ${distanceHtml}
                                 </div>
+                                <div class="task-title">${sanitizeHTML(task.category || 'Task')}</div>
+                                <div class="task-amount">${task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`}</div>
+                                <span class="task-status-badge ${statusClass}">${statusText}</span>
                             </div>
-                            
-                            <div class="detail-map-container" id="taskDetailMap"></div>
-                            
-                            <div style="margin-bottom: 24px;">
-                                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                                    <div style="width: 12px; height: 12px; background: #000; border-radius: 50%; margin-top: 4px;"></div>
-                                    <div>
-                                        <div style="font-weight: 700;">Location</div>
-                                        <div style="color: #666; margin: 4px 0;">${sanitizeHTML(task.address || 'Location set')}</div>
-                                        <div style="font-size: 0.8rem; color: #999;">Posted: ${createdDate}</div>
-                                    </div>
-                                </div>
-                                
-                                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                                    <div><i class="fi fi-rr-clipboard"></i></div>
-                                    <div>
-                                        <div style="font-weight: 700;">${sanitizeHTML(task.category || 'Task')}</div>
-                                        <div style="color: #666; margin: 4px 0;">${sanitizeHTML(task.notes || 'No additional notes')}</div>
-                                        <div style="font-size: 0.8rem; color: #999;">Budget: ${task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`}</div>
-                                    </div>
-                                </div>
-                                
-                                <div style="display: flex; gap: 12px;">
-                                    <div>
-                                        <div style="font-weight: 700;">Status</div>
-                                        <div><span class="status-text ${statusClass}">${statusText}</span></div>
-                                    </div>
-                                </div>
+                        </div>`;
+                    card.addEventListener('click', () => showTaskDetail(task.id));
+                    tasksListContainer.appendChild(card);
+                });
+            } catch (e) { console.error('renderTasksPage error:', e); }
+        }
+
+        /* ─────────────────────────────────────────
+           TASK DETAIL
+        ───────────────────────────────────────── */
+        function showTaskDetail(taskId) {
+            if (!taskDetailContent) return;
+            const task = allTasks.find(t => t?.id === taskId);
+            if (!task) return;
+            try {
+                currentDetailTask = task;
+                const createdDate  = task.createdAt ? new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown';
+                const posterInitial = (task.posterName || 'P').charAt(0).toUpperCase();
+
+                let statusText = '', statusClass = '';
+                if      (task.status === 'assigned')    { statusText = 'On my way';        statusClass = 'assigned'; }
+                else if (task.status === 'in_progress') { statusText = 'Working on task';  statusClass = 'in-progress'; }
+                else if (task.status === 'completed')   { statusText = 'Completed';         statusClass = 'completed'; }
+                else if (task.status === 'cancelled')   { statusText = 'Cancelled';         statusClass = 'cancelled'; }
+                else if (task.status === 'open')        { statusText = 'Available';         statusClass = 'incoming'; }
+
+                // FIX #9 — build detail HTML without inline onclick; attach via addEventListener
+                taskDetailContent.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px;background:#f8f8f8;border-radius:12px;">
+                        <div style="width:48px;height:48px;background:#A6CBE3;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.2rem;color:white;">${posterInitial}</div>
+                        <div>
+                            <div style="font-size:0.8rem;color:#666;">Task for</div>
+                            <div style="font-weight:700;font-size:1rem;">${sanitizeHTML(task.posterName || 'Someone')}</div>
+                        </div>
+                    </div>
+                    <div class="detail-map-container" id="taskDetailMap"></div>
+                    <div style="margin-bottom:24px;">
+                        <div style="display:flex;gap:12px;margin-bottom:16px;">
+                            <div style="width:12px;height:12px;background:#000;border-radius:50%;margin-top:4px;"></div>
+                            <div>
+                                <div style="font-weight:700;">Location</div>
+                                <div style="color:#666;margin:4px 0;">${sanitizeHTML(task.address || 'Location set')}</div>
+                                <div style="font-size:0.8rem;color:#999;">Posted: ${createdDate}</div>
                             </div>
-                            
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                ${actionButton}
-                                <button class="detail-action-btn secondary" onclick="setActivePage('tasks')">Back to tasks</button>
+                        </div>
+                        <div style="display:flex;gap:12px;margin-bottom:16px;">
+                            <div><i class="fi fi-rr-clipboard"></i></div>
+                            <div>
+                                <div style="font-weight:700;">${sanitizeHTML(task.category || 'Task')}</div>
+                                <div style="color:#666;margin:4px 0;">${sanitizeHTML(task.notes || 'No additional notes')}</div>
+                                <div style="font-size:0.8rem;color:#999;">Budget: ${task.budget === 'open' ? 'Open to offers' : `R${sanitizeHTML(task.budget)}`}</div>
                             </div>
-                        `;
-                        
-                        // Initialize detail map
-                        setTimeout(() => {
-                            const mapContainer = document.getElementById('taskDetailMap');
-                            if (mapContainer && task.location && task.location.lat && task.location.lng && typeof mapboxgl !== 'undefined') {
-                                try {
-                                    new mapboxgl.Map({
-                                        container: 'taskDetailMap',
-                                        style: 'mapbox://styles/pmalapile07/cmmhmxzd900e801skap5a047l',
-                                        center: [task.location.lng, task.location.lat],
-                                        zoom: 15,
-                                        interactive: false,
-                                        attributionControl: false
-                                    });
-                                } catch (e) {
-                                    console.error('Detail map error:', e);
-                                }
-                            }
-                        }, 100);
-                        
-                        setActivePage('taskDetail');
-                    } catch (error) {
-                        console.error('Error showing task detail:', error);
+                        </div>
+                        <div style="display:flex;gap:12px;">
+                            <div>
+                                <div style="font-weight:700;">Status</div>
+                                <div><span class="status-text ${statusClass}">${statusText}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-actions" style="display:flex;flex-direction:column;gap:12px;">
+                        ${(task.status === 'assigned' || task.status === 'in_progress')
+                            ? `<button class="detail-action-btn primary" id="detailCancelBtn">Cancel Task</button>` : ''}
+                        <button class="detail-action-btn secondary" id="detailBackBtn">Back to tasks</button>
+                    </div>`;
+
+                // FIX #9 — event listeners not inline onclick
+                document.getElementById('detailCancelBtn')?.addEventListener('click', () => cancelTask(task.id));
+                document.getElementById('detailBackBtn')?.addEventListener('click', () => setActivePage('tasks'));
+
+                // Mini map in detail
+                setTimeout(() => {
+                    const container = document.getElementById('taskDetailMap');
+                    if (container && task.location?.lat != null && task.location?.lng != null && typeof mapboxgl !== 'undefined') {
+                        try {
+                            new mapboxgl.Map({
+                                container: 'taskDetailMap',
+                                style: 'mapbox://styles/pmalapile07/cmn0rlfpe00i601s95r1qa5w9',
+                                center: [task.location.lng, task.location.lat],
+                                zoom: 15, interactive: false, attributionControl: false
+                            });
+                        } catch (e) { console.error('Detail map error:', e); }
                     }
-                };
+                }, 100);
 
-                window.handleTaskCardClick = function(taskId) {
-                    showTaskDetail(taskId);
-                };
+                setActivePage('taskDetail');
+            } catch (e) { console.error('showTaskDetail error:', e); }
+        }
 
-                window.setActivePage = setActivePage;
-                window.cancelTask = cancelTask;
+        /* ─────────────────────────────────────────
+           AUTH
+        ───────────────────────────────────────── */
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) { window.location.href = '/login.html'; return; }
+            try {
+                const snap = await database.ref('users/' + user.uid).once('value');
+                const userData = snap.val();
+                if (!userData || userData.role !== 'helper') { await auth.signOut(); window.location.href = '/login.html'; return; }
+                currentUser = { uid: user.uid, name: userData.name || 'Helper', email: user.email, phone: userData.phone || 'Not set', bio: userData.bio || '', profileImage: userData.profileImage || null };
+                initMap();
+                setupTaskListener();
+            } catch (e) { console.error('Auth error:', e); showToast('Authentication error'); }
+        });
 
-                // Auth state
-                auth.onAuthStateChanged(async (user) => {
-                    if (!user) {
-                        window.location.href = '/login.html';
-                        return;
-                    }
-                    
-                    try {
-                        const snapshot = await database.ref('users/' + user.uid).once('value');
-                        const userData = snapshot.val();
-                        
-                        if (!userData || userData.role !== 'helper') {
-                            await auth.signOut();
-                            window.location.href = '/login.html';
-                            return;
-                        }
-                        
-                        currentUser = {
-                            uid: user.uid,
-                            name: userData.name || 'Helper',
-                            email: user.email,
-                            phone: userData.phone || 'Not set',
-                            bio: userData.bio || '',
-                            profileImage: userData.profileImage || null
-                        };
-                        
-                        initMap();
-                        setupTaskListener();
-                    } catch (error) {
-                        console.error('Auth error:', error);
-                        showToast('Authentication error');
-                    }
-                });
+        /* ─────────────────────────────────────────
+           EVENT LISTENERS
+        ───────────────────────────────────────── */
+        notificationBell?.addEventListener('click', (e) => { e.stopPropagation(); toggleNotificationPanel(); });
+        previewCloseBtn?.addEventListener('click', (e) => { e.stopPropagation(); hideTaskPreview(); });
 
-                // Event Listeners
-                if (notificationBell) {
-                    notificationBell.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        toggleNotificationPanel();
-                    });
-                }
+        taskPreviewCard?.addEventListener('click', function (e) {
+            if (e.target.closest('button')) return;
+            if (selectedTask) { hideTaskPreview(); showTaskDetail(selectedTask.id); }
+        });
 
-                if (previewCloseBtn) {
-                    previewCloseBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        hideTaskPreview();
-                    });
-                }
+        previewNotesArea?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (selectedTask) { hideTaskPreview(); showTaskDetail(selectedTask.id); }
+        });
 
-                if (taskPreviewCard) {
-                    taskPreviewCard.addEventListener('click', function(e) {
-                        if (e.target.closest('button')) return;
-                        if (selectedTask) {
-                            hideTaskPreview();
-                            showTaskDetail(selectedTask.id);
-                        }
-                    });
-                }
+        chatFullscreenSend?.addEventListener('click', () => { if (chatFullscreenInput) sendFullscreenMessage(chatFullscreenInput.value); });
+        chatFullscreenInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendFullscreenMessage(chatFullscreenInput.value); } });
+        chatMinimizeBtn?.addEventListener('click', () => chatFullscreen?.classList.remove('active'));
+        chatPosterInfo?.addEventListener('click', () => { if (currentChatTask) showToast('Chat with ' + (currentChatTask.posterName || 'poster')); });
 
-                if (previewNotesArea) {
-                    previewNotesArea.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (selectedTask) {
-                            hideTaskPreview();
-                            showTaskDetail(selectedTask.id);
-                        }
-                    });
-                }
+        routeWalkingBtn?.addEventListener('click', async () => {
+            routeWalkingBtn.classList.add('active');
+            routeDrivingBtn?.classList.remove('active');
+            currentRouteProfile = 'walking';
+            if (selectedTask) await updateMainDistanceCard(selectedTask);
+        });
 
-                if (chatFullscreenSend) {
-                    chatFullscreenSend.addEventListener('click', () => {
-                        if (chatFullscreenInput) {
-                            sendFullscreenMessage(chatFullscreenInput.value);
-                        }
-                    });
-                }
-                
-                if (chatFullscreenInput) {
-                    chatFullscreenInput.addEventListener('keypress', (e) => { 
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            sendFullscreenMessage(chatFullscreenInput.value);
-                        }
-                    });
-                }
-                
-                if (chatMinimizeBtn) {
-                    chatMinimizeBtn.addEventListener('click', () => {
-                        if (chatFullscreen) chatFullscreen.classList.remove('active');
-                    });
-                }
+        routeDrivingBtn?.addEventListener('click', async () => {
+            routeDrivingBtn.classList.add('active');
+            routeWalkingBtn?.classList.remove('active');
+            currentRouteProfile = 'driving';
+            if (selectedTask) await updateMainDistanceCard(selectedTask);
+        });
 
-                if (chatPosterInfo) {
-                    chatPosterInfo.addEventListener('click', () => {
-                        if (currentChatTask) {
-                            showToast('Chat with ' + (currentChatTask.posterName || 'poster'));
-                        }
-                    });
-                }
+        navMap?.addEventListener('click',     () => setActivePage('map'));
+        navTasks?.addEventListener('click',   () => setActivePage('tasks'));
+        navAccount?.addEventListener('click', () => setActivePage('account'));
+        taskDetailBackBtn?.addEventListener('click', () => setActivePage('tasks'));
 
-                // Route toggle buttons
-                if (routeWalkingBtn) {
-                    routeWalkingBtn.addEventListener('click', async () => {
-                        routeWalkingBtn.classList.add('active');
-                        if (routeDrivingBtn) routeDrivingBtn.classList.remove('active');
-                        currentRouteProfile = 'walking';
-                        if (selectedTask) {
-                            await updateMainDistanceCard(selectedTask);
-                        }
-                    });
-                }
-
-                if (routeDrivingBtn) {
-                    routeDrivingBtn.addEventListener('click', async () => {
-                        routeDrivingBtn.classList.add('active');
-                        if (routeWalkingBtn) routeWalkingBtn.classList.remove('active');
-                        currentRouteProfile = 'driving';
-                        if (selectedTask) {
-                            await updateMainDistanceCard(selectedTask);
-                        }
-                    });
-                }
-
-                // Navigation
-                if (navMap) navMap.addEventListener('click', () => setActivePage('map'));
-                if (navTasks) navTasks.addEventListener('click', () => setActivePage('tasks'));
-                if (navAccount) navAccount.addEventListener('click', () => setActivePage('account'));
-                if (taskDetailBackBtn) taskDetailBackBtn.addEventListener('click', () => setActivePage('tasks'));
-
-                // Category tabs
-                horizontalCategoryTabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                        horizontalCategoryTabs.forEach(t => t.classList.remove('active'));
-                        this.classList.add('active');
-                        currentHorizontalCategory = this.dataset.category;
-                        renderTasksPage();
-                    });
-                });
-
-                // Tooltip menu
-                if (tooltipBtn) {
-                    tooltipBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (tooltipMenu) tooltipMenu.classList.toggle('active');
-                    });
-                }
-
-                document.addEventListener('click', (e) => {
-                    if (tooltipMenu && tooltipBtn && !tooltipBtn.contains(e.target) && !tooltipMenu.contains(e.target)) {
-                        tooltipMenu.classList.remove('active');
-                    }
-                });
-
-                if (reportTaskBtn) {
-                    reportTaskBtn.addEventListener('click', () => {
-                        if (tooltipMenu) tooltipMenu.classList.remove('active');
-                        if (currentDetailTask) {
-                            addNotification(`Reported task: ${currentDetailTask.category}`, 'report');
-                            showToast('Task reported');
-                        }
-                    });
-                }
-
-                if (reportUserBtn) {
-                    reportUserBtn.addEventListener('click', () => {
-                        if (tooltipMenu) tooltipMenu.classList.remove('active');
-                        if (currentDetailTask) {
-                            addNotification(`Reported user: ${currentDetailTask.posterName}`, 'report');
-                            showToast('User reported');
-                        }
-                    });
-                }
-
-                // Geolocation watch with throttling
-                if (navigator.geolocation) {
-                    geolocationWatchId = navigator.geolocation.watchPosition(
-                        (pos) => { 
-                            const now = Date.now();
-                            if (now - lastGeolocationUpdate > 1000) {
-                                currentLat = pos.coords.latitude; 
-                                currentLng = pos.coords.longitude; 
-                                lastGeolocationUpdate = now;
-                                updateUserMarker(); 
-                                checkProximityAndRing(); 
-                            }
-                        },
-                        (error) => console.log('Geolocation error:', error),
-                        { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
-                    );
-                }
-
-                // Click outside notification panel
-                document.addEventListener('click', (e) => {
-                    if (notificationPanel && isNotificationPanelOpen && 
-                        !notificationPanel.contains(e.target) && 
-                        notificationBell && !notificationBell.contains(e.target)) {
-                        notificationPanel.classList.remove('active');
-                        isNotificationPanelOpen = false;
-                    }
-                });
-
-                // Set initial page
-                setActivePage('map');
-                
-                // Refresh tasks periodically with cleanup
-                const intervalId = setInterval(() => {
-                    if (tasksPage && !tasksPage.classList.contains('active')) {
-                        fetchTasks();
-                    }
-                }, 30000);
-
-                // Cleanup function for when page unloads
-                window.addEventListener('beforeunload', () => {
-                    if (geolocationWatchId) {
-                        navigator.geolocation.clearWatch(geolocationWatchId);
-                    }
-                    if (chatListener) {
-                        database.ref('chats/' + currentChatTask?.id).off('child_added', chatListener);
-                    }
-                    if (tasksListener) {
-                        database.ref('tasks').off('child_added', tasksListener);
-                    }
-                    clearInterval(intervalId);
-                });
+        horizontalCategoryTabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                horizontalCategoryTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentHorizontalCategory = this.dataset.category;
+                renderTasksPage();
             });
-        })();
-    </script>
+        });
+
+        tooltipBtn?.addEventListener('click', (e) => { e.stopPropagation(); tooltipMenu?.classList.toggle('active'); });
+        document.addEventListener('click', (e) => {
+            if (tooltipMenu && tooltipBtn && !tooltipBtn.contains(e.target) && !tooltipMenu.contains(e.target)) {
+                tooltipMenu.classList.remove('active');
+            }
+            if (notificationPanel && isNotificationPanelOpen && !notificationPanel.contains(e.target) && notificationBell && !notificationBell.contains(e.target)) {
+                notificationPanel.classList.remove('active');
+                isNotificationPanelOpen = false;
+            }
+        });
+
+        reportTaskBtn?.addEventListener('click', () => {
+            tooltipMenu?.classList.remove('active');
+            if (currentDetailTask) { addNotification(`Reported task: ${currentDetailTask.category}`, 'report'); showToast('Task reported'); }
+        });
+
+        reportUserBtn?.addEventListener('click', () => {
+            tooltipMenu?.classList.remove('active');
+            if (currentDetailTask) { addNotification(`Reported user: ${currentDetailTask.posterName}`, 'report'); showToast('User reported'); }
+        });
+
+        /* Geolocation watch with throttle */
+        if (navigator.geolocation) {
+            geolocationWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const now = Date.now();
+                    if (now - lastGeolocationUpdate > 1000) {
+                        currentLat = pos.coords.latitude;
+                        currentLng = pos.coords.longitude;
+                        lastGeolocationUpdate = now;
+                        updateUserMarker();
+                        checkProximityAndRing();
+                    }
+                },
+                (e) => console.log('Geolocation error:', e),
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+            );
+        }
+
+        /* FIX #10 — interval fires always, not only when tasks page is hidden */
+        const refreshInterval = setInterval(fetchTasks, 30000);
+
+        /* Cleanup */
+        window.addEventListener('beforeunload', () => {
+            if (geolocationWatchId) navigator.geolocation.clearWatch(geolocationWatchId);
+            if (chatListenerRef && chatListener) chatListenerRef.off('child_added', chatListener);
+            database.ref('tasks').off();
+            clearInterval(refreshInterval);
+        });
+
+        /* Initial page */
+        setActivePage('map');
+
+    }); // end DOMContentLoaded
+})();
+</script>
+
 </body>
 </html>
