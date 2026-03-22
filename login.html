@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -109,6 +110,14 @@
         margin-bottom: 0.5rem;
     }
 
+    .field-hint {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 400;
+        color: #b0b0b0;
+        margin-top: 0.35rem;
+    }
+
     /* ── INPUTS ── */
     .field-input {
         width: 100%;
@@ -177,34 +186,57 @@
 
     .phone-input:focus { border-color: var(--black); background: var(--white); }
 
-    /* ── ROLE SELECTOR ── */
-    .role-selector { display: flex; gap: 0.65rem; margin-bottom: 1.1rem; }
+    /* ── ROLE CARDS ── */
+    .role-cards {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.75rem;
+    }
 
-    .role-option {
+    .role-card {
         flex: 1;
-        padding: 0.75rem;
+        padding: 1.1rem 0.75rem;
         background: var(--grey);
-        border: 1.5px solid transparent;
+        border: 2px solid transparent;
         border-radius: var(--radius);
         text-align: center;
         cursor: pointer;
-        transition: all 0.18s;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--grey-text);
-        font-family: 'Manrope', sans-serif;
+        transition: all 0.2s;
         user-select: none;
     }
 
-    .role-option.selected {
+    .role-card:hover { border-color: #ccc; }
+
+    .role-card.selected {
         background: var(--black);
         border-color: var(--black);
         color: var(--white);
     }
 
+    .role-card-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+
+    .role-card-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.2rem;
+    }
+
+    .role-card-sub {
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: var(--grey-text);
+        display: block;
+        line-height: 1.4;
+    }
+
+    .role-card.selected .role-card-sub { color: #ccc; }
+
     /* ── SKILLS ── */
-    .skills-container { display: none; margin-bottom: 1.1rem; }
-    .skills-container.show { display: block; }
     .skills-wrapper { position: relative; }
 
     .skills-input {
@@ -380,32 +412,22 @@
         animation: spin 0.75s linear infinite;
     }
 
-    /* ── DEBUG (hidden) ── */
-    .debug-panel {
-        margin-top: 20px;
-        padding: 15px;
-        background: #1e1e1e;
-        color: #00ff00;
-        font-family: monospace;
-        font-size: 12px;
-        border-radius: 8px;
-        max-height: 300px;
-        overflow-y: auto;
-        display: none;
+    /* ── SECTION DIVIDER ── */
+    .section-divider {
+        height: 1px;
+        background: var(--grey);
+        margin: 1.25rem 0;
     }
-    .debug-panel.show { display: block; }
-    .debug-header { display: flex; justify-content: space-between; margin-bottom: 10px; color: #fff; font-weight: bold; }
-    .debug-log { color: #00ff00; white-space: pre-wrap; word-break: break-all; }
 
     @media (max-width: 400px) {
         .page-body { padding: 2rem 1.1rem 1.5rem; }
     }
 </style>
 
+
 </head>
 <body>
 
-```
 <header class="site-header">
     <a href="/index.html">
         <img
@@ -417,15 +439,6 @@
 
 <main class="page-body">
 
-    <!-- Debug panel — hidden. To reveal: document.getElementById('debugPanel').classList.add('show') -->
-    <div class="debug-panel" id="debugPanel">
-        <div class="debug-header">
-            <span>🔧 Firebase Debug Console</span>
-            <span onclick="document.getElementById('debugLog').innerHTML=''" style="cursor:pointer;">🗑️ Clear</span>
-        </div>
-        <div id="debugLog" class="debug-log"></div>
-    </div>
-
     <div class="error-message" id="errorMessage"></div>
     <div class="success-message" id="successMessage"></div>
 
@@ -435,13 +448,13 @@
         <div class="tab" id="signupTab" onclick="switchTab('signup')">Sign up</div>
     </div>
 
-    <!-- SIGN IN FORM -->
+    <!-- ════════════════════════════
+         SIGN IN FORM
+    ════════════════════════════ -->
     <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
             <label class="field-label" for="loginEmail">Email</label>
-            <div class="input-wrapper">
-                <input type="email" id="loginEmail" class="field-input" placeholder="hello@example.com" required autocomplete="email">
-            </div>
+            <input type="email" id="loginEmail" class="field-input" placeholder="hello@example.com" required autocomplete="email">
         </div>
         <div class="form-group">
             <label class="field-label" for="loginPassword">Password</label>
@@ -455,27 +468,65 @@
         <button type="submit" class="btn-primary" id="loginBtn">Sign in</button>
     </form>
 
-    <!-- SIGN UP FORM -->
+    <!-- ════════════════════════════
+         SIGN UP FORM
+    ════════════════════════════ -->
     <form id="signupForm" style="display:none;" onsubmit="handleSignup(event)">
+
+        <!-- STEP 1: Role selection — always shown first -->
+        <label class="field-label" style="margin-bottom: 0.65rem;">I want to</label>
+        <div class="role-cards" id="roleCards">
+            <div class="role-card selected" id="posterCard" onclick="selectRole('poster')">
+                <span class="role-card-icon">📋</span>
+                <span class="role-card-title">Post tasks</span>
+                <span class="role-card-sub">I need help getting things done</span>
+            </div>
+            <div class="role-card" id="helperCard" onclick="selectRole('helper')">
+                <span class="role-card-icon">🙌</span>
+                <span class="role-card-title">Help others</span>
+                <span class="role-card-sub">I want to earn by doing tasks</span>
+            </div>
+        </div>
+
+        <!-- HELPER ONLY: Skills -->
+        <div id="skillsSection" style="display:none;">
+            <div class="form-group">
+                <label class="field-label">What can you do?</label>
+                <div class="skills-wrapper">
+                    <input type="text" class="skills-input" id="skillsInput" placeholder="Select your skills" readonly>
+                    <div class="skills-dropdown" id="skillsDropdown"></div>
+                </div>
+                <span class="field-hint">Only list skills you can confidently deliver — you can update this later.</span>
+                <div class="selected-skills" id="selectedSkills"></div>
+            </div>
+            <div class="section-divider"></div>
+        </div>
+
+        <!-- SHARED FIELDS: shown for both roles -->
         <div class="form-group">
             <label class="field-label" for="signupName">Full name</label>
-            <div class="input-wrapper">
-                <input type="text" id="signupName" class="field-input" placeholder="Alex Chen" required autocomplete="name">
-            </div>
+            <input type="text" id="signupName" class="field-input" placeholder="Alex Chen" required autocomplete="name">
         </div>
+
         <div class="form-group">
             <label class="field-label" for="signupEmail">Email</label>
-            <div class="input-wrapper">
-                <input type="email" id="signupEmail" class="field-input" placeholder="hello@example.com" required autocomplete="email">
-            </div>
+            <input type="email" id="signupEmail" class="field-input" placeholder="hello@example.com" required autocomplete="email">
         </div>
+
         <div class="form-group">
-            <label class="field-label" for="signupPhone">Phone</label>
+            <label class="field-label" for="signupPhone">Cell phone number</label>
             <div class="phone-wrapper">
                 <span class="country-code">+27</span>
                 <input type="tel" id="signupPhone" class="phone-input" placeholder="12 345 6789" required autocomplete="tel">
             </div>
         </div>
+
+        <!-- HELPER ONLY: Address -->
+        <div class="form-group" id="addressGroup" style="display:none;">
+            <label class="field-label" for="signupAddress">Address</label>
+            <input type="text" id="signupAddress" class="field-input" placeholder="123 Main St, Cape Town" autocomplete="street-address">
+        </div>
+
         <div class="form-group">
             <label class="field-label" for="signupPassword">Password</label>
             <div class="input-wrapper">
@@ -485,21 +536,7 @@
                 </button>
             </div>
         </div>
-        <div class="form-group">
-            <label class="field-label">I want to</label>
-            <div class="role-selector">
-                <div class="role-option selected" id="posterRole" onclick="selectRole('poster')">Post tasks</div>
-                <div class="role-option" id="helperRole" onclick="selectRole('helper')">Help others</div>
-            </div>
-        </div>
-        <div class="skills-container" id="skillsContainer">
-            <label class="field-label">What can you do?</label>
-            <div class="skills-wrapper">
-                <input type="text" class="skills-input" id="skillsInput" placeholder="Select your skills" readonly>
-                <div class="skills-dropdown" id="skillsDropdown"></div>
-            </div>
-            <div class="selected-skills" id="selectedSkills"></div>
-        </div>
+
         <button type="submit" class="btn-primary" id="signupBtn">Create account</button>
     </form>
 
@@ -609,6 +646,25 @@
         clearMessages();
     }
 
+    // ===== ROLE SELECTION =====
+    window.selectRole = function(role) {
+        selectedRole = role;
+        document.getElementById('posterCard').classList.toggle('selected', role === 'poster');
+        document.getElementById('helperCard').classList.toggle('selected', role === 'helper');
+
+        const skillsSection = document.getElementById('skillsSection');
+        const addressGroup = document.getElementById('addressGroup');
+
+        if (role === 'helper') {
+            skillsSection.style.display = 'block';
+            addressGroup.style.display = 'block';
+            initSkillsDropdown();
+        } else {
+            skillsSection.style.display = 'none';
+            addressGroup.style.display = 'none';
+        }
+    };
+
     // ===== LOGIN =====
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -627,11 +683,10 @@
 
             const snapshot = await database.ref('users/' + user.uid).once('value');
             const userData = snapshot.val();
-
-            if (!userData) throw new Error('User data not found in database');
+            if (!userData) throw new Error('User data not found in database.');
 
             showSuccess('Welcome back! Redirecting...');
-            setTimeout(() => {
+            setTimeout(function() {
                 window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
             }, 1000);
 
@@ -650,6 +705,7 @@
         const name = document.getElementById('signupName').value;
         const email = document.getElementById('signupEmail').value;
         const phone = document.getElementById('signupPhone').value;
+        const address = document.getElementById('signupAddress').value;
         const password = document.getElementById('signupPassword').value;
         const btn = document.getElementById('signupBtn');
 
@@ -665,20 +721,25 @@
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
+            // Save to database
             await database.ref('users/' + user.uid).set({
                 uid: user.uid,
                 name: name,
                 email: email,
-                phone: `+27${phone.replace(/\s/g, '')}`,
+                phone: '+27' + phone.replace(/\s/g, ''),
+                address: address,
                 role: selectedRole,
-                skills: selectedSkills,
+                skills: selectedRole === 'helper' ? selectedSkills : [],
                 createdAt: new Date().toISOString()
             });
 
-            showSuccess('Account created! Redirecting...');
-            setTimeout(() => {
+            // TODO: trigger verification email here once configured in Firebase
+            // user.sendEmailVerification();
+
+            showSuccess('Account created! Please check your email to verify your account.');
+            setTimeout(function() {
                 window.location.href = selectedRole === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
-            }, 1000);
+            }, 2000);
 
         } catch (error) {
             showError(error.message);
@@ -700,6 +761,7 @@
                         name: user.displayName,
                         email: user.email,
                         phone: '',
+                        address: '',
                         role: 'poster',
                         skills: [],
                         createdAt: new Date().toISOString()
@@ -711,20 +773,6 @@
             .catch(function(error) {
                 showError(error.message);
             });
-    };
-
-    // ===== ROLE SELECTION =====
-    window.selectRole = function(role) {
-        selectedRole = role;
-        document.getElementById('posterRole').classList.toggle('selected', role === 'poster');
-        document.getElementById('helperRole').classList.toggle('selected', role === 'helper');
-        const sc = document.getElementById('skillsContainer');
-        if (role === 'helper') {
-            sc.classList.add('show');
-            initSkillsDropdown();
-        } else {
-            sc.classList.remove('show');
-        }
     };
 
     // ===== SKILLS DROPDOWN =====
