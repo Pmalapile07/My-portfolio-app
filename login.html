@@ -6,10 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TaskMart · Sign in</title>
 
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+<!-- Phosphor Icons -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -203,6 +207,10 @@
         cursor: pointer;
         transition: all 0.2s;
         user-select: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
     }
 
     .role-card:hover { border-color: #ccc; }
@@ -213,17 +221,19 @@
         color: var(--white);
     }
 
-    .role-card-icon {
-        font-size: 1.5rem;
-        margin-bottom: 0.4rem;
+    .role-card i {
+        font-size: 1.6rem;
         display: block;
+        color: var(--grey-text);
+        transition: color 0.2s;
     }
+
+    .role-card.selected i { color: var(--white); }
 
     .role-card-title {
         font-size: 0.92rem;
         font-weight: 700;
         display: block;
-        margin-bottom: 0.2rem;
     }
 
     .role-card-sub {
@@ -261,7 +271,7 @@
         background: var(--white);
         border: 1.5px solid var(--grey);
         border-radius: var(--radius);
-        max-height: 200px;
+        max-height: 220px;
         overflow-y: auto;
         z-index: 1000;
         display: none;
@@ -412,7 +422,6 @@
         animation: spin 0.75s linear infinite;
     }
 
-    /* ── SECTION DIVIDER ── */
     .section-divider {
         height: 1px;
         background: var(--grey);
@@ -473,22 +482,22 @@
     ════════════════════════════ -->
     <form id="signupForm" style="display:none;" onsubmit="handleSignup(event)">
 
-        <!-- STEP 1: Role selection — always shown first -->
+        <!-- Role selection — always first -->
         <label class="field-label" style="margin-bottom: 0.65rem;">I want to</label>
-        <div class="role-cards" id="roleCards">
+        <div class="role-cards">
             <div class="role-card selected" id="posterCard" onclick="selectRole('poster')">
-                <span class="role-card-icon">📋</span>
+                <i class="ph ph-check-square-offset" style="font-size:2rem;"></i>
                 <span class="role-card-title">Post tasks</span>
                 <span class="role-card-sub">I need help getting things done</span>
             </div>
             <div class="role-card" id="helperCard" onclick="selectRole('helper')">
-                <span class="role-card-icon">🙌</span>
+                <i class="ph ph-handshake" style="font-size:2rem;"></i>
                 <span class="role-card-title">Help others</span>
                 <span class="role-card-sub">I want to earn by doing tasks</span>
             </div>
         </div>
 
-        <!-- HELPER ONLY: Skills -->
+        <!-- Helper only: Skills -->
         <div id="skillsSection" style="display:none;">
             <div class="form-group">
                 <label class="field-label">What can you do?</label>
@@ -502,10 +511,10 @@
             <div class="section-divider"></div>
         </div>
 
-        <!-- SHARED FIELDS: shown for both roles -->
+        <!-- Shared fields -->
         <div class="form-group">
             <label class="field-label" for="signupName">Full name</label>
-            <input type="text" id="signupName" class="field-input" placeholder="Alex Chen" required autocomplete="name">
+            <input type="text" id="signupName" class="field-input" placeholder="John Smith" required autocomplete="name">
         </div>
 
         <div class="form-group">
@@ -521,7 +530,7 @@
             </div>
         </div>
 
-        <!-- HELPER ONLY: Address -->
+        <!-- Helper only: Address -->
         <div class="form-group" id="addressGroup" style="display:none;">
             <label class="field-label" for="signupAddress">Address</label>
             <input type="text" id="signupAddress" class="field-input" placeholder="123 Main St, Cape Town" autocomplete="street-address">
@@ -560,9 +569,8 @@
     </div>
 
     <p class="disclaimer">
-        By continuing, you agree to calls, including by auto dialer, WhatsApp, or text from
-        <strong>TaskMart</strong> and its affiliates.
-        <br>See our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+        By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>
+        and allow TaskMart to contact you about your account.
     </p>
 
 </main>
@@ -584,27 +592,23 @@
     const auth = firebase.auth();
     const database = firebase.database();
 
+    // ===== SKILLS LIST =====
+    const taskSkills = [
+        "laundry", "ironing", "house cleaning", "dish washing",
+        "grocery shopping", "parcel pickup", "delivery of small items", "running errands", "queue for me",
+        "gardening", "lawn mowing", "yard cleanup", "trash removal",
+        "babysitting", "elderly companionship", "pet care", "dog walking",
+        "car washing",
+        "furniture assembly",
+        "minor plumbing", "minor electrical", "painting walls", "fix home appliances",
+        "install / fix burglar bars", "jojo tank installation", "pest control",
+        "gas/petrol bottle refill",
+        "in-house hair installation", "haircut at home", "manicure / pedicure at home", "makeup at home"
+    ];
+
     // ===== STATE =====
     let selectedRole = 'poster';
     let selectedSkills = [];
-
-    const taskSuggestions = [
-        "laundry","ironing","grocery shopping","cooking / meal prep","cleaning / tidying",
-        "dog walking / pet care","babysitting / child care","elderly care / companionship",
-        "plumbing (minor fixes)","electrical work (minor)","furniture assembly","gardening / lawn care",
-        "painting walls / touch-ups","moving / lifting heavy objects","website setup",
-        "software troubleshooting","device setup (phones/laptops)","graphic design / logo design",
-        "social media support","picking up parcels","delivery of small items","car washing / cleaning",
-        "running personal errands","house sitting","pet sitting","event setup / decorating",
-        "photography / videography","tutoring / lessons","moving / relocation help",
-        "assembling electronics","minor car maintenance","package wrapping / gift prep",
-        "shopping for gifts / items","plant care / watering","cleaning windows","packing / unpacking",
-        "minor sewing / clothing repair","furniture moving","appliance setup","data entry / admin support",
-        "email / inbox management","basic accounting / bookkeeping","errand planning / scheduling",
-        "toy / small item repair","basic sewing / mending","recycling / trash pickup",
-        "inventory check / organizing","pet training / basic commands","tech device troubleshooting",
-        "gift wrapping / decoration","small handyman tasks"
-    ];
 
     // ===== UI HELPERS =====
     function showError(msg) {
@@ -721,7 +725,6 @@
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
-            // Save to database
             await database.ref('users/' + user.uid).set({
                 uid: user.uid,
                 name: name,
@@ -733,8 +736,8 @@
                 createdAt: new Date().toISOString()
             });
 
-            // TODO: trigger verification email here once configured in Firebase
-            // user.sendEmailVerification();
+            // TODO: uncomment once email verification is configured in Firebase
+            // await user.sendEmailVerification();
 
             showSuccess('Account created! Please check your email to verify your account.');
             setTimeout(function() {
@@ -771,7 +774,9 @@
                 window.location.href = data.role === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
             })
             .catch(function(error) {
-                showError(error.message);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    showError(error.message);
+                }
             });
     };
 
@@ -781,7 +786,7 @@
         const dropdown = document.getElementById('skillsDropdown');
         if (dropdown.children.length > 0) return;
 
-        dropdown.innerHTML = taskSuggestions.map(function(skill) {
+        dropdown.innerHTML = taskSkills.map(function(skill) {
             return '<div class="skill-item">' + skill + '</div>';
         }).join('');
 
@@ -821,6 +826,7 @@
         updateSelectedSkills();
     };
 </script>
+
 
 </body>
 </html>
