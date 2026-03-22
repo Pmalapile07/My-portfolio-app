@@ -1,892 +1,991 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TaskMart · Sign in (Debug + UID fix)</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    
-    <!-- Firebase SDKs (using 10.8.0 as in original) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <title>TaskMart · Sign in</title>
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #fafafa;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            color: #1a1a1a;
-        }
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-        .auth-container {
-            width: 100%;
-            max-width: 400px;
-            background: white;
-            border-radius: 24px;
-            padding: 2rem;
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
-        }
+<style>
+    *, *::before, *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        .logo-area {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
+    :root {
+        --black: #000000;
+        --white: #ffffff;
+        --cream: #f5f0e8;
+        --grey-light: #f2f2f2;
+        --grey-mid: #e0e0e0;
+        --grey-text: #6b6b6b;
+        --grey-dark: #1a1a1a;
+        --error: #d93025;
+        --success: #1a7a40;
+        --radius: 14px;
+    }
 
-        .logo-text {
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #1a1a1a;
-        }
+    html, body {
+        height: 100%;
+    }
 
-        .tab-container {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            background: #f5f5f5;
-            padding: 0.25rem;
-            border-radius: 12px;
-        }
+    body {
+        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--white);
+        color: var(--black);
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
 
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 0.75rem;
-            font-weight: 500;
-            color: #666;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.2s;
-            font-size: 0.95rem;
-        }
+    /* ── HEADER ── */
+    .site-header {
+        background: var(--black);
+        width: 100%;
+        padding: 0 1.5rem;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
 
-        .tab.active {
-            background: white;
-            color: #1a1a1a;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
+    .site-header img {
+        height: 36px;
+        width: auto;
+        display: block;
+        object-fit: contain;
+    }
 
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
+    /* ── PAGE BODY ── */
+    .page-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 2.5rem 1.5rem 2rem;
+        max-width: 440px;
+        width: 100%;
+        margin: 0 auto;
+    }
 
-        .form-group label {
-            display: block;
-            color: #4a4a4a;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
+    /* ── STEP VIEWS ── */
+    .step { display: none; }
+    .step.active { display: block; }
 
-        .input-wrapper {
-            position: relative;
-        }
+    /* ── HEADINGS ── */
+    .step-heading {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: var(--black);
+        margin-bottom: 0.35rem;
+        line-height: 1.2;
+    }
 
-        .input-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
+    .step-sub {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--grey-text);
+        margin-bottom: 2rem;
+    }
 
-        .input-icon .material-symbols-outlined {
-            font-size: 20px;
-        }
+    /* ── FIELD LABEL ── */
+    .field-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--grey-text);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.55rem;
+        display: block;
+    }
 
-        .form-input {
-            width: 100%;
-            padding: 0.875rem 1rem 0.875rem 3rem;
-            background: #f5f5f5;
-            border: 1px solid #eaeaea;
-            border-radius: 12px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            outline: none;
-        }
+    /* ── INPUT ── */
+    .field-input {
+        width: 100%;
+        padding: 0.95rem 1.1rem;
+        background: var(--grey-light);
+        border: 1.5px solid transparent;
+        border-radius: var(--radius);
+        font-family: 'Manrope', sans-serif;
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--black);
+        outline: none;
+        transition: border-color 0.18s, background 0.18s;
+        -webkit-appearance: none;
+    }
 
-        .form-input:focus {
-            border-color: #1a1a1a;
-            background: white;
-        }
+    .field-input::placeholder {
+        color: #b0b0b0;
+        font-weight: 400;
+    }
 
-        .password-toggle {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #999;
-        }
+    .field-input:focus {
+        border-color: var(--black);
+        background: var(--white);
+    }
 
-        /* simplified role selector: two short words */
-        .role-selector {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
+    .input-wrapper {
+        position: relative;
+    }
 
-        .role-option {
-            flex: 1;
-            padding: 0.75rem;
-            background: #f5f5f5;
-            border: 1px solid #eaeaea;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-            color: #666;
-            text-transform: lowercase;
-        }
-        .role-option::first-letter {
-            text-transform: uppercase;
-        }
+    .input-wrapper .field-input {
+        padding-right: 3rem;
+    }
 
-        .role-option.selected {
-            background: #1a1a1a;
-            border-color: #1a1a1a;
-            color: white;
-        }
+    .toggle-pw {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #aaa;
+        display: flex;
+        align-items: center;
+    }
 
-        .skills-container {
-            margin-bottom: 1.5rem;
-            display: none;
-        }
+    .toggle-pw .material-symbols-outlined {
+        font-size: 20px;
+    }
 
-        .skills-container.show {
-            display: block;
-        }
+    /* ── CONTINUE BUTTON ── */
+    .btn-continue {
+        width: 100%;
+        padding: 1rem;
+        background: var(--black);
+        color: var(--white);
+        border: none;
+        border-radius: var(--radius);
+        font-family: 'Manrope', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.18s, transform 0.1s;
+        margin-top: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        letter-spacing: -0.01em;
+    }
 
-        .skills-wrapper {
-            position: relative;
-        }
+    .btn-continue:hover { background: #222; }
+    .btn-continue:active { transform: scale(0.985); }
+    .btn-continue:disabled { opacity: 0.45; cursor: not-allowed; }
 
-        .skills-input {
-            width: 100%;
-            padding: 0.875rem;
-            background: #f5f5f5;
-            border: 1px solid #eaeaea;
-            border-radius: 12px;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            text-align: left;
-        }
+    /* ── DIVIDER ── */
+    .divider {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin: 1.6rem 0;
+    }
 
-        .skills-dropdown {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #eaeaea;
-            border-radius: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-        }
+    .divider-line {
+        flex: 1;
+        height: 1px;
+        background: var(--grey-mid);
+    }
 
-        .skills-dropdown.active {
-            display: block;
-        }
+    .divider-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+    }
 
-        .skill-item {
-            padding: 0.75rem 1rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+    .divider-check {
+        width: 32px;
+        height: 32px;
+        border: 1.5px solid var(--grey-mid);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--grey-text);
+        letter-spacing: 0.02em;
+        background: var(--white);
+        flex-shrink: 0;
+    }
 
-        .skill-item:hover {
-            background: #f5f5f5;
-        }
+    /* ── SOCIAL BUTTONS ── */
+    .social-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
 
-        .selected-skills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
-        }
+    .btn-social {
+        width: 100%;
+        padding: 0.9rem 1.1rem;
+        background: var(--white);
+        border: 1.5px solid var(--grey-mid);
+        border-radius: var(--radius);
+        font-family: 'Manrope', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--black);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        transition: border-color 0.18s, background 0.18s;
+        letter-spacing: -0.01em;
+    }
 
-        .selected-skill-tag {
-            background: #1a1a1a;
-            color: white;
-            padding: 0.4rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+    .btn-social:hover {
+        border-color: #aaa;
+        background: #fafafa;
+    }
 
-        .selected-skill-tag .material-symbols-outlined {
-            font-size: 16px;
-            cursor: pointer;
-        }
+    .btn-social svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
 
-        .phone-wrapper {
-            position: relative;
-        }
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+        margin-top: 1.75rem;
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: #9a9a9a;
+        line-height: 1.6;
+        text-align: center;
+    }
 
-        .country-code {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #4a4a4a;
-            font-weight: 500;
-            z-index: 2;
-        }
+    .disclaimer a {
+        color: var(--black);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
 
-        .phone-input {
-            width: 100%;
-            padding: 0.875rem 1rem 0.875rem 4rem;
-            background: #f5f5f5;
-            border: 1px solid #eaeaea;
-            border-radius: 12px;
-            font-family: 'Inter', sans-serif;
-        }
+    /* ── BACK LINK ── */
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--grey-text);
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-bottom: 1.75rem;
+        font-family: 'Manrope', sans-serif;
+        transition: color 0.15s;
+    }
 
-        .auth-btn {
-            width: 100%;
-            padding: 0.875rem;
-            background: #1a1a1a;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 1rem;
-        }
+    .back-link:hover { color: var(--black); }
+    .back-link .material-symbols-outlined { font-size: 18px; }
 
-        .auth-btn:hover {
-            background: #333;
-        }
+    /* ── FORM GROUPS ── */
+    .form-group { margin-bottom: 1.1rem; }
 
-        .auth-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+    /* ── ROLE SELECTOR ── */
+    .role-selector {
+        display: flex;
+        gap: 0.65rem;
+        margin-bottom: 1.1rem;
+    }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: #999;
-            font-size: 0.85rem;
-            margin: 1.5rem 0;
-        }
+    .role-option {
+        flex: 1;
+        padding: 0.75rem;
+        background: var(--grey-light);
+        border: 1.5px solid transparent;
+        border-radius: var(--radius);
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.18s;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--grey-text);
+        font-family: 'Manrope', sans-serif;
+    }
 
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #eaeaea;
-        }
+    .role-option.selected {
+        background: var(--black);
+        border-color: var(--black);
+        color: var(--white);
+    }
 
-        .divider span {
-            padding: 0 1rem;
-        }
+    /* ── SKILLS ── */
+    .skills-container { display: none; margin-bottom: 1.1rem; }
+    .skills-container.show { display: block; }
 
-        .error-message {
-            background: #fee;
-            color: #e00;
-            padding: 0.875rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-            display: none;
-        }
+    .skills-wrapper { position: relative; }
 
-        .error-message.show {
-            display: block;
-        }
+    .skills-input {
+        width: 100%;
+        padding: 0.95rem 1.1rem;
+        background: var(--grey-light);
+        border: 1.5px solid transparent;
+        border-radius: var(--radius);
+        font-family: 'Manrope', sans-serif;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #b0b0b0;
+        cursor: pointer;
+        text-align: left;
+        outline: none;
+    }
 
-        .success-message {
-            background: #e4f5e4;
-            color: #0a5;
-            padding: 0.875rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-            display: none;
-        }
+    .skills-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: var(--white);
+        border: 1.5px solid var(--grey-mid);
+        border-radius: var(--radius);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 12px 30px -6px rgba(0,0,0,0.12);
+    }
 
-        .success-message.show {
-            display: block;
-        }
+    .skills-dropdown.active { display: block; }
 
-        .switch-auth {
-            text-align: center;
-            color: #666;
-            font-size: 0.9rem;
-        }
+    .skill-item {
+        padding: 0.75rem 1.1rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: background 0.15s;
+    }
 
-        .switch-auth a {
-            color: #1a1a1a;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-        }
+    .skill-item:hover { background: var(--grey-light); }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+    .selected-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.65rem;
+    }
 
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 0.8s linear infinite;
-        }
+    .selected-skill-tag {
+        background: var(--black);
+        color: var(--white);
+        padding: 0.35rem 0.7rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
 
-        .auth-btn.loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
+    .selected-skill-tag .material-symbols-outlined {
+        font-size: 15px;
+        cursor: pointer;
+    }
 
-        /* Debug Panel */
-        .debug-panel {
-            margin-top: 20px;
-            padding: 15px;
-            background: #1e1e1e;
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 12px;
-            border-radius: 8px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
+    /* ── PHONE ── */
+    .phone-wrapper { position: relative; }
+    .country-code {
+        position: absolute;
+        left: 1.1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--black);
+        z-index: 2;
+    }
 
-        .debug-panel.show {
-            display: block;
-        }
+    .phone-input {
+        width: 100%;
+        padding: 0.95rem 1.1rem 0.95rem 3.8rem;
+        background: var(--grey-light);
+        border: 1.5px solid transparent;
+        border-radius: var(--radius);
+        font-family: 'Manrope', sans-serif;
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--black);
+        outline: none;
+        transition: border-color 0.18s, background 0.18s;
+    }
 
-        .debug-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            color: #fff;
-            font-weight: bold;
-        }
+    .phone-input:focus {
+        border-color: var(--black);
+        background: var(--white);
+    }
 
-        .debug-toggle {
-            background: #333;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
+    /* ── MESSAGES ── */
+    .error-message {
+        background: #fff0f0;
+        color: var(--error);
+        padding: 0.85rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    .error-message.show { display: block; }
 
-        .debug-log {
-            color: #00ff00;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
+    .success-message {
+        background: #edfaf3;
+        color: var(--success);
+        padding: 0.85rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    .success-message.show { display: block; }
 
-        .debug-log.error {
-            color: #ff6b6b;
-        }
+    /* ── SPINNER ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-spinner {
+        display: inline-block;
+        width: 18px; height: 18px;
+        border: 2px solid rgba(255,255,255,0.35);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.75s linear infinite;
+    }
 
-        .debug-log.warning {
-            color: #ffd93d;
-        }
-    </style>
+    /* ── DEBUG (hidden by default) ── */
+    .debug-toggle {
+        background: #1a1a1a;
+        color: #888;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 11px;
+        font-family: monospace;
+        margin-bottom: 10px;
+        display: none; /* hidden but present */
+    }
+
+    .debug-panel {
+        margin-top: 20px;
+        padding: 15px;
+        background: #1e1e1e;
+        color: #00ff00;
+        font-family: monospace;
+        font-size: 12px;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .debug-panel.show { display: block; }
+
+    .debug-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        color: #fff;
+        font-weight: bold;
+    }
+
+    .debug-log {
+        color: #00ff00;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 400px) {
+        .step-heading { font-size: 1.4rem; }
+        .page-body { padding: 2rem 1.1rem 1.5rem; }
+    }
+</style>
+```
+
 </head>
 <body>
-    <div class="auth-container">
-        <div class="logo-area">
-            <span class="logo-text">taskmart</span>
+
+```
+<!-- BLACK HEADER -->
+<header class="site-header">
+    <img
+        src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Cream%20Black%20Typography%20Loop%20Brand%20Logo%20(500%20x%20180%20px).png"
+        alt="TaskMart"
+    >
+</header>
+
+<!-- PAGE BODY -->
+<main class="page-body">
+
+    <!-- Debug (hidden, toggle via console: document.querySelector('.debug-toggle').style.display='block') -->
+    <button class="debug-toggle" onclick="toggleDebug()">🔧 Debug</button>
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-header">
+            <span>🔧 Firebase Debug Console</span>
+            <span onclick="clearDebug()" style="cursor:pointer;">🗑️ Clear</span>
+        </div>
+        <div id="debugLog" class="debug-log"></div>
+    </div>
+
+    <!-- Messages -->
+    <div class="error-message" id="errorMessage"></div>
+    <div class="success-message" id="successMessage"></div>
+
+    <!-- ══════════════════════════════════
+         STEP 1: Email entry (landing)
+    ══════════════════════════════════ -->
+    <div class="step active" id="stepEmail">
+        <h1 class="step-heading">What's your email?</h1>
+        <p class="step-sub">We'll check if you have an account.</p>
+
+        <label class="field-label" for="emailInput">Email address</label>
+        <input
+            type="email"
+            id="emailInput"
+            class="field-input"
+            placeholder="Enter your email"
+            autocomplete="email"
+            inputmode="email"
+        >
+
+        <button class="btn-continue" id="emailContinueBtn" onclick="handleEmailContinue()">
+            Continue
+        </button>
+
+        <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-check">or</div>
+            <div class="divider-line"></div>
         </div>
 
-        <!-- Debug Toggle -->
-        <button class="debug-toggle" onclick="toggleDebug()">🔧 Show Debug Panel</button>
+        <div class="social-btns">
+            <button class="btn-social" onclick="handleGoogleSignIn()">
+                <!-- Google G icon -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
 
-        <!-- Debug Panel -->
-        <div class="debug-panel" id="debugPanel">
-            <div class="debug-header">
-                <span>🔧 Firebase Debug Console</span>
-                <span onclick="clearDebug()" style="cursor: pointer;">🗑️ Clear</span>
-            </div>
-            <div id="debugLog" class="debug-log"></div>
+            <button class="btn-social" onclick="handleAppleSignIn()">
+                <!-- Apple icon -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="#000"/>
+                </svg>
+                Continue with Apple
+            </button>
         </div>
 
-        <!-- Tabs -->
-        <div class="tab-container">
-            <div class="tab active" id="loginTab">Sign in</div>
-            <div class="tab" id="signupTab">Sign up</div>
-        </div>
+        <p class="disclaimer">
+            By continuing, you agree to calls, including by auto dialer, WhatsApp, or text from
+            <strong>TaskMart</strong> and its affiliates.
+            <br>See our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+        </p>
+    </div>
 
-        <!-- Messages -->
-        <div class="error-message" id="errorMessage"></div>
-        <div class="success-message" id="successMessage"></div>
+    <!-- ══════════════════════════════════
+         STEP 2A: Sign In (existing user)
+    ══════════════════════════════════ -->
+    <div class="step" id="stepSignIn">
+        <button class="back-link" onclick="goBack()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Back
+        </button>
+        <h1 class="step-heading">Welcome back</h1>
+        <p class="step-sub" id="signInEmailLabel">Signing in as you@example.com</p>
 
-        <!-- Login Form -->
-        <form id="loginForm">
+        <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label>Email</label>
+                <label class="field-label" for="loginPassword">Password</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">
-                        <span class="material-symbols-outlined">mail</span>
-                    </span>
-                    <input type="email" id="loginEmail" class="form-input" placeholder="hello@example.com" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">
-                        <span class="material-symbols-outlined">lock</span>
-                    </span>
-                    <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
-                    <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)">
+                    <input type="password" id="loginPassword" class="field-input" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" class="toggle-pw" onclick="togglePassword('loginPassword', this)">
                         <span class="material-symbols-outlined">visibility</span>
                     </button>
                 </div>
             </div>
-
-            <button type="submit" class="auth-btn" id="loginBtn">
-                Sign in
-            </button>
+            <button type="submit" class="btn-continue" id="loginBtn">Sign in</button>
         </form>
+    </div>
 
-        <!-- Signup Form -->
-        <form id="signupForm" style="display: none;">
+    <!-- ══════════════════════════════════
+         STEP 2B: Sign Up (new user)
+    ══════════════════════════════════ -->
+    <div class="step" id="stepSignUp">
+        <button class="back-link" onclick="goBack()">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Back
+        </button>
+        <h1 class="step-heading">Create account</h1>
+        <p class="step-sub" id="signUpEmailLabel">Creating account for you@example.com</p>
+
+        <form id="signupForm" onsubmit="handleSignup(event)">
             <div class="form-group">
-                <label>Full name</label>
+                <label class="field-label" for="signupName">Full name</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">
-                        <span class="material-symbols-outlined">person</span>
-                    </span>
-                    <input type="text" id="signupName" class="form-input" placeholder="Alex Chen" required>
+                    <input type="text" id="signupName" class="field-input" placeholder="Alex Chen" required autocomplete="name">
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Email</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">
-                        <span class="material-symbols-outlined">mail</span>
-                    </span>
-                    <input type="email" id="signupEmail" class="form-input" placeholder="hello@example.com" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Phone</label>
+                <label class="field-label" for="signupPhone">Phone</label>
                 <div class="phone-wrapper">
                     <span class="country-code">+27</span>
-                    <input type="tel" id="signupPhone" class="phone-input" placeholder="12 345 6789" required>
+                    <input type="tel" id="signupPhone" class="phone-input" placeholder="12 345 6789" required autocomplete="tel">
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Password</label>
+                <label class="field-label" for="signupPassword">Password</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">
-                        <span class="material-symbols-outlined">lock</span>
-                    </span>
-                    <input type="password" id="signupPassword" class="form-input" placeholder="••••••••" required>
-                    <button type="button" class="password-toggle" onclick="togglePassword('signupPassword', this)">
+                    <input type="password" id="signupPassword" class="field-input" placeholder="••••••••" required autocomplete="new-password">
+                    <button type="button" class="toggle-pw" onclick="togglePassword('signupPassword', this)">
                         <span class="material-symbols-outlined">visibility</span>
                     </button>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>I want to</label>
+                <label class="field-label">I want to</label>
                 <div class="role-selector">
-                    <div class="role-option selected" id="posterRole">poster</div>
-                    <div class="role-option" id="helperRole">helper</div>
+                    <div class="role-option selected" id="posterRole" onclick="selectRole('poster')">Post tasks</div>
+                    <div class="role-option" id="helperRole" onclick="selectRole('helper')">Help others</div>
                 </div>
             </div>
 
-            <!-- Skills (for helpers) -->
             <div class="skills-container" id="skillsContainer">
-                <label>What can you do?</label>
+                <label class="field-label">What can you do?</label>
                 <div class="skills-wrapper">
-                    <input type="text" class="skills-input" id="skillsInput" placeholder="Select skills" readonly>
+                    <input type="text" class="skills-input" id="skillsInput" placeholder="Select your skills" readonly>
                     <div class="skills-dropdown" id="skillsDropdown"></div>
                 </div>
                 <div class="selected-skills" id="selectedSkills"></div>
             </div>
 
-            <button type="submit" class="auth-btn" id="signupBtn">
-                Create account
-            </button>
+            <button type="submit" class="btn-continue" id="signupBtn">Create account</button>
         </form>
-
-        <div class="switch-auth" id="switchText">
-            <span>Don't have an account? <a>Sign up</a></span>
-        </div>
     </div>
 
-    <script>
-        // ===== DEBUG FUNCTIONS =====
-        window.toggleDebug = function() {
-            const panel = document.getElementById('debugPanel');
-            panel.classList.toggle('show');
-            const btn = document.querySelector('.debug-toggle');
-            btn.textContent = panel.classList.contains('show') ? '🔧 Hide Debug Panel' : '🔧 Show Debug Panel';
-        };
+</main>
 
-        window.clearDebug = function() {
-            document.getElementById('debugLog').innerHTML = '';
-        };
+<script>
+    /* ── DEBUG ── */
+    window.toggleDebug = function() {
+        const p = document.getElementById('debugPanel');
+        p.classList.toggle('show');
+    };
+    window.clearDebug = function() {
+        document.getElementById('debugLog').innerHTML = '';
+    };
+    function debugLog(msg, type = 'info') {
+        const log = document.getElementById('debugLog');
+        const ts = new Date().toLocaleTimeString();
+        const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#6bff6b' : type === 'warning' ? '#ffd93d' : '#00ff00';
+        const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '→';
+        log.innerHTML += `<div style="color:${color}">[${ts}] ${icon} ${msg}</div>`;
+        console.log(`[${type}]`, msg);
+    }
 
-        function debugLog(message, type = 'info') {
-            const log = document.getElementById('debugLog');
-            const timestamp = new Date().toLocaleTimeString();
-            let color = '#00ff00';
-            let prefix = '→';
-            
-            if (type === 'error') {
-                color = '#ff6b6b';
-                prefix = '❌';
-            } else if (type === 'success') {
-                color = '#6bff6b';
-                prefix = '✅';
-            } else if (type === 'warning') {
-                color = '#ffd93d';
-                prefix = '⚠️';
-            }
-            
-            log.innerHTML += `<div style="color: ${color}">[${timestamp}] ${prefix} ${message}</div>`;
-            console.log(`[${type}]`, message);
-        }
+    /* ── FIREBASE ── */
+    const firebaseConfig = {
+        apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+        authDomain: "taskmartapp-74d6b.firebaseapp.com",
+        databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+        projectId: "taskmartapp-74d6b",
+        storageBucket: "taskmartapp-74d6b.firebasestorage.app",
+        messagingSenderId: "52910279328",
+        appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
+        measurementId: "G-Z8SPLR0HSL"
+    };
 
-        // ===== FIREBASE CONFIG (your existing credentials) =====
-        const firebaseConfig = {
-            apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
-            authDomain: "taskmartapp-74d6b.firebaseapp.com",
-            databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
-            projectId: "taskmartapp-74d6b",
-            storageBucket: "taskmartapp-74d6b.firebasestorage.app",
-            messagingSenderId: "52910279328",
-            appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
-            measurementId: "G-Z8SPLR0HSL"
-        };
+    debugLog('Initialising Firebase...');
+    if (typeof firebase === 'undefined') {
+        debugLog('Firebase SDK not loaded!', 'error');
+    } else {
+        debugLog(`Firebase SDK ${firebase.SDK_VERSION}`, 'success');
+        try {
+            firebase.initializeApp(firebaseConfig);
+            debugLog('Firebase ready', 'success');
+            firebase.auth().signInAnonymously()
+                .then(c => { debugLog(`Anon test ok: ${c.user.uid}`, 'success'); firebase.auth().signOut(); })
+                .catch(e => debugLog(`Anon test: ${e.code}`, 'warning'));
+        } catch(e) { debugLog(`Init error: ${e.message}`, 'error'); }
+    }
 
-        // ===== DEBUG FIREBASE INIT =====
-        debugLog('Starting Firebase initialization...');
-        if (typeof firebase === 'undefined') {
-            debugLog('Firebase SDK not loaded!', 'error');
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    /* ── STATE ── */
+    let currentEmail = '';
+    let selectedRole = 'poster';
+    let selectedSkills = [];
+
+    const taskSuggestions = [
+        "laundry","ironing","grocery shopping","cooking / meal prep","cleaning / tidying",
+        "dog walking / pet care","babysitting / child care","elderly care / companionship",
+        "plumbing (minor fixes)","electrical work (minor)","furniture assembly","gardening / lawn care",
+        "painting walls / touch-ups","moving / lifting heavy objects","website setup",
+        "software troubleshooting","device setup (phones/laptops)","graphic design / logo design",
+        "social media support","picking up parcels","delivery of small items","car washing / cleaning",
+        "running personal errands","house sitting","pet sitting","event setup / decorating",
+        "photography / videography","tutoring / lessons","moving / relocation help",
+        "assembling electronics","minor car maintenance","package wrapping / gift prep",
+        "shopping for gifts / items","plant care / watering","cleaning windows","packing / unpacking",
+        "minor sewing / clothing repair","furniture moving","appliance setup","data entry / admin support",
+        "email / inbox management","basic accounting / bookkeeping","errand planning / scheduling",
+        "toy / small item repair","basic sewing / mending","recycling / trash pickup",
+        "inventory check / organizing","pet training / basic commands","tech device troubleshooting",
+        "gift wrapping / decoration","small handyman tasks"
+    ];
+
+    /* ── HELPERS ── */
+    function showStep(id) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('errorMessage').classList.remove('show');
+        document.getElementById('successMessage').classList.remove('show');
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorMessage');
+        el.textContent = msg;
+        el.classList.add('show');
+    }
+
+    function showSuccess(msg) {
+        const el = document.getElementById('successMessage');
+        el.textContent = msg;
+        el.classList.add('show');
+    }
+
+    function goBack() { showStep('stepEmail'); }
+
+    window.togglePassword = function(id, btn) {
+        const input = document.getElementById(id);
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = 'visibility_off';
         } else {
-            debugLog(`Firebase SDK version: ${firebase.SDK_VERSION}`, 'success');
-            try {
-                const app = firebase.initializeApp(firebaseConfig);
-                debugLog('Firebase initialized!', 'success');
-                
-                const auth = firebase.auth();
-                const database = firebase.database();
-                debugLog('Auth + Database ready', 'success');
+            input.type = 'password';
+            icon.textContent = 'visibility';
+        }
+    };
 
-                // Test API key with anonymous sign-in (optional)
-                auth.signInAnonymously()
-                    .then((cred) => {
-                        debugLog(`Anonymous test success, UID: ${cred.user.uid}`, 'success');
-                        auth.signOut();
-                    })
-                    .catch(err => debugLog(`Anonymous test: ${err.code}`, 'warning'));
-                
-            } catch (e) {
-                debugLog(`Init error: ${e.message}`, 'error');
+    /* ── EMAIL CONTINUE ── */
+    window.handleEmailContinue = async function() {
+        const email = document.getElementById('emailInput').value.trim();
+        if (!email || !email.includes('@')) {
+            showError('Please enter a valid email address.');
+            return;
+        }
+        currentEmail = email;
+
+        const btn = document.getElementById('emailContinueBtn');
+        btn.innerHTML = '<span class="loading-spinner"></span>';
+        btn.disabled = true;
+
+        // Check if user exists
+        try {
+            const methods = await auth.fetchSignInMethodsForEmail(email);
+            btn.innerHTML = 'Continue';
+            btn.disabled = false;
+
+            if (methods && methods.length > 0) {
+                // Existing user → sign in
+                document.getElementById('signInEmailLabel').textContent = `Signing in as ${email}`;
+                showStep('stepSignIn');
+            } else {
+                // New user → sign up
+                document.getElementById('signUpEmailLabel').textContent = `Creating account for ${email}`;
+                showStep('stepSignUp');
             }
+        } catch(e) {
+            btn.innerHTML = 'Continue';
+            btn.disabled = false;
+            showError(e.message);
+            debugLog(`Email check error: ${e.message}`, 'error');
+        }
+    };
+
+    // Allow Enter key on email field
+    document.getElementById('emailInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleEmailContinue();
+    });
+
+    /* ── SIGN IN ── */
+    window.handleLogin = async function(e) {
+        e.preventDefault();
+        const password = document.getElementById('loginPassword').value;
+        const btn = document.getElementById('loginBtn');
+        btn.innerHTML = '<span class="loading-spinner"></span> Signing in...';
+        btn.disabled = true;
+
+        try {
+            debugLog(`Login: ${currentEmail}`);
+            const cred = await auth.signInWithEmailAndPassword(currentEmail, password);
+            debugLog(`Login ok: ${cred.user.uid}`, 'success');
+
+            const snap = await database.ref('users/' + cred.user.uid).once('value');
+            const userData = snap.val();
+            if (!userData) throw new Error('User data not found.');
+
+            showSuccess('Welcome back! Redirecting…');
+            setTimeout(() => {
+                window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
+            }, 1000);
+        } catch(err) {
+            debugLog(`Login error: ${err.message}`, 'error');
+            showError(err.message);
+            btn.innerHTML = 'Sign in';
+            btn.disabled = false;
+        }
+    };
+
+    /* ── SIGN UP ── */
+    window.handleSignup = async function(e) {
+        e.preventDefault();
+        const name = document.getElementById('signupName').value;
+        const phone = document.getElementById('signupPhone').value;
+        const password = document.getElementById('signupPassword').value;
+        const btn = document.getElementById('signupBtn');
+
+        if (selectedRole === 'helper' && selectedSkills.length === 0) {
+            showError('Please select at least one skill.');
+            return;
         }
 
-        // ===== STATE (NO localStorage) =====
-        let selectedRole = 'poster';
-        let selectedSkills = [];
-        const auth = firebase.auth();
-        const database = firebase.database();
+        btn.innerHTML = '<span class="loading-spinner"></span> Creating…';
+        btn.disabled = true;
 
-        // ===== TASK SUGGESTIONS (exactly as provided) =====
-        const taskSuggestions = [
-            "laundry", "ironing", "grocery shopping", "cooking / meal prep", "cleaning / tidying",
-            "dog walking / pet care", "babysitting / child care", "elderly care / companionship",
-            "plumbing (minor fixes)", "electrical work (minor)", "furniture assembly", "gardening / lawn care",
-            "painting walls / touch-ups", "moving / lifting heavy objects", "website setup",
-            "software troubleshooting", "device setup (phones/laptops)", "graphic design / logo design",
-            "social media support", "picking up parcels", "delivery of small items", "car washing / cleaning",
-            "running personal errands", "house sitting", "pet sitting", "event setup / decorating",
-            "photography / videography", "tutoring / lessons", "moving / relocation help",
-            "assembling electronics", "minor car maintenance", "package wrapping / gift prep",
-            "shopping for gifts / items", "plant care / watering", "cleaning windows", "packing / unpacking",
-            "minor sewing / clothing repair", "furniture moving", "appliance setup", "data entry / admin support",
-            "email / inbox management", "basic accounting / bookkeeping", "errand planning / scheduling",
-            "toy / small item repair", "basic sewing / mending", "recycling / trash pickup",
-            "inventory check / organizing", "pet training / basic commands", "tech device troubleshooting",
-            "gift wrapping / decoration", "small handyman tasks"
-        ];
+        try {
+            debugLog(`Creating user: ${currentEmail}`);
+            const cred = await auth.createUserWithEmailAndPassword(currentEmail, password);
+            const uid = cred.user.uid;
+            debugLog(`User created: ${uid}`, 'success');
 
-        // ===== UI HELPERS =====
-        window.togglePassword = function(inputId, btn) {
-            const input = document.getElementById(inputId);
-            const icon = btn.querySelector('.material-symbols-outlined');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.textContent = 'visibility_off';
-            } else {
-                input.type = 'password';
-                icon.textContent = 'visibility';
-            }
-        };
+            await database.ref('users/' + uid).set({
+                uid, name, email: currentEmail,
+                phone: `+27${phone.replace(/\s/g, '')}`,
+                role: selectedRole,
+                skills: selectedSkills,
+                createdAt: new Date().toISOString()
+            });
+            debugLog(`Data saved: ${uid}`, 'success');
 
-        // ===== TAB SWITCHING =====
-        document.getElementById('loginTab').addEventListener('click', () => switchTab('login'));
-        document.getElementById('signupTab').addEventListener('click', () => switchTab('signup'));
-
-        function switchTab(tab) {
-            const loginTab = document.getElementById('loginTab');
-            const signupTab = document.getElementById('signupTab');
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            const switchText = document.getElementById('switchText');
-
-            if (tab === 'login') {
-                loginTab.classList.add('active');
-                signupTab.classList.remove('active');
-                loginForm.style.display = 'block';
-                signupForm.style.display = 'none';
-                switchText.innerHTML = `Don't have an account? <a>Sign up</a>`;
-            } else {
-                signupTab.classList.add('active');
-                loginTab.classList.remove('active');
-                signupForm.style.display = 'block';
-                loginForm.style.display = 'none';
-                switchText.innerHTML = `Already have an account? <a>Sign in</a>`;
-            }
-            
-            switchText.querySelector('a').addEventListener('click', () => 
-                switchTab(tab === 'login' ? 'signup' : 'login')
-            );
+            showSuccess('Account created! Redirecting…');
+            setTimeout(() => {
+                window.location.href = selectedRole === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
+            }, 1000);
+        } catch(err) {
+            debugLog(`Signup error: ${err.message}`, 'error');
+            showError(err.message);
+            btn.innerHTML = 'Create account';
+            btn.disabled = false;
         }
+    };
 
-        // ===== ROLE SELECTION (poster/helper) =====
-        document.getElementById('posterRole').addEventListener('click', () => selectRole('poster'));
-        document.getElementById('helperRole').addEventListener('click', () => selectRole('helper'));
-
-        function selectRole(role) {
-            selectedRole = role;
-            const posterRole = document.getElementById('posterRole');
-            const helperRole = document.getElementById('helperRole');
-            const skillsContainer = document.getElementById('skillsContainer');
-            
-            if (role === 'poster') {
-                posterRole.classList.add('selected');
-                helperRole.classList.remove('selected');
-                skillsContainer.classList.remove('show');
-            } else {
-                helperRole.classList.add('selected');
-                posterRole.classList.remove('selected');
-                skillsContainer.classList.add('show');
-                initSkillsDropdown();
-            }
-        }
-
-        // ===== SKILLS DROPDOWN (using taskSuggestions) =====
-        function initSkillsDropdown() {
-            const input = document.getElementById('skillsInput');
-            const dropdown = document.getElementById('skillsDropdown');
-
-            if (dropdown.children.length === 0) {
-                // Populate with taskSuggestions (capitalized nicely)
-                dropdown.innerHTML = taskSuggestions.map(skill => 
-                    `<div class="skill-item">${skill}</div>`
-                ).join('');
-
-                input.addEventListener('click', () => {
-                    dropdown.classList.add('active');
-                });
-
-                dropdown.querySelectorAll('.skill-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const skill = item.textContent;
-                        if (!selectedSkills.includes(skill)) {
-                            selectedSkills.push(skill);
-                            updateSelectedSkills();
-                        }
-                        dropdown.classList.remove('active');
+    /* ── SOCIAL (stubs) ── */
+    window.handleGoogleSignIn = function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then(async result => {
+                const user = result.user;
+                const snap = await database.ref('users/' + user.uid).once('value');
+                if (!snap.exists()) {
+                    await database.ref('users/' + user.uid).set({
+                        uid: user.uid, name: user.displayName,
+                        email: user.email, phone: '', role: 'poster',
+                        skills: [], createdAt: new Date().toISOString()
                     });
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.remove('active');
-                    }
-                });
-            }
-        }
-
-        function updateSelectedSkills() {
-            const container = document.getElementById('selectedSkills');
-            container.innerHTML = selectedSkills.map(skill => 
-                `<span class="selected-skill-tag">
-                    ${skill}
-                    <span class="material-symbols-outlined" onclick="removeSkill('${skill}')">close</span>
-                </span>`
-            ).join('');
-        }
-
-        window.removeSkill = function(skill) {
-            selectedSkills = selectedSkills.filter(s => s !== skill);
-            updateSelectedSkills();
-        };
-
-        // ===== SIGNUP FORM (NO localStorage, uses UID) =====
-        document.getElementById('signupForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            debugLog('Signup form submitted');
-            
-            const name = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const phone = document.getElementById('signupPhone').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            const btn = document.getElementById('signupBtn');
-            const errorDiv = document.getElementById('errorMessage');
-            const successDiv = document.getElementById('successMessage');
-
-            if (selectedRole === 'helper' && selectedSkills.length === 0) {
-                errorDiv.textContent = 'Please select at least one skill';
-                errorDiv.classList.add('show');
-                return;
-            }
-
-            btn.innerHTML = '<span class="loading-spinner"></span> Creating...';
-            btn.disabled = true;
-            errorDiv.classList.remove('show');
-            successDiv.classList.remove('show');
-
-            try {
-                debugLog(`Creating user with email: ${email}`);
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                debugLog(`User created: ${user.uid}`, 'success');
-
-                // Save to database under users/[UID] (using exactly the UID)
-                await database.ref('users/' + user.uid).set({
-                    uid: user.uid,           // explicitly store UID
-                    name: name,
-                    email: email,
-                    phone: `+27${phone.replace(/\s/g, '')}`,
-                    role: selectedRole,
-                    skills: selectedSkills,
-                    createdAt: new Date().toISOString()
-                });
-                debugLog('User data saved under UID: ' + user.uid, 'success');
-
-                // NO localStorage — we rely on Firebase Auth state
-
-                successDiv.textContent = 'Account created! Redirecting...';
-                successDiv.classList.add('show');
-
-                // Redirect based on role (poster -> task-planner.html, helper -> helper-dashboard.html)
-                setTimeout(() => {
-                    window.location.href = selectedRole === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
-                }, 1000);
-
-            } catch (error) {
-                debugLog(`Signup error: ${error.message}`, 'error');
-                errorDiv.textContent = error.message;
-                errorDiv.classList.add('show');
-                btn.innerHTML = 'Create account';
-                btn.disabled = false;
-            }
-        });
-
-        // ===== LOGIN FORM (NO localStorage) =====
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            debugLog('Login form submitted');
-            
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            const btn = document.getElementById('loginBtn');
-            const errorDiv = document.getElementById('errorMessage');
-            const successDiv = document.getElementById('successMessage');
-
-            btn.innerHTML = '<span class="loading-spinner"></span> Signing in...';
-            btn.disabled = true;
-            errorDiv.classList.remove('show');
-            successDiv.classList.remove('show');
-
-            try {
-                debugLog(`Attempting login for: ${email}`);
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                debugLog(`Login successful: ${user.uid}`, 'success');
-
-                // Fetch user data from database using UID
-                const snapshot = await database.ref('users/' + user.uid).once('value');
-                const userData = snapshot.val();
-
-                if (!userData) {
-                    throw new Error('User data not found in database');
                 }
+                const data = (await database.ref('users/' + user.uid).once('value')).val();
+                window.location.href = data.role === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
+            })
+            .catch(e => showError(e.message));
+    };
 
-                successDiv.textContent = 'Welcome back! Redirecting...';
-                successDiv.classList.add('show');
+    window.handleAppleSignIn = function() {
+        const provider = new firebase.auth.OAuthProvider('apple.com');
+        auth.signInWithPopup(provider)
+            .then(result => {
+                window.location.href = '/task-planner.html';
+            })
+            .catch(e => showError(e.message));
+    };
 
-                // Redirect based on role from database
-                setTimeout(() => {
-                    window.location.href = userData.role === 'helper' ? '/helper-dashboard.html' : '/task-planner.html';
-                }, 1000);
+    /* ── ROLE SELECT ── */
+    window.selectRole = function(role) {
+        selectedRole = role;
+        document.getElementById('posterRole').classList.toggle('selected', role === 'poster');
+        document.getElementById('helperRole').classList.toggle('selected', role === 'helper');
+        const sc = document.getElementById('skillsContainer');
+        if (role === 'helper') { sc.classList.add('show'); initSkillsDropdown(); }
+        else { sc.classList.remove('show'); }
+    };
 
-            } catch (error) {
-                debugLog(`Login error: ${error.message}`, 'error');
-                errorDiv.textContent = error.message;
-                errorDiv.classList.add('show');
-                btn.innerHTML = 'Sign in';
-                btn.disabled = false;
-            }
+    /* ── SKILLS DROPDOWN ── */
+    function initSkillsDropdown() {
+        const input = document.getElementById('skillsInput');
+        const dropdown = document.getElementById('skillsDropdown');
+        if (dropdown.children.length > 0) return;
+
+        dropdown.innerHTML = taskSuggestions.map(s =>
+            `<div class="skill-item">${s}</div>`
+        ).join('');
+
+        input.addEventListener('click', () => dropdown.classList.add('active'));
+
+        dropdown.querySelectorAll('.skill-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const s = item.textContent;
+                if (!selectedSkills.includes(s)) {
+                    selectedSkills.push(s);
+                    renderSkillTags();
+                }
+                dropdown.classList.remove('active');
+            });
         });
 
-        // Auto-show debug panel if there's content
-        setTimeout(() => {
-            if (document.getElementById('debugLog').children.length > 0) {
-                document.getElementById('debugPanel').classList.add('show');
-                document.querySelector('.debug-toggle').textContent = '🔧 Hide Debug Panel';
-            }
-        }, 500);
+        document.addEventListener('click', (ev) => {
+            if (!input.contains(ev.target) && !dropdown.contains(ev.target))
+                dropdown.classList.remove('active');
+        });
+    }
 
-        // ===== KEYBOARD DETECTION (as requested) =====
-        // (not used on this page but included for consistency)
-        const homeSheet = document.getElementById('homeSheet'); // doesn't exist here, but safe
-        const mainSearchInput = document.getElementById('mainSearchInput'); // doesn't exist here
-        // We'll just note it's available if needed elsewhere.
-    </script>
+    function renderSkillTags() {
+        document.getElementById('selectedSkills').innerHTML = selectedSkills.map(s =>
+            `<span class="selected-skill-tag">${s}
+                <span class="material-symbols-outlined" onclick="removeSkill('${s}')">close</span>
+            </span>`
+        ).join('');
+    }
+
+    window.removeSkill = function(s) {
+        selectedSkills = selectedSkills.filter(x => x !== s);
+        renderSkillTags();
+    };
+</script>
+
 </body>
 </html>
