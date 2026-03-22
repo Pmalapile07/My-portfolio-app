@@ -26,16 +26,23 @@
         messagingSenderId: "52910279328",
         appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
     };
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    window._findHelpers = async function() {
-        const snap = await get(ref(db, 'users'));
-        if (!snap.exists()) return 0;
-        const users = snap.val();
-        let count = 0;
-        Object.values(users).forEach(u => { if (u.role === 'helper') count++; });
-        return count;
-    };
+    try {
+        const app = initializeApp(firebaseConfig);
+        const db  = getDatabase(app);
+        window._findHelpers = async function() {
+            const snap = await get(ref(db, 'users'));
+            if (!snap.exists()) return 0;
+            const users = snap.val();
+            let count = 0;
+            Object.values(users).forEach(u => { if (u.role === 'helper') count++; });
+            return count;
+        };
+        window._firebaseReady = true;
+        console.log('[taskmart] Firebase initialized OK');
+    } catch(e) {
+        console.error('[taskmart] Firebase init error:', e);
+        window._firebaseError = e.message;
+    }
 </script>
 
 <style>
@@ -633,6 +640,8 @@
 
 <section class="hero">
     <h1>Need a hand? <br>Someone is close by.</h1>
+
+
 <div class="search-container">
     <div class="flow-inputs">
         <div class="flow-connector-line"></div>
@@ -947,12 +956,21 @@
             if (taskersResult) taskersResult.classList.remove('visible');
 
             try {
-                let attempts = 0;
-                while (typeof window._findHelpers !== 'function' && attempts < 30) {
+                // Wait up to 4s for Firebase module to be ready
+                let waited = 0;
+                while (typeof window._findHelpers !== 'function' && !window._firebaseError && waited < 4000) {
                     await new Promise(r => setTimeout(r, 100));
-                    attempts++;
+                    waited += 100;
                 }
-                const count = typeof window._findHelpers === 'function' ? await window._findHelpers() : 0;
+
+                if (window._firebaseError) {
+                    throw new Error('Firebase init failed: ' + window._firebaseError);
+                }
+                if (typeof window._findHelpers !== 'function') {
+                    throw new Error('Firebase did not load in time');
+                }
+
+                const count = await window._findHelpers();
 
                 if (count === 0) {
                     taskersResultText.textContent = 'No taskers found nearby';
@@ -962,9 +980,21 @@
                     taskersResultSub.textContent  = `Available in ${locationVal}`;
                 }
                 if (taskersResult) taskersResult.classList.add('visible');
+
             } catch(err) {
-                taskersResultText.textContent = 'Could not load taskers';
-                taskersResultSub.textContent  = 'Please check your connection and try again.';
+                console.error('[taskmart] findHelpers error:', err);
+                // Show a friendlier message based on the error type
+                const msg = err.message || '';
+                if (msg.includes('permission') || msg.includes('PERMISSION') || msg.includes('denied')) {
+                    taskersResultText.textContent = 'Access restricted';
+                    taskersResultSub.textContent  = 'Database rules need to allow public reads.';
+                } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('load in time')) {
+                    taskersResultText.textContent = 'Connection issue';
+                    taskersResultSub.textContent  = 'Check your internet and try again.';
+                } else {
+                    taskersResultText.textContent = 'Could not load taskers';
+                    taskersResultSub.textContent  = msg || 'An unexpected error occurred.';
+                }
                 if (taskersResult) taskersResult.classList.add('visible');
             } finally {
                 findTaskersBtn.disabled = false;
