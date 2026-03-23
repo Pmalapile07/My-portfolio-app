@@ -339,12 +339,12 @@
         display: inline-block;
         width: auto;
         flex-shrink: 0;
-        padding: 0.85rem 1.8rem;
+        padding: 0.78rem 1.6rem;
         background: #000;
         color: #fff;
         font-family: 'Manrope', sans-serif;
         font-weight: 500;
-        font-size: 1rem;
+        font-size: 0.94rem;
         text-align: center;
         text-decoration: none;
         border-radius: 5px;
@@ -507,7 +507,7 @@
         display: flex; flex-direction: column; min-height: 100vh;
         position: relative; z-index: 101; margin-top: 90px;
     }
-    .nav-links { display: flex; flex-direction: column; gap: 1.6rem; }
+    .nav-links { display: flex; flex-direction: column; gap: 2.4rem; }
     .nav-link {
         font-family: 'Manrope', sans-serif; font-weight: 800;
         font-size: clamp(2.8rem, 8vw, 4.8rem); line-height: 1.15;
@@ -532,7 +532,7 @@
         display: flex; flex-direction: column; gap: 0.6rem;
         overflow: hidden; max-height: 0;
         transition: max-height 0.35s ease, opacity 0.3s ease, margin-top 0.3s ease;
-        opacity: 0; margin-top: 0; padding-left: 1.05ch;
+        opacity: 0; margin-top: 0; padding-left: 2.2ch;
     }
     .nav-sub-links.open { max-height: 300px; opacity: 1; margin-top: 0.8rem; }
     .nav-sub-link {
@@ -655,6 +655,68 @@
         .services-section { padding: 3rem 16px 3rem; }
         .service-card-image { width: 90px; height: 90px; }
     }
+
+    /* ========= CTA SECTION ========= */
+    .cta-section {
+        width: 100%;
+        padding: 0.6rem 24px 4rem;
+        background: #fff;
+    }
+    .cta-inner {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+    }
+    .cta-heading {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800;
+        font-size: clamp(1.8rem, 5vw, 3rem);
+        letter-spacing: -0.02em;
+        color: #000;
+        line-height: 1.2;
+        margin-bottom: 0.85rem;
+    }
+    .cta-sub {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 400;
+        font-size: 0.95rem;
+        color: rgba(0,0,0,0.55);
+        line-height: 1.55;
+        max-width: 480px;
+        margin-bottom: 1.4rem;
+    }
+    .cta-btn {
+        display: inline-block;
+        padding: 0.78rem 1.6rem;
+        background: #000;
+        color: #fff;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500;
+        font-size: 0.94rem;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background 0.2s;
+        letter-spacing: 0.01em;
+        margin-bottom: 0.85rem;
+    }
+    .cta-btn:hover { background: #222; }
+    .cta-link {
+        display: inline-block;
+        margin-top: 0.3rem;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 300;
+        font-size: 0.95rem;
+        color: rgba(0,0,0,0.8);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0,0,0,0.35);
+        padding-bottom: 2px;
+        transition: border-color 0.2s, color 0.2s;
+    }
+    .cta-link:hover { color: #000; border-bottom-color: rgba(0,0,0,0.7); }
 
     /* ========= RESPONSIVE ========= */
     @media (min-width: 1024px) { .hero h1 { font-size: 4.8rem; } .hamburger { display: none; } }
@@ -796,6 +858,18 @@
     </div>
 </div>
 
+
+</section>
+
+<!-- CTA section -->
+
+<section class="cta-section">
+    <div class="cta-inner">
+        <h2 class="cta-heading">Manage your tasks in one place.</h2>
+        <p class="cta-sub">Post a task, track your Tasker on the map, see when they arrive, manage payments, and get support anytime.</p>
+        <a href="login.html" class="cta-btn">Log in to your account</a>
+        <a href="create-account.html" class="cta-link">Create an account</a>
+    </div>
 </section>
 
 <iframe id="taskPlannerFrame" src="task-planner.html"></iframe>
@@ -885,6 +959,7 @@
                 </div>
             </div>
             <a href="#" class="nav-link">Safety</a>
+            <a href="#" class="nav-link">Help</a>
         </nav>
     </div>
 </div>
@@ -897,9 +972,18 @@
 
     async function getLocationName(lat, lon) {
         try {
-            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
             const d = await r.json();
-            if (d && d.address) return d.address.city || d.address.town || d.address.village || d.address.county || d.address.state || null;
+            if (d && d.address) {
+                const a = d.address;
+                const road   = a.road || a.pedestrian || a.footway || a.path || 'Unnamed road';
+                const number = a.house_number || '';
+                const suburb = a.suburb || a.neighbourhood || a.quarter || '';
+                const city   = a.city || a.town || a.village || a.county || a.state || '';
+                const street = number ? `${number} ${road}` : road;
+                const parts  = [street, suburb, city].filter(Boolean);
+                return parts.join(', ') || null;
+            }
             return null;
         } catch { return null; }
     }
