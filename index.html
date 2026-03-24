@@ -812,6 +812,8 @@
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
+        padding-top: 0.6rem;
+        padding-bottom: 0.4rem;
     }
     .sched-widget-heading {
         font-family: 'Manrope', sans-serif;
@@ -952,6 +954,184 @@
         letter-spacing: 0.01em;
     }
     .sched-submit-btn:hover { opacity: 0.88; }
+
+    /* ========= FULL-SCREEN SCHEDULE CALENDAR ========= */
+    .schedcal-overlay {
+        position: fixed; inset: 0;
+        background: #fff;
+        z-index: 9000;
+        display: flex; flex-direction: column;
+        opacity: 0; visibility: hidden;
+        transition: opacity 0.22s ease, visibility 0.22s ease;
+        overflow: hidden;
+    }
+    .schedcal-overlay.active { opacity: 1; visibility: visible; }
+    .schedcal-inner {
+        display: flex; flex-direction: column;
+        height: 100%; width: 100%;
+        max-width: 520px;
+        margin: 0 auto;
+    }
+    .schedcal-header {
+        display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.2rem 0.6rem;
+        flex-shrink: 0;
+    }
+    .schedcal-header-title {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800; font-size: 1.2rem;
+        color: #000; letter-spacing: -0.02em;
+    }
+    .schedcal-close {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: #f0f0f0; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .schedcal-close:hover { background: #e0e0e0; }
+    .schedcal-close i { font-size: 18px; color: #000; }
+
+    .schedcal-phase { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Make Flatpickr fill the full-screen calendar */
+    #schedCalFpMount .flatpickr-calendar {
+        position: relative !important;
+        top: auto !important; left: auto !important;
+        width: 100% !important; max-width: 100% !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+    #schedCalFpMount .flatpickr-calendar .dayContainer {
+        width: 100% !important; min-width: 100% !important; max-width: 100% !important;
+    }
+    #schedCalFpMount .flatpickr-calendar .flatpickr-days {
+        width: 100% !important;
+    }
+    /* Marker dot on picked date */
+    .flatpickr-day.has-sched-event::after {
+        content: '';
+        display: block;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #374E88;
+        margin: 2px auto 0;
+    }
+    .flatpickr-day.selected.has-sched-event::after { background: #fff; }
+
+    /* ========= WEEK STRIP (phase 2) ========= */
+    .schedcal-week-strip {
+        display: flex; gap: 0;
+        background: #fff;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .schedcal-week-strip::-webkit-scrollbar { display: none; }
+    .schedcal-week-day {
+        flex: 1; min-width: 44px;
+        display: flex; flex-direction: column; align-items: center;
+        padding: 0.7rem 0.3rem 0.6rem;
+        cursor: pointer; transition: background 0.12s;
+        border-radius: 8px; margin: 0.3rem 0.15rem;
+    }
+    .schedcal-week-day:hover { background: #f5f5f5; }
+    .schedcal-week-day.active {
+        background: #374E88 !important;
+    }
+    .schedcal-week-day.active .schedcal-wd-name,
+    .schedcal-week-day.active .schedcal-wd-num { color: #fff !important; }
+    .schedcal-wd-name {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500; font-size: 0.68rem;
+        color: rgba(0,0,0,0.4); letter-spacing: 0.04em;
+        text-transform: uppercase; line-height: 1;
+    }
+    .schedcal-wd-num {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 700; font-size: 1rem;
+        color: #000; line-height: 1; margin-top: 0.25rem;
+    }
+    .schedcal-today-label {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500; font-size: 0.82rem;
+        color: rgba(0,0,0,0.45);
+        padding: 0.5rem 1.2rem 0.2rem;
+        flex-shrink: 0;
+    }
+
+    /* ========= TIME LIST (phase 2) ========= */
+    .schedcal-timelist {
+        flex: 1; overflow-y: auto;
+        padding: 0.4rem 1.2rem 2rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    .schedcal-time-slot {
+        display: flex; align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        cursor: pointer; position: relative;
+        gap: 1rem;
+    }
+    .schedcal-time-slot:hover { background: transparent; }
+    .schedcal-time-label {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500; font-size: 0.9rem;
+        color: rgba(0,0,0,0.35);
+        width: 64px; flex-shrink: 0;
+    }
+    .schedcal-time-line {
+        flex: 1; height: 1px;
+        background: rgba(0,0,0,0.06);
+        position: relative;
+    }
+    /* Booked event pill on a time slot */
+    .schedcal-event-pill {
+        position: absolute; left: 0; top: 50%;
+        transform: translateY(-50%);
+        background: #374E88;
+        border-radius: 8px;
+        padding: 0.3rem 0.75rem;
+        display: flex; align-items: center; gap: 0.4rem;
+        white-space: nowrap;
+    }
+    .schedcal-event-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: rgba(255,255,255,0.6); flex-shrink: 0;
+    }
+    .schedcal-event-text {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 600; font-size: 0.8rem; color: #fff;
+    }
+    .schedcal-time-slot.selected .schedcal-time-label { color: #374E88; font-weight: 700; }
+
+    /* ========= WIDGET TASK SUGGESTIONS ========= */
+    .sched-task-suggestions {
+        position: absolute;
+        bottom: calc(100% + 4px);
+        left: 0; width: 100%;
+        background: #2a3d6e;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        overflow: hidden;
+        display: none;
+        z-index: 100;
+    }
+    .sched-task-suggestions.visible { display: block; }
+    .sched-suggestion-item {
+        padding: 0.65rem 1rem;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500; font-size: 0.88rem;
+        color: rgba(255,255,255,0.85);
+        cursor: pointer; transition: background 0.12s;
+    }
+    .sched-suggestion-item:hover,
+    .sched-suggestion-item.highlighted { background: rgba(255,255,255,0.1); }
+    .sched-suggestion-item mark { background: transparent; font-weight: 800; color: #fff; }
 
     /* ========= FLATPICKR OVERRIDES — match #374E88 widget ========= */
     .flatpickr-calendar {
@@ -1356,7 +1536,7 @@
 <section class="hero">
     <h1>Need a hand? <br>Someone is close by.</h1>
 
-
+```
 <div class="search-container">
     <div class="flow-inputs">
         <div class="flow-connector-line"></div>
@@ -1410,7 +1590,6 @@
     <a href="howitworks.html" class="how-it-works-link">See how taskmart works</a>
 </div>
 
-
 </section>
 
 <!-- Services section -->
@@ -1463,16 +1642,20 @@
     <!-- Smart scheduling widget -->
     <div class="sched-widget">
         <div class="sched-widget-header">
-            <span class="sched-widget-heading">Schedule a task</span>
+            <span class="sched-widget-heading">Plan ahead +<br>trusted helper</span>
         </div>
 
-        <!-- Step 1: Date & Time — single toggle button -->
+        <!-- Step 1: Two separate date & time buttons -->
         <div class="sched-step" id="schedStep1">
             <div class="sched-datetime-row">
-                <button class="sched-dt-btn" id="schedDtToggleBtn" style="flex:0 0 auto;">
-                    <i class="ph-bold ph-calendar-blank" id="schedDtIcon"></i>
-                    <span id="schedDtLabel">Choose date</span>
+                <button class="sched-dt-btn" id="schedDateBtn">
+                    <i class="ph-bold ph-calendar-blank" id="schedDateIcon"></i>
+                    <span id="schedDateLabel">Choose date</span>
                     <input type="date" id="calendarPicker" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+                </button>
+                <button class="sched-dt-btn" id="schedTimeBtn">
+                    <i class="ph-bold ph-clock" id="schedTimeIcon"></i>
+                    <span id="schedTimeLabel">Choose time</span>
                     <input type="time" id="timePicker" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 </button>
             </div>
@@ -1494,9 +1677,10 @@
                 <!-- Connector -->
                 <div class="sched-flow-connector"></div>
                 <!-- Task row -->
-                <div class="sched-flow-row">
+                <div class="sched-flow-row" style="position:relative;">
                     <div class="sched-flow-dot sched-flow-dot--square"></div>
                     <input type="text" class="sched-task-input" id="schedTaskInput" placeholder="What do you need help with?" autocomplete="off">
+                    <div class="sched-task-suggestions" id="schedTaskSuggestions" role="listbox"></div>
                 </div>
             </div>
         </div>
@@ -1527,7 +1711,7 @@
         </div>
     </div>
 </div>
-
+```
 
 </section>
 
@@ -1596,6 +1780,33 @@
             <button class="success-close-btn" id="closeSuccessBtnB">close</button>
         </div>
     </div>
+</div>
+
+<!-- Full-screen schedule calendar overlay -->
+
+<div class="schedcal-overlay" id="schedCalOverlay" aria-hidden="true">
+    <div class="schedcal-inner">
+        <!-- Header -->
+        <div class="schedcal-header">
+            <span class="schedcal-header-title" id="schedCalTitle">Select a date</span>
+            <button class="schedcal-close" id="schedCalClose" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+        </div>
+
+
+    <!-- Phase 1: Full calendar -->
+    <div class="schedcal-phase" id="schedCalPhase1">
+        <div id="schedCalFpMount"></div>
+    </div>
+
+    <!-- Phase 2: Week strip + time list -->
+    <div class="schedcal-phase" id="schedCalPhase2" style="display:none;">
+        <div class="schedcal-week-strip" id="schedCalWeekStrip"></div>
+        <div class="schedcal-today-label" id="schedCalTodayLabel"></div>
+        <div class="schedcal-timelist" id="schedCalTimelist"></div>
+    </div>
+</div>
+
+
 </div>
 
 <!-- Contact picker fallback sheet (shown on desktop / unsupported browsers) -->
@@ -1899,54 +2110,84 @@
         });
     }
 
-    // ========= SMART SCHEDULING WIDGET — Flatpickr =========
-    const schedDtToggleBtn = document.getElementById('schedDtToggleBtn');
-    const schedDtLabel     = document.getElementById('schedDtLabel');
-    const schedDtIcon      = document.getElementById('schedDtIcon');
+    // ========= SMART SCHEDULING WIDGET =========
+    const schedDateBtn   = document.getElementById('schedDateBtn');
+    const schedTimeBtn   = document.getElementById('schedTimeBtn');
+    const schedDateLabel = document.getElementById('schedDateLabel');
+    const schedTimeLabel = document.getElementById('schedTimeLabel');
+    const schedDateIcon  = document.getElementById('schedDateIcon');
+    const schedTimeIcon  = document.getElementById('schedTimeIcon');
 
-    let dtState    = 'date';
+    // Shared state
     let pickedDate = '';
     let pickedTime = '';
-    let fpTimeOpenPending = false; // guard: only open time after a real date pick
 
-    function formatDateDisplay(dateObj) {
-        return dateObj.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
+    function formatDateShort(dateStr) {
+        if (!dateStr) return 'Choose date';
+        const d = new Date(dateStr + 'T00:00:00');
+        return d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
     }
-    function formatTimeDisplay(timeStr) {
+    function formatTimeFriendly(timeStr) {
+        if (!timeStr) return 'Choose time';
         const [h, m] = timeStr.split(':');
         const hr = parseInt(h);
         return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
     }
 
-    // --- Date picker ---
+    // Persist to localStorage
+    function saveSched() {
+        const task = document.getElementById('schedTaskInput') ? document.getElementById('schedTaskInput').value.trim() : '';
+        localStorage.setItem('tm_sched', JSON.stringify({ date: pickedDate, time: pickedTime, task }));
+    }
+    function loadSched() {
+        try {
+            const d = JSON.parse(localStorage.getItem('tm_sched') || '{}');
+            if (d.date) {
+                pickedDate = d.date;
+                schedDateLabel.textContent = formatDateShort(d.date);
+                schedDateIcon.className = 'ph-bold ph-calendar-check';
+                schedDateBtn.classList.add('selected');
+            }
+            if (d.time) {
+                pickedTime = d.time;
+                schedTimeLabel.textContent = formatTimeFriendly(d.time);
+                schedTimeIcon.className = 'ph-bold ph-clock-countdown';
+                schedTimeBtn.classList.add('selected');
+            }
+            if (d.task && document.getElementById('schedTaskInput')) {
+                document.getElementById('schedTaskInput').value = d.task;
+            }
+        } catch(e) {}
+    }
+    loadSched();
+
+    // ---- FLATPICKR — simple date picker (used by date button) ----
     const fpDate = flatpickr(document.getElementById('calendarPicker'), {
-        disableMobile: true,  // always use Flatpickr — iOS native is unreliable
+        disableMobile: true,
         minDate: 'today',
         dateFormat: 'Y-m-d',
         appendTo: document.body,
         onReady(_, __, fp) {
-            if (fp.calendarContainer) fp.calendarContainer.style.zIndex = '9999';
+            if (fp.calendarContainer) {
+                fp.calendarContainer.style.zIndex = '9999';
+                // Center horizontally
+                fp.calendarContainer.style.left = '50%';
+                fp.calendarContainer.style.transform = 'translateX(-50%)';
+                fp.calendarContainer.style.position = 'fixed';
+            }
         },
         onChange(selectedDates, dateStr) {
             if (!dateStr) return;
             pickedDate = dateStr;
-            dtState = 'time';
-            schedDtIcon.className = 'ph-bold ph-clock';
-            schedDtLabel.textContent = 'Choose time';
-            schedDtToggleBtn.classList.add('selected');
-            fpTimeOpenPending = true; // tell onClose to open time
+            schedDateLabel.textContent = formatDateShort(dateStr);
+            schedDateIcon.className = 'ph-bold ph-calendar-check';
+            schedDateBtn.classList.add('selected');
+            saveSched();
             fpDate.close();
-        },
-        onClose() {
-            // Only auto-open time if we just confirmed a date selection
-            if (fpTimeOpenPending) {
-                fpTimeOpenPending = false;
-                setTimeout(() => fpTime.open(), 240); // wait for close animation
-            }
         }
     });
 
-    // --- Time picker ---
+    // ---- FLATPICKR — time picker ----
     const fpTime = flatpickr(document.getElementById('timePicker'), {
         enableTime: true,
         noCalendar: true,
@@ -1956,42 +2197,269 @@
         animate: true,
         appendTo: document.body,
         onReady(_, __, fp) {
-            if (fp.calendarContainer) fp.calendarContainer.style.zIndex = '9999';
+            if (fp.calendarContainer) {
+                fp.calendarContainer.style.zIndex = '9999';
+                fp.calendarContainer.style.left = '50%';
+                fp.calendarContainer.style.transform = 'translateX(-50%)';
+                fp.calendarContainer.style.position = 'fixed';
+            }
         },
         onChange(selectedDates, timeStr) {
             if (!timeStr) return;
             pickedTime = timeStr;
-            dtState = 'done';
-            schedDtIcon.className = 'ph-bold ph-calendar-check';
-            const dateObj = new Date(pickedDate + 'T00:00:00');
-            schedDtLabel.textContent = `${formatDateDisplay(dateObj)}, ${formatTimeDisplay(timeStr)}`;
-            schedDtToggleBtn.classList.add('selected');
-            // Small delay so the user sees their selection before it slides away
-            setTimeout(() => fpTime.close(), 320);
+            schedTimeLabel.textContent = formatTimeFriendly(timeStr);
+            schedTimeIcon.className = 'ph-bold ph-clock-countdown';
+            schedTimeBtn.classList.add('selected');
+            saveSched();
+            setTimeout(() => fpTime.close(), 300);
         }
     });
 
-    // --- Toggle button ---
-    if (schedDtToggleBtn) {
-        schedDtToggleBtn.addEventListener('click', () => {
-            if (dtState === 'date') {
-                fpDate.open();
-            } else if (dtState === 'time') {
-                fpTime.open();
-            } else {
-                // Reset
-                dtState = 'date';
-                pickedDate = '';
-                pickedTime = '';
-                fpTimeOpenPending = false;
-                schedDtLabel.textContent = 'Choose date';
-                schedDtIcon.className = 'ph-bold ph-calendar-blank';
-                schedDtToggleBtn.classList.remove('selected');
-                fpDate.clear();
-                fpTime.clear();
-                fpDate.open();
+    if (schedDateBtn) schedDateBtn.addEventListener('click', () => fpDate.open());
+    if (schedTimeBtn) schedTimeBtn.addEventListener('click', () => fpTime.open());
+
+    // ======== FULL-SCREEN SCHEDULE CALENDAR ========
+    const schedCalOverlay  = document.getElementById('schedCalOverlay');
+    const schedCalClose    = document.getElementById('schedCalClose');
+    const schedCalTitle    = document.getElementById('schedCalTitle');
+    const schedCalPhase1   = document.getElementById('schedCalPhase1');
+    const schedCalPhase2   = document.getElementById('schedCalPhase2');
+    const schedCalWeekStrip= document.getElementById('schedCalWeekStrip');
+    const schedCalTodayLbl = document.getElementById('schedCalTodayLabel');
+    const schedCalTimelist = document.getElementById('schedCalTimelist');
+    const schedCalFpMount  = document.getElementById('schedCalFpMount');
+
+    let schedCalFp = null;     // Flatpickr inside the overlay
+    let calPhase   = 1;        // 1 = full calendar, 2 = week + time list
+    let calViewDate= '';       // currently selected date in overlay
+
+    function openSchedCal() {
+        schedCalOverlay.classList.add('active');
+        schedCalOverlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        calPhase = 1;
+        schedCalPhase1.style.display = 'flex';
+        schedCalPhase2.style.display = 'none';
+        schedCalTitle.textContent = 'Select a date';
+
+        if (!schedCalFp) {
+            // Build Flatpickr inside the overlay mount point
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.style.display = 'none';
+            schedCalFpMount.appendChild(input);
+
+            schedCalFp = flatpickr(input, {
+                inline: true,
+                disableMobile: true,
+                minDate: 'today',
+                dateFormat: 'Y-m-d',
+                defaultDate: pickedDate || undefined,
+                onDayCreate(dObj, dStr, fp, dayElem) {
+                    // Add marker dot on the saved date
+                    const dayDateStr = dayElem.dateObj
+                        ? dayElem.dateObj.toISOString().slice(0,10)
+                        : '';
+                    if (pickedDate && dayDateStr === pickedDate) {
+                        dayElem.classList.add('has-sched-event');
+                    }
+                },
+                onChange(selectedDates, dateStr) {
+                    if (!dateStr) return;
+                    calViewDate = dateStr;
+                    // Transition to phase 2
+                    setTimeout(() => showPhase2(dateStr), 100);
+                }
+            });
+        } else {
+            // Refresh day dots
+            schedCalFp.redraw();
+        }
+    }
+
+    function closeSchedCal() {
+        schedCalOverlay.classList.remove('active');
+        schedCalOverlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    if (schedCalClose) schedCalClose.addEventListener('click', closeSchedCal);
+    schedCalOverlay && schedCalOverlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeSchedCal();
+    });
+
+    function showPhase2(dateStr) {
+        calPhase = 2;
+        schedCalPhase1.style.display = 'none';
+        schedCalPhase2.style.display = 'flex';
+
+        const d = new Date(dateStr + 'T00:00:00');
+        schedCalTitle.textContent = d.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        // Build week strip — last 7 days including selected
+        buildWeekStrip(d);
+
+        // Today label
+        const today = new Date();
+        const isToday = d.toDateString() === today.toDateString();
+        schedCalTodayLbl.textContent = isToday
+            ? 'Today · ' + today.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' })
+            : d.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        // Build time list 6am–midnight
+        buildTimeList(dateStr);
+    }
+
+    function buildWeekStrip(selectedDate) {
+        schedCalWeekStrip.innerHTML = '';
+        // Show 7 days starting from 3 days before selected date
+        for (let i = -3; i <= 3; i++) {
+            const d = new Date(selectedDate);
+            d.setDate(d.getDate() + i);
+            const dateStr = d.toISOString().slice(0,10);
+            const dayEl = document.createElement('div');
+            dayEl.className = 'schedcal-week-day' + (i === 0 ? ' active' : '');
+            dayEl.innerHTML = `
+                <span class="schedcal-wd-name">${d.toLocaleDateString('en-ZA',{weekday:'short'}).slice(0,3)}</span>
+                <span class="schedcal-wd-num">${d.getDate()}</span>`;
+            dayEl.addEventListener('click', () => {
+                calViewDate = dateStr;
+                document.querySelectorAll('.schedcal-week-day').forEach(el => el.classList.remove('active'));
+                dayEl.classList.add('active');
+                const nd = new Date(dateStr + 'T00:00:00');
+                schedCalTitle.textContent = nd.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
+                buildTimeList(dateStr);
+            });
+            schedCalWeekStrip.appendChild(dayEl);
+        }
+    }
+
+    function buildTimeList(dateStr) {
+        schedCalTimelist.innerHTML = '';
+        const savedTask  = document.getElementById('schedTaskInput')
+            ? document.getElementById('schedTaskInput').value.trim() : '';
+        const savedTime  = (dateStr === pickedDate) ? pickedTime : '';
+
+        // 6am to 23:30 in 30-min slots
+        for (let h = 6; h < 24; h++) {
+            for (let half = 0; half < 2; half++) {
+                const m      = half === 0 ? '00' : '30';
+                const timeStr= `${String(h).padStart(2,'0')}:${m}`;
+                const hr12   = h % 12 || 12;
+                const ampm   = h < 12 ? 'AM' : 'PM';
+                const label  = `${hr12}:${m} ${ampm}`;
+                const isBooked = savedTime === timeStr;
+
+                const slot = document.createElement('div');
+                slot.className = 'schedcal-time-slot' + (isBooked ? ' selected' : '');
+                slot.innerHTML = `
+                    <span class="schedcal-time-label">${label}</span>
+                    <div class="schedcal-time-line">
+                        ${isBooked && savedTask ? `<div class="schedcal-event-pill"><div class="schedcal-event-dot"></div><span class="schedcal-event-text">${savedTask}</span></div>` : ''}
+                    </div>`;
+                slot.addEventListener('click', () => {
+                    pickedTime = timeStr;
+                    schedTimeLabel.textContent = formatTimeFriendly(timeStr);
+                    schedTimeIcon.className = 'ph-bold ph-clock-countdown';
+                    schedTimeBtn.classList.add('selected');
+                    saveSched();
+
+                    // Update selected state in list
+                    document.querySelectorAll('.schedcal-time-slot').forEach(s => {
+                        s.classList.remove('selected');
+                        s.querySelector('.schedcal-time-line').innerHTML = '';
+                    });
+                    slot.classList.add('selected');
+                    if (savedTask) {
+                        slot.querySelector('.schedcal-time-line').innerHTML = `<div class="schedcal-event-pill"><div class="schedcal-event-dot"></div><span class="schedcal-event-text">${savedTask}</span></div>`;
+                    }
+
+                    // Also update date
+                    pickedDate = calViewDate;
+                    schedDateLabel.textContent = formatDateShort(calViewDate);
+                    schedDateIcon.className = 'ph-bold ph-calendar-check';
+                    schedDateBtn.classList.add('selected');
+                    saveSched();
+
+                    setTimeout(() => closeSchedCal(), 350);
+                });
+
+                // Scroll to selected time
+                if (isBooked) {
+                    setTimeout(() => slot.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+                }
+                schedCalTimelist.appendChild(slot);
             }
+        }
+    }
+
+    // Open full-screen calendar when date button is clicked (if date already picked — show phase 2; else phase 1)
+    if (schedDateBtn) {
+        schedDateBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // If already have a date, go straight to the calendar view
+            openSchedCal();
         });
+    }
+    // Override: don't use fpDate for opening — we use schedCal instead
+    // The fpDate is kept as a fallback but we intercept the button click above
+
+    // ======== WIDGET TASK SUGGESTIONS ========
+    const schedTaskInput     = document.getElementById('schedTaskInput');
+    const schedTaskSuggBox   = document.getElementById('schedTaskSuggestions');
+    let schedSuggHighlight   = -1;
+
+    function renderSchedSuggestions(matches, query) {
+        if (!schedTaskSuggBox) return;
+        schedTaskSuggBox.innerHTML = '';
+        schedSuggHighlight = -1;
+        if (!matches.length) { schedTaskSuggBox.classList.remove('visible'); return; }
+        matches.slice(0, 6).forEach(match => {
+            const item = document.createElement('div');
+            item.className = 'sched-suggestion-item';
+            // Highlight matching part
+            const idx = match.toLowerCase().indexOf(query.toLowerCase());
+            if (idx >= 0) {
+                item.innerHTML = match.slice(0, idx) + '<mark>' + match.slice(idx, idx + query.length) + '</mark>' + match.slice(idx + query.length);
+            } else {
+                item.textContent = match;
+            }
+            item.addEventListener('mousedown', e => {
+                e.preventDefault();
+                schedTaskInput.value = match;
+                schedTaskSuggBox.classList.remove('visible');
+                saveSched();
+            });
+            schedTaskSuggBox.appendChild(item);
+        });
+        schedTaskSuggBox.classList.add('visible');
+    }
+
+    if (schedTaskInput) {
+        schedTaskInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (!val) { schedTaskSuggBox && schedTaskSuggBox.classList.remove('visible'); return; }
+            renderSchedSuggestions(suggestTasks(val), val);
+            saveSched();
+        });
+        schedTaskInput.addEventListener('keydown', function(e) {
+            if (!schedTaskSuggBox) return;
+            const items = schedTaskSuggBox.querySelectorAll('.sched-suggestion-item');
+            if (!schedTaskSuggBox.classList.contains('visible') || !items.length) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); schedSuggHighlight = Math.min(schedSuggHighlight + 1, items.length - 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); schedSuggHighlight = Math.max(schedSuggHighlight - 1, 0); }
+            else if (e.key === 'Enter' && schedSuggHighlight >= 0) {
+                e.preventDefault();
+                schedTaskInput.value = items[schedSuggHighlight].textContent;
+                schedTaskSuggBox.classList.remove('visible');
+                saveSched();
+                return;
+            } else if (e.key === 'Escape') { schedTaskSuggBox.classList.remove('visible'); return; }
+            else return;
+            items.forEach((el, i) => el.classList.toggle('highlighted', i === schedSuggHighlight));
+        });
+        schedTaskInput.addEventListener('blur', () => setTimeout(() => schedTaskSuggBox && schedTaskSuggBox.classList.remove('visible'), 150));
+        schedTaskInput.addEventListener('change', saveSched);
     }
 
     // ========= ASSIGN BUTTON — Firebase auth + Contact Picker =========
