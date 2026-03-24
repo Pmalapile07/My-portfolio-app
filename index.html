@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -952,53 +951,6 @@
     }
     .sched-submit-btn:hover { opacity: 0.88; }
 
-    /* ========= ASSIGN HELPER MODAL ========= */
-    .assign-modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 3000; opacity: 0; visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease;
-    }
-    .assign-modal-overlay.active { opacity: 1; visibility: visible; }
-    .assign-modal-card {
-        background: #fff; max-width: 420px; width: 90%;
-        padding: 2rem 2rem 1.6rem;
-        position: relative; border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    }
-    .assign-modal-card h3 {
-        font-family: 'Manrope', sans-serif;
-        font-weight: 800; font-size: 1.3rem; color: #000;
-        margin-bottom: 0.4rem; letter-spacing: -0.01em;
-    }
-    .assign-modal-card p {
-        font-family: 'Manrope', sans-serif;
-        font-weight: 400; font-size: 0.88rem;
-        color: rgba(0,0,0,0.5); margin-bottom: 1.4rem;
-    }
-    .assign-modal-close {
-        position: absolute; top: 12px; right: 16px;
-        background: transparent; border: none; font-size: 24px;
-        cursor: pointer; color: #000; line-height: 1;
-    }
-    .assign-input {
-        width: 100%; padding: 0.85rem 1rem;
-        border: 1px solid #000; border-radius: 5px;
-        font-family: 'Manrope', sans-serif; font-weight: 500;
-        font-size: 0.95rem; outline: none; margin-bottom: 0.8rem;
-        box-sizing: border-box;
-    }
-    .assign-input:focus { outline: 2px solid #000; }
-    .assign-confirm-btn {
-        width: 100%; padding: 0.8rem;
-        background: #000; color: #fff; border: none;
-        border-radius: 5px; font-family: 'Manrope', sans-serif;
-        font-weight: 600; font-size: 0.95rem; cursor: pointer;
-        transition: background 0.2s;
-    }
-    .assign-confirm-btn:hover { background: #222; }
-
     /* ========= RESPONSIVE ========= */
     @media (min-width: 1024px) { .hero h1 { font-size: 4.8rem; } .hamburger { display: none; } }
 
@@ -1175,8 +1127,8 @@
                 <button class="sched-dt-btn" id="schedDtToggleBtn" style="flex:0 0 auto;">
                     <i class="ph-bold ph-calendar-blank" id="schedDtIcon"></i>
                     <span id="schedDtLabel">Choose date</span>
-                    <input type="date" id="schedDateInput" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                    <input type="time" id="schedTimeInput" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+                    <input type="date" id="calendarPicker" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+                    <input type="time" id="timePicker" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 </button>
             </div>
         </div>
@@ -1276,18 +1228,6 @@
             <p>We will let you know when we have launched in your city.</p>
             <button class="success-close-btn" id="closeSuccessBtnB">close</button>
         </div>
-    </div>
-</div>
-
-<!-- Assign Helper Modal (Fix #12) -->
-
-<div class="assign-modal-overlay" id="assignModal">
-    <div class="assign-modal-card">
-        <button class="assign-modal-close" id="assignModalClose">&times;</button>
-        <h3>Assign a helper</h3>
-        <p>Enter the name of your preferred tasker.</p>
-        <input type="text" class="assign-input" id="assignHelperInput" placeholder="Helper's name" autocomplete="off">
-        <button class="assign-confirm-btn" id="assignConfirmBtn">Confirm</button>
     </div>
 </div>
 
@@ -1553,14 +1493,13 @@
     }
 
     // ========= SMART SCHEDULING WIDGET — single toggle button =========
-    const schedDateInput   = document.getElementById('schedDateInput');
-    const schedTimeInput   = document.getElementById('schedTimeInput');
+    const schedDateInput   = document.getElementById('calendarPicker');
+    const schedTimeInput   = document.getElementById('timePicker');
     const schedDtToggleBtn = document.getElementById('schedDtToggleBtn');
     const schedDtLabel     = document.getElementById('schedDtLabel');
     const schedDtIcon      = document.getElementById('schedDtIcon');
 
-    // State: 'date' = waiting for date, 'time' = waiting for time, 'done' = both picked
-    let dtState   = 'date';
+    let dtState    = 'date'; // 'date' | 'time' | 'done'
     let pickedDate = '';
     let pickedTime = '';
 
@@ -1577,12 +1516,10 @@
     }
 
     function openDatePicker() {
-        if (schedDateInput.showPicker) schedDateInput.showPicker();
-        else schedDateInput.click();
+        document.getElementById('calendarPicker').showPicker();
     }
     function openTimePicker() {
-        if (schedTimeInput.showPicker) schedTimeInput.showPicker();
-        else schedTimeInput.click();
+        document.getElementById('timePicker').showPicker();
     }
 
     if (schedDtToggleBtn) {
@@ -1592,7 +1529,7 @@
             } else if (dtState === 'time') {
                 openTimePicker();
             } else {
-                // Both picked — clicking again resets to date
+                // Both done — reset
                 dtState = 'date';
                 pickedDate = '';
                 pickedTime = '';
@@ -1610,12 +1547,10 @@
         schedDateInput.addEventListener('change', function() {
             if (!this.value) return;
             pickedDate = this.value;
-            // Switch to time picking mode
             dtState = 'time';
             schedDtIcon.className = 'ph-bold ph-clock';
             schedDtLabel.textContent = 'Choose time';
             schedDtToggleBtn.classList.add('selected');
-            // Auto-open time picker after a short delay
             setTimeout(() => openTimePicker(), 120);
         });
     }
@@ -1624,7 +1559,6 @@
         schedTimeInput.addEventListener('change', function() {
             if (!this.value) return;
             pickedTime = this.value;
-            // Both picked — show summary
             dtState = 'done';
             schedDtIcon.className = 'ph-bold ph-calendar-check';
             schedDtLabel.textContent = `${formatDate(pickedDate)}, ${formatTime(pickedTime)}`;
@@ -1632,44 +1566,21 @@
         });
     }
 
-    // Fix #12: Assign helper button now opens a modal
-    const assignModal       = document.getElementById('assignModal');
-    const assignModalClose  = document.getElementById('assignModalClose');
-    const assignHelperInput = document.getElementById('assignHelperInput');
-    const assignConfirmBtn  = document.getElementById('assignConfirmBtn');
-    const schedHelperValue  = document.getElementById('schedHelperValue');
-    const schedAssignBtn    = document.getElementById('schedAssignBtn');
+    // ========= ASSIGN BUTTON — Firebase auth check =========
+    const schedAssignBtn   = document.getElementById('schedAssignBtn');
 
-    if (schedAssignBtn && assignModal) {
+    if (schedAssignBtn) {
         schedAssignBtn.addEventListener('click', () => {
-            assignModal.classList.add('active');
-            if (assignHelperInput) assignHelperInput.focus();
-        });
-    }
-    if (assignModalClose && assignModal) {
-        assignModalClose.addEventListener('click', () => assignModal.classList.remove('active'));
-    }
-    if (assignModal) {
-        assignModal.addEventListener('click', e => { if (e.target === assignModal) assignModal.classList.remove('active'); });
-    }
-    if (assignConfirmBtn && assignHelperInput) {
-        assignConfirmBtn.addEventListener('click', () => {
-            const name = assignHelperInput.value.trim();
-            if (name && schedHelperValue) {
-                schedHelperValue.textContent = name;
-                if (schedAssignBtn) schedAssignBtn.textContent = 'Change';
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                window.location.href = 'login.html';
             }
-            assignModal.classList.remove('active');
-        });
-        assignHelperInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') assignConfirmBtn.click();
+            // If logged in: do nothing for now (implementation pending)
         });
     }
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && assignModal && assignModal.classList.contains('active')) {
-            assignModal.classList.remove('active');
-        }
+        // No assign modal to close, kept for other ESC uses
     });
 
     // ========= COLLAPSIBLE ABOUT =========
