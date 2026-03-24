@@ -822,31 +822,30 @@
         letter-spacing: -0.02em;
         line-height: 1.2;
     }
-    /* Single date/time button */
+    /* Single date/time button - no extra containers */
     .sched-datetime-row {
-        display: flex;
-        gap: 0.7rem;
+        width: 100%;
     }
     .sched-dt-btn {
-        flex: 1;
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
         background: rgba(255,255,255,0.12);
         border: none;
         border-radius: 8px;
-        padding: 0.7rem 0.9rem;
+        padding: 0.85rem 0.9rem;
         color: #fff;
         font-family: 'Manrope', sans-serif;
         font-weight: 500;
-        font-size: 0.82rem;
+        font-size: 0.9rem;
         cursor: pointer;
         transition: background 0.2s;
         text-align: center;
     }
     .sched-dt-btn:hover { background: rgba(255,255,255,0.2); }
-    .sched-dt-btn i { font-size: 18px; flex-shrink: 0; }
+    .sched-dt-btn i { font-size: 20px; flex-shrink: 0; }
     .sched-dt-btn.selected { background: rgba(255,255,255,0.22); }
     /* Flow inputs inside widget */
     .sched-flow-inputs {
@@ -1133,9 +1132,7 @@
     </div>
 
     <div class="find-taskers-row">
-        <!-- Fix #7: button with validation instead of bare anchor -->
         <button class="find-taskers-btn" id="findTaskersBtn">Find taskers</button>
-        <!-- Fix #1/#2: taskers result element now exists in DOM -->
         <div class="taskers-result" id="taskersResult">
             <span class="taskers-result-text" id="taskersResultText"></span>
             <span class="taskers-result-sub">available near you</span>
@@ -1195,45 +1192,37 @@
         <p class="sched-sub">Plan ahead. Pick your time, assign your favourite tasker, and let taskmart handle the rest.</p>
 
 
-    <!-- Smart scheduling widget -->
+    <!-- Smart scheduling widget - single button only -->
     <div class="sched-widget">
         <div class="sched-widget-header">
             <span class="sched-widget-heading">Schedule a task</span>
         </div>
 
-        <!-- Single button for date & time with Flatpickr -->
-        <div class="sched-step" id="schedStep1">
-            <div class="sched-datetime-row">
-                <button class="sched-dt-btn" id="flatpickrTriggerBtn">
-                    <i class="ph-bold ph-calendar-dots"></i>
-                    <span id="schedDtLabel">Choose date & time</span>
-                </button>
+        <!-- ONE SINGLE BUTTON for date & time with Flatpickr -->
+        <div class="sched-datetime-row">
+            <button class="sched-dt-btn" id="flatpickrTriggerBtn">
+                <i class="ph-bold ph-calendar-dots"></i>
+                <span id="schedDtLabel">Choose date & time</span>
+            </button>
+        </div>
+
+        <!-- Task + Helper section (unchanged) -->
+        <div class="sched-flow-inputs">
+            <div class="sched-flow-row">
+                <div class="sched-flow-dot sched-flow-dot--circle"></div>
+                <div class="sched-flow-field">
+                    <span class="sched-flow-label">Assign helper</span>
+                    <span class="sched-flow-value" id="schedHelperValue">No helper assigned yet</span>
+                </div>
+                <button class="sched-assign-btn" id="schedAssignBtn">Assign</button>
+            </div>
+            <div class="sched-flow-connector"></div>
+            <div class="sched-flow-row">
+                <div class="sched-flow-dot sched-flow-dot--square"></div>
+                <input type="text" class="sched-task-input" id="schedTaskInput" placeholder="What do you need help with?" autocomplete="off">
             </div>
         </div>
 
-        <!-- Step 2: Task + Helper -->
-        <div class="sched-step" id="schedStep2">
-            <div class="sched-flow-inputs">
-                <!-- Assign helper row -->
-                <div class="sched-flow-row">
-                    <div class="sched-flow-dot sched-flow-dot--circle"></div>
-                    <div class="sched-flow-field">
-                        <span class="sched-flow-label">Assign helper</span>
-                        <span class="sched-flow-value" id="schedHelperValue">No helper assigned yet</span>
-                    </div>
-                    <button class="sched-assign-btn" id="schedAssignBtn">Assign</button>
-                </div>
-                <!-- Connector -->
-                <div class="sched-flow-connector"></div>
-                <!-- Task row -->
-                <div class="sched-flow-row">
-                    <div class="sched-flow-dot sched-flow-dot--square"></div>
-                    <input type="text" class="sched-task-input" id="schedTaskInput" placeholder="What do you need help with?" autocomplete="off">
-                </div>
-            </div>
-        </div>
-
-        <!-- CTA button -->
         <button class="sched-submit-btn" id="schedSubmitBtn">Next</button>
     </div>
 </div>
@@ -1308,7 +1297,7 @@
     </div>
 </div>
 
-<!-- Contact picker fallback sheet (shown on desktop / unsupported browsers) -->
+<!-- Contact picker fallback sheet -->
 
 <div class="contact-sheet-overlay" id="contactSheetOverlay">
     <div class="contact-sheet" role="dialog" aria-label="Select a helper">
@@ -1511,7 +1500,6 @@
 
     if (locationClearBtn) locationClearBtn.addEventListener('click', e => { e.preventDefault(); clearLocation(); });
 
-    // Fix #4: location detection only fires on user click, not on page load
     if (locationArrowIcon) {
         locationArrowIcon.addEventListener('click', e => {
             e.preventDefault();
@@ -1530,23 +1518,21 @@
         });
     }
 
-    // ========= FIND TASKERS BUTTON (Fix #7) =========
+    // ========= FIND TASKERS BUTTON =========
     const findTaskersBtn = document.getElementById('findTaskersBtn');
     if (findTaskersBtn) {
         findTaskersBtn.addEventListener('click', function() {
             const taskVal = taskInput ? taskInput.value.trim() : '';
             if (!taskVal) {
-                // Shake the task input if empty
                 if (taskInput) {
                     taskInput.classList.remove('error');
-                    void taskInput.offsetWidth; // reflow to restart animation
+                    void taskInput.offsetWidth;
                     taskInput.classList.add('error');
                     taskInput.addEventListener('animationend', () => taskInput.classList.remove('error'), { once: true });
                     taskInput.focus();
                 }
                 return;
             }
-            // Navigate to task planner
             window.location.href = 'task-planner-home.html';
         });
     }
@@ -1593,7 +1579,7 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && navOverlay.classList.contains('active')) closeMenu(); });
     }
 
-    // ========= HEADER SIGNUP BTN (Fix #5: navigates to task-planner.html) =========
+    // ========= HEADER SIGNUP BTN =========
     const headerSignupBtn = document.getElementById('headerSignupBtn');
     if (headerSignupBtn) {
         headerSignupBtn.addEventListener('click', e => {
@@ -1602,7 +1588,7 @@
         });
     }
 
-    // ========= FLATPICKR DATE & TIME CHOOSER =========
+    // ========= FLATPICKR DATE & TIME CHOOSER - SINGLE BUTTON =========
     const flatpickrBtn = document.getElementById('flatpickrTriggerBtn');
     const schedDtLabel = document.getElementById('schedDtLabel');
     
@@ -1616,7 +1602,7 @@
                     const d = selectedDates[0];
                     const formattedDate = d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
                     const formattedTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    schedDtLabel.textContent = `${formattedDate} at ${formattedTime}`;
+                    schedDtLabel.innerHTML = `${formattedDate} at ${formattedTime}`;
                     flatpickrBtn.classList.add('selected');
                     // Flicker effect
                     flatpickrBtn.style.transition = 'background 0.1s';
