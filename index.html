@@ -32,6 +32,7 @@
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
         width: 100%;
+        padding-bottom: 72px;
     }
 
     button, a { -webkit-tap-highlight-color: transparent; }
@@ -357,7 +358,7 @@
     .find-taskers-btn:hover:not(:disabled) { background: #222; }
     .find-taskers-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Minimal inline count — sits directly opposite the button */
+    /* Taskers result inline count */
     .taskers-result {
         display: none;
         flex-direction: column;
@@ -783,9 +784,6 @@
     }
     .sticky-footer-btn:hover { background: #222; }
 
-    /* Push page content above sticky footer so nothing hides behind it */
-    body { padding-bottom: 72px; }
-
     /* ========= SMART SCHEDULING WIDGET ========= */
     .sched-sub {
         font-family: 'Manrope', sans-serif;
@@ -817,16 +815,10 @@
     .sched-widget-heading {
         font-family: 'Manrope', sans-serif;
         font-weight: 800;
-        font-size: 1.15rem;
+        font-size: 1.55rem;
         color: #fff;
-        letter-spacing: -0.01em;
-        line-height: 1.3;
-    }
-    .sched-widget-tagline {
-        font-family: 'Manrope', sans-serif;
-        font-weight: 300;
-        font-size: 0.8rem;
-        color: rgba(255,255,255,0.6);
+        letter-spacing: -0.02em;
+        line-height: 1.2;
     }
     /* Date & time row */
     .sched-datetime-row {
@@ -960,6 +952,53 @@
     }
     .sched-submit-btn:hover { opacity: 0.88; }
 
+    /* ========= ASSIGN HELPER MODAL ========= */
+    .assign-modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 3000; opacity: 0; visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+    .assign-modal-overlay.active { opacity: 1; visibility: visible; }
+    .assign-modal-card {
+        background: #fff; max-width: 420px; width: 90%;
+        padding: 2rem 2rem 1.6rem;
+        position: relative; border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .assign-modal-card h3 {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800; font-size: 1.3rem; color: #000;
+        margin-bottom: 0.4rem; letter-spacing: -0.01em;
+    }
+    .assign-modal-card p {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 400; font-size: 0.88rem;
+        color: rgba(0,0,0,0.5); margin-bottom: 1.4rem;
+    }
+    .assign-modal-close {
+        position: absolute; top: 12px; right: 16px;
+        background: transparent; border: none; font-size: 24px;
+        cursor: pointer; color: #000; line-height: 1;
+    }
+    .assign-input {
+        width: 100%; padding: 0.85rem 1rem;
+        border: 1px solid #000; border-radius: 5px;
+        font-family: 'Manrope', sans-serif; font-weight: 500;
+        font-size: 0.95rem; outline: none; margin-bottom: 0.8rem;
+        box-sizing: border-box;
+    }
+    .assign-input:focus { outline: 2px solid #000; }
+    .assign-confirm-btn {
+        width: 100%; padding: 0.8rem;
+        background: #000; color: #fff; border: none;
+        border-radius: 5px; font-family: 'Manrope', sans-serif;
+        font-weight: 600; font-size: 0.95rem; cursor: pointer;
+        transition: background 0.2s;
+    }
+    .assign-confirm-btn:hover { background: #222; }
+
     /* ========= RESPONSIVE ========= */
     @media (min-width: 1024px) { .hero h1 { font-size: 4.8rem; } .hamburger { display: none; } }
 
@@ -999,9 +1038,9 @@
         <div class="logo-container">
             <img class="brand-logo"
                  src="https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/Cream%20Black%20Typography%20Loop%20Brand%20Logo%20(500%20x%20180%20px).png"
-                 alt="Cream Black Loop"
+                 alt="taskmart"
                  loading="eager"
-                 onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22200%22%20height%3D%2265%22%20viewBox%3D%220%200%20200%2065%22%3E%3Crect%20width%3D%22200%22%20height%3D%2265%22%20fill%3D%22%23000000%22%2F%3E%3Ctext%20x%3D%2212%22%20y%3D%2244%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2224%22%20font-weight%3D%22500%22%20fill%3D%22white%22%3ECream%20Black%3C%2Ftext%3E%3C%2Fsvg%3E';">
+                 onerror="this.style.display='none';">
         </div>
         <div class="header-right">
             <button class="header-signup-btn" id="headerSignupBtn">Open app</button>
@@ -1034,7 +1073,7 @@
                     type="text"
                     class="flow-input-location"
                     id="locationInputField"
-                    placeholder="Detecting location…"
+                    placeholder="Enter your location"
                     aria-label="Your location"
                 >
             </div>
@@ -1062,7 +1101,13 @@
     </div>
 
     <div class="find-taskers-row">
-        <a href="task-planner-home.html" class="find-taskers-btn">Find taskers</a>
+        <!-- Fix #7: button with validation instead of bare anchor -->
+        <button class="find-taskers-btn" id="findTaskersBtn">Find taskers</button>
+        <!-- Fix #1/#2: taskers result element now exists in DOM -->
+        <div class="taskers-result" id="taskersResult">
+            <span class="taskers-result-text" id="taskersResultText"></span>
+            <span class="taskers-result-sub">available near you</span>
+        </div>
     </div>
 
     <a href="howitworks.html" class="how-it-works-link">See how taskmart works</a>
@@ -1075,7 +1120,7 @@
 
 <section class="services-section">
     <div class="services-inner">
-        <p class="services-label">Services</p>
+        <h2 class="services-label">Services</h2>
         <div class="services-cards">
 
 
@@ -1112,7 +1157,7 @@
         <a href="login.html" class="cta-btn">Log in to your account</a>
         <a href="create-account.html" class="cta-link">Create an account</a>
         <div class="cta-phone-wrap">
-            <div class="cta-phone-img cta-phone-img--bg" style="background-image:url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/smartphone-copy-space-concept.jpg');" aria-label="taskmart app preview"></div>
+            <div class="cta-phone-img" style="background-image:url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/smartphone-copy-space-concept.jpg');" aria-label="taskmart app preview"></div>
         </div>
         <p class="cta-plan-label">Smart scheduling</p>
         <p class="sched-sub">Plan ahead. Pick your time, assign your favourite tasker, and let taskmart handle the rest.</p>
@@ -1120,22 +1165,17 @@
 
     <!-- Smart scheduling widget -->
     <div class="sched-widget">
-        <!-- Fixed heading — never moves -->
         <div class="sched-widget-header">
-            
+            <span class="sched-widget-heading">Schedule a task</span>
         </div>
 
-        <!-- Step 1: Date & Time -->
+        <!-- Step 1: Date & Time — single toggle button -->
         <div class="sched-step" id="schedStep1">
             <div class="sched-datetime-row">
-                <button class="sched-dt-btn" id="schedDateBtn" onclick="document.getElementById('schedDateInput').showPicker ? document.getElementById('schedDateInput').showPicker() : document.getElementById('schedDateInput').click()">
-                    <i class="ph-bold ph-calendar-blank"></i>
-                    <span id="schedDateLabel">Choose date</span>
+                <button class="sched-dt-btn" id="schedDtToggleBtn" style="flex:0 0 auto;">
+                    <i class="ph-bold ph-calendar-blank" id="schedDtIcon"></i>
+                    <span id="schedDtLabel">Choose date</span>
                     <input type="date" id="schedDateInput" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                </button>
-                <button class="sched-dt-btn" id="schedTimeBtn" onclick="document.getElementById('schedTimeInput').showPicker ? document.getElementById('schedTimeInput').showPicker() : document.getElementById('schedTimeInput').click()">
-                    <i class="ph-bold ph-clock"></i>
-                    <span id="schedTimeLabel">Choose time</span>
                     <input type="time" id="schedTimeInput" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 </button>
             </div>
@@ -1151,6 +1191,7 @@
                         <span class="sched-flow-label">Assign helper</span>
                         <span class="sched-flow-value" id="schedHelperValue">No helper assigned yet</span>
                     </div>
+                    <!-- Fix #12: assign button now has event listener (handled in JS) -->
                     <button class="sched-assign-btn" id="schedAssignBtn">Assign</button>
                 </div>
                 <!-- Connector -->
@@ -1164,7 +1205,7 @@
         </div>
 
         <!-- CTA button -->
-        <button class="sched-submit-btn">Smart schedule</button>
+        <button class="sched-submit-btn" id="schedSubmitBtn">Next</button>
     </div>
 </div>
 
@@ -1235,6 +1276,18 @@
             <p>We will let you know when we have launched in your city.</p>
             <button class="success-close-btn" id="closeSuccessBtnB">close</button>
         </div>
+    </div>
+</div>
+
+<!-- Assign Helper Modal (Fix #12) -->
+
+<div class="assign-modal-overlay" id="assignModal">
+    <div class="assign-modal-card">
+        <button class="assign-modal-close" id="assignModalClose">&times;</button>
+        <h3>Assign a helper</h3>
+        <p>Enter the name of your preferred tasker.</p>
+        <input type="text" class="assign-input" id="assignHelperInput" placeholder="Helper's name" autocomplete="off">
+        <button class="assign-confirm-btn" id="assignConfirmBtn">Confirm</button>
     </div>
 </div>
 
@@ -1372,6 +1425,7 @@
     const locationArrowIcon  = document.getElementById('locationArrowIcon');
     const locationClearBtn   = document.getElementById('locationClearBtn');
     const taskersResult      = document.getElementById('taskersResult');
+    const taskersResultText  = document.getElementById('taskersResultText');
 
     function setLocationValue(name) {
         if (!locationInputField) return;
@@ -1406,31 +1460,59 @@
     }
 
     if (locationClearBtn) locationClearBtn.addEventListener('click', e => { e.preventDefault(); clearLocation(); });
-    if (locationArrowIcon) locationArrowIcon.addEventListener('click', e => { e.preventDefault(); detectLocation(); });
 
-    function detectLocation() {
-        if (!locationInputField) return;
-        if (navigator.geolocation) {
-            locationInputField.placeholder = 'Detecting location…';
-            navigator.geolocation.getCurrentPosition(async pos => {
-                currentCoordinates = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
-                const name = await getLocationName(pos.coords.latitude, pos.coords.longitude);
-                setLocationValue(name || 'your location');
-            }, () => { locationInputField.placeholder = 'Please turn on your location'; });
-        } else {
-            locationInputField.placeholder = 'Please turn on your location';
-        }
+    // Fix #4: location detection only fires on user click, not on page load
+    if (locationArrowIcon) {
+        locationArrowIcon.addEventListener('click', e => {
+            e.preventDefault();
+            if (navigator.geolocation) {
+                locationInputField.placeholder = 'Detecting location…';
+                navigator.geolocation.getCurrentPosition(async pos => {
+                    currentCoordinates = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+                    const name = await getLocationName(pos.coords.latitude, pos.coords.longitude);
+                    setLocationValue(name || 'your location');
+                }, () => {
+                    locationInputField.placeholder = 'Please turn on your location';
+                });
+            } else {
+                locationInputField.placeholder = 'Location not supported';
+            }
+        });
     }
-    detectLocation();
+
+    // ========= FIND TASKERS BUTTON (Fix #7) =========
+    const findTaskersBtn = document.getElementById('findTaskersBtn');
+    if (findTaskersBtn) {
+        findTaskersBtn.addEventListener('click', function() {
+            const taskVal = taskInput ? taskInput.value.trim() : '';
+            if (!taskVal) {
+                // Shake the task input if empty
+                if (taskInput) {
+                    taskInput.classList.remove('error');
+                    void taskInput.offsetWidth; // reflow to restart animation
+                    taskInput.classList.add('error');
+                    taskInput.addEventListener('animationend', () => taskInput.classList.remove('error'), { once: true });
+                    taskInput.focus();
+                }
+                return;
+            }
+            // Navigate to task planner
+            window.location.href = 'task-planner-home.html';
+        });
+    }
 
     // ========= TASK PLANNER IFRAME =========
     const plannerFrame = document.getElementById('taskPlannerFrame');
-    window.addEventListener('message', e => { if (e.data?.type === 'CLOSE_PLANNER') { plannerFrame.classList.remove('active'); document.body.classList.remove('planner-open'); } });
+    window.addEventListener('message', e => {
+        if (e.data?.type === 'CLOSE_PLANNER') {
+            plannerFrame.classList.remove('active');
+            document.body.classList.remove('planner-open');
+        }
+    });
 
     // ========= MOBILE MENU =========
     const menuCheckbox = document.getElementById('menuCheckbox');
     const navOverlay   = document.getElementById('navOverlay');
-
     let _scrollY = 0;
 
     function closeMenu() {
@@ -1461,39 +1543,134 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && navOverlay.classList.contains('active')) closeMenu(); });
     }
 
-    // ========= SMART SCHEDULING WIDGET =========
-    const schedDateInput = document.getElementById('schedDateInput');
-    const schedTimeInput = document.getElementById('schedTimeInput');
-    const schedDateLabel = document.getElementById('schedDateLabel');
-    const schedTimeLabel = document.getElementById('schedTimeLabel');
-    const schedDateBtn   = document.getElementById('schedDateBtn');
-    const schedTimeBtn   = document.getElementById('schedTimeBtn');
+    // ========= HEADER SIGNUP BTN (Fix #5: navigates to task-planner.html) =========
+    const headerSignupBtn = document.getElementById('headerSignupBtn');
+    if (headerSignupBtn) {
+        headerSignupBtn.addEventListener('click', e => {
+            e.preventDefault();
+            window.location.href = 'task-planner.html';
+        });
+    }
+
+    // ========= SMART SCHEDULING WIDGET — single toggle button =========
+    const schedDateInput   = document.getElementById('schedDateInput');
+    const schedTimeInput   = document.getElementById('schedTimeInput');
+    const schedDtToggleBtn = document.getElementById('schedDtToggleBtn');
+    const schedDtLabel     = document.getElementById('schedDtLabel');
+    const schedDtIcon      = document.getElementById('schedDtIcon');
+
+    // State: 'date' = waiting for date, 'time' = waiting for time, 'done' = both picked
+    let dtState   = 'date';
+    let pickedDate = '';
+    let pickedTime = '';
 
     function formatDate(val) {
-        if (!val) return 'Choose date';
+        if (!val) return '';
         const d = new Date(val + 'T00:00:00');
         return d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
     }
     function formatTime(val) {
-        if (!val) return 'Choose time';
+        if (!val) return '';
         const [h, m] = val.split(':');
         const hr = parseInt(h);
         return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
     }
 
+    function openDatePicker() {
+        if (schedDateInput.showPicker) schedDateInput.showPicker();
+        else schedDateInput.click();
+    }
+    function openTimePicker() {
+        if (schedTimeInput.showPicker) schedTimeInput.showPicker();
+        else schedTimeInput.click();
+    }
+
+    if (schedDtToggleBtn) {
+        schedDtToggleBtn.addEventListener('click', () => {
+            if (dtState === 'date') {
+                openDatePicker();
+            } else if (dtState === 'time') {
+                openTimePicker();
+            } else {
+                // Both picked — clicking again resets to date
+                dtState = 'date';
+                pickedDate = '';
+                pickedTime = '';
+                schedDtLabel.textContent = 'Choose date';
+                schedDtIcon.className = 'ph-bold ph-calendar-blank';
+                schedDtToggleBtn.classList.remove('selected');
+                schedDateInput.value = '';
+                schedTimeInput.value = '';
+                openDatePicker();
+            }
+        });
+    }
+
     if (schedDateInput) {
         schedDateInput.addEventListener('change', function() {
-            schedDateLabel.textContent = formatDate(this.value);
-            if (schedDateBtn) schedDateBtn.classList.add('selected');
+            if (!this.value) return;
+            pickedDate = this.value;
+            // Switch to time picking mode
+            dtState = 'time';
+            schedDtIcon.className = 'ph-bold ph-clock';
+            schedDtLabel.textContent = 'Choose time';
+            schedDtToggleBtn.classList.add('selected');
+            // Auto-open time picker after a short delay
+            setTimeout(() => openTimePicker(), 120);
         });
     }
+
     if (schedTimeInput) {
         schedTimeInput.addEventListener('change', function() {
-            schedTimeLabel.textContent = formatTime(this.value);
-            if (schedTimeBtn) schedTimeBtn.classList.add('selected');
+            if (!this.value) return;
+            pickedTime = this.value;
+            // Both picked — show summary
+            dtState = 'done';
+            schedDtIcon.className = 'ph-bold ph-calendar-check';
+            schedDtLabel.textContent = `${formatDate(pickedDate)}, ${formatTime(pickedTime)}`;
+            schedDtToggleBtn.classList.add('selected');
         });
     }
-    // ==================================
+
+    // Fix #12: Assign helper button now opens a modal
+    const assignModal       = document.getElementById('assignModal');
+    const assignModalClose  = document.getElementById('assignModalClose');
+    const assignHelperInput = document.getElementById('assignHelperInput');
+    const assignConfirmBtn  = document.getElementById('assignConfirmBtn');
+    const schedHelperValue  = document.getElementById('schedHelperValue');
+    const schedAssignBtn    = document.getElementById('schedAssignBtn');
+
+    if (schedAssignBtn && assignModal) {
+        schedAssignBtn.addEventListener('click', () => {
+            assignModal.classList.add('active');
+            if (assignHelperInput) assignHelperInput.focus();
+        });
+    }
+    if (assignModalClose && assignModal) {
+        assignModalClose.addEventListener('click', () => assignModal.classList.remove('active'));
+    }
+    if (assignModal) {
+        assignModal.addEventListener('click', e => { if (e.target === assignModal) assignModal.classList.remove('active'); });
+    }
+    if (assignConfirmBtn && assignHelperInput) {
+        assignConfirmBtn.addEventListener('click', () => {
+            const name = assignHelperInput.value.trim();
+            if (name && schedHelperValue) {
+                schedHelperValue.textContent = name;
+                if (schedAssignBtn) schedAssignBtn.textContent = 'Change';
+            }
+            assignModal.classList.remove('active');
+        });
+        assignHelperInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') assignConfirmBtn.click();
+        });
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && assignModal && assignModal.classList.contains('active')) {
+            assignModal.classList.remove('active');
+        }
+    });
 
     // ========= COLLAPSIBLE ABOUT =========
     const aboutToggle   = document.getElementById('aboutToggle');
@@ -1521,9 +1698,6 @@
     const closeSuccessBtnA = document.getElementById('closeSuccessBtnA');
 
     function resetModalA() { if (formContainerA) formContainerA.style.display = 'block'; if (successA) successA.classList.remove('active'); }
-
-    const headerSignupBtn = document.getElementById('headerSignupBtn');
-    if (headerSignupBtn) headerSignupBtn.addEventListener('click', e => { e.preventDefault(); window.location.href = 'task-planner.html'; });
     if (closeA)           closeA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
     if (closeSuccessA)    closeSuccessA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
     if (closeSuccessBtnA) closeSuccessBtnA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
