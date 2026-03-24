@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1160,7 +1161,7 @@
         <button class="sched-submit-btn" id="schedSubmitBtn">Next</button>
     </div>
 </div>
-
+```
 
 </section>
 
@@ -1255,6 +1256,26 @@
         </nav>
     </div>
 </div>
+
+<!-- Firebase SDK -->
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+        authDomain: "taskmartapp-74d6b.firebaseapp.com",
+        databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+        projectId: "taskmartapp-74d6b",
+        storageBucket: "taskmartapp-74d6b.firebasestorage.app",
+        messagingSenderId: "52910279328",
+        appId: "1:52910279328:web:f49ed0d56a09e5dead17c5",
+        measurementId: "G-Z8SPLR0HSL"
+    };
+    firebase.initializeApp(firebaseConfig);
+</script>
 
 <script>
 (function() {
@@ -1493,8 +1514,8 @@
     }
 
     // ========= SMART SCHEDULING WIDGET — single toggle button =========
-    const schedDateInput   = document.getElementById('calendarPicker');
-    const schedTimeInput   = document.getElementById('timePicker');
+    const calendarPicker   = document.getElementById('calendarPicker');
+    const timePicker       = document.getElementById('timePicker');
     const schedDtToggleBtn = document.getElementById('schedDtToggleBtn');
     const schedDtLabel     = document.getElementById('schedDtLabel');
     const schedDtIcon      = document.getElementById('schedDtIcon');
@@ -1515,48 +1536,45 @@
         return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
     }
 
-    function openDatePicker() {
-        document.getElementById('calendarPicker').showPicker();
-    }
-    function openTimePicker() {
-        document.getElementById('timePicker').showPicker();
-    }
-
+    // showPicker() MUST be called directly inside the click handler —
+    // browsers block it if it's behind a wrapper function call.
     if (schedDtToggleBtn) {
         schedDtToggleBtn.addEventListener('click', () => {
             if (dtState === 'date') {
-                openDatePicker();
+                document.getElementById('calendarPicker').showPicker();
             } else if (dtState === 'time') {
-                openTimePicker();
+                document.getElementById('timePicker').showPicker();
             } else {
-                // Both done — reset
+                // Both done — reset back to date
                 dtState = 'date';
                 pickedDate = '';
                 pickedTime = '';
                 schedDtLabel.textContent = 'Choose date';
                 schedDtIcon.className = 'ph-bold ph-calendar-blank';
                 schedDtToggleBtn.classList.remove('selected');
-                schedDateInput.value = '';
-                schedTimeInput.value = '';
-                openDatePicker();
+                calendarPicker.value = '';
+                timePicker.value = '';
+                document.getElementById('calendarPicker').showPicker();
             }
         });
     }
 
-    if (schedDateInput) {
-        schedDateInput.addEventListener('change', function() {
+    if (calendarPicker) {
+        calendarPicker.addEventListener('change', function() {
             if (!this.value) return;
             pickedDate = this.value;
             dtState = 'time';
             schedDtIcon.className = 'ph-bold ph-clock';
             schedDtLabel.textContent = 'Choose time';
             schedDtToggleBtn.classList.add('selected');
-            setTimeout(() => openTimePicker(), 120);
+            // Auto-open time picker. setTimeout keeps it in a fresh user-gesture
+            // context on most mobile browsers.
+            setTimeout(() => document.getElementById('timePicker').showPicker(), 80);
         });
     }
 
-    if (schedTimeInput) {
-        schedTimeInput.addEventListener('change', function() {
+    if (timePicker) {
+        timePicker.addEventListener('change', function() {
             if (!this.value) return;
             pickedTime = this.value;
             dtState = 'done';
@@ -1567,21 +1585,22 @@
     }
 
     // ========= ASSIGN BUTTON — Firebase auth check =========
-    const schedAssignBtn   = document.getElementById('schedAssignBtn');
+    // Track auth state continuously so currentUser is always accurate.
+    const schedAssignBtn = document.getElementById('schedAssignBtn');
+    let _firebaseUser = null;
+
+    firebase.auth().onAuthStateChanged(function(user) {
+        _firebaseUser = user; // null = signed out, object = signed in
+    });
 
     if (schedAssignBtn) {
         schedAssignBtn.addEventListener('click', () => {
-            const user = firebase.auth().currentUser;
-            if (!user) {
+            if (!_firebaseUser) {
                 window.location.href = 'login.html';
             }
-            // If logged in: do nothing for now (implementation pending)
+            // User is logged in — implement assign flow here later
         });
     }
-
-    document.addEventListener('keydown', e => {
-        // No assign modal to close, kept for other ESC uses
-    });
 
     // ========= COLLAPSIBLE ABOUT =========
     const aboutToggle   = document.getElementById('aboutToggle');
