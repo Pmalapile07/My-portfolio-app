@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -952,6 +953,34 @@
     }
     .sched-submit-btn:hover { opacity: 0.88; }
 
+    /* ========= FLATPICKR OVERRIDES — match widget theme ========= */
+    .flatpickr-calendar {
+        border-radius: 16px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
+        font-family: 'Manrope', sans-serif !important;
+        border: none !important;
+        overflow: hidden;
+    }
+    .flatpickr-months { background: #374E88 !important; padding: 0.5rem 0; }
+    .flatpickr-month { color: #fff !important; fill: #fff !important; }
+    .flatpickr-current-month { color: #fff !important; font-family: 'Manrope', sans-serif !important; font-weight: 700 !important; }
+    .flatpickr-current-month select,
+    .flatpickr-current-month input.cur-year { color: #fff !important; font-family: 'Manrope', sans-serif !important; font-weight: 700 !important; }
+    .flatpickr-prev-month svg, .flatpickr-next-month svg { fill: #fff !important; }
+    .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg { fill: rgba(255,255,255,0.7) !important; }
+    .flatpickr-weekdays { background: #374E88 !important; }
+    .flatpickr-weekday { color: rgba(255,255,255,0.7) !important; font-family: 'Manrope', sans-serif !important; font-weight: 500 !important; }
+    .flatpickr-day { font-family: 'Manrope', sans-serif !important; border-radius: 8px !important; }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #374E88 !important; border-color: #374E88 !important; color: #fff !important; }
+    .flatpickr-day:hover { background: rgba(55,78,136,0.12) !important; }
+    .flatpickr-day.today { border-color: #374E88 !important; }
+    /* Time picker */
+    .flatpickr-time { border-top: 1px solid #f0f0f0 !important; font-family: 'Manrope', sans-serif !important; }
+    .flatpickr-time input { font-family: 'Manrope', sans-serif !important; font-weight: 600 !important; color: #374E88 !important; }
+    .flatpickr-time .flatpickr-am-pm { font-family: 'Manrope', sans-serif !important; color: #374E88 !important; font-weight: 600 !important; }
+    .flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover,
+    .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus { background: rgba(55,78,136,0.08) !important; }
+
     /* ========= CONTACT PICKER FALLBACK UI ========= */
     .contact-sheet-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -1090,7 +1119,7 @@
 <section class="hero">
     <h1>Need a hand? <br>Someone is close by.</h1>
 
-
+```
 <div class="search-container">
     <div class="flow-inputs">
         <div class="flow-connector-line"></div>
@@ -1154,6 +1183,7 @@
         <h2 class="services-label">Services</h2>
         <div class="services-cards">
 
+
         <div class="service-card">
             <div class="service-card-content">
                 <h3 class="service-card-heading">Taskers</h3>
@@ -1192,7 +1222,7 @@
         <p class="cta-plan-label">Smart scheduling</p>
         <p class="sched-sub">Plan ahead. Pick your time, assign your favourite tasker, and let taskmart handle the rest.</p>
 
-
+```
     <!-- Smart scheduling widget -->
     <div class="sched-widget">
         <div class="sched-widget-header">
@@ -1316,7 +1346,7 @@
         <button class="contact-sheet-close" id="contactSheetClose">&times;</button>
         <div class="contact-sheet-handle"></div>
         <p class="contact-sheet-title">Select a helper</p>
-        <p class="contact-sheet-sub">Choose someone from your contacts to assign.</p>
+        <p class="contact-sheet-sub" id="contactSheetSub">Choose someone from your contacts to assign.</p>
         <input type="text" class="contact-search-input" id="contactSearchInput" placeholder="Search name or number…" autocomplete="off">
         <div class="contact-list" id="contactList"></div>
     </div>
@@ -1366,6 +1396,8 @@
     };
     firebase.initializeApp(firebaseConfig);
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
 (function() {
@@ -1603,9 +1635,7 @@
         });
     }
 
-    // ========= SMART SCHEDULING WIDGET — single toggle button =========
-    const calendarPicker   = document.getElementById('calendarPicker');
-    const timePicker       = document.getElementById('timePicker');
+    // ========= SMART SCHEDULING WIDGET — Flatpickr (works on iOS + Android + desktop) =========
     const schedDtToggleBtn = document.getElementById('schedDtToggleBtn');
     const schedDtLabel     = document.getElementById('schedDtLabel');
     const schedDtIcon      = document.getElementById('schedDtIcon');
@@ -1614,77 +1644,92 @@
     let pickedDate = '';
     let pickedTime = '';
 
-    function formatDate(val) {
-        if (!val) return '';
-        const d = new Date(val + 'T00:00:00');
-        return d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
+    function formatDateDisplay(dateObj) {
+        return dateObj.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
     }
-    function formatTime(val) {
-        if (!val) return '';
-        const [h, m] = val.split(':');
+    function formatTimeDisplay(timeStr) {
+        // timeStr is "HH:MM" from flatpickr
+        const [h, m] = timeStr.split(':');
         const hr = parseInt(h);
         return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
     }
 
-    // showPicker() MUST be called directly inside the click handler —
-    // browsers block it if it's behind a wrapper function call.
+    // --- Flatpickr: date picker ---
+    const fpDate = flatpickr(document.getElementById('calendarPicker'), {
+        disableMobile: false,          // use native picker on mobile if available
+        minDate: 'today',
+        dateFormat: 'Y-m-d',
+        appendTo: document.body,       // render outside the button so it positions correctly
+        onReady(_, __, fp) {
+            // Make sure it renders above the sticky footer
+            if (fp.calendarContainer) fp.calendarContainer.style.zIndex = '9999';
+        },
+        onChange(selectedDates, dateStr) {
+            if (!dateStr) return;
+            pickedDate = dateStr;
+            dtState = 'time';
+            schedDtIcon.className = 'ph-bold ph-clock';
+            schedDtLabel.textContent = 'Choose time';
+            schedDtToggleBtn.classList.add('selected');
+            fpDate.close();
+            // Auto-open time picker after a short delay
+            setTimeout(() => fpTime.open(), 150);
+        }
+    });
+
+    // --- Flatpickr: time picker ---
+    const fpTime = flatpickr(document.getElementById('timePicker'), {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i',
+        time_24hr: false,
+        appendTo: document.body,
+        onReady(_, __, fp) {
+            if (fp.calendarContainer) fp.calendarContainer.style.zIndex = '9999';
+        },
+        onChange(selectedDates, timeStr) {
+            if (!timeStr) return;
+            pickedTime = timeStr;
+            dtState = 'done';
+            schedDtIcon.className = 'ph-bold ph-calendar-check';
+            const dateObj = new Date(pickedDate + 'T00:00:00');
+            schedDtLabel.textContent = `${formatDateDisplay(dateObj)}, ${formatTimeDisplay(timeStr)}`;
+            schedDtToggleBtn.classList.add('selected');
+            fpTime.close();
+        }
+    });
+
+    // --- Toggle button click ---
     if (schedDtToggleBtn) {
         schedDtToggleBtn.addEventListener('click', () => {
             if (dtState === 'date') {
-                document.getElementById('calendarPicker').showPicker();
+                fpDate.open();
             } else if (dtState === 'time') {
-                document.getElementById('timePicker').showPicker();
+                fpTime.open();
             } else {
-                // Both done — reset back to date
+                // Both done — reset
                 dtState = 'date';
                 pickedDate = '';
                 pickedTime = '';
                 schedDtLabel.textContent = 'Choose date';
                 schedDtIcon.className = 'ph-bold ph-calendar-blank';
                 schedDtToggleBtn.classList.remove('selected');
-                calendarPicker.value = '';
-                timePicker.value = '';
-                document.getElementById('calendarPicker').showPicker();
+                fpDate.clear();
+                fpTime.clear();
+                fpDate.open();
             }
         });
     }
 
-    if (calendarPicker) {
-        calendarPicker.addEventListener('change', function() {
-            if (!this.value) return;
-            pickedDate = this.value;
-            dtState = 'time';
-            schedDtIcon.className = 'ph-bold ph-clock';
-            schedDtLabel.textContent = 'Choose time';
-            schedDtToggleBtn.classList.add('selected');
-            // Auto-open time picker. setTimeout keeps it in a fresh user-gesture
-            // context on most mobile browsers.
-            setTimeout(() => document.getElementById('timePicker').showPicker(), 80);
-        });
-    }
-
-    if (timePicker) {
-        timePicker.addEventListener('change', function() {
-            if (!this.value) return;
-            pickedTime = this.value;
-            dtState = 'done';
-            schedDtIcon.className = 'ph-bold ph-calendar-check';
-            schedDtLabel.textContent = `${formatDate(pickedDate)}, ${formatTime(pickedTime)}`;
-            schedDtToggleBtn.classList.add('selected');
-        });
-    }
-
     // ========= ASSIGN BUTTON — Firebase auth + Contact Picker =========
-    // Track auth state continuously so we always have the correct user.
-    const schedAssignBtn  = document.getElementById('schedAssignBtn');
+    const schedAssignBtn   = document.getElementById('schedAssignBtn');
     const schedHelperValue = document.getElementById('schedHelperValue');
     let _firebaseUser = null;
 
     firebase.auth().onAuthStateChanged(function(user) {
-        _firebaseUser = user; // null = signed out, object = signed in
+        _firebaseUser = user;
     });
 
-    // --- Helper: set the chosen contact in the widget ---
     function applySelectedHelper(name, detail) {
         if (schedHelperValue) {
             schedHelperValue.textContent = name + (detail ? ' · ' + detail : '');
@@ -1692,88 +1737,49 @@
         if (schedAssignBtn) schedAssignBtn.textContent = 'Change';
     }
 
-    // --- Native Web Contact Picker (Android Chrome / iOS Safari 16+) ---
+    // --- Native Web Contact Picker (Android Chrome + iOS Safari 16+) ---
     async function openNativeContactPicker() {
         try {
-            const props = ['name', 'tel', 'email'];
-            const opts  = { multiple: false };
-            // This triggers the real device contacts sheet
-            const contacts = await navigator.contacts.select(props, opts);
+            const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
             if (contacts && contacts.length > 0) {
-                const c    = contacts[0];
-                const name = (c.name && c.name[0]) || 'Unknown';
+                const c      = contacts[0];
+                const name   = (c.name && c.name[0]) || 'Unknown';
                 const detail = (c.tel && c.tel[0]) || (c.email && c.email[0]) || '';
                 applySelectedHelper(name, detail);
             }
         } catch (err) {
-            // User cancelled or permission denied — do nothing
             console.warn('Contact picker closed or denied:', err);
         }
     }
 
-    // --- Fallback sheet (desktop / unsupported browsers) ---
+    // --- Fallback sheet (desktop / browsers without Contact Picker API) ---
     const contactSheetOverlay = document.getElementById('contactSheetOverlay');
     const contactSheetClose   = document.getElementById('contactSheetClose');
     const contactSearchInput  = document.getElementById('contactSearchInput');
+    const contactSheetSub     = document.getElementById('contactSheetSub');
     const contactList         = document.getElementById('contactList');
 
-    // Demo contacts — replace with real data source (Firebase, API, etc.) later
-    const demoContacts = [
-        { name: 'Sipho Dlamini',   detail: '+27 82 111 2233' },
-        { name: 'Ayanda Khumalo',  detail: '+27 73 456 7890' },
-        { name: 'Lerato Mokoena',  detail: '+27 61 234 5678' },
-        { name: 'Thabo Nkosi',     detail: '+27 79 987 6543' },
-        { name: 'Nomsa Zulu',      detail: '+27 83 321 0987' },
-        { name: 'Bongani Sithole', detail: '+27 72 555 4321' },
-    ];
-
-    function renderContactList(filter) {
-        if (!contactList) return;
-        const q = (filter || '').toLowerCase();
-        const filtered = demoContacts.filter(c =>
-            c.name.toLowerCase().includes(q) || c.detail.includes(q)
-        );
-        contactList.innerHTML = '';
-        if (!filtered.length) {
-            contactList.innerHTML = '<p style="font-family:Manrope,sans-serif;font-size:0.85rem;color:rgba(0,0,0,0.4);padding:1rem 0.3rem;">No contacts found</p>';
-            return;
-        }
-        filtered.forEach(c => {
-            const item = document.createElement('div');
-            item.className = 'contact-item';
-            const initials = c.name.split(' ').map(w => w[0]).join('').slice(0, 2);
-            item.innerHTML = `
-                <div class="contact-avatar">${initials}</div>
-                <div class="contact-info">
-                    <span class="contact-name">${c.name}</span>
-                    <span class="contact-detail">${c.detail}</span>
-                </div>`;
-            item.addEventListener('click', () => {
-                applySelectedHelper(c.name, c.detail);
-                closeFallbackSheet();
-            });
-            contactList.appendChild(item);
-        });
-    }
-
     function openFallbackSheet() {
-        renderContactList('');
-        if (contactSearchInput) contactSearchInput.value = '';
-        if (contactSheetOverlay) {
-            contactSheetOverlay.classList.add('active');
-            setTimeout(() => { if (contactSearchInput) contactSearchInput.focus(); }, 300);
+        // Show a clear message — no fake demo data
+        if (contactSheetSub) contactSheetSub.textContent = 'Contact picker is not supported in this browser. Use Chrome on Android or Safari on iOS 16+ to select from your real contacts.';
+        if (contactSearchInput) contactSearchInput.style.display = 'none';
+        if (contactList) {
+            contactList.innerHTML = `
+                <div style="padding:1.4rem 0.3rem;display:flex;flex-direction:column;gap:0.6rem;align-items:flex-start;">
+                    <p style="font-family:Manrope,sans-serif;font-size:0.88rem;color:rgba(0,0,0,0.5);line-height:1.5;">
+                        For the best experience, open taskmart in <strong>Chrome on Android</strong> or <strong>Safari on iOS 16+</strong> and tap Assign again to pick directly from your contacts.
+                    </p>
+                </div>`;
         }
+        if (contactSheetOverlay) contactSheetOverlay.classList.add('active');
     }
 
     function closeFallbackSheet() {
         if (contactSheetOverlay) contactSheetOverlay.classList.remove('active');
+        // Reset for next open
+        if (contactSearchInput) contactSearchInput.style.display = '';
     }
 
-    if (contactSearchInput) {
-        contactSearchInput.addEventListener('input', function() {
-            renderContactList(this.value);
-        });
-    }
     if (contactSheetClose)   contactSheetClose.addEventListener('click', closeFallbackSheet);
     if (contactSheetOverlay) {
         contactSheetOverlay.addEventListener('click', e => {
@@ -1787,18 +1793,15 @@
     // --- Main assign button handler ---
     if (schedAssignBtn) {
         schedAssignBtn.addEventListener('click', () => {
-            // 1. Check Firebase auth first
+            // 1. Firebase auth check — redirect if not logged in
             if (!_firebaseUser) {
                 window.location.href = 'login.html';
                 return;
             }
-
-            // 2. User is logged in — try native contact picker
+            // 2. Logged in — use native contact picker if available
             if ('contacts' in navigator && 'ContactsManager' in window) {
-                // Native API available (Android Chrome / iOS Safari 16+)
                 openNativeContactPicker();
             } else {
-                // Fallback for desktop / unsupported browsers
                 openFallbackSheet();
             }
         });
