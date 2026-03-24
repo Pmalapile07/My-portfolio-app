@@ -822,11 +822,8 @@
         letter-spacing: -0.02em;
         line-height: 1.2;
     }
-    /* Single date/time button - no extra containers */
-    .sched-datetime-row {
-        width: 100%;
-    }
-    .sched-dt-btn {
+    /* ONE SINGLE BUTTON for date/time */
+    .date-time-picker-btn {
         width: 100%;
         display: flex;
         align-items: center;
@@ -844,9 +841,9 @@
         transition: background 0.2s;
         text-align: center;
     }
-    .sched-dt-btn:hover { background: rgba(255,255,255,0.2); }
-    .sched-dt-btn i { font-size: 20px; flex-shrink: 0; }
-    .sched-dt-btn.selected { background: rgba(255,255,255,0.22); }
+    .date-time-picker-btn:hover { background: rgba(255,255,255,0.2); }
+    .date-time-picker-btn i { font-size: 20px; flex-shrink: 0; }
+    .date-time-picker-btn.selected { background: rgba(255,255,255,0.22); }
     /* Flow inputs inside widget */
     .sched-flow-inputs {
         display: flex;
@@ -1192,19 +1189,17 @@
         <p class="sched-sub">Plan ahead. Pick your time, assign your favourite tasker, and let taskmart handle the rest.</p>
 
 
-    <!-- Smart scheduling widget - single button only -->
+    <!-- Smart scheduling widget - ONE SINGLE BUTTON -->
     <div class="sched-widget">
         <div class="sched-widget-header">
             <span class="sched-widget-heading">Schedule a task</span>
         </div>
 
-        <!-- ONE SINGLE BUTTON for date & time with Flatpickr -->
-        <div class="sched-datetime-row">
-            <button class="sched-dt-btn" id="flatpickrTriggerBtn">
-                <i class="ph-bold ph-calendar-dots"></i>
-                <span id="schedDtLabel">Choose date & time</span>
-            </button>
-        </div>
+        <!-- ONE BUTTON: date & time picker -->
+        <button class="date-time-picker-btn" id="flatpickrTriggerBtn">
+            <i class="ph-bold ph-calendar-dots"></i>
+            <span id="selectedDateTimeDisplay">Choose date & time</span>
+        </button>
 
         <!-- Task + Helper section (unchanged) -->
         <div class="sched-flow-inputs">
@@ -1338,7 +1333,6 @@
 <!-- Firebase SDK -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
@@ -1588,9 +1582,9 @@
         });
     }
 
-    // ========= FLATPICKR DATE & TIME CHOOSER - SINGLE BUTTON =========
+    // ========= FLATPICKR - ONE SINGLE BUTTON =========
     const flatpickrBtn = document.getElementById('flatpickrTriggerBtn');
-    const schedDtLabel = document.getElementById('schedDtLabel');
+    const dateTimeDisplay = document.getElementById('selectedDateTimeDisplay');
     
     if (flatpickrBtn) {
         flatpickr(flatpickrBtn, {
@@ -1602,7 +1596,7 @@
                     const d = selectedDates[0];
                     const formattedDate = d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
                     const formattedTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    schedDtLabel.innerHTML = `${formattedDate} at ${formattedTime}`;
+                    dateTimeDisplay.innerHTML = `${formattedDate} at ${formattedTime}`;
                     flatpickrBtn.classList.add('selected');
                     // Flicker effect
                     flatpickrBtn.style.transition = 'background 0.1s';
@@ -1626,150 +1620,95 @@
         _firebaseUser = user;
     });
     
-    // Mock contacts for fallback
     const mockContacts = [
         { name: 'Alex Johnson', tel: '+27 12 345 6789' },
         { name: 'Busi Mkhize', tel: '+27 82 123 4567' },
         { name: 'Charlie Brown', tel: '+27 71 987 6543' },
-        { name: 'Dineo Moloi', tel: '+27 73 555 1212' },
-        { name: 'Ethan Williams', tel: '+27 84 222 3344' },
-        { name: 'Faith Ndlovu', tel: '+27 76 888 9900' }
+        { name: 'Dineo Moloi', tel: '+27 73 555 1212' }
     ];
     
     function renderContactList(filter = '') {
-        const filtered = mockContacts.filter(c => 
-            c.name.toLowerCase().includes(filter.toLowerCase()) || 
-            c.tel.includes(filter)
-        );
+        const filtered = mockContacts.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || c.tel.includes(filter));
         contactListDiv.innerHTML = filtered.map(c => `
             <div class="contact-item" data-name="${c.name}" data-tel="${c.tel}">
                 <div class="contact-avatar">${c.name.charAt(0)}</div>
-                <div class="contact-info">
-                    <div class="contact-name">${c.name}</div>
-                    <div class="contact-detail">${c.tel}</div>
-                </div>
+                <div class="contact-info"><div class="contact-name">${c.name}</div><div class="contact-detail">${c.tel}</div></div>
             </div>
         `).join('');
-        
         document.querySelectorAll('.contact-item').forEach(el => {
             el.addEventListener('click', () => {
-                const name = el.dataset.name;
-                helperValueSpan.innerText = name;
+                helperValueSpan.innerText = el.dataset.name;
                 contactOverlay.classList.remove('active');
             });
         });
     }
     
-    function openFallbackContactSheet() {
-        renderContactList('');
-        contactOverlay.classList.add('active');
-    }
-    
-    function closeContactSheet() {
-        contactOverlay.classList.remove('active');
-    }
+    function openFallbackContactSheet() { renderContactList(''); contactOverlay.classList.add('active'); }
+    function closeContactSheet() { contactOverlay.classList.remove('active'); }
     
     if (schedAssignBtn) {
         schedAssignBtn.addEventListener('click', () => {
-            if (!_firebaseUser) {
-                window.location.href = 'login.html';
-                return;
-            }
-            
+            if (!_firebaseUser) { window.location.href = 'login.html'; return; }
             if ('contacts' in navigator && 'ContactsManager' in window) {
-                const props = ['name', 'tel'];
-                const opts = { multiple: false };
-                navigator.contacts.select(props, opts)
+                navigator.contacts.select(['name', 'tel'], { multiple: false })
                     .then(contacts => {
                         if (contacts && contacts.length) {
-                            const contactName = contacts[0].name ? contacts[0].name[0] : 'Selected contact';
-                            helperValueSpan.innerText = contactName;
-                            schedAssignBtn.style.transition = 'background 0.1s';
-                            schedAssignBtn.style.background = 'rgba(255,255,255,0.4)';
-                            setTimeout(() => { schedAssignBtn.style.background = ''; }, 150);
-                        } else {
-                            openFallbackContactSheet();
-                        }
+                            helperValueSpan.innerText = contacts[0].name ? contacts[0].name[0] : 'Contact';
+                        } else { openFallbackContactSheet(); }
                     })
-                    .catch(err => {
-                        console.error(err);
-                        openFallbackContactSheet();
-                    });
-            } else {
-                openFallbackContactSheet();
-            }
+                    .catch(() => openFallbackContactSheet());
+            } else { openFallbackContactSheet(); }
         });
     }
     
     if (contactSheetClose) contactSheetClose.addEventListener('click', closeContactSheet);
-    if (contactOverlay) {
-        contactOverlay.addEventListener('click', (e) => {
-            if (e.target === contactOverlay) closeContactSheet();
-        });
-    }
-    if (contactSearch) {
-        contactSearch.addEventListener('input', (e) => renderContactList(e.target.value));
-    }
+    if (contactOverlay) contactOverlay.addEventListener('click', e => { if (e.target === contactOverlay) closeContactSheet(); });
+    if (contactSearch) contactSearch.addEventListener('input', e => renderContactList(e.target.value));
 
     // ========= COLLAPSIBLE ABOUT =========
-    const aboutToggle   = document.getElementById('aboutToggle');
+    const aboutToggle = document.getElementById('aboutToggle');
     const aboutSubLinks = document.getElementById('aboutSubLinks');
-    const aboutCaret    = document.getElementById('aboutCaret');
-
+    const aboutCaret = document.getElementById('aboutCaret');
     if (aboutToggle && aboutSubLinks && aboutCaret) {
-        function toggleAbout() {
-            const isOpen = aboutSubLinks.classList.contains('open');
-            aboutSubLinks.classList.toggle('open', !isOpen);
-            aboutCaret.classList.toggle('open', !isOpen);
-            aboutToggle.setAttribute('aria-expanded', String(!isOpen));
-        }
-        aboutToggle.addEventListener('click', toggleAbout);
-        aboutToggle.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAbout(); } });
+        aboutToggle.addEventListener('click', () => {
+            aboutSubLinks.classList.toggle('open');
+            aboutCaret.classList.toggle('open');
+        });
     }
 
     // ========= MODAL A =========
-    const modalA           = document.getElementById('waitlistModal');
-    const closeA           = document.getElementById('closeModalBtn');
-    const formA            = document.getElementById('formA');
-    const successA         = document.getElementById('modalASuccess');
-    const formContainerA   = document.getElementById('modalAForm');
-    const closeSuccessA    = document.getElementById('closeSuccessA');
+    const modalA = document.getElementById('waitlistModal');
+    const closeA = document.getElementById('closeModalBtn');
+    const formA = document.getElementById('formA');
+    const successA = document.getElementById('modalASuccess');
+    const formContainerA = document.getElementById('modalAForm');
     const closeSuccessBtnA = document.getElementById('closeSuccessBtnA');
-
     function resetModalA() { if (formContainerA) formContainerA.style.display = 'block'; if (successA) successA.classList.remove('active'); }
-    if (closeA)           closeA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
-    if (closeSuccessA)    closeSuccessA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
+    if (closeA) closeA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
     if (closeSuccessBtnA) closeSuccessBtnA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
     if (formA) formA.addEventListener('submit', e => { e.preventDefault(); if (formContainerA) formContainerA.style.display = 'none'; if (successA) successA.classList.add('active'); });
     if (modalA) modalA.addEventListener('click', e => { if (e.target === modalA) { modalA.classList.remove('active'); resetModalA(); } });
 
     // ========= MODAL B =========
-    const modalB           = document.getElementById('areaModal');
-    const closeB           = document.getElementById('closeAreaModalBtn');
-    const formB            = document.getElementById('formB');
-    const successB         = document.getElementById('modalBSuccess');
-    const formContainerB   = document.getElementById('modalBForm');
-    const closeSuccessB    = document.getElementById('closeSuccessB');
+    const modalB = document.getElementById('areaModal');
+    const closeB = document.getElementById('closeAreaModalBtn');
+    const formB = document.getElementById('formB');
+    const successB = document.getElementById('modalBSuccess');
+    const formContainerB = document.getElementById('modalBForm');
     const closeSuccessBtnB = document.getElementById('closeSuccessBtnB');
-
     function resetModalB() { if (formContainerB) formContainerB.style.display = 'block'; if (successB) successB.classList.remove('active'); }
-    if (closeB)           closeB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
-    if (closeSuccessB)    closeSuccessB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
+    if (closeB) closeB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
     if (closeSuccessBtnB) closeSuccessBtnB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
     if (formB) formB.addEventListener('submit', e => { e.preventDefault(); if (formContainerB) formContainerB.style.display = 'none'; if (successB) successB.classList.add('active'); });
     if (modalB) modalB.addEventListener('click', e => { if (e.target === modalB) { modalB.classList.remove('active'); resetModalB(); } });
 
-    // Schedule submit button
+    // Schedule submit
     const schedSubmitBtn = document.getElementById('schedSubmitBtn');
     if (schedSubmitBtn) {
         schedSubmitBtn.addEventListener('click', () => {
-            const taskValue = document.getElementById('schedTaskInput')?.value.trim();
-            const helperValue = helperValueSpan?.innerText;
-            const dateTimeValue = schedDtLabel?.innerText;
-            alert(`Task scheduled!\n\nWhen: ${dateTimeValue !== 'Choose date & time' ? dateTimeValue : 'Not set'}\nHelper: ${helperValue !== 'No helper assigned yet' ? helperValue : 'None'}\nTask: ${taskValue || 'Not specified'}`);
+            alert('Task scheduled! (demo)');
         });
     }
-
 })();
 </script>
 
