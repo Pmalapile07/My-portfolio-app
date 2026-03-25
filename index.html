@@ -812,8 +812,8 @@
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
-        padding-top: 0.6rem;
-        padding-bottom: 0.4rem;
+        padding-top: 0.8rem;
+        padding-bottom: 0.6rem;
     }
     .sched-widget-heading {
         font-family: 'Manrope', sans-serif;
@@ -1093,7 +1093,7 @@
     .schedcal-event-pill {
         position: absolute; left: 0; top: 50%;
         transform: translateY(-50%);
-        background: #374E88;
+        background: #7c3aed;
         border-radius: 8px;
         padding: 0.3rem 0.75rem;
         display: flex; align-items: center; gap: 0.4rem;
@@ -1107,12 +1107,28 @@
         font-family: 'Manrope', sans-serif;
         font-weight: 600; font-size: 0.8rem; color: #fff;
     }
+    /* Current hour indicator */
+    .schedcal-time-slot.current-hour .schedcal-time-label {
+        color: #ef4444 !important;
+        font-weight: 700 !important;
+    }
+    .schedcal-current-badge {
+        background: #ef4444;
+        color: #fff;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 700; font-size: 0.72rem;
+        border-radius: 20px;
+        padding: 0.18rem 0.6rem;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
     .schedcal-time-slot.selected .schedcal-time-label { color: #374E88; font-weight: 700; }
 
     /* ========= WIDGET TASK SUGGESTIONS ========= */
     .sched-task-suggestions {
         position: absolute;
-        bottom: calc(100% + 4px);
+        top: calc(100% + 4px);
+        bottom: auto;
         left: 0; width: 100%;
         background: #2a3d6e;
         border: 1px solid rgba(255,255,255,0.15);
@@ -1476,6 +1492,30 @@
         font-size: 22px; cursor: pointer; color: #000; line-height: 1;
     }
 
+    /* ========= GET THINGS DONE SECTION ========= */
+    .gtd-section {
+        width: 100%;
+        max-width: 478px;
+        margin-top: 3.5rem;
+        padding-bottom: 1rem;
+    }
+    .gtd-heading {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800;
+        font-size: clamp(1.8rem, 5vw, 2.6rem);
+        letter-spacing: -0.02em;
+        color: #000;
+        line-height: 1.15;
+        margin-bottom: 1rem;
+    }
+    .gtd-body {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 400;
+        font-size: 0.95rem;
+        color: rgba(0,0,0,0.55);
+        line-height: 1.7;
+    }
+
     /* ========= RESPONSIVE ========= */
     @media (min-width: 1024px) { .hero h1 { font-size: 4.8rem; } .hamburger { display: none; } }
 
@@ -1590,6 +1630,7 @@
     <a href="howitworks.html" class="how-it-works-link">See how taskmart works</a>
 </div>
 
+
 </section>
 
 <!-- Services section -->
@@ -1629,7 +1670,7 @@
 <section class="cta-section">
     <div class="cta-inner">
         <h2 class="cta-heading">Manage your tasks in one place.</h2>
-        <p class="cta-sub">Post a task, track your tasker on the map, see when they arrive, manage payments, and get support anytime.</p>
+        <p class="cta-sub">Post a task, track your Tasker on the map, see when they arrive, manage payments, and get support anytime.</p>
         <a href="login.html" class="cta-btn">Log in to your account</a>
         <a href="create-account.html" class="cta-link">Create an account</a>
         <div class="cta-phone-wrap">
@@ -1642,7 +1683,7 @@
     <!-- Smart scheduling widget -->
     <div class="sched-widget">
         <div class="sched-widget-header">
-            <span class="sched-widget-heading">Plan ahead with a <br>trusted helper</span>
+            <span class="sched-widget-heading">Plan ahead and<br>assign a trusted tasker</span>
         </div>
 
         <!-- Step 1: Two separate date & time buttons -->
@@ -1709,6 +1750,12 @@
         <div style="margin-top:0.9rem;">
             <a href="terms.html" class="sched-terms-link">See terms</a>
         </div>
+    </div>
+
+    <!-- Get things done section -->
+    <div class="gtd-section">
+        <h2 class="gtd-heading">Get things done,<br>without the hassle.</h2>
+        <p class="gtd-body">We make getting things done fast, easy, and reliable. Schedule tasks in advance, work with verified helpers you can trust, automate payments, and manage everything in one place. Whatever you need done, wherever you are, taskmart keeps it simple and stress-free.</p>
     </div>
 </div>
 
@@ -1832,7 +1879,7 @@
 <div class="nav-overlay" id="navOverlay" aria-hidden="true">
     <div class="nav-container">
         <nav class="nav-links">
-            <a href="#" class="nav-link">Create a task</a>
+            <a href="#" class="nav-link">Request a tasker</a>
             <a href="#" class="nav-link">Become a tasker</a>
             <div class="nav-item-collapsible">
                 <div class="nav-item-collapsible-header" id="aboutToggle" role="button" tabindex="0" aria-expanded="false" aria-controls="aboutSubLinks">
@@ -2118,25 +2165,33 @@
     const schedDateIcon  = document.getElementById('schedDateIcon');
     const schedTimeIcon  = document.getElementById('schedTimeIcon');
 
-    // Shared state
-    let pickedDate = '';
-    let pickedTime = '';
+    let pickedDate = '';  // 'YYYY-MM-DD' local string
+    let pickedTime = '';  // 'HH:MM' 24h string
+
+    // Safe local date string — never use toISOString() (UTC offset bug)
+    function localDateStr(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
 
     function formatDateShort(dateStr) {
         if (!dateStr) return 'Choose date';
-        const d = new Date(dateStr + 'T00:00:00');
-        return d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        return dt.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
     }
     function formatTimeFriendly(timeStr) {
         if (!timeStr) return 'Choose time';
-        const [h, m] = timeStr.split(':');
+        const [h, mi] = timeStr.split(':');
         const hr = parseInt(h);
-        return `${hr % 12 || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
+        return `${hr % 12 || 12}:${mi} ${hr < 12 ? 'AM' : 'PM'}`;
     }
 
-    // Persist to localStorage
     function saveSched() {
-        const task = document.getElementById('schedTaskInput') ? document.getElementById('schedTaskInput').value.trim() : '';
+        const task = document.getElementById('schedTaskInput')
+            ? document.getElementById('schedTaskInput').value.trim() : '';
         localStorage.setItem('tm_sched', JSON.stringify({ date: pickedDate, time: pickedTime, task }));
     }
     function loadSched() {
@@ -2146,13 +2201,13 @@
                 pickedDate = d.date;
                 schedDateLabel.textContent = formatDateShort(d.date);
                 schedDateIcon.className = 'ph-bold ph-calendar-check';
-                schedDateBtn.classList.add('selected');
+                schedDateBtn && schedDateBtn.classList.add('selected');
             }
             if (d.time) {
                 pickedTime = d.time;
                 schedTimeLabel.textContent = formatTimeFriendly(d.time);
                 schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-                schedTimeBtn.classList.add('selected');
+                schedTimeBtn && schedTimeBtn.classList.add('selected');
             }
             if (d.task && document.getElementById('schedTaskInput')) {
                 document.getElementById('schedTaskInput').value = d.task;
@@ -2161,119 +2216,81 @@
     }
     loadSched();
 
-    // ---- FLATPICKR — simple date picker (used by date button) ----
-    const fpDate = flatpickr(document.getElementById('calendarPicker'), {
-        disableMobile: true,
-        minDate: 'today',
-        dateFormat: 'Y-m-d',
-        appendTo: document.body,
-        onReady(_, __, fp) {
-            if (fp.calendarContainer) {
-                fp.calendarContainer.style.zIndex = '9999';
-                // Center horizontally
-                fp.calendarContainer.style.left = '50%';
-                fp.calendarContainer.style.transform = 'translateX(-50%)';
-                fp.calendarContainer.style.position = 'fixed';
-            }
-        },
-        onChange(selectedDates, dateStr) {
-            if (!dateStr) return;
-            pickedDate = dateStr;
-            schedDateLabel.textContent = formatDateShort(dateStr);
-            schedDateIcon.className = 'ph-bold ph-calendar-check';
-            schedDateBtn.classList.add('selected');
-            saveSched();
-            fpDate.close();
-        }
-    });
-
-    // ---- FLATPICKR — time picker ----
-    const fpTime = flatpickr(document.getElementById('timePicker'), {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: 'H:i',
-        time_24hr: false,
-        disableMobile: true,
-        animate: true,
-        appendTo: document.body,
-        onReady(_, __, fp) {
-            if (fp.calendarContainer) {
-                fp.calendarContainer.style.zIndex = '9999';
-                fp.calendarContainer.style.left = '50%';
-                fp.calendarContainer.style.transform = 'translateX(-50%)';
-                fp.calendarContainer.style.position = 'fixed';
-            }
-        },
-        onChange(selectedDates, timeStr) {
-            if (!timeStr) return;
-            pickedTime = timeStr;
-            schedTimeLabel.textContent = formatTimeFriendly(timeStr);
-            schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-            schedTimeBtn.classList.add('selected');
-            saveSched();
-            setTimeout(() => fpTime.close(), 300);
-        }
-    });
-
-    if (schedDateBtn) schedDateBtn.addEventListener('click', () => fpDate.open());
-    if (schedTimeBtn) schedTimeBtn.addEventListener('click', () => fpTime.open());
-
     // ======== FULL-SCREEN SCHEDULE CALENDAR ========
-    const schedCalOverlay  = document.getElementById('schedCalOverlay');
-    const schedCalClose    = document.getElementById('schedCalClose');
-    const schedCalTitle    = document.getElementById('schedCalTitle');
-    const schedCalPhase1   = document.getElementById('schedCalPhase1');
-    const schedCalPhase2   = document.getElementById('schedCalPhase2');
-    const schedCalWeekStrip= document.getElementById('schedCalWeekStrip');
-    const schedCalTodayLbl = document.getElementById('schedCalTodayLabel');
-    const schedCalTimelist = document.getElementById('schedCalTimelist');
-    const schedCalFpMount  = document.getElementById('schedCalFpMount');
+    const schedCalOverlay   = document.getElementById('schedCalOverlay');
+    const schedCalClose     = document.getElementById('schedCalClose');
+    const schedCalTitle     = document.getElementById('schedCalTitle');
+    const schedCalPhase1    = document.getElementById('schedCalPhase1');
+    const schedCalPhase2    = document.getElementById('schedCalPhase2');
+    const schedCalWeekStrip = document.getElementById('schedCalWeekStrip');
+    const schedCalTodayLbl  = document.getElementById('schedCalTodayLabel');
+    const schedCalTimelist  = document.getElementById('schedCalTimelist');
+    const schedCalFpMount   = document.getElementById('schedCalFpMount');
 
-    let schedCalFp = null;     // Flatpickr inside the overlay
-    let calPhase   = 1;        // 1 = full calendar, 2 = week + time list
-    let calViewDate= '';       // currently selected date in overlay
+    let schedCalFp  = null;
+    let calViewDate = '';
 
-    function openSchedCal() {
+    function openSchedCal(startAtPhase2) {
         schedCalOverlay.classList.add('active');
         schedCalOverlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
-        calPhase = 1;
+
+        if (startAtPhase2 && pickedDate) {
+            // Time button clicked — skip to phase 2 on the already-picked date
+            calViewDate = pickedDate;
+            schedCalPhase1.style.display = 'none';
+            schedCalPhase2.style.display = 'flex';
+            const [y, m, d] = pickedDate.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            schedCalTitle.textContent = dt.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
+            buildWeekStrip(pickedDate);
+            buildTimeList(pickedDate);
+            return;
+        }
+
+        // Phase 1 — show full calendar
         schedCalPhase1.style.display = 'flex';
         schedCalPhase2.style.display = 'none';
         schedCalTitle.textContent = 'Select a date';
 
         if (!schedCalFp) {
-            // Build Flatpickr inside the overlay mount point
             const input = document.createElement('input');
-            input.type = 'text';
-            input.style.display = 'none';
+            input.type = 'text'; input.style.display = 'none';
             schedCalFpMount.appendChild(input);
+
+            const currentYear = new Date().getFullYear();
 
             schedCalFp = flatpickr(input, {
                 inline: true,
                 disableMobile: true,
                 minDate: 'today',
+                maxDate: new Date(currentYear, 11, 31), // lock to current year
                 dateFormat: 'Y-m-d',
                 defaultDate: pickedDate || undefined,
+                // Hide year navigation arrows via onReady
+                onReady(_, __, fp) {
+                    // Remove year input so user can't type a year
+                    const yearInput = fp.calendarContainer.querySelector('.numInputWrapper');
+                    if (yearInput) yearInput.style.pointerEvents = 'none';
+                    const navYear = fp.calendarContainer.querySelector('.cur-year');
+                    if (navYear) { navYear.readOnly = true; navYear.style.pointerEvents = 'none'; }
+                },
                 onDayCreate(dObj, dStr, fp, dayElem) {
-                    // Add marker dot on the saved date
-                    const dayDateStr = dayElem.dateObj
-                        ? dayElem.dateObj.toISOString().slice(0,10)
-                        : '';
-                    if (pickedDate && dayDateStr === pickedDate) {
+                    // Purple dot marker on picked date
+                    const ds = localDateStr(dayElem.dateObj);
+                    if (pickedDate && ds === pickedDate) {
                         dayElem.classList.add('has-sched-event');
                     }
                 },
                 onChange(selectedDates, dateStr) {
                     if (!dateStr) return;
                     calViewDate = dateStr;
-                    // Transition to phase 2
-                    setTimeout(() => showPhase2(dateStr), 100);
+                    setTimeout(() => showPhase2(dateStr), 120);
                 }
             });
         } else {
-            // Refresh day dots
             schedCalFp.redraw();
+            if (pickedDate) schedCalFp.setDate(pickedDate, false);
         }
     }
 
@@ -2284,51 +2301,41 @@
     }
 
     if (schedCalClose) schedCalClose.addEventListener('click', closeSchedCal);
-    schedCalOverlay && schedCalOverlay.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeSchedCal();
-    });
+    if (schedCalOverlay) schedCalOverlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeSchedCal(); });
 
     function showPhase2(dateStr) {
-        calPhase = 2;
         schedCalPhase1.style.display = 'none';
         schedCalPhase2.style.display = 'flex';
-
-        const d = new Date(dateStr + 'T00:00:00');
-        schedCalTitle.textContent = d.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-
-        // Build week strip — last 7 days including selected
-        buildWeekStrip(d);
-
-        // Today label
+        calViewDate = dateStr;
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        schedCalTitle.textContent = dt.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
+        buildWeekStrip(dateStr);
         const today = new Date();
-        const isToday = d.toDateString() === today.toDateString();
+        const isToday = localDateStr(today) === dateStr;
         schedCalTodayLbl.textContent = isToday
             ? 'Today · ' + today.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' })
-            : d.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-
-        // Build time list 6am–midnight
+            : dt.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
         buildTimeList(dateStr);
     }
 
-    function buildWeekStrip(selectedDate) {
+    function buildWeekStrip(selectedDateStr) {
         schedCalWeekStrip.innerHTML = '';
-        // Show 7 days starting from 3 days before selected date
+        const [sy, sm, sd] = selectedDateStr.split('-').map(Number);
+        const selBase = new Date(sy, sm - 1, sd);
         for (let i = -3; i <= 3; i++) {
-            const d = new Date(selectedDate);
-            d.setDate(d.getDate() + i);
-            const dateStr = d.toISOString().slice(0,10);
+            const d = new Date(sy, sm - 1, sd + i);
+            const ds = localDateStr(d);
             const dayEl = document.createElement('div');
             dayEl.className = 'schedcal-week-day' + (i === 0 ? ' active' : '');
-            dayEl.innerHTML = `
-                <span class="schedcal-wd-name">${d.toLocaleDateString('en-ZA',{weekday:'short'}).slice(0,3)}</span>
-                <span class="schedcal-wd-num">${d.getDate()}</span>`;
+            dayEl.innerHTML = `<span class="schedcal-wd-name">${d.toLocaleDateString('en-ZA',{weekday:'short'}).slice(0,3)}</span><span class="schedcal-wd-num">${d.getDate()}</span>`;
             dayEl.addEventListener('click', () => {
-                calViewDate = dateStr;
+                calViewDate = ds;
                 document.querySelectorAll('.schedcal-week-day').forEach(el => el.classList.remove('active'));
                 dayEl.classList.add('active');
-                const nd = new Date(dateStr + 'T00:00:00');
+                const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                 schedCalTitle.textContent = nd.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-                buildTimeList(dateStr);
+                buildTimeList(ds);
             });
             schedCalWeekStrip.appendChild(dayEl);
         }
@@ -2336,55 +2343,58 @@
 
     function buildTimeList(dateStr) {
         schedCalTimelist.innerHTML = '';
-        const savedTask  = document.getElementById('schedTaskInput')
-            ? document.getElementById('schedTaskInput').value.trim() : '';
-        const savedTime  = (dateStr === pickedDate) ? pickedTime : '';
+        const savedTask = (document.getElementById('schedTaskInput') || {}).value?.trim() || '';
+        const savedTime = (dateStr === pickedDate) ? pickedTime : '';
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMin  = now.getMinutes();
+        const isToday = localDateStr(now) === dateStr;
 
-        // 6am to 23:30 in 30-min slots
-        for (let h = 6; h < 24; h++) {
-            for (let half = 0; half < 2; half++) {
-                const m      = half === 0 ? '00' : '30';
-                const timeStr= `${String(h).padStart(2,'0')}:${m}`;
-                const hr12   = h % 12 || 12;
-                const ampm   = h < 12 ? 'AM' : 'PM';
-                const label  = `${hr12}:${m} ${ampm}`;
-                const isBooked = savedTime === timeStr;
+        // 7am to 22:00 (10 PM) in 30-min slots
+        for (let h = 7; h <= 22; h++) {
+            const halfCount = h === 22 ? 1 : 2; // stop at 10:00 PM, no 10:30
+            for (let half = 0; half < halfCount; half++) {
+                const m       = half === 0 ? '00' : '30';
+                const timeStr = `${String(h).padStart(2,'0')}:${m}`;
+                const hr12    = h % 12 || 12;
+                const ampm    = h < 12 ? 'AM' : 'PM';
+                const label   = `${hr12}:${m} ${ampm}`;
+                const isBooked  = savedTime === timeStr;
+                // Current hour: exact hour match on today
+                const isCurrent = isToday && h === currentHour && half === 0;
 
                 const slot = document.createElement('div');
-                slot.className = 'schedcal-time-slot' + (isBooked ? ' selected' : '');
+                slot.className = 'schedcal-time-slot'
+                    + (isBooked   ? ' selected'     : '')
+                    + (isCurrent  ? ' current-hour' : '');
+
                 slot.innerHTML = `
                     <span class="schedcal-time-label">${label}</span>
-                    <div class="schedcal-time-line">
+                    ${isCurrent ? `<span class="schedcal-current-badge">Now</span>` : ''}
+                    <div class="schedcal-time-line" style="flex:1;">
                         ${isBooked && savedTask ? `<div class="schedcal-event-pill"><div class="schedcal-event-dot"></div><span class="schedcal-event-text">${savedTask}</span></div>` : ''}
                     </div>`;
+
                 slot.addEventListener('click', () => {
+                    // Update time
                     pickedTime = timeStr;
                     schedTimeLabel.textContent = formatTimeFriendly(timeStr);
                     schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-                    schedTimeBtn.classList.add('selected');
-                    saveSched();
+                    schedTimeBtn && schedTimeBtn.classList.add('selected');
 
-                    // Update selected state in list
-                    document.querySelectorAll('.schedcal-time-slot').forEach(s => {
-                        s.classList.remove('selected');
-                        s.querySelector('.schedcal-time-line').innerHTML = '';
-                    });
-                    slot.classList.add('selected');
-                    if (savedTask) {
-                        slot.querySelector('.schedcal-time-line').innerHTML = `<div class="schedcal-event-pill"><div class="schedcal-event-dot"></div><span class="schedcal-event-text">${savedTask}</span></div>`;
-                    }
-
-                    // Also update date
+                    // Update date from whichever day is being viewed
                     pickedDate = calViewDate;
                     schedDateLabel.textContent = formatDateShort(calViewDate);
                     schedDateIcon.className = 'ph-bold ph-calendar-check';
-                    schedDateBtn.classList.add('selected');
+                    schedDateBtn && schedDateBtn.classList.add('selected');
+
                     saveSched();
 
-                    setTimeout(() => closeSchedCal(), 350);
+                    // Refresh list to show pill
+                    buildTimeList(calViewDate);
+                    setTimeout(() => closeSchedCal(), 380);
                 });
 
-                // Scroll to selected time
                 if (isBooked) {
                     setTimeout(() => slot.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
                 }
@@ -2393,21 +2403,25 @@
         }
     }
 
-    // Open full-screen calendar when date button is clicked (if date already picked — show phase 2; else phase 1)
+    // Date button → open full-screen calendar at phase 1
     if (schedDateBtn) {
         schedDateBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            // If already have a date, go straight to the calendar view
-            openSchedCal();
+            openSchedCal(false);
         });
     }
-    // Override: don't use fpDate for opening — we use schedCal instead
-    // The fpDate is kept as a fallback but we intercept the button click above
+    // Time button → open full-screen calendar at phase 2 (or phase 1 if no date yet)
+    if (schedTimeBtn) {
+        schedTimeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openSchedCal(!!pickedDate); // go to phase 2 only if date already picked
+        });
+    }
 
     // ======== WIDGET TASK SUGGESTIONS ========
-    const schedTaskInput     = document.getElementById('schedTaskInput');
-    const schedTaskSuggBox   = document.getElementById('schedTaskSuggestions');
-    let schedSuggHighlight   = -1;
+    const schedTaskInput   = document.getElementById('schedTaskInput');
+    const schedTaskSuggBox = document.getElementById('schedTaskSuggestions');
+    let schedSuggHighlight = -1;
 
     function renderSchedSuggestions(matches, query) {
         if (!schedTaskSuggBox) return;
@@ -2417,13 +2431,10 @@
         matches.slice(0, 6).forEach(match => {
             const item = document.createElement('div');
             item.className = 'sched-suggestion-item';
-            // Highlight matching part
             const idx = match.toLowerCase().indexOf(query.toLowerCase());
-            if (idx >= 0) {
-                item.innerHTML = match.slice(0, idx) + '<mark>' + match.slice(idx, idx + query.length) + '</mark>' + match.slice(idx + query.length);
-            } else {
-                item.textContent = match;
-            }
+            item.innerHTML = idx >= 0
+                ? match.slice(0,idx) + '<mark>' + match.slice(idx, idx+query.length) + '</mark>' + match.slice(idx+query.length)
+                : match;
             item.addEventListener('mousedown', e => {
                 e.preventDefault();
                 schedTaskInput.value = match;
@@ -2446,14 +2457,11 @@
             if (!schedTaskSuggBox) return;
             const items = schedTaskSuggBox.querySelectorAll('.sched-suggestion-item');
             if (!schedTaskSuggBox.classList.contains('visible') || !items.length) return;
-            if (e.key === 'ArrowDown') { e.preventDefault(); schedSuggHighlight = Math.min(schedSuggHighlight + 1, items.length - 1); }
-            else if (e.key === 'ArrowUp') { e.preventDefault(); schedSuggHighlight = Math.max(schedSuggHighlight - 1, 0); }
+            if (e.key === 'ArrowDown') { e.preventDefault(); schedSuggHighlight = Math.min(schedSuggHighlight+1, items.length-1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); schedSuggHighlight = Math.max(schedSuggHighlight-1, 0); }
             else if (e.key === 'Enter' && schedSuggHighlight >= 0) {
-                e.preventDefault();
-                schedTaskInput.value = items[schedSuggHighlight].textContent;
-                schedTaskSuggBox.classList.remove('visible');
-                saveSched();
-                return;
+                e.preventDefault(); schedTaskInput.value = items[schedSuggHighlight].textContent;
+                schedTaskSuggBox.classList.remove('visible'); saveSched(); return;
             } else if (e.key === 'Escape') { schedTaskSuggBox.classList.remove('visible'); return; }
             else return;
             items.forEach((el, i) => el.classList.toggle('highlighted', i === schedSuggHighlight));
