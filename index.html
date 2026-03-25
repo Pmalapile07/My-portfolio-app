@@ -1439,12 +1439,10 @@
                 <button class="sched-dt-btn" id="schedDateBtn">
                     <i class="ph-bold ph-calendar-blank" id="schedDateIcon"></i>
                     <span id="schedDateLabel">Choose date</span>
-                    <input type="date" id="calendarPicker" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 </button>
                 <button class="sched-dt-btn" id="schedTimeBtn">
                     <i class="ph-bold ph-clock" id="schedTimeIcon"></i>
                     <span id="schedTimeLabel">Choose time</span>
-                    <input type="time" id="timePicker" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 </button>
             </div>
             <!-- Combined button shown once both date and time are picked -->
@@ -1964,20 +1962,57 @@
     }
     loadLast();
 
-    const fpTime = flatpickr(document.getElementById('timePicker'), {
-        enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: false,
-        disableMobile: true, animate: true, appendTo: document.body,
-        minTime: '07:00', maxTime: '22:00',
-        onReady(_, __, fp) {
-            if (fp.calendarContainer) {
-                fp.calendarContainer.style.zIndex = '9999';
-                fp.calendarContainer.style.left = '50%';
-                fp.calendarContainer.style.transform = 'translateX(-50%)';
-                fp.calendarContainer.style.position = 'fixed';
-                fp.calendarContainer.style.top = '40%';
+    // Create separate date and time flatpickr instances
+    let datePickerInstance = null;
+    let timePickerInstance = null;
+    
+    // Create hidden input for date picker
+    const hiddenDateInput = document.createElement('input');
+    hiddenDateInput.type = 'text';
+    hiddenDateInput.style.position = 'absolute';
+    hiddenDateInput.style.opacity = '0';
+    hiddenDateInput.style.pointerEvents = 'none';
+    hiddenDateInput.style.width = '0';
+    hiddenDateInput.style.height = '0';
+    document.body.appendChild(hiddenDateInput);
+    
+    // Create hidden input for time picker
+    const hiddenTimeInput = document.createElement('input');
+    hiddenTimeInput.type = 'text';
+    hiddenTimeInput.style.position = 'absolute';
+    hiddenTimeInput.style.opacity = '0';
+    hiddenTimeInput.style.pointerEvents = 'none';
+    hiddenTimeInput.style.width = '0';
+    hiddenTimeInput.style.height = '0';
+    document.body.appendChild(hiddenTimeInput);
+    
+    // Initialize date picker
+    datePickerInstance = flatpickr(hiddenDateInput, {
+        dateFormat: 'Y-m-d',
+        minDate: 'today',
+        onChange: function(selectedDates, dateStr) {
+            if (!dateStr) return;
+            pickedDate = dateStr;
+            if (schedDateLabel && schedDateIcon && schedDateBtn) {
+                schedDateLabel.textContent = formatDateShort(dateStr);
+                schedDateIcon.className = 'ph-bold ph-calendar-check';
+                schedDateBtn.classList.add('selected');
             }
-        },
-        onChange(_, timeStr) {
+            const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
+            if (pickedTime) saveEvent(pickedDate, pickedTime, task);
+            updateDtButtons();
+        }
+    });
+    
+    // Initialize time picker
+    timePickerInstance = flatpickr(hiddenTimeInput, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i',
+        time_24hr: false,
+        minTime: '07:00',
+        maxTime: '22:00',
+        onChange: function(selectedDates, timeStr) {
             if (!timeStr) return;
             pickedTime = timeStr;
             if (schedTimeLabel && schedTimeIcon && schedTimeBtn) {
@@ -1988,11 +2023,22 @@
             const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
             if (pickedDate) saveEvent(pickedDate, pickedTime, task);
             updateDtButtons();
-            setTimeout(() => fpTime.close(), 300);
         }
     });
 
-    if (schedTimeBtn) schedTimeBtn.addEventListener('click', e => { e.stopPropagation(); fpTime.open(); });
+    if (schedDateBtn) {
+        schedDateBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            datePickerInstance.open();
+        });
+    }
+    
+    if (schedTimeBtn) {
+        schedTimeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            timePickerInstance.open();
+        });
+    }
 
     // ======== FULL-SCREEN CALENDAR ========
     const schedCalOverlayEl = document.getElementById('schedCalOverlay');
