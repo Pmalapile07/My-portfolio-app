@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1368,9 +1367,7 @@
     </div>
 
     <div class="find-taskers-row">
-        <!-- Fix #7: button with validation instead of bare anchor -->
         <button class="find-taskers-btn" id="findTaskersBtn">Find taskers</button>
-        <!-- Fix #1/#2: taskers result element now exists in DOM -->
         <div class="taskers-result" id="taskersResult">
             <span class="taskers-result-text" id="taskersResultText"></span>
             <span class="taskers-result-sub">available near you</span>
@@ -1467,7 +1464,6 @@
                         <span class="sched-flow-label">Assign helper</span>
                         <span class="sched-flow-value" id="schedHelperValue">No helper assigned yet</span>
                     </div>
-                    <!-- Fix #12: assign button now has event listener (handled in JS) -->
                     <button class="sched-assign-btn" id="schedAssignBtn">Assign</button>
                 </div>
                 <!-- Connector -->
@@ -1482,7 +1478,7 @@
         </div>
 
         <!-- CTA button -->
-        <button class="sched-submit-btn" id="schedSubmitBtn" onclick="window.location.href='task-planner.html'">Next</button>
+        <button class="sched-submit-btn" id="schedSubmitBtn">Next</button>
     </div>
 
     <!-- Features list card -->
@@ -1656,10 +1652,13 @@
 <!-- Firebase SDK -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
+(function() {
+    'use strict';
+
     const firebaseConfig = {
         apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
         authDomain: "taskmartapp-74d6b.firebaseapp.com",
@@ -1671,13 +1670,6 @@
         measurementId: "G-Z8SPLR0HSL"
     };
     firebase.initializeApp(firebaseConfig);
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<script>
-(function() {
-    'use strict';
 
     let currentCoordinates = '', currentLocationName = '';
 
@@ -1740,6 +1732,7 @@
     }
 
     function renderSuggestions(matches, query) {
+        if (!suggestionsBox) return;
         suggestionsBox.innerHTML = '';
         highlightedIndex = -1;
         if (!matches.length) { suggestionsBox.classList.remove('visible'); return; }
@@ -1750,7 +1743,7 @@
             item.innerHTML = highlightMatch(match, query);
             item.addEventListener('mousedown', e => {
                 e.preventDefault();
-                taskInput.value = match;
+                if (taskInput) taskInput.value = match;
                 suggestionsBox.classList.remove('visible');
             });
             suggestionsBox.appendChild(item);
@@ -1758,7 +1751,7 @@
         suggestionsBox.classList.add('visible');
     }
 
-    function closeSuggestions() { suggestionsBox.classList.remove('visible'); highlightedIndex = -1; }
+    function closeSuggestions() { if (suggestionsBox) suggestionsBox.classList.remove('visible'); highlightedIndex = -1; }
 
     if (taskInput && suggestionsBox) {
         taskInput.addEventListener('input', function() {
@@ -1820,54 +1813,51 @@
 
     if (locationClearBtn) locationClearBtn.addEventListener('click', e => { e.preventDefault(); clearLocation(); });
 
-    // Fix #4: location detection only fires on user click, not on page load
     if (locationArrowIcon) {
         locationArrowIcon.addEventListener('click', e => {
             e.preventDefault();
-            if (navigator.geolocation) {
+            if (navigator.geolocation && locationInputField) {
                 locationInputField.placeholder = 'Detecting location…';
                 navigator.geolocation.getCurrentPosition(async pos => {
                     currentCoordinates = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
                     const name = await getLocationName(pos.coords.latitude, pos.coords.longitude);
                     setLocationValue(name || 'your location');
                 }, () => {
-                    locationInputField.placeholder = 'Please turn on your location';
+                    if (locationInputField) locationInputField.placeholder = 'Please turn on your location';
                 });
-            } else {
+            } else if (locationInputField) {
                 locationInputField.placeholder = 'Location not supported';
             }
         });
     }
 
-    // ========= FIND TASKERS BUTTON (Fix #7) =========
+    // ========= FIND TASKERS BUTTON =========
     const findTaskersBtn = document.getElementById('findTaskersBtn');
-    if (findTaskersBtn) {
+    if (findTaskersBtn && taskInput) {
         findTaskersBtn.addEventListener('click', function() {
-            const taskVal = taskInput ? taskInput.value.trim() : '';
+            const taskVal = taskInput.value.trim();
             if (!taskVal) {
-                // Shake the task input if empty
-                if (taskInput) {
-                    taskInput.classList.remove('error');
-                    void taskInput.offsetWidth; // reflow to restart animation
-                    taskInput.classList.add('error');
-                    taskInput.addEventListener('animationend', () => taskInput.classList.remove('error'), { once: true });
-                    taskInput.focus();
-                }
+                taskInput.classList.remove('error');
+                void taskInput.offsetWidth;
+                taskInput.classList.add('error');
+                taskInput.addEventListener('animationend', () => taskInput.classList.remove('error'), { once: true });
+                taskInput.focus();
                 return;
             }
-            // Navigate to task planner
             window.location.href = 'task-planner-home.html';
         });
     }
 
     // ========= TASK PLANNER IFRAME =========
     const plannerFrame = document.getElementById('taskPlannerFrame');
-    window.addEventListener('message', e => {
-        if (e.data?.type === 'CLOSE_PLANNER') {
-            plannerFrame.classList.remove('active');
-            document.body.classList.remove('planner-open');
-        }
-    });
+    if (plannerFrame) {
+        window.addEventListener('message', e => {
+            if (e.data?.type === 'CLOSE_PLANNER') {
+                plannerFrame.classList.remove('active');
+                document.body.classList.remove('planner-open');
+            }
+        });
+    }
 
     // ========= MOBILE MENU =========
     const menuCheckbox = document.getElementById('menuCheckbox');
@@ -1902,7 +1892,7 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && navOverlay.classList.contains('active')) closeMenu(); });
     }
 
-    // ========= HEADER SIGNUP BTN (Fix #5: navigates to task-planner.html) =========
+    // ========= HEADER SIGNUP BTN =========
     const headerSignupBtn = document.getElementById('headerSignupBtn');
     if (headerSignupBtn) {
         headerSignupBtn.addEventListener('click', e => {
@@ -1925,7 +1915,6 @@
     let pickedDate = '';
     let pickedTime = '';
 
-    // Safe local date — never use toISOString()
     function localDateStr(d) {
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
@@ -1941,8 +1930,8 @@
         return `${hr%12||12}:${mi} ${hr<12?'AM':'PM'}`;
     }
 
-    // Merge or split the two buttons into/from the combined button
     function updateDtButtons() {
+        if (!schedDtRow || !schedDtCombined || !schedDtCombinedLbl) return;
         if (pickedDate && pickedTime) {
             schedDtRow.style.display = 'none';
             schedDtCombinedLbl.textContent = `${formatDateShort(pickedDate)}  ·  ${formatTimeFriendly(pickedTime)}`;
@@ -1953,32 +1942,28 @@
         }
     }
 
-    // localStorage — stores an array of {date, time, task} events
     function getAllEvents() {
         try { return JSON.parse(localStorage.getItem('tm_sched_events') || '[]'); } catch(e) { return []; }
     }
     function saveEvent(date, time, task) {
         const events = getAllEvents();
-        // Replace existing event for same date+time, or add new
         const idx = events.findIndex(e => e.date === date && e.time === time);
         if (idx >= 0) events[idx].task = task;
         else events.push({ date, time, task });
         localStorage.setItem('tm_sched_events', JSON.stringify(events));
-        // Also keep a simple "last picked" for restoring button state
         localStorage.setItem('tm_sched_last', JSON.stringify({ date, time, task }));
     }
     function loadLast() {
         try {
             const d = JSON.parse(localStorage.getItem('tm_sched_last') || '{}');
-            if (d.date) { pickedDate = d.date; schedDateLabel.textContent = formatDateShort(d.date); schedDateIcon.className = 'ph-bold ph-calendar-check'; }
-            if (d.time) { pickedTime = d.time; schedTimeLabel.textContent = formatTimeFriendly(d.time); schedTimeIcon.className = 'ph-bold ph-clock-countdown'; }
+            if (d.date && schedDateLabel && schedDateIcon) { pickedDate = d.date; schedDateLabel.textContent = formatDateShort(d.date); schedDateIcon.className = 'ph-bold ph-calendar-check'; }
+            if (d.time && schedTimeLabel && schedTimeIcon) { pickedTime = d.time; schedTimeLabel.textContent = formatTimeFriendly(d.time); schedTimeIcon.className = 'ph-bold ph-clock-countdown'; }
             if (d.task && document.getElementById('schedTaskInput')) document.getElementById('schedTaskInput').value = d.task;
             updateDtButtons();
         } catch(e) {}
     }
     loadLast();
 
-    // -------- Flatpickr: time picker (dark clock, opened by time button) --------
     const fpTime = flatpickr(document.getElementById('timePicker'), {
         enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: false,
         disableMobile: true, animate: true, appendTo: document.body,
@@ -1995,9 +1980,11 @@
         onChange(_, timeStr) {
             if (!timeStr) return;
             pickedTime = timeStr;
-            schedTimeLabel.textContent = formatTimeFriendly(timeStr);
-            schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-            schedTimeBtn.classList.add('selected');
+            if (schedTimeLabel && schedTimeIcon && schedTimeBtn) {
+                schedTimeLabel.textContent = formatTimeFriendly(timeStr);
+                schedTimeIcon.className = 'ph-bold ph-clock-countdown';
+                schedTimeBtn.classList.add('selected');
+            }
             const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
             if (pickedDate) saveEvent(pickedDate, pickedTime, task);
             updateDtButtons();
@@ -2005,102 +1992,24 @@
         }
     });
 
-    // Time button click
     if (schedTimeBtn) schedTimeBtn.addEventListener('click', e => { e.stopPropagation(); fpTime.open(); });
 
-    // ======== FULL-SCREEN CALENDAR (opened by date button and combined button) ========
-    const schedCalOverlay   = document.getElementById('schedCalOverlay');
-    const schedCalClose     = document.getElementById('schedCalClose');
-    const schedCalTitle     = document.getElementById('schedCalTitle');
-    const schedCalPhase1    = document.getElementById('schedCalPhase1');
-    const schedCalPhase2    = document.getElementById('schedCalPhase2');
-    const schedCalWeekStrip = document.getElementById('schedCalWeekStrip');
-    const schedCalTodayLbl  = document.getElementById('schedCalTodayLabel');
-    const schedCalTimelist  = document.getElementById('schedCalTimelist');
-    const schedCalFpMount   = document.getElementById('schedCalFpMount');
-    let schedCalFp = null;
+    // ======== FULL-SCREEN CALENDAR ========
+    const schedCalOverlayEl = document.getElementById('schedCalOverlay');
+    const schedCalCloseEl   = document.getElementById('schedCalClose');
+    const schedCalTitleEl   = document.getElementById('schedCalTitle');
+    const schedCalPhase1El  = document.getElementById('schedCalPhase1');
+    const schedCalPhase2El  = document.getElementById('schedCalPhase2');
+    const schedCalWeekStripEl = document.getElementById('schedCalWeekStrip');
+    const schedCalTodayLblEl  = document.getElementById('schedCalTodayLabel');
+    const schedCalTimelistEl  = document.getElementById('schedCalTimelist');
+    const schedCalFpMountEl   = document.getElementById('schedCalFpMount');
+    let schedCalFpObj = null;
     let calViewDate = '';
 
-    function openCalPhase1() {
-        schedCalPhase1.style.display = 'flex';
-        schedCalPhase2.style.display = 'none';
-        schedCalTitle.textContent = 'Select a date';
-        const currentYear = new Date().getFullYear();
-        if (!schedCalFp) {
-            const inp = document.createElement('input');
-            inp.type = 'text'; inp.style.display = 'none';
-            schedCalFpMount.appendChild(inp);
-            schedCalFp = flatpickr(inp, {
-                inline: true, disableMobile: true,
-                minDate: 'today', maxDate: new Date(currentYear,11,31),
-                dateFormat: 'Y-m-d', defaultDate: pickedDate || undefined,
-                onReady(_, __, fp) {
-                    const yr = fp.calendarContainer.querySelector('.cur-year');
-                    if (yr) { yr.readOnly = true; yr.style.pointerEvents = 'none'; }
-                    const nw = fp.calendarContainer.querySelector('.numInputWrapper');
-                    if (nw) nw.style.pointerEvents = 'none';
-                },
-                onDayCreate(_, __, fp, dayElem) {
-                    const ds = localDateStr(dayElem.dateObj);
-                    const events = getAllEvents();
-                    if (events.some(e => e.date === ds)) dayElem.classList.add('has-sched-event');
-                },
-                onChange(_, dateStr) {
-                    if (!dateStr) return;
-                    // Just close — user picks time separately
-                    pickedDate = dateStr;
-                    schedDateLabel.textContent = formatDateShort(dateStr);
-                    schedDateIcon.className = 'ph-bold ph-calendar-check';
-                    schedDateBtn && schedDateBtn.classList.add('selected');
-                    const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
-                    if (pickedTime) saveEvent(pickedDate, pickedTime, task);
-                    updateDtButtons();
-                    setTimeout(() => closeSchedCal(), 200);
-                }
-            });
-        } else {
-            schedCalFp.redraw();
-            if (pickedDate) schedCalFp.setDate(pickedDate, false);
-        }
-    }
-
-    function openCalPhase2() {
-        schedCalPhase1.style.display = 'none';
-        schedCalPhase2.style.display = 'flex';
-        calViewDate = pickedDate || localDateStr(new Date());
-        const [y,m,d] = calViewDate.split('-').map(Number);
-        const dt = new Date(y,m-1,d);
-        schedCalTitle.textContent = dt.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-        buildWeekStrip(calViewDate);
-        const today = new Date();
-        schedCalTodayLbl.textContent = localDateStr(today) === calViewDate
-            ? 'Today · ' + today.toLocaleDateString('en-ZA',{day:'numeric',month:'long'})
-            : dt.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-        buildTimeList(calViewDate);
-    }
-
-    function openSchedCal(phase) {
-        schedCalOverlay.classList.add('active');
-        schedCalOverlay.setAttribute('aria-hidden','false');
-        document.body.style.overflow = 'hidden';
-        if (phase === 2) openCalPhase2();
-        else openCalPhase1();
-    }
-    function closeSchedCal() {
-        schedCalOverlay.classList.remove('active');
-        schedCalOverlay.setAttribute('aria-hidden','true');
-        document.body.style.overflow = '';
-    }
-    if (schedCalClose) schedCalClose.addEventListener('click', closeSchedCal);
-    if (schedCalOverlay) schedCalOverlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeSchedCal(); });
-
-    // Date button → open full-screen calendar phase 1 (pick date only, closes after pick)
-    if (schedDateBtn) schedDateBtn.addEventListener('click', e => { e.stopPropagation(); openSchedCal(1); });
-    // Combined button → open full-screen calendar phase 2 (view booked tasks)
-    if (schedDtCombined) schedDtCombined.addEventListener('click', e => { e.stopPropagation(); openSchedCal(2); });
-
     function buildWeekStrip(selectedDateStr) {
-        schedCalWeekStrip.innerHTML = '';
+        if (!schedCalWeekStripEl) return;
+        schedCalWeekStripEl.innerHTML = '';
         const [sy,sm,sd] = selectedDateStr.split('-').map(Number);
         const todayStr = localDateStr(new Date());
         for (let i = -3; i <= 3; i++) {
@@ -2110,7 +2019,6 @@
             const isActive = i === 0;
             const dayEl = document.createElement('div');
             dayEl.className = 'schedcal-week-day' + (isActive ? ' active' : '') + (isToday ? ' is-today' : '');
-            // Single letter weekday
             const letter = ['S','M','T','W','T','F','S'][d.getDay()];
             dayEl.innerHTML = `<span class="schedcal-wd-name">${letter}</span><div class="schedcal-wd-num-wrap"><span class="schedcal-wd-num">${d.getDate()}</span></div>`;
             dayEl.addEventListener('click', () => {
@@ -2118,23 +2026,25 @@
                 document.querySelectorAll('.schedcal-week-day').forEach(el => el.classList.remove('active'));
                 dayEl.classList.add('active');
                 const nd = new Date(d.getFullYear(),d.getMonth(),d.getDate());
-                schedCalTitle.textContent = nd.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-                schedCalTodayLbl.textContent = localDateStr(new Date()) === ds
-                    ? 'Today · ' + nd.toLocaleDateString('en-ZA',{day:'numeric',month:'long'})
-                    : nd.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
+                if (schedCalTitleEl) schedCalTitleEl.textContent = nd.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
+                if (schedCalTodayLblEl) {
+                    schedCalTodayLblEl.textContent = localDateStr(new Date()) === ds
+                        ? 'Today · ' + nd.toLocaleDateString('en-ZA',{day:'numeric',month:'long'})
+                        : nd.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
+                }
                 buildTimeList(ds);
             });
-            schedCalWeekStrip.appendChild(dayEl);
+            schedCalWeekStripEl.appendChild(dayEl);
         }
     }
 
     function buildTimeList(dateStr) {
-        schedCalTimelist.innerHTML = '';
+        if (!schedCalTimelistEl) return;
+        schedCalTimelistEl.innerHTML = '';
         const events = getAllEvents().filter(e => e.date === dateStr);
         const now = new Date();
         const todayStr = localDateStr(now);
         const isToday = todayStr === dateStr;
-        // 7am to 10pm in 30-min slots — read-only view
         for (let h = 7; h <= 22; h++) {
             const maxHalf = h === 22 ? 1 : 2;
             for (let half = 0; half < maxHalf; half++) {
@@ -2151,20 +2061,101 @@
                     <span class="schedcal-time-label">${label}</span>
                     ${isCurrent ? '<span class="schedcal-current-badge">Now</span>' : ''}
                     <div class="schedcal-time-line">${pills}</div>`;
-                schedCalTimelist.appendChild(slot);
+                schedCalTimelistEl.appendChild(slot);
             }
         }
-        // Scroll to current hour if today
         if (isToday) {
             setTimeout(() => {
-                const cur = schedCalTimelist.querySelector('.current-hour');
+                const cur = schedCalTimelistEl.querySelector('.current-hour');
                 if (cur) cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 80);
         }
     }
 
+    function openCalPhase1() {
+        if (!schedCalPhase1El || !schedCalPhase2El || !schedCalTitleEl || !schedCalFpMountEl) return;
+        schedCalPhase1El.style.display = 'flex';
+        schedCalPhase2El.style.display = 'none';
+        schedCalTitleEl.textContent = 'Select a date';
+        const currentYear = new Date().getFullYear();
+        if (!schedCalFpObj) {
+            const inp = document.createElement('input');
+            inp.type = 'text'; inp.style.display = 'none';
+            schedCalFpMountEl.appendChild(inp);
+            schedCalFpObj = flatpickr(inp, {
+                inline: true, disableMobile: true,
+                minDate: 'today', maxDate: new Date(currentYear,11,31),
+                dateFormat: 'Y-m-d', defaultDate: pickedDate || undefined,
+                onReady(_, __, fp) {
+                    const yr = fp.calendarContainer.querySelector('.cur-year');
+                    if (yr) { yr.readOnly = true; yr.style.pointerEvents = 'none'; }
+                    const nw = fp.calendarContainer.querySelector('.numInputWrapper');
+                    if (nw) nw.style.pointerEvents = 'none';
+                },
+                onDayCreate(_, __, fp, dayElem) {
+                    const ds = localDateStr(dayElem.dateObj);
+                    const events = getAllEvents();
+                    if (events.some(e => e.date === ds)) dayElem.classList.add('has-sched-event');
+                },
+                onChange(_, dateStr) {
+                    if (!dateStr) return;
+                    pickedDate = dateStr;
+                    if (schedDateLabel && schedDateIcon && schedDateBtn) {
+                        schedDateLabel.textContent = formatDateShort(dateStr);
+                        schedDateIcon.className = 'ph-bold ph-calendar-check';
+                        schedDateBtn.classList.add('selected');
+                    }
+                    const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
+                    if (pickedTime) saveEvent(pickedDate, pickedTime, task);
+                    updateDtButtons();
+                    setTimeout(() => closeSchedCal(), 200);
+                }
+            });
+        } else {
+            schedCalFpObj.redraw();
+            if (pickedDate) schedCalFpObj.setDate(pickedDate, false);
+        }
+    }
+
+    function openCalPhase2() {
+        if (!schedCalPhase1El || !schedCalPhase2El || !schedCalTitleEl) return;
+        schedCalPhase1El.style.display = 'none';
+        schedCalPhase2El.style.display = 'flex';
+        calViewDate = pickedDate || localDateStr(new Date());
+        const [y,m,d] = calViewDate.split('-').map(Number);
+        const dt = new Date(y,m-1,d);
+        schedCalTitleEl.textContent = dt.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
+        buildWeekStrip(calViewDate);
+        const today = new Date();
+        if (schedCalTodayLblEl) {
+            schedCalTodayLblEl.textContent = localDateStr(today) === calViewDate
+                ? 'Today · ' + today.toLocaleDateString('en-ZA',{day:'numeric',month:'long'})
+                : dt.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
+        }
+        buildTimeList(calViewDate);
+    }
+
+    function openSchedCal(phase) {
+        if (!schedCalOverlayEl) return;
+        schedCalOverlayEl.classList.add('active');
+        schedCalOverlayEl.setAttribute('aria-hidden','false');
+        document.body.style.overflow = 'hidden';
+        if (phase === 2) openCalPhase2();
+        else openCalPhase1();
+    }
+    function closeSchedCal() {
+        if (!schedCalOverlayEl) return;
+        schedCalOverlayEl.classList.remove('active');
+        schedCalOverlayEl.setAttribute('aria-hidden','true');
+        document.body.style.overflow = '';
+    }
+    if (schedCalCloseEl) schedCalCloseEl.addEventListener('click', closeSchedCal);
+    if (schedCalOverlayEl) schedCalOverlayEl.addEventListener('keydown', e => { if (e.key === 'Escape') closeSchedCal(); });
+    if (schedDateBtn) schedDateBtn.addEventListener('click', e => { e.stopPropagation(); openSchedCal(1); });
+    if (schedDtCombined) schedDtCombined.addEventListener('click', e => { e.stopPropagation(); openSchedCal(2); });
+
     // ======== WIDGET TASK SUGGESTIONS ========
-    const schedTaskInput   = document.getElementById('schedTaskInput');
+    const schedTaskInputEl   = document.getElementById('schedTaskInput');
     const schedTaskSuggBox = document.getElementById('schedTaskSuggestions');
     let schedSuggHighlight = -1;
 
@@ -2178,280 +2169,37 @@
             const idx = match.toLowerCase().indexOf(query.toLowerCase());
             item.innerHTML = idx>=0 ? match.slice(0,idx)+'<mark>'+match.slice(idx,idx+query.length)+'</mark>'+match.slice(idx+query.length) : match;
             item.addEventListener('mousedown', e => {
-                e.preventDefault(); schedTaskInput.value = match;
-                schedTaskSuggBox.classList.remove('visible');
+                e.preventDefault(); if (schedTaskInputEl) schedTaskInputEl.value = match;
+                if (schedTaskSuggBox) schedTaskSuggBox.classList.remove('visible');
                 if (pickedDate && pickedTime) saveEvent(pickedDate, pickedTime, match);
             });
             schedTaskSuggBox.appendChild(item);
         });
         schedTaskSuggBox.classList.add('visible');
     }
-    if (schedTaskInput) {
-        schedTaskInput.addEventListener('input', function() {
+    if (schedTaskInputEl && schedTaskSuggBox) {
+        schedTaskInputEl.addEventListener('input', function() {
             const val = this.value.trim();
-            if (!val) { schedTaskSuggBox && schedTaskSuggBox.classList.remove('visible'); return; }
+            if (!val) { schedTaskSuggBox.classList.remove('visible'); return; }
             renderSchedSuggestions(suggestTasks(val), val);
         });
-        schedTaskInput.addEventListener('keydown', function(e) {
-            if (!schedTaskSuggBox) return;
+        schedTaskInputEl.addEventListener('keydown', function(e) {
             const items = schedTaskSuggBox.querySelectorAll('.sched-suggestion-item');
             if (!schedTaskSuggBox.classList.contains('visible') || !items.length) return;
             if (e.key==='ArrowDown') { e.preventDefault(); schedSuggHighlight=Math.min(schedSuggHighlight+1,items.length-1); }
             else if (e.key==='ArrowUp') { e.preventDefault(); schedSuggHighlight=Math.max(schedSuggHighlight-1,0); }
-            else if (e.key==='Enter' && schedSuggHighlight>=0) { e.preventDefault(); schedTaskInput.value=items[schedSuggHighlight].textContent; schedTaskSuggBox.classList.remove('visible'); return; }
+            else if (e.key==='Enter' && schedSuggHighlight>=0) { e.preventDefault(); schedTaskInputEl.value=items[schedSuggHighlight].textContent; schedTaskSuggBox.classList.remove('visible'); return; }
             else if (e.key==='Escape') { schedTaskSuggBox.classList.remove('visible'); return; }
             else return;
             items.forEach((el,i) => el.classList.toggle('highlighted', i===schedSuggHighlight));
         });
-        schedTaskInput.addEventListener('blur', () => setTimeout(() => schedTaskSuggBox && schedTaskSuggBox.classList.remove('visible'), 150));
-        schedTaskInput.addEventListener('change', function() {
+        schedTaskInputEl.addEventListener('blur', () => setTimeout(() => schedTaskSuggBox && schedTaskSuggBox.classList.remove('visible'), 150));
+        schedTaskInputEl.addEventListener('change', function() {
             if (pickedDate && pickedTime) saveEvent(pickedDate, pickedTime, this.value.trim());
         });
     }
 
-    // Safe local date string — never use toISOString() (UTC offset bug)
-    function localDateStr(d) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }
-
-    function formatDateShort(dateStr) {
-        if (!dateStr) return 'Choose date';
-        const [y, m, d] = dateStr.split('-').map(Number);
-        const dt = new Date(y, m - 1, d);
-        return dt.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' });
-    }
-    function formatTimeFriendly(timeStr) {
-        if (!timeStr) return 'Choose time';
-        const [h, mi] = timeStr.split(':');
-        const hr = parseInt(h);
-        return `${hr % 12 || 12}:${mi} ${hr < 12 ? 'AM' : 'PM'}`;
-    }
-
-    function saveSched() {
-        const task = document.getElementById('schedTaskInput')
-            ? document.getElementById('schedTaskInput').value.trim() : '';
-        localStorage.setItem('tm_sched', JSON.stringify({ date: pickedDate, time: pickedTime, task }));
-    }
-    function loadSched() {
-        try {
-            const d = JSON.parse(localStorage.getItem('tm_sched') || '{}');
-            if (d.date) {
-                pickedDate = d.date;
-                schedDateLabel.textContent = formatDateShort(d.date);
-                schedDateIcon.className = 'ph-bold ph-calendar-check';
-                schedDateBtn && schedDateBtn.classList.add('selected');
-            }
-            if (d.time) {
-                pickedTime = d.time;
-                schedTimeLabel.textContent = formatTimeFriendly(d.time);
-                schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-                schedTimeBtn && schedTimeBtn.classList.add('selected');
-            }
-            if (d.task && document.getElementById('schedTaskInput')) {
-                document.getElementById('schedTaskInput').value = d.task;
-            }
-        } catch(e) {}
-    }
-    loadSched();
-
-    // ======== FULL-SCREEN SCHEDULE CALENDAR ========
-    const schedCalOverlay   = document.getElementById('schedCalOverlay');
-    const schedCalClose     = document.getElementById('schedCalClose');
-    const schedCalTitle     = document.getElementById('schedCalTitle');
-    const schedCalPhase1    = document.getElementById('schedCalPhase1');
-    const schedCalPhase2    = document.getElementById('schedCalPhase2');
-    const schedCalWeekStrip = document.getElementById('schedCalWeekStrip');
-    const schedCalTodayLbl  = document.getElementById('schedCalTodayLabel');
-    const schedCalTimelist  = document.getElementById('schedCalTimelist');
-    const schedCalFpMount   = document.getElementById('schedCalFpMount');
-
-    let schedCalFp  = null;
-    let calViewDate = '';
-
-    function openSchedCal(startAtPhase2) {
-        schedCalOverlay.classList.add('active');
-        schedCalOverlay.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-
-        if (startAtPhase2 && pickedDate) {
-            // Time button clicked — skip to phase 2 on the already-picked date
-            calViewDate = pickedDate;
-            schedCalPhase1.style.display = 'none';
-            schedCalPhase2.style.display = 'flex';
-            const [y, m, d] = pickedDate.split('-').map(Number);
-            const dt = new Date(y, m - 1, d);
-            schedCalTitle.textContent = dt.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-            buildWeekStrip(pickedDate);
-            buildTimeList(pickedDate);
-            return;
-        }
-
-        // Phase 1 — show full calendar
-        schedCalPhase1.style.display = 'flex';
-        schedCalPhase2.style.display = 'none';
-        schedCalTitle.textContent = 'Select a date';
-
-        if (!schedCalFp) {
-            const input = document.createElement('input');
-            input.type = 'text'; input.style.display = 'none';
-            schedCalFpMount.appendChild(input);
-
-            const currentYear = new Date().getFullYear();
-
-            schedCalFp = flatpickr(input, {
-                inline: true,
-                disableMobile: true,
-                minDate: 'today',
-                maxDate: new Date(currentYear, 11, 31), // lock to current year
-                dateFormat: 'Y-m-d',
-                defaultDate: pickedDate || undefined,
-                // Hide year navigation arrows via onReady
-                onReady(_, __, fp) {
-                    // Remove year input so user can't type a year
-                    const yearInput = fp.calendarContainer.querySelector('.numInputWrapper');
-                    if (yearInput) yearInput.style.pointerEvents = 'none';
-                    const navYear = fp.calendarContainer.querySelector('.cur-year');
-                    if (navYear) { navYear.readOnly = true; navYear.style.pointerEvents = 'none'; }
-                },
-                onDayCreate(dObj, dStr, fp, dayElem) {
-                    // Purple dot marker on picked date
-                    const ds = localDateStr(dayElem.dateObj);
-                    if (pickedDate && ds === pickedDate) {
-                        dayElem.classList.add('has-sched-event');
-                    }
-                },
-                onChange(selectedDates, dateStr) {
-                    if (!dateStr) return;
-                    calViewDate = dateStr;
-                    setTimeout(() => showPhase2(dateStr), 120);
-                }
-            });
-        } else {
-            schedCalFp.redraw();
-            if (pickedDate) schedCalFp.setDate(pickedDate, false);
-        }
-    }
-
-    function closeSchedCal() {
-        schedCalOverlay.classList.remove('active');
-        schedCalOverlay.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-    }
-
-    if (schedCalClose) schedCalClose.addEventListener('click', closeSchedCal);
-    if (schedCalOverlay) schedCalOverlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeSchedCal(); });
-
-    function showPhase2(dateStr) {
-        schedCalPhase1.style.display = 'none';
-        schedCalPhase2.style.display = 'flex';
-        calViewDate = dateStr;
-        const [y, m, d] = dateStr.split('-').map(Number);
-        const dt = new Date(y, m - 1, d);
-        schedCalTitle.textContent = dt.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-        buildWeekStrip(dateStr);
-        const today = new Date();
-        const isToday = localDateStr(today) === dateStr;
-        schedCalTodayLbl.textContent = isToday
-            ? 'Today · ' + today.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' })
-            : dt.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-        buildTimeList(dateStr);
-    }
-
-    function buildWeekStrip(selectedDateStr) {
-        schedCalWeekStrip.innerHTML = '';
-        const [sy, sm, sd] = selectedDateStr.split('-').map(Number);
-        const selBase = new Date(sy, sm - 1, sd);
-        for (let i = -3; i <= 3; i++) {
-            const d = new Date(sy, sm - 1, sd + i);
-            const ds = localDateStr(d);
-            const dayEl = document.createElement('div');
-            dayEl.className = 'schedcal-week-day' + (i === 0 ? ' active' : '');
-            dayEl.innerHTML = `<span class="schedcal-wd-name">${d.toLocaleDateString('en-ZA',{weekday:'short'}).slice(0,3)}</span><span class="schedcal-wd-num">${d.getDate()}</span>`;
-            dayEl.addEventListener('click', () => {
-                calViewDate = ds;
-                document.querySelectorAll('.schedcal-week-day').forEach(el => el.classList.remove('active'));
-                dayEl.classList.add('active');
-                const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                schedCalTitle.textContent = nd.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
-                buildTimeList(ds);
-            });
-            schedCalWeekStrip.appendChild(dayEl);
-        }
-    }
-
-    function buildTimeList(dateStr) {
-        schedCalTimelist.innerHTML = '';
-        const savedTask = (document.getElementById('schedTaskInput') || {}).value?.trim() || '';
-        const savedTime = (dateStr === pickedDate) ? pickedTime : '';
-        const now = new Date();
-        const currentHour = now.getHours();
-        const currentMin  = now.getMinutes();
-        const isToday = localDateStr(now) === dateStr;
-
-        // 7am to 22:00 (10 PM) in 30-min slots
-        for (let h = 7; h <= 22; h++) {
-            const halfCount = h === 22 ? 1 : 2; // stop at 10:00 PM, no 10:30
-            for (let half = 0; half < halfCount; half++) {
-                const m       = half === 0 ? '00' : '30';
-                const timeStr = `${String(h).padStart(2,'0')}:${m}`;
-                const hr12    = h % 12 || 12;
-                const ampm    = h < 12 ? 'AM' : 'PM';
-                const label   = `${hr12}:${m} ${ampm}`;
-                const isBooked  = savedTime === timeStr;
-                // Current hour: exact hour match on today
-                const isCurrent = isToday && h === currentHour && half === 0;
-
-                const slot = document.createElement('div');
-                slot.className = 'schedcal-time-slot'
-                    + (isBooked   ? ' selected'     : '')
-                    + (isCurrent  ? ' current-hour' : '');
-
-                slot.innerHTML = `
-                    <span class="schedcal-time-label">${label}</span>
-                    ${isCurrent ? `<span class="schedcal-current-badge">Now</span>` : ''}
-                    <div class="schedcal-time-line" style="flex:1;">
-                        ${isBooked && savedTask ? `<div class="schedcal-event-pill"><div class="schedcal-event-dot"></div><span class="schedcal-event-text">${savedTask}</span></div>` : ''}
-                    </div>`;
-
-                slot.addEventListener('click', () => {
-                    // Update time
-                    pickedTime = timeStr;
-                    schedTimeLabel.textContent = formatTimeFriendly(timeStr);
-                    schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-                    schedTimeBtn && schedTimeBtn.classList.add('selected');
-
-                    // Update date from whichever day is being viewed
-                    pickedDate = calViewDate;
-                    schedDateLabel.textContent = formatDateShort(calViewDate);
-                    schedDateIcon.className = 'ph-bold ph-calendar-check';
-                    schedDateBtn && schedDateBtn.classList.add('selected');
-
-                    saveSched();
-
-                    // Refresh list to show pill
-                    buildTimeList(calViewDate);
-                    setTimeout(() => closeSchedCal(), 380);
-                });
-
-                if (isBooked) {
-                    setTimeout(() => slot.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
-                }
-                schedCalTimelist.appendChild(slot);
-            }
-        }
-    }
-
-    // Date button → open full-screen calendar at phase 1
-    if (schedDateBtn) {
-        schedDateBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openSchedCal(false);
-        });
-    }
-    // ========= ASSIGN BUTTON — Firebase auth + Contact Picker =========
+    // ========= ASSIGN BUTTON =========
     const schedAssignBtn   = document.getElementById('schedAssignBtn');
     const schedHelperValue = document.getElementById('schedHelperValue');
     let _firebaseUser = null;
@@ -2467,7 +2215,6 @@
         if (schedAssignBtn) schedAssignBtn.textContent = 'Change';
     }
 
-    // Native Web Contact Picker (Android Chrome + iOS Safari 16+)
     async function openNativeContactPicker() {
         try {
             const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
@@ -2482,28 +2229,18 @@
         }
     }
 
-    // Fallback bottom sheet (desktop / unsupported — shows App Store CTA)
-    const contactSheetOverlay = document.getElementById('contactSheetOverlay');
-    const contactSheetClose   = document.getElementById('contactSheetClose');
+    const contactSheetOverlayEl = document.getElementById('contactSheetOverlay');
+    const contactSheetCloseEl   = document.getElementById('contactSheetClose');
 
-    function openFallbackSheet() {
-        if (contactSheetOverlay) contactSheetOverlay.classList.add('active');
-    }
-    function closeFallbackSheet() {
-        if (contactSheetOverlay) contactSheetOverlay.classList.remove('active');
-    }
+    function openFallbackSheet() { if (contactSheetOverlayEl) contactSheetOverlayEl.classList.add('active'); }
+    function closeFallbackSheet() { if (contactSheetOverlayEl) contactSheetOverlayEl.classList.remove('active'); }
 
-    if (contactSheetClose) contactSheetClose.addEventListener('click', closeFallbackSheet);
-    if (contactSheetOverlay) {
-        contactSheetOverlay.addEventListener('click', e => {
-            if (e.target === contactSheetOverlay) closeFallbackSheet();
-        });
+    if (contactSheetCloseEl) contactSheetCloseEl.addEventListener('click', closeFallbackSheet);
+    if (contactSheetOverlayEl) {
+        contactSheetOverlayEl.addEventListener('click', e => { if (e.target === contactSheetOverlayEl) closeFallbackSheet(); });
     }
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeFallbackSheet();
-    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFallbackSheet(); });
 
-    // Main assign handler
     if (schedAssignBtn) {
         schedAssignBtn.addEventListener('click', () => {
             if (!_firebaseUser) {
@@ -2525,7 +2262,7 @@
 
     if (aboutToggle && aboutSubLinks && aboutCaret) {
         function toggleAbout(e) {
-            e.stopPropagation(); // prevent click bubbling to navOverlay close handler
+            e.stopPropagation();
             const isOpen = aboutSubLinks.classList.contains('open');
             aboutSubLinks.classList.toggle('open', !isOpen);
             aboutCaret.classList.toggle('open', !isOpen);
@@ -2540,7 +2277,6 @@
         });
     }
 
-    // Stop clicks inside the nav container from closing the overlay
     const navContainer = document.querySelector('.nav-container');
     if (navContainer) {
         navContainer.addEventListener('click', e => e.stopPropagation());
@@ -2556,9 +2292,9 @@
     const closeSuccessBtnA = document.getElementById('closeSuccessBtnA');
 
     function resetModalA() { if (formContainerA) formContainerA.style.display = 'block'; if (successA) successA.classList.remove('active'); }
-    if (closeA)           closeA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
-    if (closeSuccessA)    closeSuccessA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
-    if (closeSuccessBtnA) closeSuccessBtnA.addEventListener('click', () => { modalA.classList.remove('active'); resetModalA(); });
+    if (closeA)           closeA.addEventListener('click', () => { if (modalA) modalA.classList.remove('active'); resetModalA(); });
+    if (closeSuccessA)    closeSuccessA.addEventListener('click', () => { if (modalA) modalA.classList.remove('active'); resetModalA(); });
+    if (closeSuccessBtnA) closeSuccessBtnA.addEventListener('click', () => { if (modalA) modalA.classList.remove('active'); resetModalA(); });
     if (formA) formA.addEventListener('submit', e => { e.preventDefault(); if (formContainerA) formContainerA.style.display = 'none'; if (successA) successA.classList.add('active'); });
     if (modalA) modalA.addEventListener('click', e => { if (e.target === modalA) { modalA.classList.remove('active'); resetModalA(); } });
 
@@ -2572,17 +2308,24 @@
     const closeSuccessBtnB = document.getElementById('closeSuccessBtnB');
 
     function resetModalB() { if (formContainerB) formContainerB.style.display = 'block'; if (successB) successB.classList.remove('active'); }
-    if (closeB)           closeB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
-    if (closeSuccessB)    closeSuccessB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
-    if (closeSuccessBtnB) closeSuccessBtnB.addEventListener('click', () => { modalB.classList.remove('active'); resetModalB(); });
+    if (closeB)           closeB.addEventListener('click', () => { if (modalB) modalB.classList.remove('active'); resetModalB(); });
+    if (closeSuccessB)    closeSuccessB.addEventListener('click', () => { if (modalB) modalB.classList.remove('active'); resetModalB(); });
+    if (closeSuccessBtnB) closeSuccessBtnB.addEventListener('click', () => { if (modalB) modalB.classList.remove('active'); resetModalB(); });
     if (formB) formB.addEventListener('submit', e => { e.preventDefault(); if (formContainerB) formContainerB.style.display = 'none'; if (successB) successB.classList.add('active'); });
     if (modalB) modalB.addEventListener('click', e => { if (e.target === modalB) { modalB.classList.remove('active'); resetModalB(); } });
+
+    // ========= SCHED SUBMIT BUTTON =========
+    const schedSubmitBtn = document.getElementById('schedSubmitBtn');
+    if (schedSubmitBtn) {
+        schedSubmitBtn.addEventListener('click', function() {
+            window.location.href = 'task-planner.html';
+        });
+    }
 
 })();
 </script>
 
 <!-- Sticky bottom bar -->
-
 <div class="sticky-footer">
     <a href="task-planner-home.html" class="sticky-footer-btn">Find taskers</a>
 </div>
