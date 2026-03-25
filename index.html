@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +13,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -358,7 +358,6 @@
     .find-taskers-btn:hover:not(:disabled) { background: #222; }
     .find-taskers-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* Taskers result inline count */
     .taskers-result {
         display: none;
         flex-direction: column;
@@ -807,22 +806,60 @@
         gap: 1.2rem;
         margin-bottom: 2rem;
     }
+
+    /* ---- Widget heading with more breathing room ---- */
     .sched-widget-header {
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
-        padding-top: 0.8rem;
-        padding-bottom: 0.6rem;
+        padding-top: 1rem;   /* +1px from original 0.8rem → using rem for proportionality */
+        padding-bottom: 0.7rem; /* +1px from original 0.6rem */
     }
     .sched-widget-heading {
         font-family: 'Manrope', sans-serif;
         font-weight: 800;
-        font-size: 1.55rem;
+        font-size: 1.6rem;   /* bumped up from 1.55rem */
         color: #fff;
         letter-spacing: -0.02em;
         line-height: 1.2;
     }
-    /* Date & time row */
+
+    /* ---- Date preview bar (shown after both date & time picked, before step 2) ---- */
+    .sched-date-preview {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255,255,255,0.14);
+        border-radius: 8px;
+        padding: 0.6rem 0.9rem;
+        margin-bottom: 0.2rem;
+    }
+    .sched-date-preview.visible { display: flex; }
+    .sched-date-preview i { font-size: 14px; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+    .sched-date-preview-text {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.9);
+        letter-spacing: 0.01em;
+    }
+    .sched-date-preview-edit {
+        margin-left: auto;
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.55);
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500;
+        font-size: 0.72rem;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        transition: color 0.15s;
+    }
+    .sched-date-preview-edit:hover { color: rgba(255,255,255,0.9); }
+
+    /* ---- Step 1: date + time buttons ---- */
+    .sched-step { display: flex; flex-direction: column; gap: 0.7rem; }
     .sched-datetime-row {
         display: flex;
         gap: 0.7rem;
@@ -841,7 +878,6 @@
         font-weight: 500;
         font-size: 0.82rem;
         cursor: pointer;
-        position: relative;
         transition: background 0.2s;
         text-align: left;
         white-space: nowrap;
@@ -849,7 +885,8 @@
     .sched-dt-btn:hover { background: rgba(255,255,255,0.2); }
     .sched-dt-btn i { font-size: 15px; flex-shrink: 0; }
     .sched-dt-btn.selected { background: rgba(255,255,255,0.22); }
-    /* Flow inputs inside widget */
+
+    /* ---- Step 2: flow inputs ---- */
     .sched-flow-inputs {
         display: flex;
         flex-direction: column;
@@ -938,6 +975,8 @@
         width: 100%;
     }
     .sched-task-input::placeholder { color: rgba(255,255,255,0.45); }
+
+    /* ---- Submit / Find Taskers button ---- */
     .sched-submit-btn {
         width: 100%;
         padding: 0.8rem;
@@ -954,122 +993,42 @@
     }
     .sched-submit-btn:hover { opacity: 0.88; }
 
-    /* ========= FULL-SCREEN SCHEDULE CALENDAR ========= */
-    .schedcal-overlay {
-        position: fixed; inset: 0; background: #fff;
-        z-index: 9000; display: flex; flex-direction: column;
-        opacity: 0; visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease; overflow: hidden;
+    /* Terms & conditions below find taskers button */
+    .sched-terms-note {
+        text-align: center;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 400;
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.35);
+        letter-spacing: 0.01em;
     }
-    .schedcal-overlay.active { opacity: 1; visibility: visible; }
-    .schedcal-inner { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 520px; margin: 0 auto; }
-    .schedcal-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 1.1rem 1.4rem 0.5rem; flex-shrink: 0; border-bottom: 1px solid #f0f0f0;
-    }
-    .schedcal-header-title { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 1.05rem; color: #000; letter-spacing: -0.02em; }
-    .schedcal-close {
-        width: 34px; height: 34px; border-radius: 50%; background: #f0f0f0; border: none; cursor: pointer;
-        display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0;
-    }
-    .schedcal-close:hover { background: #e0e0e0; }
-    .schedcal-close i { font-size: 16px; color: #000; }
-    .schedcal-phase { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
-    /* Flatpickr inside overlay — black & white */
-    #schedCalFpMount { flex: 1; overflow: hidden; }
-    #schedCalFpMount .flatpickr-calendar {
-        position: relative !important; top: auto !important; left: auto !important;
-        width: 100% !important; max-width: 100% !important;
-        box-shadow: none !important; border-radius: 0 !important; border: none !important; margin: 0 !important; background: #fff !important;
+    /* ---- Widget task suggestions ---- */
+    .sched-task-suggestions {
+        position: absolute;
+        top: calc(100% + 4px);
+        bottom: auto;
+        left: 0;
+        width: 100%;
+        background: #2a3d6e;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        overflow: hidden;
+        display: none;
+        z-index: 100;
     }
-    #schedCalFpMount .flatpickr-months { background: #fff !important; padding: 0.8rem 0 0 !important; }
-    #schedCalFpMount .flatpickr-month { color: #000 !important; fill: #000 !important; height: 36px !important; }
-    #schedCalFpMount .flatpickr-current-month { color: #000 !important; font-family: 'Manrope', sans-serif !important; font-weight: 800 !important; font-size: 1rem !important; padding-top: 4px !important; }
-    #schedCalFpMount .flatpickr-current-month select,
-    #schedCalFpMount .flatpickr-current-month input.cur-year { color: #000 !important; font-family: 'Manrope', sans-serif !important; font-weight: 800 !important; }
-    #schedCalFpMount .flatpickr-prev-month, #schedCalFpMount .flatpickr-next-month { color: #000 !important; fill: #000 !important; padding: 10px !important; }
-    #schedCalFpMount .flatpickr-prev-month svg, #schedCalFpMount .flatpickr-next-month svg { fill: #000 !important; }
-    #schedCalFpMount .flatpickr-prev-month:hover svg, #schedCalFpMount .flatpickr-next-month:hover svg { fill: rgba(0,0,0,0.4) !important; }
-    #schedCalFpMount .flatpickr-weekdays { background: #fff !important; padding: 1.4rem 0 0.5rem !important; }
-    #schedCalFpMount .flatpickr-weekday { color: rgba(0,0,0,0.28) !important; font-family: 'Manrope', sans-serif !important; font-weight: 600 !important; font-size: 0.68rem !important; background: #fff !important; letter-spacing: 0.08em !important; }
-    #schedCalFpMount .flatpickr-days { border: none !important; }
-    #schedCalFpMount .dayContainer { width: 100% !important; min-width: 100% !important; max-width: 100% !important; padding: 0.4rem 0.9rem !important; }
-    #schedCalFpMount .flatpickr-day {
-        font-family: 'Manrope', sans-serif !important; font-weight: 500 !important;
-        border-radius: 50% !important; border: none !important; color: #000 !important;
-        height: 40px !important; line-height: 40px !important; margin: 2px !important;
-    }
-    #schedCalFpMount .flatpickr-day.today { background: #ef4444 !important; border: none !important; color: #fff !important; font-weight: 700 !important; }
-    #schedCalFpMount .flatpickr-day.selected, #schedCalFpMount .flatpickr-day.selected:hover { background: #000 !important; border: none !important; color: #fff !important; font-weight: 700 !important; }
-    #schedCalFpMount .flatpickr-day:hover:not(.selected):not(.today) { background: #f0f0f0 !important; color: #000 !important; }
-    #schedCalFpMount .flatpickr-day.flatpickr-disabled, #schedCalFpMount .flatpickr-day.prevMonthDay, #schedCalFpMount .flatpickr-day.nextMonthDay { color: rgba(0,0,0,0.15) !important; }
-    /* Purple circle dot on days with tasks */
-    .flatpickr-day.has-sched-event::after { content: ''; display: block; width: 5px; height: 5px; border-radius: 50%; background: #7c3aed; margin: 1px auto 0; }
-    .flatpickr-day.selected.has-sched-event::after, .flatpickr-day.today.has-sched-event::after { background: rgba(255,255,255,0.7); }
-
-    /* ========= WEEK STRIP (phase 2) ========= */
-    .schedcal-week-strip {
-        display: flex; background: #fff; border-bottom: 1px solid #f0f0f0;
-        flex-shrink: 0; padding: 0.6rem 0.4rem;
-        overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
-    }
-    .schedcal-week-strip::-webkit-scrollbar { display: none; }
-    .schedcal-week-day { flex: 1; min-width: 40px; display: flex; flex-direction: column; align-items: center; padding: 0.4rem 0.1rem; cursor: pointer; border-radius: 50px; transition: background 0.12s; }
-    .schedcal-week-day:hover { background: #f5f5f5; }
-    .schedcal-wd-name { font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 0.6rem; color: rgba(0,0,0,0.28); letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; margin-bottom: 0.35rem; }
-    .schedcal-wd-num-wrap { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-    .schedcal-wd-num { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 0.85rem; color: #000; line-height: 1; }
-    .schedcal-week-day.active .schedcal-wd-num-wrap { background: #000; }
-    .schedcal-week-day.active .schedcal-wd-num { color: #fff; }
-    .schedcal-week-day.is-today .schedcal-wd-num-wrap { background: #ef4444; }
-    .schedcal-week-day.is-today .schedcal-wd-num { color: #fff; }
-    .schedcal-week-day.is-today.active .schedcal-wd-num-wrap { background: #000; }
-    .schedcal-today-label { font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 0.75rem; color: rgba(0,0,0,0.3); padding: 0.8rem 1.4rem 0.2rem; flex-shrink: 0; }
-
-    /* ========= TIME LIST (phase 2 — read-only view, no picking) ========= */
-    .schedcal-timelist { flex: 1; overflow-y: auto; padding: 0.2rem 1.4rem 2rem; -webkit-overflow-scrolling: touch; }
-    .schedcal-time-slot { display: flex; align-items: center; padding: 0.48rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); gap: 0.8rem; }
-    .schedcal-time-label { font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 0.68rem; color: rgba(0,0,0,0.28); width: 54px; flex-shrink: 0; letter-spacing: 0.01em; }
-    .schedcal-time-line { flex: 1; height: 1px; background: rgba(0,0,0,0.04); position: relative; }
-    .schedcal-event-pill { position: absolute; left: 0; top: 50%; transform: translateY(-50%); background: #7c3aed; border-radius: 20px; padding: 0.2rem 0.6rem; display: flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
-    .schedcal-event-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.5); flex-shrink: 0; }
-    .schedcal-event-text { font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 0.68rem; color: #fff; }
-    .schedcal-time-slot.current-hour .schedcal-time-label { color: #ef4444 !important; font-weight: 700 !important; }
-    .schedcal-current-badge { background: #ef4444; color: #fff; font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 0.6rem; border-radius: 20px; padding: 0.12rem 0.4rem; flex-shrink: 0; white-space: nowrap; }
-
-    /* ========= COMBINED DATE+TIME BUTTON ========= */
-    .sched-dt-combined {
-        display: none; width: 100%; align-items: center; gap: 0.55rem;
-        background: rgba(255,255,255,0.15); border: none; border-radius: 8px;
-        padding: 0.8rem 0.9rem; color: #fff; font-family: 'Manrope', sans-serif;
-        font-weight: 600; font-size: 0.85rem; cursor: pointer; text-align: left; transition: background 0.2s;
-    }
-    .sched-dt-combined:hover { background: rgba(255,255,255,0.22); }
-    .sched-dt-combined i { font-size: 16px; flex-shrink: 0; }
-    .sched-dt-combined.visible { display: flex; }
-
-    /* ========= WIDGET TASK SUGGESTIONS ========= */
-    .sched-task-suggestions { position: absolute; top: calc(100% + 4px); bottom: auto; left: 0; width: 100%; background: #2a3d6e; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; overflow: hidden; display: none; z-index: 100; }
     .sched-task-suggestions.visible { display: block; }
-    .sched-suggestion-item { padding: 0.65rem 1rem; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 0.88rem; color: rgba(255,255,255,0.85); cursor: pointer; transition: background 0.12s; }
+    .sched-suggestion-item {
+        padding: 0.65rem 1rem;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500;
+        font-size: 0.88rem;
+        color: rgba(255,255,255,0.85);
+        cursor: pointer;
+        transition: background 0.12s;
+    }
     .sched-suggestion-item:hover, .sched-suggestion-item.highlighted { background: rgba(255,255,255,0.1); }
     .sched-suggestion-item mark { background: transparent; font-weight: 800; color: #fff; }
-
-    /* ========= FLATPICKR — time-only dark clock picker ========= */
-    .flatpickr-calendar.noCalendar { border-radius: 20px !important; overflow: hidden !important; background: #111 !important; box-shadow: 0 16px 48px rgba(0,0,0,0.38) !important; border: none !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time { background: #111 !important; border-radius: 20px !important; border-top: none !important; height: 88px !important; display: flex !important; align-items: center !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time input { color: #fff !important; font-family: 'Manrope', sans-serif !important; font-weight: 700 !important; font-size: 2rem !important; background: transparent !important; letter-spacing: -0.02em !important; height: 100% !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time .flatpickr-time-separator { color: rgba(255,255,255,0.4) !important; font-family: 'Manrope', sans-serif !important; font-weight: 300 !important; font-size: 1.6rem !important; background: transparent !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time .flatpickr-am-pm { color: rgba(255,255,255,0.45) !important; font-family: 'Manrope', sans-serif !important; font-weight: 500 !important; font-size: 0.85rem !important; background: transparent !important; letter-spacing: 0.04em !important; text-transform: uppercase !important; align-self: flex-end !important; padding-bottom: 0.7rem !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time input:hover, .flatpickr-calendar.noCalendar .flatpickr-time input:focus,
-    .flatpickr-calendar.noCalendar .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-calendar.noCalendar .flatpickr-time .flatpickr-am-pm:focus { background: rgba(255,255,255,0.07) !important; border-radius: 10px !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time .numInputWrapper { height: 100% !important; display: flex !important; align-items: center !important; }
-    .flatpickr-calendar.noCalendar .flatpickr-time .numInputWrapper span.arrowUp,
-    .flatpickr-calendar.noCalendar .flatpickr-time .numInputWrapper span.arrowDown { display: none !important; }
-
-    @keyframes fpSlideDown { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(12px) scale(0.97); } }
-    .flatpickr-calendar.noCalendar.animate.flatpickr-calendar:not(.open) { animation: fpSlideDown 0.18s ease forwards !important; }
 
     /* ========= FEATURES LIST CARD ========= */
     .sched-features-card {
@@ -1124,9 +1083,8 @@
         color: #000;
         line-height: 1.4;
     }
-    /* See terms — dashed underline only under the text, not full width */
     .sched-terms-link {
-        display: inline; /* inline so the underline only spans the text */
+        display: inline;
         font-family: 'Manrope', sans-serif;
         font-weight: 400;
         font-size: 0.82rem;
@@ -1138,7 +1096,7 @@
     }
     .sched-terms-link:hover { color: rgba(0,0,0,0.7); border-bottom-color: rgba(0,0,0,0.5); }
 
-    /* ========= APP STORE BUTTON (contact fallback) ========= */
+    /* ========= APP STORE BUTTON ========= */
     .appstore-btn {
         display: inline-flex;
         align-items: center;
@@ -1163,7 +1121,7 @@
     .appstore-btn-sub  { font-weight: 400; font-size: 0.68rem; color: rgba(0,0,0,0.5); }
     .appstore-btn-main { font-weight: 700; font-size: 0.92rem; }
 
-    /* ========= CONTACT PICKER FALLBACK UI ========= */
+    /* ========= CONTACT PICKER FALLBACK ========= */
     .contact-sheet-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.45);
@@ -1198,43 +1156,6 @@
         font-weight: 400; font-size: 0.82rem;
         color: rgba(0,0,0,0.45); margin-bottom: 1rem;
     }
-    .contact-search-input {
-        width: 100%; padding: 0.7rem 1rem;
-        border: 1px solid #e0e0e0; border-radius: 8px;
-        font-family: 'Manrope', sans-serif; font-weight: 500;
-        font-size: 0.9rem; outline: none; margin-bottom: 0.8rem;
-        box-sizing: border-box;
-    }
-    .contact-search-input:focus { border-color: #000; }
-    .contact-list {
-        overflow-y: auto; flex: 1;
-        display: flex; flex-direction: column; gap: 0;
-    }
-    .contact-item {
-        display: flex; align-items: center; gap: 0.9rem;
-        padding: 0.75rem 0.3rem;
-        border-bottom: 1px solid #f0f0f0;
-        cursor: pointer; transition: background 0.12s;
-        border-radius: 6px;
-    }
-    .contact-item:hover { background: #f7f7f7; }
-    .contact-avatar {
-        width: 38px; height: 38px; border-radius: 50%;
-        background: #000; color: #fff;
-        display: flex; align-items: center; justify-content: center;
-        font-family: 'Manrope', sans-serif; font-weight: 700;
-        font-size: 0.85rem; flex-shrink: 0;
-        text-transform: uppercase;
-    }
-    .contact-info { display: flex; flex-direction: column; gap: 1px; }
-    .contact-name {
-        font-family: 'Manrope', sans-serif; font-weight: 600;
-        font-size: 0.9rem; color: #000;
-    }
-    .contact-detail {
-        font-family: 'Manrope', sans-serif; font-weight: 400;
-        font-size: 0.75rem; color: rgba(0,0,0,0.45);
-    }
     .contact-sheet-close {
         position: absolute; top: 14px; right: 16px;
         background: transparent; border: none;
@@ -1264,6 +1185,269 @@
         color: rgba(0,0,0,0.55);
         line-height: 1.7;
     }
+
+    /* =========================================================
+       CUSTOM CALENDAR PICKER OVERLAY
+    ========================================================= */
+    .custom-cal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9000;
+        display: flex; align-items: flex-end; justify-content: center;
+        opacity: 0; visibility: hidden;
+        transition: opacity 0.22s ease, visibility 0.22s ease;
+    }
+    .custom-cal-overlay.active { opacity: 1; visibility: visible; }
+
+    .custom-cal-sheet {
+        background: #fff;
+        width: 100%; max-width: 480px;
+        border-radius: 20px 20px 0 0;
+        padding: 0 0 2rem;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+        max-height: 92vh;
+        overflow: hidden;
+        display: flex; flex-direction: column;
+    }
+    .custom-cal-overlay.active .custom-cal-sheet { transform: translateY(0); }
+
+    .custom-cal-handle-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1rem 1.2rem 0.4rem;
+        flex-shrink: 0;
+    }
+    .custom-cal-handle {
+        width: 36px; height: 4px; border-radius: 2px;
+        background: #ddd; margin: 0 auto;
+        position: absolute; left: 50%; transform: translateX(-50%);
+        top: 0.7rem;
+    }
+    .custom-cal-close-btn {
+        margin-left: auto;
+        width: 30px; height: 30px; border-radius: 50%;
+        background: #f0f0f0; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .custom-cal-close-btn:hover { background: #e0e0e0; }
+    .custom-cal-close-btn i { font-size: 14px; color: #000; }
+
+    .custom-cal-title {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800; font-size: 1.05rem;
+        color: #000; letter-spacing: -0.01em;
+        padding: 0 1.4rem 0.8rem;
+        flex-shrink: 0;
+    }
+
+    /* Month navigation */
+    .custom-cal-nav {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 1.4rem 0.6rem;
+        flex-shrink: 0;
+    }
+    .custom-cal-month-label {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800; font-size: 1rem;
+        color: #000; letter-spacing: -0.01em;
+    }
+    .custom-cal-nav-btn {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: #f0f0f0; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .custom-cal-nav-btn:hover { background: #e0e0e0; }
+    .custom-cal-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .custom-cal-nav-btn i { font-size: 14px; color: #000; }
+
+    /* Weekday headers */
+    .custom-cal-weekdays {
+        display: grid; grid-template-columns: repeat(7, 1fr);
+        padding: 0 0.8rem;
+        flex-shrink: 0;
+    }
+    .custom-cal-wd {
+        text-align: center;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 600; font-size: 0.62rem;
+        letter-spacing: 0.06em; text-transform: uppercase;
+        color: rgba(0,0,0,0.28);
+        padding: 0.4rem 0;
+    }
+
+    /* Day grid */
+    .custom-cal-grid {
+        display: grid; grid-template-columns: repeat(7, 1fr);
+        padding: 0.2rem 0.8rem 0.8rem;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+    .custom-cal-day {
+        aspect-ratio: 1;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 500; font-size: 0.88rem;
+        color: #000; cursor: pointer;
+        transition: background 0.12s;
+        border: none; background: transparent;
+        position: relative;
+    }
+    .custom-cal-day:hover:not(.disabled):not(.selected) { background: #f0f0f0; }
+    .custom-cal-day.other-month { color: rgba(0,0,0,0.18); cursor: default; }
+    .custom-cal-day.today { background: #ef4444 !important; color: #fff !important; font-weight: 700; }
+    .custom-cal-day.selected { background: #000 !important; color: #fff !important; font-weight: 700; }
+    .custom-cal-day.selected.today { background: #000 !important; }
+    .custom-cal-day.disabled { color: rgba(0,0,0,0.2); cursor: default; pointer-events: none; }
+    .custom-cal-day.empty { cursor: default; }
+
+    /* =========================================================
+       CUSTOM TIME PICKER OVERLAY
+    ========================================================= */
+    .custom-time-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9000;
+        display: flex; align-items: flex-end; justify-content: center;
+        opacity: 0; visibility: hidden;
+        transition: opacity 0.22s ease, visibility 0.22s ease;
+    }
+    .custom-time-overlay.active { opacity: 1; visibility: visible; }
+
+    .custom-time-sheet {
+        background: #111;
+        width: 100%; max-width: 480px;
+        border-radius: 20px 20px 0 0;
+        padding: 0 0 2.5rem;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+        display: flex; flex-direction: column;
+    }
+    .custom-time-overlay.active .custom-time-sheet { transform: translateY(0); }
+
+    .custom-time-handle-row {
+        position: relative;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.1rem 1.2rem 0.5rem;
+        flex-shrink: 0;
+    }
+    .custom-time-handle {
+        width: 36px; height: 4px; border-radius: 2px;
+        background: rgba(255,255,255,0.2);
+        position: absolute; left: 50%; transform: translateX(-50%); top: 0.7rem;
+    }
+    .custom-time-title {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800; font-size: 1.05rem;
+        color: #fff; letter-spacing: -0.01em;
+        padding: 0 1.4rem 1.2rem;
+    }
+    .custom-time-close-btn {
+        margin-left: auto;
+        width: 30px; height: 30px; border-radius: 50%;
+        background: rgba(255,255,255,0.1); border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .custom-time-close-btn:hover { background: rgba(255,255,255,0.18); }
+    .custom-time-close-btn i { font-size: 14px; color: #fff; }
+
+    /* Scroll drums */
+    .custom-time-drums {
+        display: flex; align-items: center; justify-content: center;
+        gap: 0; padding: 0 1.4rem 1.4rem;
+        position: relative;
+    }
+    .custom-time-separator {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 300; font-size: 2.4rem;
+        color: rgba(255,255,255,0.3);
+        padding: 0 0.2rem;
+        align-self: center;
+        margin-bottom: 0.2rem;
+    }
+    .custom-time-drum-wrap {
+        flex: 1; max-width: 90px;
+        height: 180px; overflow: hidden;
+        position: relative;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+    }
+    .custom-time-drum {
+        display: flex; flex-direction: column; align-items: center;
+        overflow-y: scroll; height: 100%;
+        scroll-snap-type: y mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .custom-time-drum::-webkit-scrollbar { display: none; }
+    .custom-time-drum-item {
+        flex-shrink: 0;
+        height: 52px; /* 3 items visible, centre one is selected */
+        display: flex; align-items: center; justify-content: center;
+        scroll-snap-align: center;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 700; font-size: 2rem;
+        color: rgba(255,255,255,0.28);
+        transition: color 0.1s, font-size 0.1s;
+        letter-spacing: -0.02em;
+        cursor: pointer;
+        user-select: none;
+    }
+    .custom-time-drum-item.active {
+        color: #fff;
+        font-size: 2.2rem;
+    }
+    /* Highlight bar behind active item */
+    .custom-time-drum-wrap::after {
+        content: '';
+        position: absolute;
+        left: 6px; right: 6px;
+        top: 50%; transform: translateY(-50%);
+        height: 52px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.07);
+        pointer-events: none;
+    }
+
+    /* AM/PM column */
+    .custom-time-ampm-col {
+        display: flex; flex-direction: column;
+        gap: 0.4rem; align-self: center;
+        margin-left: 0.8rem;
+    }
+    .custom-time-ampm-btn {
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        border: none; cursor: pointer;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 600; font-size: 0.8rem;
+        background: rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.4);
+        transition: background 0.15s, color 0.15s;
+        letter-spacing: 0.04em;
+    }
+    .custom-time-ampm-btn.active {
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+    }
+
+    /* Confirm button */
+    .custom-time-confirm {
+        margin: 0 1.4rem;
+        padding: 0.85rem;
+        background: #fff;
+        color: #111;
+        border: none; border-radius: 12px;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 700; font-size: 0.95rem;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        letter-spacing: 0.01em;
+    }
+    .custom-time-confirm:hover { opacity: 0.88; }
 
     /* ========= RESPONSIVE ========= */
     @media (min-width: 1024px) { .hero h1 { font-size: 4.8rem; } .hamburger { display: none; } }
@@ -1386,16 +1570,15 @@
     <div class="services-inner">
         <h2 class="services-label">Services</h2>
         <div class="services-cards">
-
-
-        <div class="service-card">
-            <div class="service-card-content">
-                <h3 class="service-card-heading">Taskers</h3>
-                <p class="service-card-body">Get things done with trusted local help, whenever you need it.</p>
-                <a href="task-planner-home.html" class="service-card-btn">Learn more</a>
+            <div class="service-card">
+                <div class="service-card-content">
+                    <h3 class="service-card-heading">Taskers</h3>
+                    <p class="service-card-body">Get things done with trusted local help, whenever you need it.</p>
+                    <a href="task-planner-home.html" class="service-card-btn">Learn more</a>
+                </div>
+                <div class="service-card-image service-card-image--bg" style="background-image:url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/painter.png');" aria-label="Taskers"></div>
             </div>
-            <div class="service-card-image service-card-image--bg" style="background-image:url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/painter.png');" aria-label="Taskers"></div>
-        </div>
+
 
         <div class="service-card">
             <div class="service-card-content">
@@ -1405,7 +1588,6 @@
             </div>
             <div class="service-card-image service-card-image--bg" style="background-image:url('https://raw.githubusercontent.com/Pmalapile07/My-portfolio-app/main/scooter.png');" aria-label="Delivery"></div>
         </div>
-
     </div>
 </div>
 
@@ -1427,13 +1609,13 @@
         <p class="sched-sub">Plan ahead. Pick your time, assign your favourite tasker, and let taskmart handle the rest.</p>
 
 
-    <!-- Smart scheduling widget -->
+    <!-- ========= SMART SCHEDULING WIDGET ========= -->
     <div class="sched-widget">
         <div class="sched-widget-header">
             <span class="sched-widget-heading">Plan ahead and<br>assign a trusted tasker</span>
         </div>
 
-        <!-- Step 1: Two separate date & time buttons + combined once both picked -->
+        <!-- Step 1: date & time picker buttons -->
         <div class="sched-step" id="schedStep1">
             <div class="sched-datetime-row" id="schedDtRow">
                 <button class="sched-dt-btn" id="schedDateBtn">
@@ -1442,20 +1624,22 @@
                 </button>
                 <button class="sched-dt-btn" id="schedTimeBtn">
                     <i class="ph-bold ph-clock" id="schedTimeIcon"></i>
-                    <span id="schedTimeLabel">Choose time</span>
+                    <span id="schedTimeLabel">Pick time</span>
                 </button>
             </div>
-            <!-- Combined button shown once both date and time are picked -->
-            <button class="sched-dt-combined" id="schedDtCombined">
-                <i class="ph-bold ph-calendar-check"></i>
-                <span id="schedDtCombinedLabel"></span>
-            </button>
         </div>
 
-        <!-- Step 2: Task + Helper -->
-        <div class="sched-step" id="schedStep2">
+        <!-- Date preview + Step 2 (hidden until both picked) -->
+        <div id="schedStep2Wrapper" style="display:none; flex-direction:column; gap:0.8rem;">
+            <!-- Date preview bar -->
+            <div class="sched-date-preview visible" id="schedDatePreview">
+                <i class="ph-bold ph-calendar-check"></i>
+                <span class="sched-date-preview-text" id="schedDatePreviewText"></span>
+                <button class="sched-date-preview-edit" id="schedDatePreviewEdit">Change</button>
+            </div>
+
+            <!-- Flow fields -->
             <div class="sched-flow-inputs">
-                <!-- Assign helper row -->
                 <div class="sched-flow-row">
                     <div class="sched-flow-dot sched-flow-dot--circle"></div>
                     <div class="sched-flow-field">
@@ -1464,9 +1648,7 @@
                     </div>
                     <button class="sched-assign-btn" id="schedAssignBtn">Assign</button>
                 </div>
-                <!-- Connector -->
                 <div class="sched-flow-connector"></div>
-                <!-- Task row -->
                 <div class="sched-flow-row" style="position:relative;">
                     <div class="sched-flow-dot sched-flow-dot--square"></div>
                     <input type="text" class="sched-task-input" id="schedTaskInput" placeholder="What do you need help with?" autocomplete="off">
@@ -1477,6 +1659,9 @@
 
         <!-- CTA button -->
         <button class="sched-submit-btn" id="schedSubmitBtn">Next</button>
+
+        <!-- Terms note — only shown in step 2 -->
+        <p class="sched-terms-note" id="schedTermsNote" style="display:none;">Terms and conditions apply</p>
     </div>
 
     <!-- Features list card -->
@@ -1578,33 +1763,71 @@
     </div>
 </div>
 
-<!-- Full-screen schedule calendar overlay -->
+<!-- =========================================================
+     CUSTOM CALENDAR OVERLAY
+========================================================= -->
 
-<div class="schedcal-overlay" id="schedCalOverlay" aria-hidden="true">
-    <div class="schedcal-inner">
-        <!-- Header -->
-        <div class="schedcal-header">
-            <span class="schedcal-header-title" id="schedCalTitle">Select a date</span>
-            <button class="schedcal-close" id="schedCalClose" aria-label="Close"><i class="ph-bold ph-x"></i></button>
+<div class="custom-cal-overlay" id="customCalOverlay">
+    <div class="custom-cal-sheet" id="customCalSheet">
+        <div class="custom-cal-handle-row" style="position:relative; padding-top:1.4rem;">
+            <div class="custom-cal-handle"></div>
+            <button class="custom-cal-close-btn" id="customCalClose" style="margin-left:auto;">
+                <i class="ph-bold ph-x"></i>
+            </button>
         </div>
-
-    <!-- Phase 1: Full calendar -->
-    <div class="schedcal-phase" id="schedCalPhase1">
-        <div id="schedCalFpMount"></div>
-    </div>
-
-    <!-- Phase 2: Week strip + time list -->
-    <div class="schedcal-phase" id="schedCalPhase2" style="display:none;">
-        <div class="schedcal-week-strip" id="schedCalWeekStrip"></div>
-        <div class="schedcal-today-label" id="schedCalTodayLabel"></div>
-        <div class="schedcal-timelist" id="schedCalTimelist"></div>
+        <div class="custom-cal-title">Select a date</div>
+        <div class="custom-cal-nav">
+            <button class="custom-cal-nav-btn" id="calPrevBtn"><i class="ph-bold ph-caret-left"></i></button>
+            <span class="custom-cal-month-label" id="calMonthLabel"></span>
+            <button class="custom-cal-nav-btn" id="calNextBtn"><i class="ph-bold ph-caret-right"></i></button>
+        </div>
+        <div class="custom-cal-weekdays">
+            <div class="custom-cal-wd">Su</div>
+            <div class="custom-cal-wd">Mo</div>
+            <div class="custom-cal-wd">Tu</div>
+            <div class="custom-cal-wd">We</div>
+            <div class="custom-cal-wd">Th</div>
+            <div class="custom-cal-wd">Fr</div>
+            <div class="custom-cal-wd">Sa</div>
+        </div>
+        <div class="custom-cal-grid" id="calGrid"></div>
     </div>
 </div>
 
+<!-- =========================================================
+     CUSTOM TIME PICKER OVERLAY
+========================================================= -->
 
+<div class="custom-time-overlay" id="customTimeOverlay">
+    <div class="custom-time-sheet">
+        <div class="custom-time-handle-row">
+            <div class="custom-time-handle"></div>
+            <button class="custom-time-close-btn" id="customTimeClose" style="margin-left:auto;">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+        <div class="custom-time-title">Pick a time</div>
+        <div class="custom-time-drums">
+            <!-- Hour drum -->
+            <div class="custom-time-drum-wrap">
+                <div class="custom-time-drum" id="timeDrumHour"></div>
+            </div>
+            <span class="custom-time-separator">:</span>
+            <!-- Minute drum -->
+            <div class="custom-time-drum-wrap">
+                <div class="custom-time-drum" id="timeDrumMin"></div>
+            </div>
+            <!-- AM/PM -->
+            <div class="custom-time-ampm-col">
+                <button class="custom-time-ampm-btn active" id="ampmAM">AM</button>
+                <button class="custom-time-ampm-btn" id="ampmPM">PM</button>
+            </div>
+        </div>
+        <button class="custom-time-confirm" id="customTimeConfirm">Confirm time</button>
+    </div>
 </div>
 
-<!-- Contact picker fallback sheet (shown on desktop / unsupported browsers) -->
+<!-- Contact picker fallback sheet -->
 
 <div class="contact-sheet-overlay" id="contactSheetOverlay">
     <div class="contact-sheet" role="dialog" aria-label="Select a helper">
@@ -1650,8 +1873,8 @@
 <!-- Firebase SDK -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
 (function() {
@@ -1899,310 +2122,338 @@
         });
     }
 
-    // ========= SMART SCHEDULING WIDGET =========
+    // =================================================================
+    //  CUSTOM CALENDAR
+    // =================================================================
+    const calOverlay    = document.getElementById('customCalOverlay');
+    const calSheet      = document.getElementById('customCalSheet');
+    const calCloseBtn   = document.getElementById('customCalClose');
+    const calPrevBtn    = document.getElementById('calPrevBtn');
+    const calNextBtn    = document.getElementById('calNextBtn');
+    const calMonthLabel = document.getElementById('calMonthLabel');
+    const calGrid       = document.getElementById('calGrid');
+
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    let calViewYear  = 0;
+    let calViewMonth = 0; // 0-indexed
+    let calSelectedDateStr = ''; // 'YYYY-MM-DD'
+    let calOnSelectCallback = null;
+
+    function localDateStr(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function renderCalGrid() {
+        if (!calGrid || !calMonthLabel) return;
+        calMonthLabel.textContent = `${MONTH_NAMES[calViewMonth]} ${calViewYear}`;
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const todayStr = localDateStr(today);
+
+        // Disable prev if already at current month
+        const nowY = today.getFullYear(), nowM = today.getMonth();
+        if (calPrevBtn) calPrevBtn.disabled = (calViewYear === nowY && calViewMonth === nowM);
+
+        calGrid.innerHTML = '';
+
+        const firstDay = new Date(calViewYear, calViewMonth, 1).getDay(); // 0=Sun
+        const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+
+        // Leading blanks
+        for (let i = 0; i < firstDay; i++) {
+            const blank = document.createElement('div');
+            blank.className = 'custom-cal-day empty';
+            calGrid.appendChild(blank);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const btn = document.createElement('button');
+            btn.className = 'custom-cal-day';
+            btn.textContent = d;
+            const dateStr = `${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const thisDate = new Date(calViewYear, calViewMonth, d);
+
+            if (thisDate < today) {
+                btn.classList.add('disabled');
+            } else {
+                if (dateStr === todayStr) btn.classList.add('today');
+                if (dateStr === calSelectedDateStr) btn.classList.add('selected');
+                btn.addEventListener('click', () => {
+                    calSelectedDateStr = dateStr;
+                    if (calOnSelectCallback) calOnSelectCallback(dateStr);
+                    closeCustomCal();
+                });
+            }
+            calGrid.appendChild(btn);
+        }
+    }
+
+    function openCustomCal(onSelect) {
+        const today = new Date();
+        calViewYear  = today.getFullYear();
+        calViewMonth = today.getMonth();
+        calOnSelectCallback = onSelect;
+        renderCalGrid();
+        if (calOverlay) {
+            calOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeCustomCal() {
+        if (calOverlay) {
+            calOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    if (calCloseBtn) calCloseBtn.addEventListener('click', closeCustomCal);
+    if (calOverlay)  calOverlay.addEventListener('click', e => { if (e.target === calOverlay) closeCustomCal(); });
+    if (calPrevBtn)  calPrevBtn.addEventListener('click', () => {
+        calViewMonth--;
+        if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+        renderCalGrid();
+    });
+    if (calNextBtn)  calNextBtn.addEventListener('click', () => {
+        calViewMonth++;
+        if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+        renderCalGrid();
+    });
+
+    // =================================================================
+    //  CUSTOM TIME PICKER (scrollable drum)
+    // =================================================================
+    const timeOverlay    = document.getElementById('customTimeOverlay');
+    const timeCloseBtn   = document.getElementById('customTimeClose');
+    const timeConfirmBtn = document.getElementById('customTimeConfirm');
+    const drumHour       = document.getElementById('timeDrumHour');
+    const drumMin        = document.getElementById('timeDrumMin');
+    const ampmAM         = document.getElementById('ampmAM');
+    const ampmPM         = document.getElementById('ampmPM');
+
+    const ITEM_H = 52; // px — must match CSS
+    let timeOnConfirm = null;
+    let selectedAmpm = 'AM';
+
+    function buildDrum(drumEl, items) {
+        if (!drumEl) return;
+        drumEl.innerHTML = '';
+        // Padding items top & bottom so edges can centre-snap
+        const pad = document.createElement('div');
+        pad.style.height = `${ITEM_H}px`; pad.style.flexShrink = '0';
+        drumEl.appendChild(pad.cloneNode());
+
+        items.forEach((val, idx) => {
+            const el = document.createElement('div');
+            el.className = 'custom-time-drum-item';
+            el.textContent = val;
+            el.dataset.idx = idx;
+            el.dataset.val = val;
+            drumEl.appendChild(el);
+        });
+
+        drumEl.appendChild(pad.cloneNode());
+    }
+
+    function getDrumActive(drumEl) {
+        if (!drumEl) return 0;
+        const scrollTop = drumEl.scrollTop;
+        return Math.round(scrollTop / ITEM_H);
+    }
+
+    function scrollDrumTo(drumEl, idx, smooth) {
+        if (!drumEl) return;
+        drumEl.scrollTo({ top: idx * ITEM_H, behavior: smooth ? 'smooth' : 'instant' });
+    }
+
+    function updateDrumHighlight(drumEl) {
+        if (!drumEl) return;
+        const activeIdx = getDrumActive(drumEl);
+        drumEl.querySelectorAll('.custom-time-drum-item').forEach((el, i) => {
+            el.classList.toggle('active', i === activeIdx);
+        });
+    }
+
+    // Hour: 1-12
+    const hourItems = Array.from({length:12}, (_,i) => String(i+1).padStart(2,'0'));
+    // Minutes: 00, 05, 10 … 55
+    const minItems  = Array.from({length:12}, (_,i) => String(i*5).padStart(2,'0'));
+
+    function initDrums() {
+        buildDrum(drumHour, hourItems);
+        buildDrum(drumMin,  minItems);
+        // Default: 09:00 AM
+        scrollDrumTo(drumHour, 8, false); // index 8 = hour 9
+        scrollDrumTo(drumMin,  0, false);
+        setTimeout(() => {
+            updateDrumHighlight(drumHour);
+            updateDrumHighlight(drumMin);
+        }, 50);
+
+        if (drumHour) drumHour.addEventListener('scroll', () => updateDrumHighlight(drumHour), { passive: true });
+        if (drumMin)  drumMin.addEventListener('scroll',  () => updateDrumHighlight(drumMin),  { passive: true });
+    }
+    initDrums();
+
+    if (ampmAM) ampmAM.addEventListener('click', () => {
+        selectedAmpm = 'AM';
+        ampmAM.classList.add('active');
+        if (ampmPM) ampmPM.classList.remove('active');
+    });
+    if (ampmPM) ampmPM.addEventListener('click', () => {
+        selectedAmpm = 'PM';
+        ampmPM.classList.add('active');
+        if (ampmAM) ampmAM.classList.remove('active');
+    });
+
+    function openCustomTime(onConfirm) {
+        timeOnConfirm = onConfirm;
+        // Reset to 9:00 AM
+        selectedAmpm = 'AM';
+        if (ampmAM) { ampmAM.classList.add('active'); }
+        if (ampmPM) { ampmPM.classList.remove('active'); }
+        scrollDrumTo(drumHour, 8, false);
+        scrollDrumTo(drumMin,  0, false);
+        setTimeout(() => { updateDrumHighlight(drumHour); updateDrumHighlight(drumMin); }, 60);
+        if (timeOverlay) {
+            timeOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeCustomTime() {
+        if (timeOverlay) {
+            timeOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    if (timeCloseBtn) timeCloseBtn.addEventListener('click', closeCustomTime);
+    if (timeOverlay)  timeOverlay.addEventListener('click', e => { if (e.target === timeOverlay) closeCustomTime(); });
+
+    if (timeConfirmBtn) {
+        timeConfirmBtn.addEventListener('click', () => {
+            const hourIdx = getDrumActive(drumHour);
+            const minIdx  = getDrumActive(drumMin);
+            const hourVal = parseInt(hourItems[Math.min(hourIdx, hourItems.length-1)]);
+            const minVal  = minItems[Math.min(minIdx, minItems.length-1)];
+
+            // Convert to 24h
+            let h24 = hourVal;
+            if (selectedAmpm === 'AM' && hourVal === 12) h24 = 0;
+            if (selectedAmpm === 'PM' && hourVal !== 12) h24 = hourVal + 12;
+
+            const timeStr24 = `${String(h24).padStart(2,'0')}:${minVal}`;
+            const friendlyStr = `${hourItems[Math.min(hourIdx, hourItems.length-1)]}:${minVal} ${selectedAmpm}`;
+
+            closeCustomTime();
+            if (timeOnConfirm) timeOnConfirm(timeStr24, friendlyStr);
+        });
+    }
+
+    // =================================================================
+    //  SMART SCHEDULING WIDGET
+    // =================================================================
     const schedDateBtn       = document.getElementById('schedDateBtn');
     const schedTimeBtn       = document.getElementById('schedTimeBtn');
     const schedDateLabel     = document.getElementById('schedDateLabel');
     const schedTimeLabel     = document.getElementById('schedTimeLabel');
     const schedDateIcon      = document.getElementById('schedDateIcon');
     const schedTimeIcon      = document.getElementById('schedTimeIcon');
-    const schedDtRow         = document.getElementById('schedDtRow');
-    const schedDtCombined    = document.getElementById('schedDtCombined');
-    const schedDtCombinedLbl = document.getElementById('schedDtCombinedLabel');
+    const schedStep2Wrapper  = document.getElementById('schedStep2Wrapper');
+    const schedDatePreview   = document.getElementById('schedDatePreview');
+    const schedDatePreviewTxt= document.getElementById('schedDatePreviewText');
+    const schedDatePreviewEdit=document.getElementById('schedDatePreviewEdit');
+    const schedSubmitBtn     = document.getElementById('schedSubmitBtn');
+    const schedTermsNote     = document.getElementById('schedTermsNote');
 
-    let pickedDate = '';
-    let pickedTime = '';
+    let pickedDate = '';  // 'YYYY-MM-DD'
+    let pickedTime = '';  // 'HH:MM' 24h
+    let widgetStep = 1;   // 1 = date/time picking, 2 = show helper & task fields
 
-    function localDateStr(d) {
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
     function formatDateShort(ds) {
-        if (!ds) return 'Choose date';
+        if (!ds) return '';
         const [y,m,d] = ds.split('-').map(Number);
         return new Date(y,m-1,d).toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
     }
+
     function formatTimeFriendly(ts) {
-        if (!ts) return 'Choose time';
-        const [h,mi] = ts.split(':');
-        const hr = parseInt(h);
-        return `${hr%12||12}:${mi} ${hr<12?'AM':'PM'}`;
+        if (!ts) return '';
+        const [h,mi] = ts.split(':').map(Number);
+        const hr = h%12||12;
+        const ampm = h<12?'AM':'PM';
+        return `${hr}:${String(mi).padStart(2,'0')} ${ampm}`;
     }
 
-    function updateDtButtons() {
-        if (!schedDtRow || !schedDtCombined || !schedDtCombinedLbl) return;
+    function updateDatePreview() {
+        if (!schedDatePreviewTxt || !schedDatePreview) return;
         if (pickedDate && pickedTime) {
-            schedDtRow.style.display = 'none';
-            schedDtCombinedLbl.textContent = `${formatDateShort(pickedDate)}  ·  ${formatTimeFriendly(pickedTime)}`;
-            schedDtCombined.classList.add('visible');
-        } else {
-            schedDtRow.style.display = 'flex';
-            schedDtCombined.classList.remove('visible');
+            schedDatePreviewTxt.textContent = `${formatDateShort(pickedDate)}  ·  ${formatTimeFriendly(pickedTime)}`;
         }
     }
 
-    function getAllEvents() {
-        try { return JSON.parse(localStorage.getItem('tm_sched_events') || '[]'); } catch(e) { return []; }
-    }
-    function saveEvent(date, time, task) {
-        const events = getAllEvents();
-        const idx = events.findIndex(e => e.date === date && e.time === time);
-        if (idx >= 0) events[idx].task = task;
-        else events.push({ date, time, task });
-        localStorage.setItem('tm_sched_events', JSON.stringify(events));
-        localStorage.setItem('tm_sched_last', JSON.stringify({ date, time, task }));
-    }
-    function loadLast() {
-        try {
-            const d = JSON.parse(localStorage.getItem('tm_sched_last') || '{}');
-            if (d.date && schedDateLabel && schedDateIcon) { pickedDate = d.date; schedDateLabel.textContent = formatDateShort(d.date); schedDateIcon.className = 'ph-bold ph-calendar-check'; }
-            if (d.time && schedTimeLabel && schedTimeIcon) { pickedTime = d.time; schedTimeLabel.textContent = formatTimeFriendly(d.time); schedTimeIcon.className = 'ph-bold ph-clock-countdown'; }
-            if (d.task && document.getElementById('schedTaskInput')) document.getElementById('schedTaskInput').value = d.task;
-            updateDtButtons();
-        } catch(e) {}
-    }
-    loadLast();
-
-    // Create separate date and time flatpickr instances
-    let datePickerInstance = null;
-    let timePickerInstance = null;
-    
-    // Create hidden input for date picker
-    const hiddenDateInput = document.createElement('input');
-    hiddenDateInput.type = 'text';
-    hiddenDateInput.style.position = 'absolute';
-    hiddenDateInput.style.opacity = '0';
-    hiddenDateInput.style.pointerEvents = 'none';
-    hiddenDateInput.style.width = '0';
-    hiddenDateInput.style.height = '0';
-    document.body.appendChild(hiddenDateInput);
-    
-    // Create hidden input for time picker
-    const hiddenTimeInput = document.createElement('input');
-    hiddenTimeInput.type = 'text';
-    hiddenTimeInput.style.position = 'absolute';
-    hiddenTimeInput.style.opacity = '0';
-    hiddenTimeInput.style.pointerEvents = 'none';
-    hiddenTimeInput.style.width = '0';
-    hiddenTimeInput.style.height = '0';
-    document.body.appendChild(hiddenTimeInput);
-    
-    // Initialize date picker
-    datePickerInstance = flatpickr(hiddenDateInput, {
-        dateFormat: 'Y-m-d',
-        minDate: 'today',
-        onChange: function(selectedDates, dateStr) {
-            if (!dateStr) return;
-            pickedDate = dateStr;
-            if (schedDateLabel && schedDateIcon && schedDateBtn) {
-                schedDateLabel.textContent = formatDateShort(dateStr);
-                schedDateIcon.className = 'ph-bold ph-calendar-check';
-                schedDateBtn.classList.add('selected');
-            }
-            const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
-            if (pickedTime) saveEvent(pickedDate, pickedTime, task);
-            updateDtButtons();
+    function checkAndAdvanceStep() {
+        if (pickedDate && pickedTime && widgetStep === 1) {
+            // Advance to step 2
+            widgetStep = 2;
+            if (schedStep2Wrapper) schedStep2Wrapper.style.display = 'flex';
+            updateDatePreview();
+            if (schedSubmitBtn) schedSubmitBtn.textContent = 'Find taskers';
+            if (schedTermsNote) schedTermsNote.style.display = 'block';
         }
-    });
-    
-    // Initialize time picker
-    timePickerInstance = flatpickr(hiddenTimeInput, {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: 'H:i',
-        time_24hr: false,
-        minTime: '07:00',
-        maxTime: '22:00',
-        onChange: function(selectedDates, timeStr) {
-            if (!timeStr) return;
-            pickedTime = timeStr;
-            if (schedTimeLabel && schedTimeIcon && schedTimeBtn) {
-                schedTimeLabel.textContent = formatTimeFriendly(timeStr);
-                schedTimeIcon.className = 'ph-bold ph-clock-countdown';
-                schedTimeBtn.classList.add('selected');
-            }
-            const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
-            if (pickedDate) saveEvent(pickedDate, pickedTime, task);
-            updateDtButtons();
-        }
-    });
+    }
 
+    // Date button → open custom calendar
     if (schedDateBtn) {
-        schedDateBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            datePickerInstance.open();
+        schedDateBtn.addEventListener('click', () => {
+            openCustomCal((dateStr) => {
+                pickedDate = dateStr;
+                if (schedDateLabel) schedDateLabel.textContent = formatDateShort(dateStr);
+                if (schedDateIcon)  schedDateIcon.className = 'ph-bold ph-calendar-check';
+                schedDateBtn.classList.add('selected');
+                checkAndAdvanceStep();
+                updateDatePreview();
+            });
         });
     }
-    
+
+    // Time button → open custom time picker
     if (schedTimeBtn) {
-        schedTimeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            timePickerInstance.open();
+        schedTimeBtn.addEventListener('click', () => {
+            openCustomTime((timeStr24, friendlyStr) => {
+                pickedTime = timeStr24;
+                if (schedTimeLabel) schedTimeLabel.textContent = friendlyStr;
+                if (schedTimeIcon)  schedTimeIcon.className = 'ph-bold ph-clock-countdown';
+                schedTimeBtn.classList.add('selected');
+                checkAndAdvanceStep();
+                updateDatePreview();
+            });
         });
     }
 
-    // ======== FULL-SCREEN CALENDAR ========
-    const schedCalOverlayEl = document.getElementById('schedCalOverlay');
-    const schedCalCloseEl   = document.getElementById('schedCalClose');
-    const schedCalTitleEl   = document.getElementById('schedCalTitle');
-    const schedCalPhase1El  = document.getElementById('schedCalPhase1');
-    const schedCalPhase2El  = document.getElementById('schedCalPhase2');
-    const schedCalWeekStripEl = document.getElementById('schedCalWeekStrip');
-    const schedCalTodayLblEl  = document.getElementById('schedCalTodayLabel');
-    const schedCalTimelistEl  = document.getElementById('schedCalTimelist');
-    const schedCalFpMountEl   = document.getElementById('schedCalFpMount');
-    let schedCalFpObj = null;
-    let calViewDate = '';
-
-    function buildWeekStrip(selectedDateStr) {
-        if (!schedCalWeekStripEl) return;
-        schedCalWeekStripEl.innerHTML = '';
-        const [sy,sm,sd] = selectedDateStr.split('-').map(Number);
-        const todayStr = localDateStr(new Date());
-        for (let i = -3; i <= 3; i++) {
-            const d = new Date(sy,sm-1,sd+i);
-            const ds = localDateStr(d);
-            const isToday = ds === todayStr;
-            const isActive = i === 0;
-            const dayEl = document.createElement('div');
-            dayEl.className = 'schedcal-week-day' + (isActive ? ' active' : '') + (isToday ? ' is-today' : '');
-            const letter = ['S','M','T','W','T','F','S'][d.getDay()];
-            dayEl.innerHTML = `<span class="schedcal-wd-name">${letter}</span><div class="schedcal-wd-num-wrap"><span class="schedcal-wd-num">${d.getDate()}</span></div>`;
-            dayEl.addEventListener('click', () => {
-                calViewDate = ds;
-                document.querySelectorAll('.schedcal-week-day').forEach(el => el.classList.remove('active'));
-                dayEl.classList.add('active');
-                const nd = new Date(d.getFullYear(),d.getMonth(),d.getDate());
-                if (schedCalTitleEl) schedCalTitleEl.textContent = nd.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-                if (schedCalTodayLblEl) {
-                    schedCalTodayLblEl.textContent = localDateStr(new Date()) === ds
-                        ? 'Today · ' + nd.toLocaleDateString('en-ZA',{day:'numeric',month:'long'})
-                        : nd.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-                }
-                buildTimeList(ds);
-            });
-            schedCalWeekStripEl.appendChild(dayEl);
-        }
+    // "Change" button in date preview — go back to step 1
+    if (schedDatePreviewEdit) {
+        schedDatePreviewEdit.addEventListener('click', () => {
+            widgetStep = 1;
+            pickedDate = '';
+            pickedTime = '';
+            if (schedDateLabel)  schedDateLabel.textContent  = 'Choose date';
+            if (schedTimeLabel)  schedTimeLabel.textContent  = 'Pick time';
+            if (schedDateIcon)   schedDateIcon.className     = 'ph-bold ph-calendar-blank';
+            if (schedTimeIcon)   schedTimeIcon.className     = 'ph-bold ph-clock';
+            if (schedDateBtn)    schedDateBtn.classList.remove('selected');
+            if (schedTimeBtn)    schedTimeBtn.classList.remove('selected');
+            if (schedStep2Wrapper) schedStep2Wrapper.style.display = 'none';
+            if (schedSubmitBtn)  schedSubmitBtn.textContent = 'Next';
+            if (schedTermsNote)  schedTermsNote.style.display = 'none';
+        });
     }
-
-    function buildTimeList(dateStr) {
-        if (!schedCalTimelistEl) return;
-        schedCalTimelistEl.innerHTML = '';
-        const events = getAllEvents().filter(e => e.date === dateStr);
-        const now = new Date();
-        const todayStr = localDateStr(now);
-        const isToday = todayStr === dateStr;
-        for (let h = 7; h <= 22; h++) {
-            const maxHalf = h === 22 ? 1 : 2;
-            for (let half = 0; half < maxHalf; half++) {
-                const m = half === 0 ? '00' : '30';
-                const timeStr = `${String(h).padStart(2,'0')}:${m}`;
-                const hr12 = h%12||12; const ampm = h<12?'AM':'PM';
-                const label = `${hr12}:${m} ${ampm}`;
-                const isCurrent = isToday && h === now.getHours() && half === 0;
-                const slotEvents = events.filter(e => e.time === timeStr);
-                const slot = document.createElement('div');
-                slot.className = 'schedcal-time-slot' + (isCurrent ? ' current-hour' : '');
-                const pills = slotEvents.map(ev => `<div class="schedcal-event-pill"><div class="schedcal-event-dot"></div><span class="schedcal-event-text">${ev.task||'Task'}</span></div>`).join('');
-                slot.innerHTML = `
-                    <span class="schedcal-time-label">${label}</span>
-                    ${isCurrent ? '<span class="schedcal-current-badge">Now</span>' : ''}
-                    <div class="schedcal-time-line">${pills}</div>`;
-                schedCalTimelistEl.appendChild(slot);
-            }
-        }
-        if (isToday) {
-            setTimeout(() => {
-                const cur = schedCalTimelistEl.querySelector('.current-hour');
-                if (cur) cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 80);
-        }
-    }
-
-    function openCalPhase1() {
-        if (!schedCalPhase1El || !schedCalPhase2El || !schedCalTitleEl || !schedCalFpMountEl) return;
-        schedCalPhase1El.style.display = 'flex';
-        schedCalPhase2El.style.display = 'none';
-        schedCalTitleEl.textContent = 'Select a date';
-        const currentYear = new Date().getFullYear();
-        if (!schedCalFpObj) {
-            const inp = document.createElement('input');
-            inp.type = 'text'; inp.style.display = 'none';
-            schedCalFpMountEl.appendChild(inp);
-            schedCalFpObj = flatpickr(inp, {
-                inline: true, disableMobile: true,
-                minDate: 'today', maxDate: new Date(currentYear,11,31),
-                dateFormat: 'Y-m-d', defaultDate: pickedDate || undefined,
-                onReady(_, __, fp) {
-                    const yr = fp.calendarContainer.querySelector('.cur-year');
-                    if (yr) { yr.readOnly = true; yr.style.pointerEvents = 'none'; }
-                    const nw = fp.calendarContainer.querySelector('.numInputWrapper');
-                    if (nw) nw.style.pointerEvents = 'none';
-                },
-                onDayCreate(_, __, fp, dayElem) {
-                    const ds = localDateStr(dayElem.dateObj);
-                    const events = getAllEvents();
-                    if (events.some(e => e.date === ds)) dayElem.classList.add('has-sched-event');
-                },
-                onChange(_, dateStr) {
-                    if (!dateStr) return;
-                    pickedDate = dateStr;
-                    if (schedDateLabel && schedDateIcon && schedDateBtn) {
-                        schedDateLabel.textContent = formatDateShort(dateStr);
-                        schedDateIcon.className = 'ph-bold ph-calendar-check';
-                        schedDateBtn.classList.add('selected');
-                    }
-                    const task = (document.getElementById('schedTaskInput')||{}).value?.trim() || '';
-                    if (pickedTime) saveEvent(pickedDate, pickedTime, task);
-                    updateDtButtons();
-                    setTimeout(() => closeSchedCal(), 200);
-                }
-            });
-        } else {
-            schedCalFpObj.redraw();
-            if (pickedDate) schedCalFpObj.setDate(pickedDate, false);
-        }
-    }
-
-    function openCalPhase2() {
-        if (!schedCalPhase1El || !schedCalPhase2El || !schedCalTitleEl) return;
-        schedCalPhase1El.style.display = 'none';
-        schedCalPhase2El.style.display = 'flex';
-        calViewDate = pickedDate || localDateStr(new Date());
-        const [y,m,d] = calViewDate.split('-').map(Number);
-        const dt = new Date(y,m-1,d);
-        schedCalTitleEl.textContent = dt.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-        buildWeekStrip(calViewDate);
-        const today = new Date();
-        if (schedCalTodayLblEl) {
-            schedCalTodayLblEl.textContent = localDateStr(today) === calViewDate
-                ? 'Today · ' + today.toLocaleDateString('en-ZA',{day:'numeric',month:'long'})
-                : dt.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});
-        }
-        buildTimeList(calViewDate);
-    }
-
-    function openSchedCal(phase) {
-        if (!schedCalOverlayEl) return;
-        schedCalOverlayEl.classList.add('active');
-        schedCalOverlayEl.setAttribute('aria-hidden','false');
-        document.body.style.overflow = 'hidden';
-        if (phase === 2) openCalPhase2();
-        else openCalPhase1();
-    }
-    function closeSchedCal() {
-        if (!schedCalOverlayEl) return;
-        schedCalOverlayEl.classList.remove('active');
-        schedCalOverlayEl.setAttribute('aria-hidden','true');
-        document.body.style.overflow = '';
-    }
-    if (schedCalCloseEl) schedCalCloseEl.addEventListener('click', closeSchedCal);
-    if (schedCalOverlayEl) schedCalOverlayEl.addEventListener('keydown', e => { if (e.key === 'Escape') closeSchedCal(); });
-    if (schedDateBtn) schedDateBtn.addEventListener('click', e => { e.stopPropagation(); openSchedCal(1); });
-    if (schedDtCombined) schedDtCombined.addEventListener('click', e => { e.stopPropagation(); openSchedCal(2); });
 
     // ======== WIDGET TASK SUGGESTIONS ========
-    const schedTaskInputEl   = document.getElementById('schedTaskInput');
-    const schedTaskSuggBox = document.getElementById('schedTaskSuggestions');
+    const schedTaskInputEl  = document.getElementById('schedTaskInput');
+    const schedTaskSuggBox  = document.getElementById('schedTaskSuggestions');
     let schedSuggHighlight = -1;
 
     function renderSchedSuggestions(matches, query) {
@@ -2215,14 +2466,15 @@
             const idx = match.toLowerCase().indexOf(query.toLowerCase());
             item.innerHTML = idx>=0 ? match.slice(0,idx)+'<mark>'+match.slice(idx,idx+query.length)+'</mark>'+match.slice(idx+query.length) : match;
             item.addEventListener('mousedown', e => {
-                e.preventDefault(); if (schedTaskInputEl) schedTaskInputEl.value = match;
+                e.preventDefault();
+                if (schedTaskInputEl) schedTaskInputEl.value = match;
                 if (schedTaskSuggBox) schedTaskSuggBox.classList.remove('visible');
-                if (pickedDate && pickedTime) saveEvent(pickedDate, pickedTime, match);
             });
             schedTaskSuggBox.appendChild(item);
         });
         schedTaskSuggBox.classList.add('visible');
     }
+
     if (schedTaskInputEl && schedTaskSuggBox) {
         schedTaskInputEl.addEventListener('input', function() {
             const val = this.value.trim();
@@ -2239,10 +2491,7 @@
             else return;
             items.forEach((el,i) => el.classList.toggle('highlighted', i===schedSuggHighlight));
         });
-        schedTaskInputEl.addEventListener('blur', () => setTimeout(() => schedTaskSuggBox && schedTaskSuggBox.classList.remove('visible'), 150));
-        schedTaskInputEl.addEventListener('change', function() {
-            if (pickedDate && pickedTime) saveEvent(pickedDate, pickedTime, this.value.trim());
-        });
+        schedTaskInputEl.addEventListener('blur', () => setTimeout(() => { if(schedTaskSuggBox) schedTaskSuggBox.classList.remove('visible'); }, 150));
     }
 
     // ========= ASSIGN BUTTON =========
@@ -2250,9 +2499,7 @@
     const schedHelperValue = document.getElementById('schedHelperValue');
     let _firebaseUser = null;
 
-    firebase.auth().onAuthStateChanged(function(user) {
-        _firebaseUser = user;
-    });
+    firebase.auth().onAuthStateChanged(function(user) { _firebaseUser = user; });
 
     function applySelectedHelper(name, detail) {
         if (schedHelperValue) {
@@ -2285,19 +2532,29 @@
     if (contactSheetOverlayEl) {
         contactSheetOverlayEl.addEventListener('click', e => { if (e.target === contactSheetOverlayEl) closeFallbackSheet(); });
     }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFallbackSheet(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeFallbackSheet(); closeCustomCal(); closeCustomTime(); } });
 
     if (schedAssignBtn) {
         schedAssignBtn.addEventListener('click', () => {
-            if (!_firebaseUser) {
-                window.location.href = 'login.html';
-                return;
-            }
+            if (!_firebaseUser) { window.location.href = 'login.html'; return; }
             if ('contacts' in navigator && 'ContactsManager' in window) {
                 openNativeContactPicker();
             } else {
                 openFallbackSheet();
             }
+        });
+    }
+
+    // ========= SUBMIT / FIND TASKERS =========
+    if (schedSubmitBtn) {
+        schedSubmitBtn.addEventListener('click', function() {
+            if (widgetStep === 1) {
+                // Step 1: nudge user to pick date/time if not done
+                if (!pickedDate) { schedDateBtn && schedDateBtn.click(); return; }
+                if (!pickedTime) { schedTimeBtn && schedTimeBtn.click(); return; }
+            }
+            // Step 2: navigate
+            window.location.href = 'task-planner.html';
         });
     }
 
@@ -2316,17 +2573,12 @@
         }
         aboutToggle.addEventListener('click', toggleAbout);
         aboutToggle.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleAbout(e);
-            }
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAbout(e); }
         });
     }
 
     const navContainer = document.querySelector('.nav-container');
-    if (navContainer) {
-        navContainer.addEventListener('click', e => e.stopPropagation());
-    }
+    if (navContainer) navContainer.addEventListener('click', e => e.stopPropagation());
 
     // ========= MODAL A =========
     const modalA           = document.getElementById('waitlistModal');
@@ -2360,18 +2612,11 @@
     if (formB) formB.addEventListener('submit', e => { e.preventDefault(); if (formContainerB) formContainerB.style.display = 'none'; if (successB) successB.classList.add('active'); });
     if (modalB) modalB.addEventListener('click', e => { if (e.target === modalB) { modalB.classList.remove('active'); resetModalB(); } });
 
-    // ========= SCHED SUBMIT BUTTON =========
-    const schedSubmitBtn = document.getElementById('schedSubmitBtn');
-    if (schedSubmitBtn) {
-        schedSubmitBtn.addEventListener('click', function() {
-            window.location.href = 'task-planner.html';
-        });
-    }
-
 })();
 </script>
 
 <!-- Sticky bottom bar -->
+
 <div class="sticky-footer">
     <a href="task-planner-home.html" class="sticky-footer-btn">Find taskers</a>
 </div>
