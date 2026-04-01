@@ -6,2239 +6,1816 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>TaskMart</title>
 
-<!-- Fonts -->
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
-
-<!-- Phosphor Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-
-<!-- Mapbox GL JS -->
 
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-
-<!-- Firebase SDK -->
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <style>
-/* ══════════════════════════════════════════
-   DESIGN TOKENS
-══════════════════════════════════════════ */
+/* ─── TOKENS ─────────────────────────────── */
 :root {
-  --black: #0A0A0A;
-  --white: #FAFAFA;
-  --off-white: #F4F4F2;
-  --grey-50: #F5F5F3;
-  --grey-100: #EBEBEA;
-  --grey-200: #D6D6D4;
-  --grey-400: #9A9A97;
-  --grey-600: #5C5C5A;
-  --green: #22C55E;
-  --green-bg: rgba(34,197,94,0.1);
-  --red: #EF4444;
-  --red-bg: rgba(239,68,68,0.1);
-  --amber: #F59E0B;
-  --amber-bg: rgba(245,158,11,0.1);
-  --blue: #3B82F6;
-  --blue-bg: rgba(59,130,246,0.1);
-  --font-head: 'Syne', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
-  --nav-h: 68px;
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
-  --radius-xl: 28px;
-  --radius-pill: 999px;
-  --shadow-xs: 0 1px 4px rgba(0,0,0,0.06);
-  --shadow-sm: 0 2px 10px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
-  --transition: 0.26s cubic-bezier(.4,0,.2,1);
-  --bounce: 0.32s cubic-bezier(.34,1.56,.64,1);
+  --black:   #0A0A0A;
+  --white:   #FFFFFF;
+  --bg:      #F6F6F4;
+  --g50:     #F5F5F3;
+  --g100:    #EBEBEA;
+  --g200:    #D6D6D4;
+  --g400:    #9A9A97;
+  --g600:    #5C5C5A;
+  --green:   #22C55E;
+  --green10: rgba(34,197,94,.10);
+  --red:     #EF4444;
+  --red10:   rgba(239,68,68,.10);
+  --amber:   #F59E0B;
+  --amber10: rgba(245,158,11,.10);
+  --blue:    #3B82F6;
+  --blue10:  rgba(59,130,246,.10);
+  --nav-h:   60px;
+  --r-sm:    8px;
+  --r-md:    14px;
+  --r-lg:    20px;
+  --r-xl:    26px;
+  --r-pill:  999px;
+  --sh-xs:   0 1px 3px rgba(0,0,0,.06);
+  --sh-sm:   0 2px 8px rgba(0,0,0,.08);
+  --sh-md:   0 4px 18px rgba(0,0,0,.10);
+  --sh-lg:   0 8px 30px rgba(0,0,0,.13);
+  --tr:      .22s cubic-bezier(.4,0,.2,1);
+  --bounce:  .30s cubic-bezier(.34,1.56,.64,1);
+  --font:    'Manrope', sans-serif;
 }
 
-/* ══════════════════════════════════════════
-   RESET & BASE
-══════════════════════════════════════════ */
-*, *::before, *::after {
-  box-sizing: border-box; margin: 0; padding: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-html, body {
-  height: 100%; font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-  background: #111;
-  display: flex; align-items: center; justify-content: center;
+/* ─── RESET ──────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:var(--font);-webkit-font-smoothing:antialiased;background:#111;overflow:hidden}
+input,textarea,button,select{font-family:var(--font)}
+input[type=file]{display:none}
+
+/* ─── APP ROOT ───────────────────────────── */
+#app{
+  position:fixed;inset:0;
+  background:var(--white);
+  display:flex;flex-direction:column;
+  overflow:hidden;
 }
 
-/* ══════════════════════════════════════════
-   PHONE SHELL
-══════════════════════════════════════════ */
-.phone {
-  width: 390px; height: 844px;
-  background: var(--white);
-  border-radius: 50px;
-  overflow: hidden; position: relative;
-  box-shadow: 0 48px 96px rgba(0,0,0,0.55), inset 0 0 0 1.5px rgba(255,255,255,0.08);
+/* ─── SCREENS ────────────────────────────── */
+.screen{
+  position:absolute;inset:0;bottom:var(--nav-h);
+  display:flex;flex-direction:column;
+  background:var(--white);
+  opacity:0;transform:translateY(14px) scale(.984);
+  pointer-events:none;
+  transition:opacity var(--tr),transform var(--tr);
+  will-change:opacity,transform;
 }
-@media (max-height: 860px) {
-  .phone { height: 100dvh; border-radius: 0; width: 100vw; }
-  html, body { background: var(--white); }
-}
+.screen.active{opacity:1;transform:none;pointer-events:all}
 
-/* ══════════════════════════════════════════
-   STATUS BAR
-══════════════════════════════════════════ */
-.status-bar {
-  height: 44px; background: var(--white);
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  position: relative; z-index: 500; flex-shrink: 0;
+.scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
 }
-.status-bar .time {
-  font-family: var(--font-head); font-weight: 700;
-  font-size: 15px; letter-spacing: -0.3px;
-}
-.status-bar .icons { display: flex; gap: 5px; align-items: center; }
-.status-bar .icons svg { width: 16px; height: 16px; }
+.scroll::-webkit-scrollbar{display:none}
 
-/* ══════════════════════════════════════════
-   SCREENS SYSTEM
-══════════════════════════════════════════ */
-.screens-root {
-  position: absolute; top: 44px; left: 0; right: 0; bottom: 0;
-  overflow: hidden;
+/* ─── BOTTOM NAV ─────────────────────────── */
+#bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  height:var(--nav-h);
+  background:var(--white);
+  border-top:1px solid var(--g100);
+  display:flex;align-items:stretch;
+  z-index:600;
+  padding-bottom:env(safe-area-inset-bottom,0);
 }
+.nb{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;
+  border:none;background:none;cursor:pointer;padding:0;
+  transition:opacity .15s;
+}
+.nb:active{opacity:.5}
+.nb-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;transition:transform var(--bounce)}
+.nb.on .nb-icon{transform:translateY(-2px)}
+.nb-icon i{font-size:21px;color:var(--g400);transition:color var(--tr)}
+.nb.on .nb-icon i{color:var(--black)}
+.nb-lbl{font-size:10px;font-weight:600;color:var(--g400);transition:color var(--tr);letter-spacing:.1px}
+.nb.on .nb-lbl{color:var(--black)}
+.nb-post .nb-icon{width:48px;height:48px;background:var(--black);border-radius:14px;margin-top:-16px;box-shadow:0 5px 18px rgba(0,0,0,.28)}
+.nb-post .nb-icon i{color:var(--white)!important;font-size:22px}
+.nb-dot{position:absolute;top:2px;right:calc(50% - 16px);width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--white);display:none}
+.nb-dot.on{display:block}
 
-.screen {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  display: flex; flex-direction: column;
-  background: var(--white);
-  opacity: 0;
-  transform: translateY(16px) scale(0.984);
-  pointer-events: none;
-  transition: opacity var(--transition), transform var(--transition);
-  will-change: opacity, transform;
-}
-.screen.active {
-  opacity: 1; transform: none; pointer-events: all;
-}
+/* ─── TYPOGRAPHY ─────────────────────────── */
+.t-h1{font-size:24px;font-weight:800;letter-spacing:-.6px;color:var(--black);line-height:1.15}
+.t-h2{font-size:19px;font-weight:700;letter-spacing:-.4px;color:var(--black)}
+.t-h3{font-size:15px;font-weight:700;letter-spacing:-.15px;color:var(--black)}
+.t-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--g400)}
+.t-body{font-size:14px;font-weight:400;color:var(--g600);line-height:1.55}
+.t-sm{font-size:12px;font-weight:500;color:var(--g400)}
 
-/* ══════════════════════════════════════════
-   SCROLL WRAPPER
-══════════════════════════════════════════ */
-.scroll-wrap {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding-bottom: calc(var(--nav-h) + 8px);
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.scroll-wrap::-webkit-scrollbar { display: none; }
+/* ─── BADGES ─────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--r-pill);font-size:10.5px;font-weight:700;letter-spacing:.2px}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge-green{background:var(--green10);color:#16a34a}
+.badge-red{background:var(--red10);color:#dc2626}
+.badge-amber{background:var(--amber10);color:#d97706}
+.badge-blue{background:var(--blue10);color:#2563eb}
+.badge-grey{background:var(--g100);color:var(--g600)}
 
-/* ══════════════════════════════════════════
-   BOTTOM NAV
-══════════════════════════════════════════ */
-.bottom-nav {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: var(--nav-h);
-  background: var(--white);
-  border-top: 1px solid var(--grey-100);
-  display: flex; align-items: stretch; z-index: 400;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-.nav-btn {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px;
-  border: none; background: none; cursor: pointer; padding: 0;
-  position: relative; transition: opacity 0.15s;
-}
-.nav-btn:active { opacity: 0.55; }
-.nav-icon-wrap {
-  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  transition: transform var(--bounce);
-}
-.nav-btn.active .nav-icon-wrap { transform: translateY(-2px); }
-.nav-icon-wrap i { font-size: 22px; transition: color var(--transition); }
-.nav-btn:not(.active) .nav-icon-wrap i { color: var(--grey-400); }
-.nav-btn.active .nav-icon-wrap i { color: var(--black); }
-.nav-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.1px;
-  color: var(--grey-400); transition: color var(--transition);
-}
-.nav-btn.active .nav-label { color: var(--black); }
-/* Post button centre */
-.nav-btn.post-nav .nav-icon-wrap {
-  width: 50px; height: 50px;
-  background: var(--black); border-radius: 16px;
-  margin-top: -18px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.28);
-}
-.nav-btn.post-nav .nav-icon-wrap i { color: var(--white) !important; font-size: 22px; }
-.nav-badge {
-  position: absolute; top: 6px; right: calc(50% - 18px);
-  width: 8px; height: 8px; background: var(--red);
-  border-radius: 50%; border: 2px solid var(--white);
-  display: none;
-}
-.nav-badge.show { display: block; }
+/* ─── BUTTONS ────────────────────────────── */
+.btn{border:none;cursor:pointer;font-family:var(--font);font-weight:700;transition:transform .13s,opacity .13s;display:inline-flex;align-items:center;justify-content:center;gap:6px;letter-spacing:-.1px}
+.btn:active{transform:scale(.92)}
+.btn:disabled{opacity:.38;pointer-events:none}
+.btn-blk{background:var(--black);color:var(--white);border-radius:var(--r-pill);padding:0 18px;height:38px;font-size:13px}
+.btn-blk-lg{width:100%;height:52px;border-radius:var(--r-md);font-size:15px}
+.btn-ghost{background:var(--g50);color:var(--black);border-radius:var(--r-pill);padding:0 14px;height:35px;font-size:12px;font-weight:600}
+.btn-danger{background:var(--red);color:var(--white);border-radius:var(--r-sm);height:36px;padding:0 14px;font-size:13px}
+.btn-green{background:var(--green);color:var(--white)}
+.btn-icon{width:36px;height:36px;border-radius:50%;background:var(--g50);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s}
+.btn-icon:active{background:var(--g200)}
+.btn-icon i{font-size:18px;color:var(--black)}
 
-/* ══════════════════════════════════════════
-   TYPOGRAPHY HELPERS
-══════════════════════════════════════════ */
-.h1 { font-family: var(--font-head); font-size: 26px; font-weight: 800; letter-spacing: -0.8px; color: var(--black); line-height: 1.1; }
-.h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; letter-spacing: -0.4px; color: var(--black); }
-.h3 { font-family: var(--font-head); font-size: 16px; font-weight: 700; letter-spacing: -0.2px; color: var(--black); }
-.label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--grey-400); }
-.body-sm { font-size: 13px; color: var(--grey-600); line-height: 1.5; }
+/* ─── FORMS ──────────────────────────────── */
+.form-label{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--g600);display:block;margin-bottom:6px}
+.form-input{width:100%;background:var(--g50);border:1.5px solid transparent;border-radius:var(--r-md);padding:12px 14px;font-family:var(--font);font-size:14px;color:var(--black);outline:none;transition:border-color .2s,background .2s;-webkit-appearance:none}
+.form-input:focus{border-color:var(--black);background:var(--white)}
+.form-input::placeholder{color:var(--g400);font-weight:400}
+textarea.form-input{resize:none;min-height:84px;line-height:1.5}
+.form-group{margin-bottom:14px}
+.toggle-row{display:flex;gap:8px;margin-bottom:8px}
+.toggle-btn{flex:1;height:40px;border-radius:var(--r-md);border:1.5px solid var(--g200);background:var(--white);font-family:var(--font);font-size:13px;font-weight:600;color:var(--g600);cursor:pointer;transition:all .14s}
+.toggle-btn.on{background:var(--black);color:var(--white);border-color:var(--black)}
 
-/* ══════════════════════════════════════════
-   BADGES
-══════════════════════════════════════════ */
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 9px; border-radius: var(--radius-pill);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
-}
-.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.badge-green { background: var(--green-bg); color: #16a34a; }
-.badge-red { background: var(--red-bg); color: #dc2626; }
-.badge-amber { background: var(--amber-bg); color: #d97706; }
-.badge-blue { background: var(--blue-bg); color: #2563eb; }
-.badge-grey { background: var(--grey-100); color: var(--grey-600); }
+/* ─── CARD ───────────────────────────────── */
+.card{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g100);box-shadow:var(--sh-xs);cursor:pointer;transition:transform .13s,box-shadow .13s}
+.card:active{transform:scale(.983);box-shadow:none}
 
-/* ══════════════════════════════════════════
-   BUTTONS
-══════════════════════════════════════════ */
-.btn {
-  border: none; cursor: pointer; font-family: var(--font-head);
-  font-weight: 700; transition: transform 0.14s, opacity 0.14s;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn:active { transform: scale(0.93); }
-.btn-primary { background: var(--black); color: var(--white); border-radius: var(--radius-pill); padding: 0 20px; height: 40px; font-size: 13px; }
-.btn-primary-lg { width: 100%; height: 54px; border-radius: var(--radius-md); font-size: 16px; letter-spacing: 0.1px; }
-.btn-ghost { background: var(--grey-50); color: var(--black); border-radius: var(--radius-pill); padding: 0 16px; height: 36px; font-size: 12px; }
-.btn-danger { background: var(--red); color: var(--white); border-radius: var(--radius-sm); padding: 0 16px; height: 38px; font-size: 13px; }
-.btn:disabled { opacity: 0.4; pointer-events: none; }
-.btn-success { background: var(--green); color: var(--white); }
+/* ─── TOAST ──────────────────────────────── */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 12px);left:14px;right:14px;background:var(--black);color:var(--white);border-radius:var(--r-md);padding:12px 15px;font-size:13px;font-weight:600;z-index:9000;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;display:flex;align-items:center;gap:8px;box-shadow:var(--sh-lg)}
+#toast.on{opacity:1;transform:none}
 
-/* ══════════════════════════════════════════
-   CARDS
-══════════════════════════════════════════ */
-.card {
-  background: var(--white); border-radius: var(--radius-lg);
-  border: 1px solid var(--grey-100);
-  box-shadow: var(--shadow-xs);
-  transition: transform 0.14s, box-shadow 0.14s;
-  cursor: pointer;
-}
-.card:active { transform: scale(0.984); box-shadow: none; }
+/* ─── LOADING ────────────────────────────── */
+#loading-overlay{position:fixed;inset:0;background:rgba(10,10,10,.42);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+#loading-overlay.on{display:flex}
+.loading-card{background:var(--white);border-radius:var(--r-lg);padding:22px 26px;display:flex;align-items:center;gap:13px;box-shadow:var(--sh-lg)}
+.loading-card span{font-size:14px;font-weight:600;color:var(--black)}
+.spin{width:20px;height:20px;border:2.5px solid var(--g100);border-top-color:var(--black);border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-sm{width:16px;height:16px;border-width:2px}
 
-/* ══════════════════════════════════════════
-   FORMS
-══════════════════════════════════════════ */
-.form-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--grey-600); display: block; margin-bottom: 7px; }
-.form-input {
-  width: 100%; background: var(--grey-50);
-  border: 1.5px solid transparent; border-radius: var(--radius-md);
-  padding: 13px 15px; font-family: var(--font-body); font-size: 15px;
-  color: var(--black); outline: none;
-  transition: border-color 0.2s, background 0.2s;
-  -webkit-appearance: none;
-}
-.form-input:focus { border-color: var(--black); background: var(--white); }
-.form-input::placeholder { color: var(--grey-400); }
-textarea.form-input { resize: none; min-height: 88px; line-height: 1.5; }
-.form-group { margin-bottom: 16px; }
-
-/* ══════════════════════════════════════════
-   TOAST
-══════════════════════════════════════════ */
-.toast {
-  position: absolute;
-  bottom: calc(var(--nav-h) + 14px);
-  left: 16px; right: 16px;
-  background: var(--black); color: var(--white);
-  border-radius: var(--radius-md); padding: 13px 16px;
-  font-size: 13.5px; font-weight: 500; z-index: 9000;
-  opacity: 0; transform: translateY(10px);
-  transition: opacity 0.22s, transform 0.22s;
-  pointer-events: none;
-  display: flex; align-items: center; gap: 9px;
-  box-shadow: var(--shadow-lg);
-}
-.toast.show { opacity: 1; transform: none; }
-
-/* ══════════════════════════════════════════
-   LOADING SPINNER
-══════════════════════════════════════════ */
-.spinner {
-  width: 20px; height: 20px;
-  border: 2.5px solid rgba(0,0,0,0.1);
-  border-top-color: var(--black);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ══════════════════════════════════════════
+/* ═══════════════════════════════════════════
    MAPBOX OVERRIDES
-══════════════════════════════════════════ */
-.mapboxgl-ctrl-logo { opacity: 0.35 !important; }
-.mapboxgl-ctrl-attrib { font-family: var(--font-body) !important; font-size: 9px !important; border-radius: 20px !important; }
-.mapboxgl-popup-content {
-  padding: 12px 14px !important; border-radius: 12px !important;
-  font-family: var(--font-body) !important;
-  box-shadow: var(--shadow-md) !important; border: 1px solid var(--grey-100) !important;
-}
-.mapboxgl-popup-tip { border-top-color: var(--white) !important; }
+═══════════════════════════════════════════ */
+.mapboxgl-ctrl-logo{opacity:.3!important}
+.mapboxgl-ctrl-attrib{font-family:var(--font)!important;font-size:9px!important;border-radius:20px!important}
+.mapboxgl-popup-content{padding:11px 13px!important;border-radius:10px!important;font-family:var(--font)!important;box-shadow:var(--sh-md)!important;border:1px solid var(--g100)!important;font-size:13px!important;font-weight:600}
+.mapboxgl-popup-tip{border-top-color:var(--white)!important}
+.mapboxgl-ctrl-group{border-radius:var(--r-md)!important;overflow:hidden;box-shadow:var(--sh-sm)!important}
 
-/* ══════════════════════════════════════════
-   LOCATION PIN (map markers)
-══════════════════════════════════════════ */
-.user-pin {
-  width: 14px; height: 14px; background: var(--black);
-  border: 2.5px solid var(--white); border-radius: 50%;
-  box-shadow: 0 0 0 5px rgba(0,0,0,0.15);
-  animation: pin-pulse 2.2s infinite;
-}
-@keyframes pin-pulse {
-  0%,100% { box-shadow: 0 0 0 4px rgba(0,0,0,0.12); }
-  50% { box-shadow: 0 0 0 10px rgba(0,0,0,0.0); }
-}
-.radius-ring {
-  width: 90px; height: 90px; border-radius: 50%;
-  background: rgba(59,130,246,0.08);
-  border: 1.5px solid rgba(59,130,246,0.2);
-  transform: translate(-50%, -50%);
-  animation: ring-pulse 2.4s infinite ease-out;
-}
-@keyframes ring-pulse {
-  0%,100% { opacity: 0.8; transform: translate(-50%,-50%) scale(1); }
-  50% { opacity: 0.3; transform: translate(-50%,-50%) scale(1.15); }
-}
+/* user location marker */
+.u-pin{width:14px;height:14px;background:var(--black);border:2.5px solid var(--white);border-radius:50%;box-shadow:0 0 0 5px rgba(0,0,0,.12);animation:upulse 2.2s infinite}
+@keyframes upulse{0%,100%{box-shadow:0 0 0 4px rgba(0,0,0,.10)}50%{box-shadow:0 0 0 10px rgba(0,0,0,.0)}}
+.u-ring{width:80px;height:80px;border-radius:50%;background:rgba(59,130,246,.07);border:1.5px solid rgba(59,130,246,.18);transform:translate(-50%,-50%);animation:uring 2.4s infinite}
+@keyframes uring{0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1)}50%{opacity:.2;transform:translate(-50%,-50%) scale(1.2)}}
 
-/* helper marker on map */
-.helper-marker {
-  width: 38px; height: 38px; border-radius: 50%;
-  background-size: cover; background-position: center;
-  border: 2.5px solid var(--white);
-  box-shadow: var(--shadow-md); cursor: pointer;
-  animation: marker-pop 0.28s var(--bounce) both;
-}
-@keyframes marker-pop { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+/* task pins */
+.t-pin{width:28px;height:28px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);border:2px solid var(--white);box-shadow:0 3px 8px rgba(0,0,0,.25);cursor:pointer}
+.t-pin-open{background:var(--blue)}
+.t-pin-urgent{background:var(--red)}
+.t-pin-done{background:var(--green)}
 
-/* task pin on map */
-.task-pin {
-  width: 30px; height: 30px; border-radius: 50% 50% 50% 4px;
-  transform: rotate(-45deg);
-  background: var(--blue);
-  border: 2px solid var(--white);
-  box-shadow: 0 3px 8px rgba(59,130,246,0.4);
-}
-.task-pin.urgent { background: var(--red); box-shadow: 0 3px 8px rgba(239,68,68,0.4); }
-.task-pin.new { background: var(--green); box-shadow: 0 3px 8px rgba(34,197,94,0.4); }
+/* helper markers */
+.h-marker{width:36px;height:36px;border-radius:50%;background-size:cover;background-position:center;border:2px solid var(--white);box-shadow:var(--sh-md);cursor:pointer;animation:mpop .26s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes mpop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 
-/* ══════════════════════════════════════════
-   ██ SCREEN: HOME
-══════════════════════════════════════════ */
-#screen-home { background: var(--white); }
+/* ═══════════════════════════════════════════
+   NOTIFICATIONS PANEL
+═══════════════════════════════════════════ */
+#notif-panel{
+  position:fixed;top:0;left:0;right:0;
+  background:var(--white);border-radius:0 0 var(--r-xl) var(--r-xl);
+  box-shadow:var(--sh-lg);z-index:700;
+  transform:translateY(-110%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  max-height:80vh;display:flex;flex-direction:column;
+}
+#notif-panel.open{transform:translateY(0)}
+.notif-header{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px;border-bottom:1px solid var(--g100);flex-shrink:0}
+.notif-list{overflow-y:auto;flex:1;scrollbar-width:none}
+.notif-list::-webkit-scrollbar{display:none}
+.notif-item{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .12s}
+.notif-item:active{background:var(--g50)}
+.notif-item.unread{background:rgba(59,130,246,.03)}
+.notif-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-icon i{font-size:18px}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:13.5px;font-weight:600;color:var(--black);margin-bottom:2px}
+.notif-sub{font-size:12px;color:var(--g400);line-height:1.4}
+.notif-time{font-size:10.5px;color:var(--g400);margin-top:3px}
+#notif-backdrop{position:fixed;inset:0;z-index:699;display:none}
+#notif-backdrop.on{display:block}
 
-/* mini map zone */
-.home-map-zone {
-  position: relative; height: 240px;
-  border-radius: 0 0 28px 28px; overflow: hidden;
-  flex-shrink: 0;
-}
-#mini-map { width: 100%; height: 100%; }
-.map-overlay-gradient {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
-  background: linear-gradient(to top, rgba(250,250,250,1) 0%, transparent 100%);
-  pointer-events: none;
-}
-/* top bar over map */
-.home-topbar {
-  position: absolute; top: 0; left: 0; right: 0;
-  padding: 14px 18px;
-  display: flex; justify-content: space-between; align-items: center;
-  z-index: 10;
-}
-.home-topbar-logo {
-  font-family: var(--font-head); font-weight: 800;
-  font-size: 18px; letter-spacing: -0.5px; color: var(--black);
-  background: var(--white); padding: 6px 12px; border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
-}
-.home-topbar-actions { display: flex; gap: 8px; }
-.topbar-btn {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: var(--white); border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-sm); position: relative;
-}
-.topbar-btn i { font-size: 18px; color: var(--black); }
-.topbar-notif-dot {
-  position: absolute; top: 6px; right: 6px;
-  width: 7px; height: 7px; background: var(--red); border-radius: 50%;
-  border: 1.5px solid var(--white); display: none;
-}
-.topbar-notif-dot.show { display: block; }
+/* ═══════════════════════════════════════════
+   HOME SCREEN
+═══════════════════════════════════════════ */
+#screen-home .map-zone{position:relative;height:230px;flex-shrink:0;overflow:hidden}
+#mini-map{width:100%;height:100%}
+.map-fade{position:absolute;bottom:0;left:0;right:0;height:72px;background:linear-gradient(to top,var(--white) 0%,transparent 100%);pointer-events:none}
+.map-topbar{position:absolute;top:0;left:0;right:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:10}
+.logo-pill{background:var(--white);padding:6px 12px;border-radius:var(--r-sm);box-shadow:var(--sh-sm);display:flex;align-items:center;gap:6px}
+.logo-text{font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--black)}
+.logo-dot{width:7px;height:7px;background:var(--black);border-radius:50%}
+.map-expand-btn{position:absolute;bottom:20px;right:14px;width:34px;height:34px;background:var(--white);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-sm);z-index:10}
+.map-expand-btn i{font-size:17px;color:var(--black)}
+.home-body{padding:0 16px}
+.greeting-block{padding:14px 0 12px}
+.greeting-sub{font-size:13px;color:var(--g400);font-weight:500;margin-bottom:2px}
+.greeting-name{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--black)}
+.stats-row{display:flex;gap:8px;margin-bottom:16px}
+.stat-chip{flex:1;padding:12px 11px;border-radius:var(--r-md);border:1px solid var(--g100)}
+.stat-chip.dark{background:var(--black);border-color:var(--black)}
+.stat-val{font-size:20px;font-weight:800;letter-spacing:-.4px;line-height:1;margin-bottom:3px}
+.stat-chip.dark .stat-val{color:var(--white)}
+.stat-chip:not(.dark) .stat-val{color:var(--black)}
+.stat-lbl{font-size:11px;font-weight:500}
+.stat-chip.dark .stat-lbl{color:rgba(255,255,255,.45)}
+.stat-chip:not(.dark) .stat-lbl{color:var(--g400)}
+.section-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-title{font-size:16px;font-weight:700;color:var(--black);letter-spacing:-.15px}
+.section-action{font-size:12px;color:var(--g400);font-weight:600;cursor:pointer}
 
-/* home content */
-.home-content { padding: 0 18px 0; }
-.home-greeting { padding: 14px 0 16px; }
-.home-greeting-sub { font-size: 12.5px; color: var(--grey-400); font-weight: 400; margin-bottom: 3px; }
-.home-greeting-name { font-family: var(--font-head); font-size: 23px; font-weight: 800; letter-spacing: -0.6px; color: var(--black); }
+/* search bar */
+.search-bar{display:flex;align-items:center;gap:9px;background:var(--g50);border-radius:var(--r-md);padding:11px 13px;margin-bottom:16px;cursor:pointer}
+.search-bar i{font-size:16px;color:var(--g400);flex-shrink:0}
+.search-bar input{flex:1;border:none;background:none;font-family:var(--font);font-size:14px;color:var(--black);outline:none;cursor:pointer;font-weight:400}
+.search-bar input::placeholder{color:var(--g400)}
 
-/* stats strip */
-.stats-strip { display: flex; gap: 9px; margin-bottom: 18px; }
-.stat-chip {
-  flex: 1; padding: 13px 12px; border-radius: var(--radius-md);
-  border: 1px solid var(--grey-100);
-}
-.stat-chip.dark { background: var(--black); border-color: var(--black); }
-.stat-chip-val { font-family: var(--font-head); font-size: 21px; font-weight: 800; letter-spacing: -0.4px; line-height: 1; margin-bottom: 3px; }
-.stat-chip.dark .stat-chip-val { color: var(--white); }
-.stat-chip:not(.dark) .stat-chip-val { color: var(--black); }
-.stat-chip-lbl { font-size: 11px; font-weight: 500; }
-.stat-chip.dark .stat-chip-lbl { color: rgba(255,255,255,0.5); }
-.stat-chip:not(.dark) .stat-chip-lbl { color: var(--grey-400); }
+/* ═══════════════════════════════════════════
+   TASK CARD
+═══════════════════════════════════════════ */
+.tc{padding:14px;margin-bottom:9px;border-radius:var(--r-lg);border:1px solid var(--g100);background:var(--white);box-shadow:var(--sh-xs);cursor:pointer;transition:transform .13s,box-shadow .13s}
+.tc:active{transform:scale(.983);box-shadow:none}
+.tc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.tc-title{font-size:15px;font-weight:700;color:var(--black);letter-spacing:-.12px;flex:1;margin-right:8px;line-height:1.3}
+.tc-price{font-size:18px;font-weight:800;color:var(--black);letter-spacing:-.4px;white-space:nowrap}
+.tc-price small{font-size:11px;font-weight:400;color:var(--g400)}
+.tc-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.tc-meta-item{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--g600);font-weight:500}
+.tc-meta-item i{font-size:12px;color:var(--g400)}
+.tc-footer{display:flex;justify-content:space-between;align-items:center}
+.tc-poster{display:flex;align-items:center;gap:7px}
+.tc-ava{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--white);flex-shrink:0}
+.tc-poster-name{font-size:11px;color:var(--g600);font-weight:600}
+.tc-actions{display:flex;gap:6px;align-items:center}
 
-/* section header row */
-.section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.section-hdr-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--black); letter-spacing: -0.2px; }
-.section-hdr-action { font-size: 12.5px; color: var(--grey-400); font-weight: 500; cursor: pointer; }
+/* ═══════════════════════════════════════════
+   FIND / TASKS SCREEN
+═══════════════════════════════════════════ */
+.find-hdr{padding:16px 16px 0;background:var(--white);border-bottom:1px solid var(--g100);flex-shrink:0}
+.find-hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.filter-tabs{display:flex;gap:0;border-bottom:2px solid var(--g100);margin-bottom:0}
+.ftab{flex:1;padding:10px 0;font-size:13px;font-weight:600;color:var(--g400);background:none;border:none;cursor:pointer;transition:color .15s;position:relative;letter-spacing:-.1px}
+.ftab.on{color:var(--black)}
+.ftab.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--black);border-radius:2px 2px 0 0}
+.find-results-bar{padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center}
+.find-search-wrap{padding:10px 16px;background:var(--white)}
+.find-search{display:flex;align-items:center;gap:8px;background:var(--g50);border-radius:var(--r-md);padding:10px 13px}
+.find-search i{font-size:15px;color:var(--g400);flex-shrink:0}
+.find-search input{flex:1;border:none;background:none;font-family:var(--font);font-size:13.5px;color:var(--black);outline:none;font-weight:400}
+.find-search input::placeholder{color:var(--g400)}
 
-/* task card (home + find) */
-.task-card-ui {
-  padding: 16px; margin-bottom: 10px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--grey-100);
-  background: var(--white);
-  box-shadow: var(--shadow-xs);
-  cursor: pointer; transition: transform 0.14s, box-shadow 0.14s;
-}
-.task-card-ui:active { transform: scale(0.984); box-shadow: none; }
-.task-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 9px; }
-.task-card-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -0.15px; flex: 1; margin-right: 10px; line-height: 1.3; }
-.task-card-price { font-family: var(--font-head); font-size: 19px; font-weight: 800; color: var(--black); letter-spacing: -0.4px; white-space: nowrap; }
-.task-card-price span { font-size: 12px; font-weight: 400; color: var(--grey-400); }
-.task-card-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 13px; }
-.task-card-meta-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--grey-600); }
-.task-card-meta-item i { font-size: 12px; color: var(--grey-400); }
-.task-card-footer { display: flex; justify-content: space-between; align-items: center; }
-.poster-row { display: flex; align-items: center; gap: 7px; }
-.poster-ava { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: var(--white); flex-shrink: 0; font-family: var(--font-head); }
-.poster-name { font-size: 11.5px; color: var(--grey-600); font-weight: 500; }
-.task-card-actions { display: flex; gap: 7px; align-items: center; }
+/* ═══════════════════════════════════════════
+   POST SCREEN
+═══════════════════════════════════════════ */
+.post-hdr{padding:16px 16px 0;flex-shrink:0}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.cat-item{background:var(--g50);border-radius:var(--r-md);padding:12px 8px;text-align:center;cursor:pointer;border:1.5px solid transparent;transition:all .14s}
+.cat-item.on{border-color:var(--black);background:var(--white)}
+.cat-icon{font-size:19px;margin-bottom:4px}
+.cat-lbl{font-size:11px;font-weight:600;color:var(--g600)}
+.cat-item.on .cat-lbl{color:var(--black)}
+.price-row{display:flex;gap:9px}
+.price-row .form-group{flex:1}
+.pfx{position:relative}
+.pfx .form-input{padding-left:28px}
+.pfx::before{content:'R';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--g600);z-index:1;pointer-events:none;font-size:13px}
+.upload-zone{background:var(--g50);border-radius:var(--r-md);padding:20px;text-align:center;cursor:pointer;border:1.5px dashed var(--g200);transition:border-color .2s}
+.upload-zone:active{border-color:var(--black)}
+.upload-zone p{font-size:13.5px;font-weight:600;color:var(--black);margin-bottom:2px}
+.upload-zone small{font-size:11.5px;color:var(--g400)}
+.img-grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.img-item{position:relative}
+.img-item img{width:60px;height:60px;object-fit:cover;border-radius:var(--r-sm);border:1.5px solid var(--g200)}
+.img-rm{position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:var(--black);color:var(--white);border:none;border-radius:3px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.post-footer{padding:12px 16px 16px;flex-shrink:0}
 
-/* ══════════════════════════════════════════
-   ██ SCREEN: FIND TASKS
-══════════════════════════════════════════ */
-.find-header {
-  padding: 18px 18px 0; background: var(--white);
-  border-bottom: 1px solid var(--grey-100); flex-shrink: 0;
-}
-.find-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.find-search-bar {
-  display: flex; align-items: center; gap: 9px;
-  background: var(--grey-50); border-radius: var(--radius-md);
-  padding: 11px 14px; margin-bottom: 14px;
-}
-.find-search-bar i { font-size: 16px; color: var(--grey-400); flex-shrink: 0; }
-.find-search-bar input { flex: 1; border: none; background: none; font-family: var(--font-body); font-size: 14px; color: var(--black); outline: none; }
-.find-search-bar input::placeholder { color: var(--grey-400); }
-.filter-scroll { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 14px; scrollbar-width: none; }
-.filter-scroll::-webkit-scrollbar { display: none; }
-.filter-chip {
-  padding: 7px 14px; border-radius: var(--radius-pill);
-  font-size: 12.5px; font-weight: 600; border: 1.5px solid var(--grey-200);
-  background: var(--white); color: var(--grey-600); cursor: pointer;
-  white-space: nowrap; transition: all 0.14s;
-  -webkit-tap-highlight-color: transparent;
-}
-.filter-chip.on { background: var(--black); color: var(--white); border-color: var(--black); }
-.find-results-hdr { padding: 12px 18px 0; display: flex; justify-content: space-between; align-items: center; }
+/* ═══════════════════════════════════════════
+   MESSAGES SCREEN
+═══════════════════════════════════════════ */
+.msg-hdr{padding:16px 16px 14px;background:var(--white);border-bottom:1px solid var(--g100);flex-shrink:0}
+.conv-list{flex:1;overflow-y:auto;scrollbar-width:none}
+.conv-list::-webkit-scrollbar{display:none}
+.conv-item{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .1s}
+.conv-item:active{background:var(--g50)}
+.conv-ava{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--white);flex-shrink:0}
+.conv-body{flex:1;min-width:0}
+.conv-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.conv-name{font-size:14px;font-weight:700;color:var(--black);letter-spacing:-.1px}
+.conv-time{font-size:10px;color:var(--g400)}
+.conv-task{font-size:11px;color:var(--g400);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-preview{font-size:12.5px;color:var(--g600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unread-dot{width:8px;height:8px;background:var(--black);border-radius:50%;flex-shrink:0}
 
-/* empty state */
-.empty-state { text-align: center; padding: 40px 28px; }
-.empty-state-icon { font-size: 40px; color: var(--grey-200); margin-bottom: 14px; }
-.empty-state-title { font-family: var(--font-head); font-size: 17px; font-weight: 700; color: var(--black); margin-bottom: 7px; }
-.empty-state-sub { font-size: 13px; color: var(--grey-400); line-height: 1.5; }
+/* ─── CHAT VIEW ──────────────────────────── */
+#chat-view{position:fixed;inset:0;background:var(--white);z-index:500;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1)}
+#chat-view.open{transform:none}
+.chat-topbar{padding:12px 14px;border-bottom:1px solid var(--g100);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.chat-contact{flex:1}
+.chat-contact-name{font-size:15px;font-weight:700;color:var(--black);letter-spacing:-.1px}
+.chat-contact-status{font-size:11px;color:var(--green);font-weight:600}
+.chat-task-bar{background:var(--g50);padding:8px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.chat-task-bar span:first-child{font-size:12.5px;font-weight:600;color:var(--black)}
+.chat-task-bar span:last-child{font-size:13px;font-weight:800;color:var(--black)}
+.msgs-area{flex:1;overflow-y:auto;padding:12px 13px 80px;display:flex;flex-direction:column;gap:9px;scrollbar-width:none}
+.msgs-area::-webkit-scrollbar{display:none}
+.msg-wrap{display:flex;flex-direction:column;max-width:75%}
+.msg-wrap.sent{align-self:flex-end;align-items:flex-end}
+.msg-wrap.recv{align-self:flex-start;align-items:flex-start}
+.bubble{padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.45;font-weight:400}
+.msg-wrap.sent .bubble{background:var(--black);color:var(--white);border-bottom-right-radius:4px}
+.msg-wrap.recv .bubble{background:var(--g100);color:var(--black);border-bottom-left-radius:4px}
+.msg-ts{font-size:10px;color:var(--g400);margin-top:3px;font-weight:500}
+.msg-divider{align-self:center;font-size:11px;color:var(--g400);font-weight:600;padding:3px 0;letter-spacing:.3px}
+.chat-input-bar{position:absolute;bottom:0;left:0;right:0;padding:8px 13px;background:var(--white);border-top:1px solid var(--g100);display:flex;align-items:center;gap:8px}
+.chat-field{flex:1;background:var(--g50);border:none;border-radius:20px;padding:10px 14px;font-family:var(--font);font-size:13.5px;color:var(--black);outline:none;font-weight:400}
+.chat-field::placeholder{color:var(--g400)}
+.send-btn{width:36px;height:36px;border-radius:50%;background:var(--black);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .13s}
+.send-btn:active{transform:scale(.86)}
+.send-btn i{font-size:16px;color:var(--white)}
 
-/* ══════════════════════════════════════════
-   ██ SCREEN: POST TASK
-══════════════════════════════════════════ */
-.post-header { padding: 18px 18px 0; flex-shrink: 0; }
-.cat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-bottom: 18px; }
-.cat-item {
-  background: var(--grey-50); border-radius: var(--radius-md);
-  padding: 13px 8px; text-align: center; cursor: pointer;
-  border: 1.5px solid transparent; transition: all 0.14s;
-  -webkit-tap-highlight-color: transparent;
-}
-.cat-item.on { border-color: var(--black); background: var(--white); }
-.cat-item-icon { font-size: 20px; margin-bottom: 5px; }
-.cat-item-label { font-size: 11px; font-weight: 600; color: var(--grey-600); }
-.cat-item.on .cat-item-label { color: var(--black); }
-.price-row { display: flex; gap: 10px; }
-.price-row .form-group { flex: 1; }
-.price-prefix { position: relative; }
-.price-prefix .form-input { padding-left: 34px; }
-.price-prefix::before { content: 'R'; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--grey-600); z-index: 1; pointer-events: none; font-family: var(--font-head); font-size: 14px; }
-.toggle-row { display: flex; gap: 9px; margin-bottom: 9px; }
-.toggle-btn {
-  flex: 1; height: 42px; border-radius: var(--radius-md);
-  border: 1.5px solid var(--grey-200); background: var(--white);
-  font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
-  color: var(--grey-600); cursor: pointer; transition: all 0.14s;
-}
-.toggle-btn.on { background: var(--black); color: var(--white); border-color: var(--black); }
-.post-actions { padding: 14px 18px 18px; flex-shrink: 0; }
+/* ═══════════════════════════════════════════
+   PROFILE SCREEN
+═══════════════════════════════════════════ */
+.profile-cover{height:150px;position:relative;overflow:hidden;flex-shrink:0;background:var(--black)}
+.cover-img{position:absolute;inset:0;background-size:cover;background-position:center}
+.cover-pattern{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,transparent,transparent 26px,rgba(255,255,255,.03) 26px,rgba(255,255,255,.03) 27px)}
+.cover-edit-btn{position:absolute;bottom:10px;right:12px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cover-edit-btn i{font-size:14px;color:var(--white)}
+.profile-ava-wrap{position:absolute;bottom:-32px;left:16px}
+.profile-ava{width:70px;height:70px;border-radius:50%;border:3px solid var(--white);box-shadow:var(--sh-lg);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:var(--white);background:linear-gradient(135deg,#667eea,#764ba2);overflow:hidden;position:relative}
+.profile-ava img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.profile-ava-edit{position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;background:var(--black);border-radius:50%;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.profile-ava-edit i{font-size:10px;color:var(--white)}
+.profile-verified{position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;background:var(--green);border-radius:50%;border:2px solid var(--white);display:flex;align-items:center;justify-content:center}
+.profile-verified i{font-size:10px;color:var(--white)}
+.profile-info{padding:42px 16px 14px;border-bottom:1px solid var(--g100)}
+.profile-name-row{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.profile-name{font-size:21px;font-weight:800;letter-spacing:-.5px;color:var(--black)}
+.profile-edit-pencil{background:none;border:none;cursor:pointer;color:var(--g400);padding:2px}
+.profile-edit-pencil i{font-size:14px}
+.profile-loc{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--g400);margin-bottom:8px}
+.profile-loc i{font-size:12px}
+.profile-bio{font-size:13.5px;color:var(--g600);line-height:1.55;margin-bottom:9px}
+.stars-row{display:flex;align-items:center;gap:3px;margin-bottom:9px}
+.st-f{color:#F59E0B;font-size:13px}
+.st-e{color:var(--g200);font-size:13px}
+.rating-val{font-size:13px;font-weight:700;color:var(--black);margin-left:3px}
+.rating-ct{font-size:11px;color:var(--g400)}
+.skills-row{display:flex;flex-wrap:wrap;gap:5px}
+.skill-tag{padding:4px 10px;background:var(--g50);border-radius:var(--r-pill);font-size:11.5px;font-weight:600;color:var(--g600);border:1px solid var(--g100)}
+.skill-tag-edit{background:none;border:1px dashed var(--g200);color:var(--g400);cursor:pointer}
+.stats-3{display:grid;grid-template-columns:repeat(3,1fr);background:var(--g100);gap:1px;border-top:1px solid var(--g100);border-bottom:1px solid var(--g100)}
+.stat-box{background:var(--white);padding:14px 8px;text-align:center}
+.stat-box-val{font-size:20px;font-weight:800;letter-spacing:-.4px;color:var(--black)}
+.stat-box-lbl{font-size:10px;color:var(--g400);font-weight:500;margin-top:2px}
+.p-section{padding:14px 16px;border-bottom:1px solid var(--g100)}
+.p-section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.p-section-title{font-size:15px;font-weight:700;color:var(--black);letter-spacing:-.1px}
+.earnings-card{background:var(--black);border-radius:var(--r-lg);padding:16px;color:var(--white)}
+.e-label{font-size:10px;opacity:.4;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:4px}
+.e-amount{font-size:30px;font-weight:800;letter-spacing:-.9px}
+.e-row{display:flex;gap:12px;margin-top:12px}
+.e-item{flex:1}
+.e-item-val{font-size:16px;font-weight:700}
+.e-item-lbl{font-size:10px;opacity:.4;font-weight:500;margin-top:1px}
+.e-bar{height:2px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:12px;overflow:hidden}
+.e-fill{height:100%;background:var(--green);border-radius:2px;width:0%;transition:width .8s ease}
+.review-card{background:var(--g50);border-radius:var(--r-md);padding:12px;margin-bottom:8px}
+.rv-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.rv-name{font-size:13px;font-weight:700;color:var(--black)}
+.rv-date{font-size:10px;color:var(--g400)}
+.rv-stars{display:flex;gap:2px;margin-bottom:4px}
+.rv-text{font-size:12.5px;color:var(--g600);line-height:1.45}
+.acct-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--g100)}
+.acct-lbl{font-size:12px;font-weight:600;color:var(--g400);width:70px;flex-shrink:0}
+.acct-val{font-size:14px;font-weight:500;color:var(--black);flex:1}
+.logout-btn{width:100%;height:48px;background:var(--black);color:var(--white);border:none;border-radius:var(--r-md);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;transition:opacity .15s}
+.logout-btn:active{opacity:.75}
 
-/* image upload */
-.upload-area {
-  background: var(--grey-50); border-radius: var(--radius-md);
-  padding: 24px 14px; text-align: center; cursor: pointer;
-  border: 1.5px dashed var(--grey-200); transition: border-color 0.2s;
-}
-.upload-area:active { border-color: var(--black); }
-.upload-area-title { font-size: 14px; font-weight: 600; color: var(--black); margin-bottom: 3px; }
-.upload-area-hint { font-size: 12px; color: var(--grey-400); }
-.img-preview-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.img-preview-item { position: relative; }
-.img-preview-item img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); border: 1.5px solid var(--grey-200); }
-.img-remove-btn {
-  position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
-  background: var(--black); color: var(--white); border: none;
-  border-radius: 4px; font-size: 11px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
+/* ─── EDIT MODALS ────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none;align-items:flex-end;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--white);border-radius:var(--r-xl) var(--r-xl) 0 0;width:100%;padding:20px 18px 32px;animation:slideup .24s cubic-bezier(.4,0,.2,1)}
+@keyframes slideup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-title{font-size:17px;font-weight:700;color:var(--black)}
 
-/* ══════════════════════════════════════════
-   ██ SCREEN: MESSAGES (chat list)
-══════════════════════════════════════════ */
-.conv-list { flex: 1; overflow-y: auto; scrollbar-width: none; padding-bottom: var(--nav-h); }
-.conv-list::-webkit-scrollbar { display: none; }
-.conv-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 13px 18px; border-bottom: 1px solid var(--grey-100);
-  cursor: pointer; transition: background 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.conv-item:active { background: var(--grey-50); }
-.conv-ava { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 17px; font-weight: 800; color: var(--white); flex-shrink: 0; }
-.conv-body { flex: 1; min-width: 0; }
-.conv-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-.conv-name { font-family: var(--font-head); font-size: 14.5px; font-weight: 700; color: var(--black); letter-spacing: -0.15px; }
-.conv-time { font-size: 10.5px; color: var(--grey-400); }
-.conv-task-label { font-size: 11.5px; color: var(--grey-400); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.conv-preview { font-size: 12.5px; color: var(--grey-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.conv-unread { width: 20px; height: 20px; background: var(--black); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: var(--white); flex-shrink: 0; font-family: var(--font-head); }
+/* ─── FULL SCREEN MAP ────────────────────── */
+#fullmap-view{position:fixed;inset:0;z-index:550;display:none;flex-direction:column}
+#fullmap-view.open{display:flex}
+#full-map{flex:1}
+.fullmap-back{position:absolute;top:16px;left:14px;z-index:10;width:40px;height:40px;background:var(--white);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-md)}
+.fullmap-back i{font-size:20px;color:var(--black)}
+.fullmap-legend{position:absolute;bottom:24px;left:14px;right:14px;background:var(--white);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-md);display:flex;gap:20px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--black)}
+.legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 
-/* ══════════════════════════════════════════
-   ██ CHAT VIEW (overlay)
-══════════════════════════════════════════ */
-.chat-view {
-  position: absolute; inset: 0; background: var(--white); z-index: 300;
-  display: flex; flex-direction: column;
-  opacity: 0; transform: translateX(24px);
-  pointer-events: none;
-  transition: opacity var(--transition), transform var(--transition);
-}
-.chat-view.open { opacity: 1; transform: none; pointer-events: all; }
-.chat-topbar {
-  padding: 14px 16px; border-bottom: 1px solid var(--grey-100);
-  display: flex; align-items: center; gap: 11px; flex-shrink: 0;
-  background: var(--white);
-}
-.chat-back-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--grey-50); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-.chat-back-btn i { font-size: 17px; color: var(--black); }
-.chat-contact-block { flex: 1; }
-.chat-contact-name { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -0.2px; }
-.chat-contact-status { font-size: 11px; font-weight: 500; color: var(--green); }
-.chat-task-bar { background: var(--grey-50); padding: 9px 18px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-.chat-task-bar-title { font-size: 12.5px; font-weight: 600; color: var(--black); }
-.chat-task-bar-price { font-family: var(--font-head); font-size: 14px; font-weight: 800; color: var(--black); }
-.messages-area { flex: 1; overflow-y: auto; padding: 14px 14px 80px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
-.messages-area::-webkit-scrollbar { display: none; }
-.msg { display: flex; flex-direction: column; max-width: 76%; }
-.msg.sent { align-self: flex-end; align-items: flex-end; }
-.msg.recv { align-self: flex-start; align-items: flex-start; }
-.bubble { padding: 10px 14px; border-radius: 17px; font-size: 13.5px; line-height: 1.45; }
-.msg.sent .bubble { background: var(--black); color: var(--white); border-bottom-right-radius: 5px; }
-.msg.recv .bubble { background: var(--grey-100); color: var(--black); border-bottom-left-radius: 5px; }
-.msg-time { font-size: 10px; color: var(--grey-400); margin-top: 4px; font-weight: 500; }
-.msg-date-div { align-self: center; font-size: 11px; color: var(--grey-400); font-weight: 600; letter-spacing: 0.4px; padding: 4px 0; }
-.chat-input-bar {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 9px 14px; background: var(--white);
-  border-top: 1px solid var(--grey-100);
-  display: flex; align-items: center; gap: 9px;
-}
-.chat-field { flex: 1; background: var(--grey-50); border: none; border-radius: 22px; padding: 10px 15px; font-family: var(--font-body); font-size: 13.5px; color: var(--black); outline: none; }
-.chat-field::placeholder { color: var(--grey-400); }
-.chat-send-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--black); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: transform 0.14s; }
-.chat-send-btn:active { transform: scale(0.87); }
-.chat-send-btn i { font-size: 17px; color: var(--white); }
+/* ─── TASK DETAIL OVERLAY ────────────────── */
+#task-detail{position:fixed;inset:0;background:var(--white);z-index:520;display:none;flex-direction:column;overflow-y:auto}
+#task-detail.open{display:flex}
+.td-topbar{padding:14px 14px 12px;border-bottom:1px solid var(--g100);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.td-map{width:calc(100% - 28px);height:170px;border-radius:var(--r-lg);overflow:hidden;margin:14px;border:1px solid var(--g100);flex-shrink:0}
+.td-body{padding:0 14px 100px}
+.td-helper{background:var(--g50);border-radius:var(--r-md);padding:13px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.td-helper-l{display:flex;flex-direction:column}
+.td-helper-label{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:3px}
+.td-helper-name{font-size:15px;font-weight:700;color:var(--black)}
+.td-helper-ava{width:42px;height:42px;border-radius:50%;background:var(--black);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--white)}
+.timeline{padding-left:6px}
+.tl{display:flex;gap:13px;margin-bottom:18px;position:relative}
+.tl:not(:last-child)::after{content:'';position:absolute;left:7px;top:18px;width:2px;height:calc(100% - 4px);background:var(--g100)}
+.tl-dot{width:16px;height:16px;background:var(--black);border:2.5px solid var(--white);border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.12);flex-shrink:0;margin-top:2px;z-index:1}
+.tl-body{flex:1}
+.tl-title{font-size:14px;font-weight:700;color:var(--black);margin-bottom:2px}
+.tl-sub{font-size:12px;color:var(--g600);margin-bottom:1px}
+.tl-time{font-size:11px;color:var(--g400)}
+.td-actions{display:flex;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--g100)}
+.td-actions .btn{flex:1;height:46px;border-radius:var(--r-md);font-size:13.5px}
 
-/* ══════════════════════════════════════════
-   ██ SCREEN: PROFILE
-══════════════════════════════════════════ */
-.profile-cover {
-  height: 156px; background: var(--black); position: relative; overflow: hidden; flex-shrink: 0;
-}
-.cover-pattern {
-  position: absolute; inset: 0;
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 28px, rgba(255,255,255,0.025) 28px, rgba(255,255,255,0.025) 29px);
-}
-.cover-glow { position: absolute; top: -40px; right: -20px; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%); }
-.profile-ava-wrap { position: absolute; bottom: -34px; left: 18px; }
-.profile-ava {
-  width: 74px; height: 74px; border-radius: 50%;
-  border: 3.5px solid var(--white); box-shadow: var(--shadow-lg);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--white);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  overflow: hidden;
-}
-.profile-ava img { width: 100%; height: 100%; object-fit: cover; }
-.profile-verified {
-  position: absolute; bottom: 0; right: -2px;
-  width: 22px; height: 22px; background: var(--green); border-radius: 50%;
-  border: 2px solid var(--white); display: flex; align-items: center; justify-content: center;
-}
-.profile-verified i { font-size: 10px; color: var(--white); }
-.profile-edit-btn {
-  position: absolute; top: 14px; right: 14px;
-  width: 34px; height: 34px; border-radius: 50%;
-  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-}
-.profile-edit-btn i { font-size: 15px; color: var(--white); }
-.profile-info-section { padding: 44px 18px 16px; border-bottom: 1px solid var(--grey-100); }
-.profile-name { font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--black); letter-spacing: -0.5px; }
-.profile-loc { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--grey-400); margin-top: 3px; }
-.profile-loc i { font-size: 12px; }
-.profile-bio { font-size: 13px; color: var(--grey-600); line-height: 1.55; margin-top: 9px; }
-.stars-row { display: flex; align-items: center; gap: 3px; margin-top: 9px; }
-.star-filled { color: #F59E0B; font-size: 14px; }
-.star-empty { color: var(--grey-200); font-size: 14px; }
-.rating-val { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--black); margin-left: 4px; }
-.rating-count { font-size: 11.5px; color: var(--grey-400); }
-.skills-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
-.skill-tag { padding: 4px 11px; background: var(--grey-50); border-radius: var(--radius-pill); font-size: 11.5px; font-weight: 600; color: var(--grey-600); border: 1px solid var(--grey-100); }
-.stats-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); background: var(--grey-100); gap: 1px; border-top: 1px solid var(--grey-100); border-bottom: 1px solid var(--grey-100); }
-.stat-box { background: var(--white); padding: 16px 10px; text-align: center; }
-.stat-box-val { font-family: var(--font-head); font-size: 21px; font-weight: 800; letter-spacing: -0.4px; color: var(--black); }
-.stat-box-lbl { font-size: 10.5px; color: var(--grey-400); font-weight: 500; margin-top: 2px; }
-.profile-section { padding: 16px 18px; border-bottom: 1px solid var(--grey-100); }
-.profile-section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
-.profile-section-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -0.1px; }
-.earnings-card {
-  background: var(--black); border-radius: var(--radius-lg);
-  padding: 18px; color: var(--white);
-}
-.earnings-label { font-size: 11px; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 5px; }
-.earnings-amount { font-family: var(--font-head); font-size: 32px; font-weight: 800; letter-spacing: -1px; }
-.earnings-row { display: flex; gap: 14px; margin-top: 14px; }
-.earnings-item { flex: 1; }
-.earnings-item-val { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
-.earnings-item-lbl { font-size: 10px; opacity: 0.4; font-weight: 500; margin-top: 1px; }
-.earnings-bar { height: 2.5px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 14px; overflow: hidden; }
-.earnings-fill { height: 100%; background: var(--green); border-radius: 2px; width: 0%; transition: width 0.8s ease; }
-.review-card { background: var(--grey-50); border-radius: var(--radius-md); padding: 13px; margin-bottom: 9px; }
-.review-hdr { display: flex; justify-content: space-between; margin-bottom: 6px; }
-.review-name { font-size: 12.5px; font-weight: 700; color: var(--black); }
-.review-date { font-size: 10.5px; color: var(--grey-400); }
-.review-stars-row { display: flex; gap: 2px; margin-bottom: 5px; }
-.review-stars-row span { font-size: 12px; color: #F59E0B; }
-.review-text { font-size: 12.5px; color: var(--grey-600); line-height: 1.45; }
-.logout-btn {
-  width: 100%; height: 50px; background: var(--black); color: var(--white);
-  border: none; border-radius: var(--radius-md); font-family: var(--font-head);
-  font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px;
-  transition: opacity 0.15s;
-}
-.logout-btn:active { opacity: 0.75; }
+/* ─── EMPTY ──────────────────────────────── */
+.empty{text-align:center;padding:36px 24px}
+.empty i{font-size:36px;color:var(--g200);margin-bottom:12px;display:block}
+.empty h3{font-size:16px;font-weight:700;color:var(--black);margin-bottom:5px}
+.empty p{font-size:13px;color:var(--g400);line-height:1.5}
 
-/* ══════════════════════════════════════════
-   TASK DETAIL OVERLAY
-══════════════════════════════════════════ */
-.task-detail-overlay {
-  position: absolute; inset: 0; background: var(--white);
-  z-index: 250; display: flex; flex-direction: column;
-  opacity: 0; transform: translateX(20px); pointer-events: none;
-  transition: opacity var(--transition), transform var(--transition);
-  overflow-y: auto; scrollbar-width: none;
-}
-.task-detail-overlay::-webkit-scrollbar { display: none; }
-.task-detail-overlay.open { opacity: 1; transform: none; pointer-events: all; }
-.task-detail-topbar { padding: 14px 16px; border-bottom: 1px solid var(--grey-100); display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
-.task-detail-back { width: 34px; height: 34px; border-radius: 50%; background: var(--grey-50); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.task-detail-back i { font-size: 18px; color: var(--black); }
-.detail-map-zone { width: calc(100% - 32px); height: 180px; border-radius: var(--radius-lg); overflow: hidden; margin: 16px; border: 1px solid var(--grey-100); flex-shrink: 0; }
-.detail-content { padding: 0 16px 100px; }
-.timeline { padding-left: 6px; }
-.tl-item { display: flex; gap: 14px; margin-bottom: 20px; position: relative; }
-.tl-item:not(:last-child)::after { content: ''; position: absolute; left: 7px; top: 20px; width: 2px; height: calc(100% - 4px); background: var(--grey-100); }
-.tl-dot { width: 16px; height: 16px; background: var(--black); border: 2px solid var(--white); border-radius: 50%; box-shadow: 0 0 0 2.5px rgba(0,0,0,0.15); flex-shrink: 0; margin-top: 2px; z-index: 1; }
-.tl-body { flex: 1; }
-.tl-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--black); margin-bottom: 3px; }
-.tl-sub { font-size: 12px; color: var(--grey-600); margin-bottom: 2px; }
-.tl-time { font-size: 11px; color: var(--grey-400); }
-.detail-actions { display: flex; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--grey-100); }
-.detail-actions .btn { flex: 1; height: 48px; border-radius: var(--radius-md); font-size: 14px; }
-.helper-card { background: var(--grey-50); border-radius: var(--radius-md); padding: 14px; margin: 16px 0; display: flex; align-items: center; justify-content: space-between; }
-.helper-card-left { display: flex; flex-direction: column; }
-.helper-card-label { font-size: 10.5px; color: var(--grey-400); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 3px; }
-.helper-card-name { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--black); }
-.helper-card-ava { width: 44px; height: 44px; border-radius: 50%; background: var(--black); display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 18px; font-weight: 800; color: var(--white); }
-
-/* ══════════════════════════════════════════
-   LOADING OVERLAY
-══════════════════════════════════════════ */
-.loading-overlay {
-  position: absolute; inset: 0; background: rgba(10,10,10,0.45);
-  z-index: 9999; display: none; align-items: center; justify-content: center;
-  backdrop-filter: blur(3px);
-}
-.loading-overlay.show { display: flex; }
-.loading-card { background: var(--white); border-radius: var(--radius-lg); padding: 24px 28px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-lg); }
-.loading-card-text { font-size: 14px; font-weight: 600; color: var(--black); }
+/* ─── MISC ───────────────────────────────── */
+.divider{height:1px;background:var(--g100);margin:0 16px}
+.pb-nav{height:calc(var(--nav-h) + 16px)}
 </style>
 
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     PHONE SHELL
-══════════════════════════════════════════ -->
+<div id="app">
 
-<div class="phone" id="phone">
+  <!-- ══════════════ SCREENS ══════════════ -->
 
-  <!-- Status Bar -->
+  <!-- HOME -->
 
-  <div class="status-bar">
-    <span class="time" id="statusTime">9:41</span>
-    <div class="icons">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 6s4-2 11-2 11 2 11 2M5 10s3-1 7-1 7 1 7 1M9 14s2-.5 3-.5 3 .5 3 .5M12 18h.01" stroke-width="2" stroke-linecap="round"/></svg>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="16" height="11" rx="2" stroke-width="2"/><path d="M22 11v3" stroke-width="2" stroke-linecap="round"/><rect x="2" y="7" width="10" height="11" rx="1" fill="currentColor" opacity="0.85"/></svg>
-    </div>
-  </div>
-
-  <!-- Screens Root -->
-
-  <div class="screens-root" id="screensRoot">
-
-```
-<!-- ████ SCREEN: HOME ████ -->
-<div class="screen active" id="screen-home">
-  <!-- Mini map zone -->
-  <div class="home-map-zone">
-    <div id="mini-map"></div>
-    <div class="map-overlay-gradient"></div>
-    <!-- top bar over map -->
-    <div class="home-topbar">
-      <div class="home-topbar-logo">TaskMart</div>
-      <div class="home-topbar-actions">
-        <button class="topbar-btn" id="notifBtn">
-          <i class="ph ph-bell"></i>
-          <div class="topbar-notif-dot" id="topbarNotifDot"></div>
-        </button>
-        <button class="topbar-btn" id="recenterBtn">
-          <i class="ph ph-crosshair"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Home content -->
-  <div class="scroll-wrap">
-    <div class="home-content">
-      <!-- Greeting -->
-      <div class="home-greeting">
-        <div class="home-greeting-sub" id="homeGreetingSub">Good morning 👋</div>
-        <div class="home-greeting-name" id="homeGreetingName">Loading…</div>
-      </div>
-
-      <!-- Stats strip -->
-      <div class="stats-strip">
-        <div class="stat-chip dark">
-          <div class="stat-chip-val" id="nearbyCount">—</div>
-          <div class="stat-chip-lbl">Tasks nearby</div>
+  <div class="screen active" id="screen-home">
+    <div class="map-zone">
+      <div id="mini-map"></div>
+      <div class="map-fade"></div>
+      <div class="map-topbar">
+        <div class="logo-pill">
+          <div class="logo-dot"></div>
+          <span class="logo-text">TaskMart</span>
         </div>
-        <div class="stat-chip">
-          <div class="stat-chip-val" id="earningsThisWeek" style="color:var(--green)">—</div>
-          <div class="stat-chip-lbl">Your earnings</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-icon" id="notif-btn" style="position:relative">
+            <i class="ph ph-bell"></i>
+            <div class="nb-dot" id="notif-dot" style="position:absolute;top:4px;right:4px"></div>
+          </button>
+          <button class="btn-icon" id="recenter-btn"><i class="ph ph-crosshair"></i></button>
         </div>
       </div>
-
-      <!-- Quick post search bar -->
-      <div style="margin-bottom:18px">
-        <div class="find-search-bar" id="homeSearchBar" style="cursor:pointer">
+      <button class="map-expand-btn" id="map-expand-btn"><i class="ph ph-arrows-out"></i></button>
+    </div>
+    <div class="scroll">
+      <div class="home-body">
+        <div class="greeting-block">
+          <div class="greeting-sub" id="greeting-sub">Good morning 👋</div>
+          <div class="greeting-name" id="greeting-name">Loading…</div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-chip dark">
+            <div class="stat-val" id="stat-nearby">—</div>
+            <div class="stat-lbl">Tasks nearby</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-val" id="stat-earnings" style="color:var(--green)">—</div>
+            <div class="stat-lbl">Your earnings</div>
+          </div>
+        </div>
+        <div class="search-bar" id="home-search" onclick="navigate('post')">
           <i class="ph ph-magnifying-glass"></i>
-          <input type="text" id="homeSearchInput" placeholder="Post a task… cleaning, errands…" readonly style="cursor:pointer">
+          <input type="text" placeholder="Post a task… cleaning, errands…" readonly>
         </div>
-      </div>
-
-      <!-- Nearby tasks section -->
-      <div class="section-hdr">
-        <span class="section-hdr-title">Tasks Near You</span>
-        <span class="section-hdr-action" onclick="navigate('find')">See all</span>
-      </div>
-
-      <div id="homeTaskList">
-        <!-- Populated by JS -->
-        <div class="empty-state" id="homeTaskEmpty" style="display:none">
-          <div class="empty-state-icon"><i class="ph ph-map-pin"></i></div>
-          <div class="empty-state-title">No tasks nearby yet</div>
-          <div class="empty-state-sub">Be the first to post one!</div>
+        <div class="section-row">
+          <span class="section-title">Tasks Near You</span>
+          <span class="section-action" onclick="navigate('find')">See all</span>
         </div>
-        <div style="text-align:center;padding:24px;color:var(--grey-400);font-size:13px" id="homeTaskLoading">
-          <div class="spinner" style="margin:0 auto 8px"></div>
-          Loading nearby tasks…
-        </div>
-      </div>
-    </div>
-  </div>
-</div><!-- /screen-home -->
-
-<!-- ████ SCREEN: FIND TASKS ████ -->
-<div class="screen" id="screen-find">
-  <div class="find-header">
-    <div class="find-header-top">
-      <span class="h2">Find Tasks</span>
-      <button class="btn btn-ghost" id="findFilterBtn" style="display:flex;align-items:center;gap:6px">
-        <i class="ph ph-funnel"></i> Filter
-      </button>
-    </div>
-    <div class="find-search-bar">
-      <i class="ph ph-magnifying-glass"></i>
-      <input type="text" id="findSearchInput" placeholder="Search tasks…">
-    </div>
-    <div class="filter-scroll" id="filterScroll">
-      <div class="filter-chip on" data-cat="all">All tasks</div>
-      <div class="filter-chip" data-cat="cleaning">Cleaning</div>
-      <div class="filter-chip" data-cat="delivery">Delivery</div>
-      <div class="filter-chip" data-cat="fixing">Fixing</div>
-      <div class="filter-chip" data-cat="errands">Errands</div>
-      <div class="filter-chip" data-cat="moving">Moving</div>
-      <div class="filter-chip" data-cat="garden">Garden</div>
-    </div>
-  </div>
-  <div class="find-results-hdr">
-    <span class="label" id="findResultsLabel">Loading…</span>
-    <span style="font-size:12px;color:var(--grey-400)" id="findSortLabel">Nearest first</span>
-  </div>
-  <div class="scroll-wrap" style="padding-top:8px">
-    <div style="padding:0 18px" id="findTaskList">
-      <div style="text-align:center;padding:28px;color:var(--grey-400);font-size:13px" id="findLoading">
-        <div class="spinner" style="margin:0 auto 8px"></div>
-        Loading tasks…
-      </div>
-    </div>
-  </div>
-</div><!-- /screen-find -->
-
-<!-- ████ SCREEN: POST TASK ████ -->
-<div class="screen" id="screen-post">
-  <div class="post-header">
-    <div style="margin-bottom:4px" class="h1">Post a Task</div>
-    <div class="body-sm" style="margin-bottom:16px">Tell helpers what you need done</div>
-    <!-- Category grid -->
-    <div class="cat-grid" id="catGrid">
-      <div class="cat-item on" data-cat="cleaning"><div class="cat-item-icon">🧹</div><div class="cat-item-label">Cleaning</div></div>
-      <div class="cat-item" data-cat="delivery"><div class="cat-item-icon">🚗</div><div class="cat-item-label">Delivery</div></div>
-      <div class="cat-item" data-cat="fixing"><div class="cat-item-icon">🔧</div><div class="cat-item-label">Fixing</div></div>
-      <div class="cat-item" data-cat="errands"><div class="cat-item-icon">🛒</div><div class="cat-item-label">Errands</div></div>
-      <div class="cat-item" data-cat="moving"><div class="cat-item-icon">📦</div><div class="cat-item-label">Moving</div></div>
-      <div class="cat-item" data-cat="garden"><div class="cat-item-icon">🌿</div><div class="cat-item-label">Garden</div></div>
-    </div>
-  </div>
-  <div class="scroll-wrap" style="padding-top:4px">
-    <div style="padding:0 18px">
-      <div class="form-group">
-        <label class="form-label">Task title</label>
-        <input class="form-input" type="text" id="postTaskTitle" placeholder="e.g. Deep clean 3-bedroom house">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea class="form-input" id="postTaskDesc" placeholder="Any specific instructions, tools required, access info…"></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Location</label>
-        <div style="position:relative">
-          <input class="form-input" type="text" id="postTaskLocation" placeholder="Detecting your location…" style="padding-right:44px">
-          <div style="position:absolute;right:13px;top:50%;transform:translateY(-50%)">
-            <i class="ph ph-map-pin" style="font-size:18px;color:var(--grey-400)"></i>
+        <div id="home-task-list">
+          <div style="text-align:center;padding:20px;color:var(--g400);font-size:13px" id="home-loading">
+            <div class="spin" style="margin:0 auto 8px"></div>Loading…
           </div>
         </div>
+        <div class="pb-nav"></div>
       </div>
-      <div class="price-row">
+    </div>
+  </div>
+
+  <!-- FIND/TASKS -->
+
+  <div class="screen" id="screen-find">
+    <div class="find-hdr">
+      <div class="find-hdr-top">
+        <span class="t-h2">Tasks</span>
+        <div id="find-dist-lbl" class="t-sm">Within 10 km</div>
+      </div>
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="ftab on" data-tab="incoming">Incoming</button>
+        <button class="ftab" data-tab="current">Current</button>
+        <button class="ftab" data-tab="past">Past</button>
+      </div>
+    </div>
+    <div class="find-search-wrap">
+      <div class="find-search">
+        <i class="ph ph-magnifying-glass"></i>
+        <input type="text" id="find-search-input" placeholder="Search by task name…">
+      </div>
+    </div>
+    <div class="find-results-bar">
+      <span class="t-label" id="find-result-label">Loading…</span>
+    </div>
+    <div class="scroll" style="padding-top:8px">
+      <div style="padding:0 16px" id="find-task-list">
+        <div style="text-align:center;padding:20px;color:var(--g400);font-size:13px" id="find-loading">
+          <div class="spin" style="margin:0 auto 8px"></div>Loading tasks…
+        </div>
+      </div>
+      <div class="pb-nav"></div>
+    </div>
+  </div>
+
+  <!-- POST -->
+
+  <div class="screen" id="screen-post">
+    <div class="post-hdr">
+      <div class="t-h1" style="margin-bottom:3px">Post a Task</div>
+      <div class="t-body" style="margin-bottom:14px">Tell helpers what you need</div>
+      <div class="cat-grid" id="cat-grid">
+        <div class="cat-item on" data-cat="cleaning"><div class="cat-icon">🧹</div><div class="cat-lbl">Cleaning</div></div>
+        <div class="cat-item" data-cat="delivery"><div class="cat-icon">🚗</div><div class="cat-lbl">Delivery</div></div>
+        <div class="cat-item" data-cat="fixing"><div class="cat-icon">🔧</div><div class="cat-lbl">Fixing</div></div>
+        <div class="cat-item" data-cat="errands"><div class="cat-icon">🛒</div><div class="cat-lbl">Errands</div></div>
+        <div class="cat-item" data-cat="moving"><div class="cat-icon">📦</div><div class="cat-lbl">Moving</div></div>
+        <div class="cat-item" data-cat="garden"><div class="cat-icon">🌿</div><div class="cat-lbl">Garden</div></div>
+      </div>
+    </div>
+    <div class="scroll" style="padding-top:4px">
+      <div style="padding:0 16px">
         <div class="form-group">
-          <label class="form-label">Budget (R)</label>
-          <div class="price-prefix">
-            <input class="form-input" type="number" id="postBudget" placeholder="250" inputmode="numeric">
+          <label class="form-label">Task title</label>
+          <input class="form-input" type="text" id="p-title" placeholder="e.g. Deep clean 3-bedroom house">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" id="p-desc" placeholder="Specific instructions, access info, tools needed…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <div style="position:relative">
+            <input class="form-input" type="text" id="p-location" placeholder="Detecting your location…" style="padding-right:40px">
+            <i class="ph ph-map-pin" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--g400)"></i>
+          </div>
+        </div>
+        <div class="price-row">
+          <div class="form-group">
+            <label class="form-label">Budget (R)</label>
+            <div class="pfx"><input class="form-input" type="number" id="p-budget" placeholder="250" inputmode="numeric"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration</label>
+            <input class="form-input" type="text" id="p-duration" placeholder="2–3 hrs">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Duration</label>
-          <input class="form-input" type="text" id="postDuration" placeholder="2–3 hours">
-        </div>
-      </div>
-      <!-- When -->
-      <div class="form-group">
-        <label class="form-label">When</label>
-        <div class="toggle-row">
-          <button class="toggle-btn on" id="whenNowBtn">Now</button>
-          <button class="toggle-btn" id="whenLaterBtn">Later</button>
-        </div>
-        <div id="datePickers" style="display:none">
-          <div style="display:flex;gap:9px">
-            <div style="position:relative;flex:1">
-              <input class="form-input" type="date" id="postDate" style="font-family:var(--font-body)">
-            </div>
-            <div style="position:relative;flex:1">
-              <input class="form-input" type="time" id="postTime" style="font-family:var(--font-body)">
+          <label class="form-label">When</label>
+          <div class="toggle-row">
+            <button class="toggle-btn on" id="when-now">Now</button>
+            <button class="toggle-btn" id="when-later">Later</button>
+          </div>
+          <div id="date-pickers" style="display:none;display:none">
+            <div style="display:flex;gap:8px">
+              <input class="form-input" type="date" id="p-date" style="flex:1">
+              <input class="form-input" type="time" id="p-time" style="flex:1">
             </div>
           </div>
         </div>
-      </div>
-      <!-- Budget type -->
-      <div class="form-group">
-        <label class="form-label">Budget type</label>
-        <div class="toggle-row">
-          <button class="toggle-btn on" id="budgetFixedBtn">Fixed</button>
-          <button class="toggle-btn" id="budgetOpenBtn">Open to offers</button>
-        </div>
-      </div>
-      <!-- Images -->
-      <div class="form-group">
-        <label class="form-label">Photos (optional)</label>
-        <div class="upload-area" id="uploadArea">
-          <div class="upload-area-title">📷 Tap to add photos</div>
-          <div class="upload-area-hint">JPG or PNG, max 5MB each</div>
-        </div>
-        <div class="img-preview-wrap" id="imgPreviewWrap"></div>
-      </div>
-      <!-- Notes -->
-      <div class="form-group">
-        <label class="form-label">Extra notes</label>
-        <textarea class="form-input" id="postNotes" placeholder="Any extra info for the helper…" style="min-height:72px"></textarea>
-      </div>
-    </div>
-  </div>
-  <div class="post-actions">
-    <button class="btn btn-primary btn-primary-lg" id="postTaskBtn" disabled>Post Task</button>
-    <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--grey-400)">Free to post. Pay only when task is done.</div>
-  </div>
-</div><!-- /screen-post -->
-
-<!-- ████ SCREEN: MESSAGES ████ -->
-<div class="screen" id="screen-messages">
-  <div class="find-header" style="padding-bottom:16px">
-    <span class="h2">Messages</span>
-  </div>
-  <div class="conv-list" id="convList">
-    <!-- Populated by JS -->
-    <div style="text-align:center;padding:28px;color:var(--grey-400);font-size:13px" id="convLoading">
-      <div class="spinner" style="margin:0 auto 8px"></div>
-      Loading conversations…
-    </div>
-  </div>
-
-  <!-- Chat view (overlay inside messages screen) -->
-  <div class="chat-view" id="chatView">
-    <div class="status-bar" style="flex-shrink:0">
-      <span class="time" id="chatStatusTime">9:41</span>
-      <div class="icons">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 6s4-2 11-2 11 2 11 2M5 10s3-1 7-1 7 1 7 1M9 14s2-.5 3-.5 3 .5 3 .5M12 18h.01" stroke-width="2" stroke-linecap="round"/></svg>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="16" height="11" rx="2" stroke-width="2"/><path d="M22 11v3" stroke-width="2" stroke-linecap="round"/><rect x="2" y="7" width="10" height="11" rx="1" fill="currentColor" opacity="0.85"/></svg>
-      </div>
-    </div>
-    <div class="chat-topbar">
-      <button class="chat-back-btn" id="chatBackBtn"><i class="ph ph-arrow-left"></i></button>
-      <div class="chat-contact-block">
-        <div class="chat-contact-name" id="chatContactName">—</div>
-        <div class="chat-contact-status" id="chatContactStatus">● Online</div>
-      </div>
-      <button class="topbar-btn" style="box-shadow:none;background:var(--grey-50)">
-        <i class="ph ph-phone"></i>
-      </button>
-    </div>
-    <div class="chat-task-bar">
-      <span class="chat-task-bar-title" id="chatTaskTitle">—</span>
-      <span class="chat-task-bar-price" id="chatTaskPrice">—</span>
-    </div>
-    <div class="messages-area" id="messagesArea"></div>
-    <div class="chat-input-bar">
-      <input class="chat-field" id="chatInputField" type="text" placeholder="Type a message…">
-      <button class="chat-send-btn" id="chatSendBtn"><i class="ph ph-paper-plane-tilt"></i></button>
-    </div>
-  </div>
-</div><!-- /screen-messages -->
-
-<!-- ████ SCREEN: PROFILE ████ -->
-<div class="screen" id="screen-profile">
-  <div class="scroll-wrap">
-    <!-- Cover -->
-    <div class="profile-cover">
-      <div class="cover-pattern"></div>
-      <div class="cover-glow"></div>
-      <div class="profile-ava-wrap">
-        <div class="profile-ava" id="profileAva">P</div>
-        <div class="profile-verified"><i class="ph-fill ph-check"></i></div>
-      </div>
-      <button class="profile-edit-btn"><i class="ph ph-pencil-simple"></i></button>
-    </div>
-
-    <!-- Info -->
-    <div class="profile-info-section">
-      <div class="profile-name" id="profileName">Loading…</div>
-      <div class="profile-loc">
-        <i class="ph ph-map-pin"></i>
-        <span id="profileCity">Johannesburg, SA</span>
-      </div>
-      <div class="profile-bio" id="profileBio">TaskMart member</div>
-      <div class="stars-row" id="profileStars">
-        <span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-empty">★</span>
-        <span class="rating-val" id="profileRatingVal">4.0</span>
-        <span class="rating-count" id="profileRatingCount">(0 reviews)</span>
-      </div>
-      <div class="skills-row" id="profileSkills">
-        <!-- skills rendered by JS -->
-      </div>
-    </div>
-
-    <!-- Stats grid -->
-    <div class="stats-grid-3">
-      <div class="stat-box">
-        <div class="stat-box-val" id="statTasksDone">—</div>
-        <div class="stat-box-lbl">Tasks done</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-val" id="statRating" style="color:var(--green)">—</div>
-        <div class="stat-box-lbl">Rating</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-val" id="statCompletion">—</div>
-        <div class="stat-box-lbl">Completion</div>
-      </div>
-    </div>
-
-    <!-- Earnings -->
-    <div class="profile-section">
-      <div class="profile-section-hdr">
-        <span class="profile-section-title">Earnings</span>
-        <span class="section-hdr-action">This month</span>
-      </div>
-      <div class="earnings-card">
-        <div class="earnings-label">Total earned</div>
-        <div class="earnings-amount" id="earningsTotal">R0</div>
-        <div class="earnings-row">
-          <div class="earnings-item">
-            <div class="earnings-item-val" id="earningsWeek">R0</div>
-            <div class="earnings-item-lbl">This week</div>
-          </div>
-          <div class="earnings-item">
-            <div class="earnings-item-val" id="earningsTaskCount">0</div>
-            <div class="earnings-item-lbl">Tasks done</div>
-          </div>
-          <div class="earnings-item">
-            <div class="earnings-item-val" id="earningsAvg">R0</div>
-            <div class="earnings-item-lbl">Avg/task</div>
+        <div class="form-group">
+          <label class="form-label">Budget type</label>
+          <div class="toggle-row">
+            <button class="toggle-btn on" id="budget-fixed">Fixed price</button>
+            <button class="toggle-btn" id="budget-open">Open to offers</button>
           </div>
         </div>
-        <div class="earnings-bar"><div class="earnings-fill" id="earningsFill"></div></div>
-      </div>
-    </div>
-
-    <!-- Reviews -->
-    <div class="profile-section">
-      <div class="profile-section-hdr">
-        <span class="profile-section-title">Reviews</span>
-        <span class="section-hdr-action" id="reviewCount">See all</span>
-      </div>
-      <div id="reviewsList">
-        <div class="empty-state" style="padding:20px 0">
-          <div class="empty-state-icon"><i class="ph ph-star"></i></div>
-          <div class="empty-state-title" style="font-size:14px">No reviews yet</div>
+        <div class="form-group">
+          <label class="form-label">Photos (optional)</label>
+          <div class="upload-zone" id="upload-zone">
+            <p>📷 Tap to add photos</p>
+            <small>JPG or PNG, max 5MB each</small>
+          </div>
+          <div class="img-grid" id="img-grid"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Extra notes</label>
+          <textarea class="form-input" id="p-notes" placeholder="Anything else the helper should know…" style="min-height:68px"></textarea>
         </div>
       </div>
+      <div class="pb-nav"></div>
     </div>
-
-    <!-- Account info + logout -->
-    <div class="profile-section">
-      <div class="profile-section-hdr">
-        <span class="profile-section-title">Account</span>
-      </div>
-      <div style="margin-bottom:8px">
-        <div class="body-sm" style="margin-bottom:3px;color:var(--grey-400)">Email</div>
-        <div style="font-size:14px;font-weight:500;color:var(--black)" id="profileEmail">—</div>
-      </div>
-      <div style="margin-bottom:16px">
-        <div class="body-sm" style="margin-bottom:3px;color:var(--grey-400)">Role</div>
-        <div style="font-size:14px;font-weight:500;color:var(--black)" id="profileRole">—</div>
-      </div>
-      <button class="logout-btn" id="logoutBtn">Log out</button>
-      <button class="logout-btn" id="loginBtn" style="display:none;background:var(--black)">Log in to continue</button>
-    </div>
-
-    <div style="height:calc(var(--nav-h) + 24px)"></div>
-  </div>
-</div><!-- /screen-profile -->
-```
-
-  </div><!-- /screens-root -->
-
-  <!-- ████ TASK DETAIL OVERLAY ████ -->
-
-  <div class="task-detail-overlay" id="taskDetailOverlay">
-    <div class="task-detail-topbar">
-      <button class="task-detail-back" id="taskDetailBackBtn"><i class="ph ph-arrow-left"></i></button>
-      <span class="h3" id="taskDetailTitle">Task Details</span>
-    </div>
-    <div class="helper-card" id="taskDetailHelperCard">
-      <div class="helper-card-left">
-        <span class="helper-card-label">Task with</span>
-        <span class="helper-card-name" id="taskDetailHelperName">Not assigned yet</span>
-      </div>
-      <div class="helper-card-ava" id="taskDetailHelperAva">?</div>
-    </div>
-    <div class="detail-map-zone" id="detailMapZone"></div>
-    <div class="detail-content">
-      <div class="timeline" id="taskDetailTimeline"></div>
-      <div class="detail-actions" id="taskDetailActions"></div>
+    <div class="post-footer">
+      <button class="btn btn-blk btn-blk-lg" id="post-btn" disabled>Post Task</button>
+      <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--g400)">Free to post · Pay only when done</div>
     </div>
   </div>
 
-  <!-- ████ BOTTOM NAV ████ -->
+  <!-- MESSAGES -->
 
-  <div class="bottom-nav" id="bottomNav">
-    <button class="nav-btn active" id="nav-home" data-screen="home">
-      <div class="nav-icon-wrap"><i class="ph ph-house-simple"></i></div>
-      <span class="nav-label">Home</span>
-    </button>
-    <button class="nav-btn" id="nav-find" data-screen="find">
-      <div class="nav-icon-wrap"><i class="ph ph-magnifying-glass"></i></div>
-      <span class="nav-label">Find</span>
-    </button>
-    <button class="nav-btn post-nav" id="nav-post" data-screen="post">
-      <div class="nav-icon-wrap"><i class="ph ph-plus"></i></div>
-      <span class="nav-label">Post</span>
-    </button>
-    <button class="nav-btn" id="nav-messages" data-screen="messages">
-      <div class="nav-icon-wrap" style="position:relative">
-        <i class="ph ph-chat-circle-dots"></i>
-        <div class="nav-badge" id="msgBadge"></div>
+  <div class="screen" id="screen-messages">
+    <div class="msg-hdr">
+      <span class="t-h2">Messages</span>
+    </div>
+    <div class="conv-list" id="conv-list">
+      <div style="text-align:center;padding:24px;color:var(--g400);font-size:13px" id="conv-loading">
+        <div class="spin" style="margin:0 auto 8px"></div>Loading…
       </div>
-      <span class="nav-label">Messages</span>
-    </button>
-    <button class="nav-btn" id="nav-profile" data-screen="profile">
-      <div class="nav-icon-wrap"><i class="ph ph-user"></i></div>
-      <span class="nav-label">Profile</span>
-    </button>
-  </div>
-
-  <!-- Toast -->
-
-  <div class="toast" id="toast">
-    <span id="toastIcon">✅</span>
-    <span id="toastText">Done</span>
-  </div>
-
-  <!-- Loading overlay -->
-
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-card">
-      <div class="spinner"></div>
-      <span class="loading-card-text" id="loadingText">Processing…</span>
     </div>
   </div>
 
-</div><!-- /phone -->
+  <!-- PROFILE -->
+
+  <div class="screen" id="screen-profile">
+    <div class="scroll">
+      <div class="profile-cover" id="profile-cover">
+        <div class="cover-img" id="cover-img"></div>
+        <div class="cover-pattern"></div>
+        <div class="profile-ava-wrap">
+          <div class="profile-ava" id="profile-ava">
+            <img id="profile-ava-img" src="" alt="" style="display:none">
+            <span id="profile-ava-initials">P</span>
+          </div>
+          <div class="profile-ava-edit" id="ava-edit-btn"><i class="ph ph-pencil-simple"></i></div>
+        </div>
+        <button class="cover-edit-btn" id="cover-edit-btn"><i class="ph ph-pencil-simple"></i></button>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name-row">
+          <div class="profile-name" id="p-name">Loading…</div>
+          <button class="profile-edit-pencil" id="edit-name-btn"><i class="ph ph-pencil-simple"></i></button>
+        </div>
+        <div class="profile-loc"><i class="ph ph-map-pin"></i><span id="p-city">—</span></div>
+        <div class="profile-bio" id="p-bio">—</div>
+        <button class="btn btn-ghost" style="margin-bottom:9px;height:30px;font-size:11.5px" id="edit-bio-btn"><i class="ph ph-pencil-simple"></i> Edit bio</button>
+        <div class="stars-row" id="p-stars">
+          <span class="st-f">★</span><span class="st-f">★</span><span class="st-f">★</span><span class="st-f">★</span><span class="st-e">★</span>
+          <span class="rating-val" id="p-rating">4.0</span>
+          <span class="rating-ct" id="p-review-ct">(0 reviews)</span>
+        </div>
+        <div class="skills-row" id="p-skills-row">
+          <button class="skill-tag skill-tag-edit" id="edit-skills-btn"><i class="ph ph-plus"></i> Add skill</button>
+        </div>
+      </div>
+      <div class="stats-3">
+        <div class="stat-box"><div class="stat-box-val" id="s-done">—</div><div class="stat-box-lbl">Tasks done</div></div>
+        <div class="stat-box"><div class="stat-box-val" id="s-rating" style="color:var(--green)">—</div><div class="stat-box-lbl">Rating</div></div>
+        <div class="stat-box"><div class="stat-box-val" id="s-comp">—</div><div class="stat-box-lbl">Completion</div></div>
+      </div>
+      <div class="p-section">
+        <div class="p-section-hdr"><span class="p-section-title">Earnings</span><span class="t-sm">This month</span></div>
+        <div class="earnings-card">
+          <div class="e-label">Total earned</div>
+          <div class="e-amount" id="e-total">R0</div>
+          <div class="e-row">
+            <div class="e-item"><div class="e-item-val" id="e-week">R0</div><div class="e-item-lbl">This week</div></div>
+            <div class="e-item"><div class="e-item-val" id="e-tasks">0</div><div class="e-item-lbl">Tasks done</div></div>
+            <div class="e-item"><div class="e-item-val" id="e-avg">R0</div><div class="e-item-lbl">Avg/task</div></div>
+          </div>
+          <div class="e-bar"><div class="e-fill" id="e-fill"></div></div>
+        </div>
+      </div>
+      <div class="p-section">
+        <div class="p-section-hdr">
+          <span class="p-section-title">Reviews</span>
+          <span class="t-sm" id="review-see-all">See all</span>
+        </div>
+        <div id="reviews-list">
+          <div class="empty"><i class="ph ph-star"></i><h3>No reviews yet</h3></div>
+        </div>
+      </div>
+      <div class="p-section">
+        <div class="p-section-hdr"><span class="p-section-title">Account</span></div>
+        <div class="acct-row"><span class="acct-lbl">Email</span><span class="acct-val" id="acct-email">—</span></div>
+        <div class="acct-row"><span class="acct-lbl">Role</span><span class="acct-val" id="acct-role">—</span></div>
+        <div class="acct-row"><span class="acct-lbl">Member since</span><span class="acct-val" id="acct-since">—</span></div>
+        <button class="logout-btn" id="logout-btn">Log out</button>
+        <button class="logout-btn" id="login-btn" style="display:none">Log in to continue</button>
+      </div>
+      <div class="pb-nav"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+
+  <div id="bottom-nav">
+    <button class="nb on" id="nb-home" data-s="home">
+      <div class="nb-icon"><i class="ph ph-house-simple"></i></div>
+      <span class="nb-lbl">Home</span>
+    </button>
+    <button class="nb" id="nb-find" data-s="find">
+      <div class="nb-icon"><i class="ph ph-list-checks"></i></div>
+      <span class="nb-lbl">Tasks</span>
+    </button>
+    <button class="nb nb-post" id="nb-post" data-s="post">
+      <div class="nb-icon"><i class="ph ph-plus"></i></div>
+      <span class="nb-lbl">Post</span>
+    </button>
+    <button class="nb" id="nb-messages" data-s="messages" style="position:relative">
+      <div class="nb-icon"><i class="ph ph-chat-circle-dots"></i></div>
+      <span class="nb-lbl">Messages</span>
+      <div class="nb-dot" id="nb-msg-dot"></div>
+    </button>
+    <button class="nb" id="nb-profile" data-s="profile">
+      <div class="nb-icon"><i class="ph ph-user"></i></div>
+      <span class="nb-lbl">Profile</span>
+    </button>
+  </div>
+
+</div><!-- #app -->
+
+<!-- NOTIFICATIONS PANEL -->
+
+<div id="notif-backdrop" onclick="closeNotifPanel()"></div>
+<div id="notif-panel">
+  <div class="notif-header">
+    <span class="t-h3">Notifications</span>
+    <button class="btn-icon" onclick="closeNotifPanel()"><i class="ph ph-x"></i></button>
+  </div>
+  <div class="notif-list" id="notif-list">
+    <div class="empty" style="padding:24px 0"><i class="ph ph-bell-slash"></i><h3>No notifications</h3></div>
+  </div>
+</div>
+
+<!-- FULL SCREEN MAP -->
+
+<div id="fullmap-view">
+  <div id="full-map"></div>
+  <button class="fullmap-back" onclick="closeFullMap()"><i class="ph ph-arrow-left"></i></button>
+  <div class="fullmap-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--black)"></div>Your location</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Task location</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Urgent task</div>
+  </div>
+</div>
+
+<!-- CHAT VIEW -->
+
+<div id="chat-view">
+  <div class="chat-topbar">
+    <button class="btn-icon" id="chat-back-btn"><i class="ph ph-arrow-left"></i></button>
+    <div class="chat-contact">
+      <div class="chat-contact-name" id="chat-contact-name">—</div>
+      <div class="chat-contact-status" id="chat-status">● Online</div>
+    </div>
+    <button class="btn-icon"><i class="ph ph-phone"></i></button>
+  </div>
+  <div class="chat-task-bar">
+    <span id="chat-task-title">—</span>
+    <span id="chat-task-price">—</span>
+  </div>
+  <div class="msgs-area" id="msgs-area"></div>
+  <div class="chat-input-bar">
+    <input class="chat-field" id="chat-input" type="text" placeholder="Type a message…">
+    <button class="send-btn" id="send-btn"><i class="ph ph-paper-plane-tilt"></i></button>
+  </div>
+</div>
+
+<!-- TASK DETAIL -->
+
+<div id="task-detail">
+  <div class="td-topbar">
+    <button class="btn-icon" id="td-back"><i class="ph ph-arrow-left"></i></button>
+    <span class="t-h3" id="td-title">Task Details</span>
+  </div>
+  <div class="td-helper" id="td-helper">
+    <div class="td-helper-l">
+      <span class="td-helper-label">Task with</span>
+      <span class="td-helper-name" id="td-helper-name">Not assigned</span>
+    </div>
+    <div class="td-helper-ava" id="td-helper-ava">?</div>
+  </div>
+  <div class="td-map" id="td-map"></div>
+  <div class="td-body">
+    <div class="timeline" id="td-timeline"></div>
+    <div class="td-actions" id="td-actions"></div>
+  </div>
+</div>
+
+<!-- EDIT MODALS -->
+
+<!-- Bio modal -->
+
+<div class="modal-overlay" id="modal-bio">
+  <div class="modal-sheet">
+    <div class="modal-hdr">
+      <span class="modal-title">Edit Bio</span>
+      <button class="btn-icon" onclick="closeModal('modal-bio')"><i class="ph ph-x"></i></button>
+    </div>
+    <textarea class="form-input" id="modal-bio-input" rows="4" placeholder="Tell people about yourself…"></textarea>
+    <button class="btn btn-blk btn-blk-lg" style="margin-top:12px" onclick="saveBio()">Save</button>
+  </div>
+</div>
+
+<!-- Name modal -->
+
+<div class="modal-overlay" id="modal-name">
+  <div class="modal-sheet">
+    <div class="modal-hdr">
+      <span class="modal-title">Edit Name</span>
+      <button class="btn-icon" onclick="closeModal('modal-name')"><i class="ph ph-x"></i></button>
+    </div>
+    <input class="form-input" type="text" id="modal-name-input" placeholder="Your full name">
+    <button class="btn btn-blk btn-blk-lg" style="margin-top:12px" onclick="saveName()">Save</button>
+  </div>
+</div>
+
+<!-- Skills modal -->
+
+<div class="modal-overlay" id="modal-skills">
+  <div class="modal-sheet">
+    <div class="modal-hdr">
+      <span class="modal-title">Edit Skills</span>
+      <button class="btn-icon" onclick="closeModal('modal-skills')"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Your skills (comma separated)</label>
+      <textarea class="form-input" id="modal-skills-input" rows="3" placeholder="Cleaning, Delivery, Gardening…"></textarea>
+    </div>
+    <button class="btn btn-blk btn-blk-lg" onclick="saveSkills()">Save</button>
+  </div>
+</div>
+
+<!-- Toast & Loading -->
+
+<div id="toast"><span id="toast-icon">✅</span><span id="toast-msg">Done</span></div>
+<div id="loading-overlay"><div class="loading-card"><div class="spin"></div><span id="loading-msg">Processing…</span></div></div>
 
 <script>
-(function () {
+(function(){
 'use strict';
 
-/* ══════════════════════════════════════════
-   FIREBASE CONFIG
-══════════════════════════════════════════ */
-const FB_CONFIG = {
-  apiKey: "AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
-  authDomain: "taskmartapp-74d6b.firebaseapp.com",
-  databaseURL: "https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
-  projectId: "taskmartapp-74d6b",
-  storageBucket: "taskmartapp-74d6b.firebasestorage.app",
-  messagingSenderId: "52910279328",
-  appId: "1:52910279328:web:f49ed0d56a09e5dead17c5"
+/* ══ CONFIG ═══════════════════════════════ */
+const FB = {
+  apiKey:"AIzaSyBi_srk36131SlYbhclVqlqsqobJJ917Pg",
+  authDomain:"taskmartapp-74d6b.firebaseapp.com",
+  databaseURL:"https://taskmartapp-74d6b-default-rtdb.firebaseio.com",
+  projectId:"taskmartapp-74d6b",
+  storageBucket:"taskmartapp-74d6b.firebasestorage.app",
+  messagingSenderId:"52910279328",
+  appId:"1:52910279328:web:f49ed0d56a09e5dead17c5"
 };
+mapboxgl.accessToken='pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoicG1hbGFwaWxlMDciLCJhIjoiY2x3dG43cGt4MDJhNDJxcGtxYTV4cGVmeCJ9.8gq8mhT1rZQcZnGgZl9zCg';
+/* ══ STATE ════════════════════════════════ */
+let db,auth;
+let me=null,myProfile=null;
+let lat=-26.195246,lng=28.034088;
+let miniMap=null,fullMap=null,tdMap=null;
+let userPinMarker=null,userRingMarker=null;
+let taskMarkers=[],fullTaskMarkers=[];
+let allTasks=[];
+let myTasks=[];
+let uploadedImgs=[];
+let activeChatId=null,chatUnsub=null;
+let postWhenNow=true,postBudgetFixed=true;
+let findTab='incoming',findQ='';
 
-/* ══════════════════════════════════════════
-   STATE
-══════════════════════════════════════════ */
-let db, auth;
-let currentUser = null, userProfile = null;
-let currentLat = -26.195246, currentLng = 28.034088;
-let originalLat, originalLng;
-let miniMap = null, userPinMarker = null, userRadiusMarker = null;
-let helperMarkers = [];
-let allPublicTasks = [];
-let allMyTasks = [];
-let uploadedImages = [];
-let activeChatConvId = null;
-let chatListener = null;
-let convListeners = {};
+/* ══ UTILS ════════════════════════════════ */
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toast(msg,icon='✅'){
+  document.getElementById('toast-icon').textContent=icon;
+  document.getElementById('toast-msg').textContent=msg;
+  const t=document.getElementById('toast');
+  t.classList.add('on');
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('on'),3000);
+}
+function showLoad(msg='Processing…'){document.getElementById('loading-msg').textContent=msg;document.getElementById('loading-overlay').classList.add('on')}
+function hideLoad(){document.getElementById('loading-overlay').classList.remove('on')}
+function timeAgo(ts){
+  if(!ts)return'just now';
+  const d=Date.now()-ts,m=Math.floor(d/60000),h=Math.floor(m/60);
+  if(m<1)return'just now';if(m<60)return m+'m ago';
+  if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';
+}
+function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'})}
+function fmtDateShort(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})}
+function haversine(a,b,c,d){
+  const R=6371,dL=(c-a)*Math.PI/180,dO=(d-b)*Math.PI/180;
+  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dO/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function capFirst(s){return s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():''}
+function avaColor(n){const c=['#667eea','#e17055','#00b894','#00cec9','#6c5ce7','#fd79a8','#0984e3','#e84393'];let s=0;for(const ch of(n||'?'))s+=ch.charCodeAt(0);return c[s%c.length]}
+function avaInit(n){if(!n)return'?';const p=n.trim().split(' ');return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():p[0].substring(0,2).toUpperCase()}
 
-/* ══════════════════════════════════════════
-   UTILS
-══════════════════════════════════════════ */
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function showToast(msg, icon = '✅') {
-  const t = document.getElementById('toast');
-  document.getElementById('toastIcon').textContent = icon;
-  document.getElementById('toastText').textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
-}
-function showLoading(msg = 'Processing…') {
-  document.getElementById('loadingText').textContent = msg;
-  document.getElementById('loadingOverlay').classList.add('show');
-}
-function hideLoading() {
-  document.getElementById('loadingOverlay').classList.remove('show');
-}
-function timeAgo(ts) {
-  if (!ts) return 'just now';
-  const diff = Date.now() - ts;
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return m + 'm ago';
-  const h = Math.floor(m / 60);
-  if (h < 24) return h + 'h ago';
-  return Math.floor(h / 24) + 'd ago';
-}
-function formatDate(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
-function avatarColor(name) {
-  const colors = ['#667eea','#e17055','#00b894','#00cec9','#6c5ce7','#fd79a8','#0984e3','#e84393'];
-  let sum = 0; for (let c of (name||'?')) sum += c.charCodeAt(0);
-  return colors[sum % colors.length];
-}
-function avatarInitials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(' ');
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return parts[0].substring(0,2).toUpperCase();
+/* ══ GREETING ═════════════════════════════ */
+function setGreeting(name){
+  const h=new Date().getHours();
+  const g=h<12?'Good morning 👋':h<17?'Good afternoon ☀️':'Good evening 🌙';
+  document.getElementById('greeting-sub').textContent=g;
+  document.getElementById('greeting-name').textContent=name||'Guest';
 }
 
-/* live clock */
-function updateClock() {
-  const n = new Date(), h = n.getHours(), m = String(n.getMinutes()).padStart(2,'0');
-  const t = h + ':' + m;
-  document.getElementById('statusTime').textContent = t;
-  document.getElementById('chatStatusTime').textContent = t;
-}
-updateClock(); setInterval(updateClock, 15000);
+/* ══ FIREBASE INIT ════════════════════════ */
+try{
+  if(!firebase.apps.length)firebase.initializeApp(FB);
+  db=firebase.database();auth=firebase.auth();
+}catch(e){console.error('[FB]',e)}
 
-/* greeting */
-function setGreeting(name) {
-  const h = new Date().getHours();
-  let g = h < 12 ? 'Good morning 👋' : h < 17 ? 'Good afternoon ☀️' : 'Good evening 🌙';
-  document.getElementById('homeGreetingSub').textContent = g;
-  document.getElementById('homeGreetingName').textContent = name || 'Guest';
-}
-
-/* ══════════════════════════════════════════
-   FIREBASE INIT
-══════════════════════════════════════════ */
-try {
-  if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-  db = firebase.database();
-  auth = firebase.auth();
-} catch(e) { console.error('[FB]', e); }
-
-auth.onAuthStateChanged(async (user) => {
-  if (user && !user.isAnonymous) {
-    currentUser = user;
-    try {
-      const snap = await db.ref('users/' + user.uid).once('value');
-      userProfile = snap.val() || {};
-    } catch(e) { userProfile = {}; }
-    const name = userProfile.name || user.displayName || user.email?.split('@')[0] || 'User';
+auth.onAuthStateChanged(async user=>{
+  if(user&&!user.isAnonymous){
+    me=user;
+    try{const s=await db.ref('users/'+user.uid).once('value');myProfile=s.val()||{}}
+    catch{myProfile={}}
+    const name=myProfile.name||user.displayName||user.email?.split('@')[0]||'User';
     setGreeting(name);
-    renderProfile();
+    loadTasks();
     loadMyTasksEarnings();
-    loadPublicTasks();
     checkConvBadge();
     checkNotifDot();
-  } else if (user && user.isAnonymous) {
-    currentUser = null; userProfile = null;
-    setGreeting('Guest');
+  }else if(user&&user.isAnonymous){
+    me=null;myProfile=null;setGreeting('Guest');
+    loadTasks();
     renderProfileGuest();
-    loadPublicTasks();
-  } else {
-    currentUser = null; userProfile = null;
-    setGreeting('Guest');
+  }else{
+    me=null;myProfile=null;setGreeting('Guest');
+    auth.signInAnonymously().catch(e=>console.error('[Auth]',e));
+    loadTasks();
     renderProfileGuest();
-    auth.signInAnonymously().catch(e => console.error('[Auth]', e));
   }
 });
 
-/* ══════════════════════════════════════════
-   NAVIGATION
-══════════════════════════════════════════ */
-const screenIds = ['home', 'find', 'post', 'messages', 'profile'];
-let currentScreen = 'home';
+/* ══ NAVIGATION ══════════════════════════ */
+const SCREENS=['home','find','post','messages','profile'];
+let curScreen='home';
 
-function navigate(screenId) {
-  if (!screenIds.includes(screenId)) return;
-  screenIds.forEach(id => {
-    document.getElementById('screen-'+id).classList.remove('active');
-    const nb = document.getElementById('nav-'+id);
-    if (nb) nb.classList.remove('active');
+function navigate(id){
+  if(!SCREENS.includes(id))return;
+  SCREENS.forEach(s=>{
+    document.getElementById('screen-'+s).classList.remove('active');
+    const nb=document.getElementById('nb-'+s);
+    if(nb)nb.classList.remove('on');
   });
-  document.getElementById('screen-'+screenId).classList.add('active');
-  const nb = document.getElementById('nav-'+screenId);
-  if (nb) nb.classList.add('active');
-  currentScreen = screenId;
-
+  document.getElementById('screen-'+id).classList.add('active');
+  const nb=document.getElementById('nb-'+id);
+  if(nb)nb.classList.add('on');
+  curScreen=id;
   // icon swap
-  screenIds.forEach(id => {
-    const btn = document.getElementById('nav-'+id);
-    if (!btn) return;
-    const i = btn.querySelector('.nav-icon-wrap i');
-    if (!i) return;
-    const iconMap = {
-      home: ['ph-house-simple','ph-fill ph-house-simple'],
-      find: ['ph-magnifying-glass','ph-fill ph-magnifying-glass'],
-      post: ['ph-plus','ph-plus'],
-      messages: ['ph-chat-circle-dots','ph-fill ph-chat-circle-dots'],
-      profile: ['ph-user','ph-fill ph-user']
+  const icons={home:['ph-house-simple','ph-fill ph-house-simple'],find:['ph-list-checks','ph-fill ph-list-checks'],post:['ph-plus','ph-plus'],messages:['ph-chat-circle-dots','ph-fill ph-chat-circle-dots'],profile:['ph-user','ph-fill ph-user']};
+  SCREENS.forEach(s=>{
+    const btn=document.getElementById('nb-'+s);if(!btn)return;
+    const ic=btn.querySelector('.nb-icon i');if(!ic)return;
+    const[off,on]=icons[s]||['ph-circle','ph-circle'];
+    ic.className=s===id?on:off;
+  });
+  if(id==='home'&&miniMap)setTimeout(()=>miniMap.resize(),60);
+  if(id==='find')renderFindTasks();
+  if(id==='messages')loadConversations();
+  if(id==='profile')renderProfile();
+}
+
+document.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.s)));
+
+/* ══ NOTIFICATIONS PANEL ══════════════════ */
+function openNotifPanel(){
+  document.getElementById('notif-panel').classList.add('open');
+  document.getElementById('notif-backdrop').classList.add('on');
+  loadNotifications();
+}
+function closeNotifPanel(){
+  document.getElementById('notif-panel').classList.remove('open');
+  document.getElementById('notif-backdrop').classList.remove('on');
+}
+document.getElementById('notif-btn').addEventListener('click',()=>{
+  if(!me){toast('Log in to see notifications','🔒');return}
+  openNotifPanel();
+});
+
+function loadNotifications(){
+  if(!me||!db)return;
+  const list=document.getElementById('notif-list');
+  list.innerHTML='<div style="text-align:center;padding:18px;color:var(--g400);font-size:13px"><div class="spin" style="margin:0 auto 6px"></div>Loading…</div>';
+  db.ref('notifications/'+me.uid).orderByChild('createdAt').limitToLast(30).once('value').then(snap=>{
+    const items=snap.val()||{};
+    const sorted=Object.entries(items).sort(([,a],[,b])=>(b.createdAt||0)-(a.createdAt||0));
+    if(!sorted.length){list.innerHTML='<div class="empty" style="padding:24px 0"><i class="ph ph-bell-slash"></i><h3>No notifications</h3></div>';return}
+    const typeInfo={
+      new_task:{icon:'ph-briefcase',color:'var(--blue10)',iconColor:'var(--blue)',text:'New task nearby'},
+      task_accepted:{icon:'ph-check-circle',color:'var(--green10)',iconColor:'var(--green)',text:'Task accepted'},
+      task_assigned:{icon:'ph-user-check',color:'var(--amber10)',iconColor:'var(--amber)',text:'Helper assigned'},
+      task_completed:{icon:'ph-trophy',color:'var(--green10)',iconColor:'var(--green)',text:'Task completed'},
+      schedule_accepted:{icon:'ph-calendar-check',color:'var(--green10)',iconColor:'var(--green)',text:'Schedule confirmed'},
+      schedule_rejected:{icon:'ph-x-circle',color:'var(--red10)',iconColor:'var(--red)',text:'Schedule declined'},
     };
-    const [inactive, active] = iconMap[id] || ['ph-circle','ph-fill ph-circle'];
-    i.className = id === screenId ? active : inactive;
+    list.innerHTML=sorted.map(([id,n])=>{
+      const ti=typeInfo[n.type]||{icon:'ph-bell',color:'var(--g100)',iconColor:'var(--g600)',text:capFirst(n.type||'Notification')};
+      return`<div class="notif-item ${n.status==='pending'?'unread':''}">
+        <div class="notif-icon" style="background:${ti.color}"><i class="ph ${ti.icon}" style="color:${ti.iconColor}"></i></div>
+        <div class="notif-body">
+          <div class="notif-title">${esc(ti.text)}</div>
+          <div class="notif-sub">${esc(n.category||'')}${n.distance?' · '+n.distance+'km away':''}</div>
+          <div class="notif-time">${timeAgo(n.createdAt)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    // mark as read
+    sorted.forEach(([id,n])=>{
+      if(n.status==='pending')db.ref('notifications/'+me.uid+'/'+id+'/status').set('read').catch(()=>{});
+    });
+    document.getElementById('notif-dot').classList.remove('on');
+  }).catch(e=>console.error('[Notifs]',e));
+}
+
+function checkNotifDot(){
+  if(!me||!db)return;
+  db.ref('notifications/'+me.uid).orderByChild('status').equalTo('pending').once('value').then(snap=>{
+    const has=snap.numChildren()>0;
+    document.getElementById('notif-dot').classList.toggle('on',has);
+  }).catch(()=>{});
+}
+
+/* ══ MAPBOX MINI MAP ══════════════════════ */
+function initMiniMap(){
+  if(miniMap)return;
+  miniMap=new mapboxgl.Map({
+    container:'mini-map',
+    style:'mapbox://styles/pmalapile07/cmmwfxan9004001s8h9ph8z6v',
+    center:[lng,lat],zoom:13,
+    attributionControl:false,
+    interactive:true
   });
-
-  if (screenId === 'home') { if (miniMap) setTimeout(() => miniMap.resize(), 80); }
-  if (screenId === 'find') loadPublicTasksToFind();
-  if (screenId === 'messages') loadConversations();
-  if (screenId === 'profile') renderProfile();
+  miniMap.addControl(new mapboxgl.NavigationControl({showCompass:false}),'bottom-left');
+  miniMap.on('load',()=>{placeUserPin(lat,lng,miniMap,true);placeTaskPins(miniMap,taskMarkers)});
+  miniMap.on('error',e=>console.warn('[Map]',e.error?.message));
 }
 
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => navigate(btn.dataset.screen));
-});
+function placeUserPin(la,lo,map,isMini){
+  if(isMini){
+    if(userPinMarker){userPinMarker.remove();userPinMarker=null}
+    if(userRingMarker){userRingMarker.remove();userRingMarker=null}
+    const ringEl=document.createElement('div');ringEl.className='u-ring';
+    userRingMarker=new mapboxgl.Marker({element:ringEl,anchor:'center'}).setLngLat([lo,la]).addTo(map);
+    const pinEl=document.createElement('div');pinEl.className='u-pin';
+    const popup=new mapboxgl.Popup({offset:14,closeButton:false}).setHTML('<b>Your location</b>');
+    userPinMarker=new mapboxgl.Marker({element:pinEl,anchor:'center'}).setLngLat([lo,la]).setPopup(popup).addTo(map);
+  }else{
+    const ringEl=document.createElement('div');ringEl.className='u-ring';
+    new mapboxgl.Marker({element:ringEl,anchor:'center'}).setLngLat([lo,la]).addTo(map);
+    const pinEl=document.createElement('div');pinEl.className='u-pin';
+    const popup=new mapboxgl.Popup({offset:14,closeButton:false}).setHTML('<b>Your location</b>');
+    new mapboxgl.Marker({element:pinEl,anchor:'center'}).setLngLat([lo,la]).setPopup(popup).addTo(map);
+  }
+}
 
-// Home search bar → open post
-document.getElementById('homeSearchBar').addEventListener('click', () => {
-  if (!currentUser) { showToast('Please log in to post tasks', '🔒'); return; }
-  navigate('post');
-});
-document.getElementById('homeSearchInput').addEventListener('click', () => {
-  if (!currentUser) { showToast('Please log in to post tasks', '🔒'); return; }
-  navigate('post');
-});
-
-/* ══════════════════════════════════════════
-   MAPBOX MINI MAP (Home screen)
-══════════════════════════════════════════ */
-function initMiniMap() {
-  if (miniMap) return;
-  miniMap = new mapboxgl.Map({
-    container: 'mini-map',
-    style: 'mapbox://styles/pmalapile07/cmmwfxan9004001s8h9ph8z6v',
-    center: [currentLng, currentLat],
-    zoom: 13,
-    interactive: true,
-    attributionControl: false
+function placeTaskPins(map,markerArr){
+  if(!map)return;
+  markerArr.forEach(m=>m.remove());
+  markerArr.length=0;
+  allTasks.forEach(t=>{
+    if(!t.location?.lat||!t.location?.lng)return;
+    const el=document.createElement('div');
+    el.className='t-pin '+(t.priority==='urgent'?'t-pin-urgent':t.status==='completed'?'t-pin-done':'t-pin-open');
+    const popup=new mapboxgl.Popup({offset:18,closeButton:false}).setHTML(`<b>${esc(t.category||'Task')}</b><br>${t.budget==='open'?'Open offer':'R'+(t.budget||0)}`);
+    const m=new mapboxgl.Marker({element:el,anchor:'center'}).setLngLat([t.location.lng,t.location.lat]).setPopup(popup).addTo(map);
+    markerArr.push(m);
   });
-  miniMap.on('load', () => {
-    placeUserPin(currentLat, currentLng);
-  });
-  miniMap.on('error', e => console.error('[Map]', e.error));
 }
 
-function placeUserPin(lat, lng) {
-  if (!miniMap) return;
-  if (userPinMarker) { userPinMarker.remove(); userPinMarker = null; }
-  if (userRadiusMarker) { userRadiusMarker.remove(); userRadiusMarker = null; }
-
-  const pinEl = document.createElement('div');
-  pinEl.className = 'user-pin';
-  userPinMarker = new mapboxgl.Marker({ element: pinEl, anchor: 'center' })
-    .setLngLat([lng, lat]).addTo(miniMap);
-
-  const ringEl = document.createElement('div');
-  ringEl.className = 'radius-ring';
-  userRadiusMarker = new mapboxgl.Marker({ element: ringEl, anchor: 'center' })
-    .setLngLat([lng, lat]).addTo(miniMap);
-}
-
-function flyToUser() {
-  if (!miniMap) return;
-  miniMap.flyTo({ center: [currentLng, currentLat], zoom: 14, speed: 1.6 });
-}
-
-function clearHelperMarkers() {
-  helperMarkers.forEach(m => m.remove());
-  helperMarkers = [];
-}
-
-function addTaskPinToMap(task) {
-  if (!miniMap || !task.location?.lat || !task.location?.lng) return;
-  const el = document.createElement('div');
-  el.className = 'task-pin';
-  if ((task.priority || '').toLowerCase() === 'urgent') el.classList.add('urgent');
-  else el.classList.add('new');
-  const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat([task.location.lng, task.location.lat]).addTo(miniMap);
-  helperMarkers.push(marker);
-}
-
-function geolocationSetup() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    currentLat = pos.coords.latitude;
-    currentLng = pos.coords.longitude;
-    originalLat = currentLat; originalLng = currentLng;
-    if (miniMap) {
-      miniMap.flyTo({ center: [currentLng, currentLat], zoom: 14, speed: 2.2 });
-      placeUserPin(currentLat, currentLng);
+function geoSetup(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    lat=pos.coords.latitude;lng=pos.coords.longitude;
+    if(miniMap){
+      miniMap.flyTo({center:[lng,lat],zoom:14,speed:2});
+      placeUserPin(lat,lng,miniMap,true);
+      placeTaskPins(miniMap,taskMarkers);
     }
-    // reverse geocode for post task location field
-    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${currentLng},${currentLat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.features?.[0]) {
-          let parts = data.features[0].place_name.split(', ');
-          if (parts.length > 1) parts.pop();
-          document.getElementById('postTaskLocation').value = parts.join(', ');
-        }
-      }).catch(() => {});
-    loadPublicTasks();
-  }, err => {
-    console.warn('[Geo]', err.message);
-    document.getElementById('postTaskLocation').value = 'Johannesburg';
-    loadPublicTasks();
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&types=place,locality`)
+      .then(r=>r.json()).then(d=>{
+        if(d.features?.[0]){document.getElementById('p-location').value=d.features[0].place_name.split(', ').slice(0,2).join(', ')}
+      }).catch(()=>{});
+    loadTasks();
+  },()=>{
+    document.getElementById('p-location').value='Johannesburg';
+    loadTasks();
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
 }
 
-document.getElementById('recenterBtn').addEventListener('click', flyToUser);
+document.getElementById('recenter-btn').addEventListener('click',()=>{
+  if(miniMap)miniMap.flyTo({center:[lng,lat],zoom:14,speed:1.8});
+});
 
-/* ══════════════════════════════════════════
-   TASK CARD RENDERER (shared)
-══════════════════════════════════════════ */
-const BADGE_COLORS = {
-  new: 'badge-green', urgent: 'badge-red', popular: 'badge-amber',
-  open: 'badge-blue', assigned: 'badge-amber', completed: 'badge-grey',
-  in_progress: 'badge-green', scheduled: 'badge-blue'
+/* ── Full screen map ──────────────────────── */
+document.getElementById('map-expand-btn').addEventListener('click',openFullMap);
+function openFullMap(){
+  const view=document.getElementById('fullmap-view');
+  view.style.display='flex';
+  if(!fullMap){
+    fullMap=new mapboxgl.Map({
+      container:'full-map',
+      style:'mapbox://styles/pmalapile07/cmmwfxan9004001s8h9ph8z6v',
+      center:[lng,lat],zoom:13,
+      attributionControl:false
+    });
+    fullMap.addControl(new mapboxgl.NavigationControl({showCompass:false}),'top-right');
+    fullMap.on('load',()=>{placeUserPin(lat,lng,fullMap,false);placeTaskPins(fullMap,fullTaskMarkers)});
+  }else{
+    fullMap.resize();
+    placeTaskPins(fullMap,fullTaskMarkers);
+  }
+}
+function closeFullMap(){
+  document.getElementById('fullmap-view').style.display='none';
+}
+
+/* ══ TASK DATA ════════════════════════════ */
+const STATUS_BADGE={
+  open:'badge-green',assigned:'badge-amber',in_progress:'badge-blue',
+  scheduled:'badge-blue',completed:'badge-grey',cancelled:'badge-grey'
+};
+const STATUS_LABEL={
+  open:'Open',assigned:'Assigned',in_progress:'In Progress',
+  scheduled:'Scheduled',completed:'Completed',cancelled:'Cancelled'
 };
 
-function buildTaskCard(task, opts = {}) {
-  const { onAccept, myTask } = opts;
-  const dist = (task.location?.lat && task.location?.lng)
-    ? haversineKm(currentLat, currentLng, task.location.lat, task.location.lng).toFixed(1) + ' km'
-    : '—';
-  const budget = task.budget === 'open' ? 'Open offer' : 'R' + task.budget;
-  const budgetNum = task.budget === 'open' ? 0 : Number(task.budget);
-  const posterName = task.posterName || 'User';
-  const avaColor = avatarColor(posterName);
-  const avaInit = avatarInitials(posterName);
-  const statusBadge = task.status ? BADGE_COLORS[task.status] || 'badge-grey' : 'badge-green';
-  const statusText = task.status ? capFirst(task.status.replace('_',' ')) : 'Open';
-  const isUrgent = (task.priority||'').toLowerCase() === 'urgent';
+function loadTasks(){
+  if(!db)return;
+  db.ref('tasks').once('value').then(snap=>{
+    const raw=snap.val()||{};
+    const tasks=[];
+    Object.entries(raw).forEach(([uid,userTasks])=>{
+      if(typeof userTasks==='object'&&userTasks){
+        Object.entries(userTasks).forEach(([tid,t])=>{
+          if(t)tasks.push({...t,id:tid,_uid:uid});
+        });
+      }
+    });
+    // filter to 10km
+    allTasks=tasks.filter(t=>{
+      if(!t.location?.lat||!t.location?.lng)return true;
+      return haversine(lat,lng,t.location.lat,t.location.lng)<=10;
+    }).sort((a,b)=>{
+      const dA=a.location?.lat?haversine(lat,lng,a.location.lat,a.location.lng):999;
+      const dB=b.location?.lat?haversine(lat,lng,b.location.lat,b.location.lng):999;
+      return dA-dB;
+    });
 
-  return `
-  <div class="task-card-ui" data-task-id="${esc(task.id||task.taskId||'')}">
-    <div class="task-card-top">
-      <div class="task-card-title">${esc(task.category || 'Task')}</div>
-      <div class="task-card-price">${budgetNum > 0 ? 'R'+budgetNum : 'Open'}<span>/job</span></div>
+    const open=allTasks.filter(t=>t.status==='open'||!t.status);
+    document.getElementById('stat-nearby').textContent=open.length;
+
+    renderHomeTasks();
+    if(miniMap)placeTaskPins(miniMap,taskMarkers);
+    if(fullMap)placeTaskPins(fullMap,fullTaskMarkers);
+    if(curScreen==='find')renderFindTasks();
+  }).catch(e=>console.error('[Tasks]',e));
+}
+
+/* ── Task card HTML ──────────────────────── */
+function buildTC(task,showAccept){
+  const dist=task.location?.lat?haversine(lat,lng,task.location.lat,task.location.lng).toFixed(1)+' km':'—';
+  const budget=task.budget==='open'?'Open offer':`R${task.budget}`;
+  const budgetNum=task.budget==='open'?0:Number(task.budget);
+  const poster=task.posterName||'User';
+  const st=task.status||'open';
+  const badgeCls=STATUS_BADGE[st]||'badge-green';
+  const badgeLbl=STATUS_LABEL[st]||capFirst(st);
+  const canAccept=showAccept&&(st==='open'||!st);
+
+  return`<div class="tc" data-tid="${esc(task.id||task.taskId||'')}">
+    <div class="tc-top">
+      <div class="tc-title">${esc(task.category||'Task')}</div>
+      <div class="tc-price">${budgetNum>0?'R'+budgetNum:'Open'}<small>/job</small></div>
     </div>
-    <div class="task-card-meta">
-      <div class="task-card-meta-item"><i class="ph ph-map-pin"></i>${esc(task.location?.city || task.address || 'Johannesburg')}</div>
-      <div class="task-card-meta-item"><i class="ph ph-navigation-arrow"></i>${dist}</div>
-      ${task.duration ? `<div class="task-card-meta-item"><i class="ph ph-clock"></i>${esc(task.duration)}</div>` : ''}
+    <div class="tc-meta">
+      <div class="tc-meta-item"><i class="ph ph-map-pin"></i>${esc(task.location?.city||task.address||'Johannesburg')}</div>
+      <div class="tc-meta-item"><i class="ph ph-navigation-arrow"></i>${dist}</div>
+      ${task.duration?`<div class="tc-meta-item"><i class="ph ph-clock"></i>${esc(task.duration)}</div>`:''}
     </div>
-    <div class="task-card-footer">
-      <div class="poster-row">
-        <div class="poster-ava" style="background:${avaColor}">${avaInit}</div>
-        <span class="poster-name">${esc(posterName)}</span>
+    <div class="tc-footer">
+      <div class="tc-poster">
+        <div class="tc-ava" style="background:${avaColor(poster)}">${avaInit(poster)}</div>
+        <span class="tc-poster-name">${esc(poster)}</span>
       </div>
-      <div class="task-card-actions">
-        ${isUrgent ? '<span class="badge badge-red">Urgent</span>' : ''}
-        <span class="badge ${statusBadge}">${statusText}</span>
-        ${onAccept ? `<button class="btn btn-primary" style="height:34px;font-size:12px;padding:0 14px" data-accept-id="${esc(task.id||task.taskId||'')}">Accept</button>` : ''}
-        ${myTask ? `<button class="btn btn-ghost" style="height:34px;font-size:12px" data-detail-id="${esc(task.id||task.taskId||'')}"><i class="ph ph-eye"></i></button>` : ''}
+      <div class="tc-actions">
+        <span class="badge ${badgeCls}">${badgeLbl}</span>
+        ${canAccept?`<button class="btn btn-blk" style="height:33px;font-size:12px;padding:0 13px" data-accept="${esc(task.id||task.taskId||'')}">Accept</button>`:''}
       </div>
     </div>
   </div>`;
 }
 
-/* ══════════════════════════════════════════
-   HOME: LOAD PUBLIC TASKS
-══════════════════════════════════════════ */
-function loadPublicTasks() {
-  document.getElementById('homeTaskLoading').style.display = 'block';
-  document.getElementById('homeTaskEmpty').style.display = 'none';
-  if (!db) return;
-
-  db.ref('tasks').once('value').then(snap => {
-    const raw = snap.val() || {};
-    const tasks = [];
-    Object.entries(raw).forEach(([uid, userTasks]) => {
-      if (typeof userTasks === 'object') {
-        Object.entries(userTasks).forEach(([tid, t]) => {
-          if (t && t.status !== 'completed' && t.status !== 'cancelled') {
-            tasks.push({ ...t, id: tid, _uid: uid });
-          }
-        });
-      }
-    });
-    allPublicTasks = tasks.sort((a,b) => {
-      const dA = a.location?.lat ? haversineKm(currentLat, currentLng, a.location.lat, a.location.lng) : 999;
-      const dB = b.location?.lat ? haversineKm(currentLat, currentLng, b.location.lat, b.location.lng) : 999;
-      return dA - dB;
-    });
-
-    // stats
-    document.getElementById('nearbyCount').textContent = allPublicTasks.length;
-
-    // render on home
-    const list = document.getElementById('homeTaskList');
-    document.getElementById('homeTaskLoading').style.display = 'none';
-    if (allPublicTasks.length === 0) {
-      document.getElementById('homeTaskEmpty').style.display = 'block';
-      return;
-    }
-    const nearby = allPublicTasks.slice(0, 5);
-    list.innerHTML = nearby.map(t => buildTaskCard(t, { onAccept: true })).join('');
-
-    // add to map
-    clearHelperMarkers();
-    nearby.forEach(t => addTaskPinToMap(t));
-
-    // bind accept
-    list.querySelectorAll('[data-accept-id]').forEach(btn => {
-      btn.addEventListener('click', e => { e.stopPropagation(); acceptTask(btn.dataset.acceptId); });
-    });
-    // bind detail tap
-    list.querySelectorAll('.task-card-ui').forEach(card => {
-      card.addEventListener('click', () => {
-        const t = allPublicTasks.find(x => (x.id||x.taskId) === card.dataset.taskId);
-        if (t) openTaskDetail(t);
-      });
-    });
-  }).catch(e => {
-    document.getElementById('homeTaskLoading').style.display = 'none';
-    document.getElementById('homeTaskEmpty').style.display = 'block';
-    console.error('[Tasks]', e);
-  });
+/* ── Home task list ──────────────────────── */
+function renderHomeTasks(){
+  document.getElementById('home-loading').style.display='none';
+  const list=document.getElementById('home-task-list');
+  const open=allTasks.filter(t=>(t.status==='open'||!t.status)&&t.status!=='completed').slice(0,6);
+  if(!open.length){list.innerHTML='<div class="empty"><i class="ph ph-map-pin"></i><h3>No tasks nearby</h3><p>Be the first to post one!</p></div>';return}
+  list.innerHTML=open.map(t=>buildTC(t,true)).join('');
+  bindTaskCards(list,true);
 }
 
-/* ══════════════════════════════════════════
-   FIND TASKS
-══════════════════════════════════════════ */
-let findFilter = 'all', findSearch = '';
+/* ── Find tasks ──────────────────────────── */
+function renderFindTasks(){
+  const q=findQ.toLowerCase();
+  let tasks=[...allTasks];
+  if(q)tasks=tasks.filter(t=>(t.category||'').toLowerCase().includes(q));
 
-function loadPublicTasksToFind() {
-  renderFindTasks();
-}
+  const now=Date.now();
+  const todayStart=new Date();todayStart.setHours(0,0,0,0);
 
-function renderFindTasks() {
-  let tasks = allPublicTasks.length > 0 ? allPublicTasks : [];
-  if (findFilter !== 'all') {
-    tasks = tasks.filter(t => (t.category||'').toLowerCase().includes(findFilter));
+  let filtered=[];
+  let showAccept=false;
+  if(findTab==='incoming'){
+    filtered=tasks.filter(t=>!t.status||t.status==='open');
+    showAccept=true;
+  }else if(findTab==='current'){
+    filtered=tasks.filter(t=>['assigned','in_progress','scheduled','traveling'].includes(t.status));
+    showAccept=false;
+  }else{
+    filtered=tasks.filter(t=>['completed','cancelled'].includes(t.status));
+    showAccept=false;
   }
-  if (findSearch) {
-    const q = findSearch.toLowerCase();
-    tasks = tasks.filter(t =>
-      (t.category||'').toLowerCase().includes(q) ||
-      (t.location?.city||'').toLowerCase().includes(q) ||
-      (t.posterName||'').toLowerCase().includes(q)
-    );
-  }
-  document.getElementById('findLoading').style.display = 'none';
-  document.getElementById('findResultsLabel').textContent = tasks.length + ' task' + (tasks.length!==1?'s':'') + ' found';
-  const list = document.getElementById('findTaskList');
-  if (tasks.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="ph ph-briefcase"></i></div><div class="empty-state-title">No tasks found</div><div class="empty-state-sub">Try a different filter or check back soon.</div></div>`;
+
+  document.getElementById('find-loading').style.display='none';
+  document.getElementById('find-result-label').textContent=filtered.length+' task'+(filtered.length!==1?'s':'')+' found';
+  const list=document.getElementById('find-task-list');
+  if(!filtered.length){
+    list.innerHTML='<div class="empty"><i class="ph ph-briefcase"></i><h3>No tasks here</h3><p>Try a different filter.</p></div>';
     return;
   }
-  list.innerHTML = tasks.map(t => buildTaskCard(t, { onAccept: true })).join('');
-  list.querySelectorAll('[data-accept-id]').forEach(btn => {
-    btn.addEventListener('click', e => { e.stopPropagation(); acceptTask(btn.dataset.acceptId); });
-  });
-  list.querySelectorAll('.task-card-ui').forEach(card => {
-    card.addEventListener('click', () => {
-      const t = allPublicTasks.find(x => (x.id||x.taskId) === card.dataset.taskId);
-      if (t) openTaskDetail(t);
-    });
-  });
+  list.innerHTML=filtered.map(t=>buildTC(t,showAccept)).join('');
+  bindTaskCards(list,showAccept);
 }
 
-// filter chips
-document.getElementById('filterScroll').querySelectorAll('.filter-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
-    chip.classList.add('on');
-    findFilter = chip.dataset.cat;
+/* ── Bind card events ────────────────────── */
+function bindTaskCards(container,canAccept){
+  container.querySelectorAll('.tc').forEach(card=>{
+    card.addEventListener('click',e=>{
+      if(e.target.closest('[data-accept]'))return;
+      const t=allTasks.find(x=>(x.id||x.taskId)===card.dataset.tid);
+      if(t)openTaskDetail(t);
+    });
+  });
+  if(canAccept){
+    container.querySelectorAll('[data-accept]').forEach(btn=>{
+      btn.addEventListener('click',e=>{e.stopPropagation();acceptTask(btn.dataset.accept)});
+    });
+  }
+}
+
+/* ── Filter tabs ─────────────────────────── */
+document.getElementById('filter-tabs').querySelectorAll('.ftab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('on'));
+    tab.classList.add('on');
+    findTab=tab.dataset.tab;
     renderFindTasks();
   });
 });
+document.getElementById('find-search-input').addEventListener('input',e=>{findQ=e.target.value.trim();renderFindTasks()});
 
-document.getElementById('findSearchInput').addEventListener('input', e => {
-  findSearch = e.target.value.trim();
-  renderFindTasks();
-});
-
-/* ══════════════════════════════════════════
-   ACCEPT TASK
-══════════════════════════════════════════ */
-async function acceptTask(taskId) {
-  if (!currentUser) { showToast('Log in to accept tasks', '🔒'); return; }
-  if (!db) return;
-
-  const task = allPublicTasks.find(t => (t.id||t.taskId) === taskId);
-  if (!task) { showToast('Task not found', '❌'); return; }
-
-  showLoading('Accepting task…');
-  try {
-    const uid = task._uid || task.posterId;
-    await db.ref('tasks/' + uid + '/' + taskId).update({
-      status: 'assigned',
-      assignedHelperId: currentUser.uid,
-      assignedHelperName: userProfile?.name || currentUser.displayName || 'Helper',
-      assignedAt: Date.now(),
-      updatedAt: Date.now()
+/* ══ ACCEPT TASK ═════════════════════════ */
+async function acceptTask(taskId){
+  if(!me){toast('Log in to accept tasks','🔒');return}
+  const task=allTasks.find(t=>(t.id||t.taskId)===taskId);
+  if(!task){toast('Task not found','❌');return}
+  if(task._uid===me.uid){toast('Cannot accept your own task','ℹ️');return}
+  showLoad('Accepting task…');
+  try{
+    const uid=task._uid||task.posterId;
+    await db.ref('tasks/'+uid+'/'+taskId).update({
+      status:'assigned',assignedHelperId:me.uid,
+      assignedHelperName:myProfile?.name||me.displayName||'Helper',
+      assignedAt:Date.now(),updatedAt:Date.now()
     });
-
     // notify poster
-    const notifRef = db.ref('notifications/' + uid).push();
-    await notifRef.set({
-      taskId, helperUid: currentUser.uid,
-      helperName: userProfile?.name || currentUser.displayName || 'Helper',
-      type: 'task_accepted', status: 'pending', createdAt: Date.now()
+    await db.ref('notifications/'+uid).push().set({
+      taskId,helperUid:me.uid,type:'task_accepted',
+      helperName:myProfile?.name||me.displayName||'Helper',
+      category:task.category,status:'pending',createdAt:Date.now()
     });
-
-    // create or open chat
-    const chatId = [uid, currentUser.uid].sort().join('_') + '_' + taskId;
-    await db.ref('chats/' + chatId).update({
-      participants: { [uid]: true, [currentUser.uid]: true },
-      taskId, taskCategory: task.category,
-      taskBudget: task.budget,
-      posterId: uid,
-      helperId: currentUser.uid,
-      helperName: userProfile?.name || currentUser.displayName || 'Helper',
-      posterName: task.posterName || 'Poster',
-      createdAt: Date.now(), updatedAt: Date.now()
+    // create chat
+    const chatId=[uid,me.uid].sort().join('_')+'_'+taskId;
+    await db.ref('chats/'+chatId).update({
+      participants:{[uid]:true,[me.uid]:true},
+      taskId,taskCategory:task.category,taskBudget:task.budget,
+      posterId:uid,helperId:me.uid,
+      helperName:myProfile?.name||me.displayName||'Helper',
+      posterName:task.posterName||'Poster',
+      createdAt:Date.now(),updatedAt:Date.now()
     });
-
-    hideLoading();
-    showToast('Task accepted! Chat opened.', '🎉');
-    loadPublicTasks();
+    hideLoad();
+    toast('Task accepted! Opening chat…','🎉');
+    loadTasks();
     navigate('messages');
-    setTimeout(() => openChatById(chatId, task.posterName || 'Poster', task.category, task.budget), 400);
-  } catch(e) {
-    hideLoading();
-    console.error('[Accept]', e);
-    showToast('Error accepting task', '❌');
-  }
+    setTimeout(()=>openChatById(chatId,task.posterName||'Poster',task.category,task.budget),400);
+  }catch(e){hideLoad();console.error('[Accept]',e);toast('Error accepting task','❌')}
 }
 
-/* ══════════════════════════════════════════
-   TASK DETAIL OVERLAY
-══════════════════════════════════════════ */
-let detailMap = null;
+/* ══ TASK DETAIL ══════════════════════════ */
+let tdMapInst=null;
+function openTaskDetail(task){
+  document.getElementById('task-detail').style.display='flex';
+  document.getElementById('task-detail').classList.add('open');
+  document.getElementById('td-title').textContent=task.category||'Task';
+  const hName=task.assignedHelperName||'Not assigned yet';
+  document.getElementById('td-helper-name').textContent=hName;
+  document.getElementById('td-helper-ava').textContent=hName==='Not assigned yet'?'?':avaInit(hName);
 
-function openTaskDetail(task) {
-  const overlay = document.getElementById('taskDetailOverlay');
-  document.getElementById('taskDetailTitle').textContent = esc(task.category || 'Task Details');
-  const helperName = task.assignedHelperName || 'Not assigned yet';
-  document.getElementById('taskDetailHelperName').textContent = helperName;
-  document.getElementById('taskDetailHelperAva').textContent = helperName === 'Not assigned yet' ? '?' : avatarInitials(helperName);
+  const st=task.status||'open';
+  const tl=document.getElementById('td-timeline');
+  tl.innerHTML=`
+    <div class="tl"><div class="tl-dot"></div><div class="tl-body">
+      <div class="tl-title">Location</div>
+      <div class="tl-sub">${esc(task.location?.city||task.address||'Not specified')}</div>
+      <div class="tl-time">${fmtDate(task.createdAt)}</div>
+    </div></div>
+    <div class="tl"><div class="tl-dot"></div><div class="tl-body">
+      <div class="tl-title">${esc(task.category||'Task')}</div>
+      <div class="tl-sub">${esc(task.notes||task.description||'No additional notes')}</div>
+      <div class="tl-time">Budget: ${task.budget==='open'?'Open to offers':'R'+task.budget}</div>
+    </div></div>
+    <div class="tl"><div class="tl-dot"></div><div class="tl-body">
+      <div class="tl-title">Status</div>
+      <div class="tl-sub"><span class="badge ${STATUS_BADGE[st]||'badge-green'}">${STATUS_LABEL[st]||capFirst(st)}</span></div>
+      <div class="tl-time">${timeAgo(task.updatedAt||task.createdAt)}</div>
+    </div></div>`;
 
-  // timeline
-  const tl = document.getElementById('taskDetailTimeline');
-  tl.innerHTML = `
-    <div class="tl-item">
-      <div class="tl-dot"></div>
-      <div class="tl-body">
-        <div class="tl-title">Location</div>
-        <div class="tl-sub">${esc(task.location?.city || task.address || 'Location set')}</div>
-        <div class="tl-time">${formatDate(task.createdAt)}</div>
-      </div>
-    </div>
-    <div class="tl-item">
-      <div class="tl-dot"></div>
-      <div class="tl-body">
-        <div class="tl-title">${esc(task.category || 'Task')}</div>
-        <div class="tl-sub">${esc(task.notes || task.description || 'No additional notes')}</div>
-        <div class="tl-time">Budget: ${task.budget === 'open' ? 'Open to offers' : 'R'+task.budget}</div>
-      </div>
-    </div>
-    <div class="tl-item">
-      <div class="tl-dot"></div>
-      <div class="tl-body">
-        <div class="tl-title">Status</div>
-        <div class="tl-sub"><span class="badge ${BADGE_COLORS[task.status]||'badge-grey'}">${capFirst((task.status||'open').replace('_',' '))}</span></div>
-        <div class="tl-time">${timeAgo(task.updatedAt || task.createdAt)}</div>
-      </div>
-    </div>`;
-
-  // actions
-  const acts = document.getElementById('taskDetailActions');
-  if (task.status === 'open') {
-    acts.innerHTML = `<button class="btn btn-primary" style="flex:1;height:48px;border-radius:var(--radius-md);font-size:14px" id="detailAcceptBtn">Accept Task</button>`;
-    document.getElementById('detailAcceptBtn')?.addEventListener('click', () => {
-      acceptTask(task.id || task.taskId);
-      closeTaskDetail();
-    });
-  } else if (task.status === 'assigned' || task.status === 'in_progress') {
-    acts.innerHTML = `
-      <button class="btn btn-ghost" style="flex:1;height:48px;border-radius:var(--radius-md);font-size:14px" id="detailMsgBtn">Message</button>
-      <button class="btn btn-primary btn-success" style="flex:1;height:48px;border-radius:var(--radius-md);font-size:14px" id="detailCompleteBtn">Mark Complete</button>`;
-    document.getElementById('detailCompleteBtn')?.addEventListener('click', () => completeTask(task));
-  } else {
-    acts.innerHTML = `<button class="btn btn-ghost" style="flex:1;height:48px;border-radius:var(--radius-md);font-size:14px" id="detailRebookBtn">Rebook</button>`;
+  const acts=document.getElementById('td-actions');
+  acts.innerHTML='';
+  if(st==='open'){
+    const ab=document.createElement('button');
+    ab.className='btn btn-blk';ab.textContent='Accept Task';
+    ab.addEventListener('click',()=>{acceptTask(task.id||task.taskId);closeTaskDetail()});
+    acts.appendChild(ab);
+  }else if(['assigned','in_progress'].includes(st)){
+    const cb=document.createElement('button');
+    cb.className='btn btn-blk btn-green';cb.textContent='Mark Complete';
+    cb.addEventListener('click',()=>completeTask(task));
+    acts.appendChild(cb);
   }
-
-  overlay.classList.add('open');
 
   // mini detail map
-  setTimeout(() => {
-    if (detailMap) { detailMap.remove(); detailMap = null; }
-    const lat = task.location?.lat || currentLat;
-    const lng = task.location?.lng || currentLng;
-    detailMap = new mapboxgl.Map({
-      container: 'detailMapZone',
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [lng, lat], zoom: 14, interactive: false, attributionControl: false
+  setTimeout(()=>{
+    if(tdMapInst){tdMapInst.remove();tdMapInst=null}
+    const la=task.location?.lat||lat,lo=task.location?.lng||lng;
+    tdMapInst=new mapboxgl.Map({container:'td-map',style:'mapbox://styles/mapbox/light-v11',center:[lo,la],zoom:14,interactive:false,attributionControl:false});
+    tdMapInst.on('load',()=>{
+      const p=document.createElement('div');p.className='u-pin';
+      new mapboxgl.Marker({element:p,anchor:'center'}).setLngLat([lo,la]).addTo(tdMapInst);
     });
-    detailMap.on('load', () => {
-      const el = document.createElement('div');
-      el.className = 'user-pin';
-      new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(detailMap);
-    });
-  }, 80);
+  },100);
+}
+function closeTaskDetail(){
+  const td=document.getElementById('task-detail');
+  td.style.display='none';td.classList.remove('open');
+  if(tdMapInst){tdMapInst.remove();tdMapInst=null}
+}
+document.getElementById('td-back').addEventListener('click',closeTaskDetail);
+
+async function completeTask(task){
+  if(!me||!db)return;
+  const uid=task._uid||task.posterId;
+  showLoad('Completing…');
+  try{
+    await db.ref('tasks/'+uid+'/'+(task.id||task.taskId)).update({status:'completed',completedAt:Date.now(),taskState:'past',updatedAt:Date.now()});
+    if(task.assignedHelperId){
+      await db.ref('notifications/'+task.assignedHelperId).push().set({taskId:task.id,type:'task_completed',status:'pending',budget:task.budget,createdAt:Date.now()});
+    }
+    hideLoad();toast('Task completed! 🎉');
+    closeTaskDetail();loadTasks();loadMyTasksEarnings();
+  }catch(e){hideLoad();toast('Error','❌')}
 }
 
-function closeTaskDetail() {
-  document.getElementById('taskDetailOverlay').classList.remove('open');
-}
-document.getElementById('taskDetailBackBtn').addEventListener('click', closeTaskDetail);
+/* ══ POST TASK ════════════════════════════ */
+document.getElementById('cat-grid').querySelectorAll('.cat-item').forEach(i=>{
+  i.addEventListener('click',()=>{document.querySelectorAll('.cat-item').forEach(c=>c.classList.remove('on'));i.classList.add('on');validatePost()});
+});
+document.getElementById('when-now').addEventListener('click',()=>{postWhenNow=true;document.getElementById('when-now').classList.add('on');document.getElementById('when-later').classList.remove('on');document.getElementById('date-pickers').style.display='none';validatePost()});
+document.getElementById('when-later').addEventListener('click',()=>{postWhenNow=false;document.getElementById('when-later').classList.add('on');document.getElementById('when-now').classList.remove('on');document.getElementById('date-pickers').style.display='block';document.getElementById('p-date').min=new Date().toISOString().split('T')[0];validatePost()});
+document.getElementById('budget-fixed').addEventListener('click',()=>{postBudgetFixed=true;document.getElementById('budget-fixed').classList.add('on');document.getElementById('budget-open').classList.remove('on');document.getElementById('p-budget').parentElement.style.display='block';validatePost()});
+document.getElementById('budget-open').addEventListener('click',()=>{postBudgetFixed=false;document.getElementById('budget-open').classList.add('on');document.getElementById('budget-fixed').classList.remove('on');document.getElementById('p-budget').parentElement.style.display='none';validatePost()});
 
-async function completeTask(task) {
-  if (!currentUser || !db) return;
-  const uid = task._uid || task.posterId;
-  showLoading('Completing task…');
-  try {
-    await db.ref('tasks/' + uid + '/' + (task.id||task.taskId)).update({
-      status: 'completed', completedAt: Date.now(), taskState: 'past', updatedAt: Date.now()
-    });
-    hideLoading();
-    showToast('Task completed! 🎉');
-    closeTaskDetail();
-    loadPublicTasks();
-    loadMyTasksEarnings();
-  } catch(e) { hideLoading(); showToast('Error completing task','❌'); }
-}
-
-/* ══════════════════════════════════════════
-   POST TASK
-══════════════════════════════════════════ */
-let postWhenNow = true, postBudgetFixed = true;
-
-// Category selection
-document.getElementById('catGrid').querySelectorAll('.cat-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.cat-item').forEach(c => c.classList.remove('on'));
-    item.classList.add('on');
-    validatePostForm();
+document.getElementById('upload-zone').addEventListener('click',()=>{
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;
+  inp.onchange=e=>Array.from(e.target.files).forEach(f=>{
+    if(f.size>5*1024*1024){toast('File too large (max 5MB)','⚠️');return}
+    const r=new FileReader();r.onload=ev=>{uploadedImgs.push(ev.target.result);renderImgGrid()};r.readAsDataURL(f);
   });
-});
-
-// When toggles
-document.getElementById('whenNowBtn').addEventListener('click', () => {
-  postWhenNow = true;
-  document.getElementById('whenNowBtn').classList.add('on');
-  document.getElementById('whenLaterBtn').classList.remove('on');
-  document.getElementById('datePickers').style.display = 'none';
-  validatePostForm();
-});
-document.getElementById('whenLaterBtn').addEventListener('click', () => {
-  postWhenNow = false;
-  document.getElementById('whenLaterBtn').classList.add('on');
-  document.getElementById('whenNowBtn').classList.remove('on');
-  document.getElementById('datePickers').style.display = 'block';
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('postDate').min = today;
-  validatePostForm();
-});
-
-// Budget toggles
-document.getElementById('budgetFixedBtn').addEventListener('click', () => {
-  postBudgetFixed = true;
-  document.getElementById('budgetFixedBtn').classList.add('on');
-  document.getElementById('budgetOpenBtn').classList.remove('on');
-  document.getElementById('postBudget').style.display = 'block';
-  validatePostForm();
-});
-document.getElementById('budgetOpenBtn').addEventListener('click', () => {
-  postBudgetFixed = false;
-  document.getElementById('budgetOpenBtn').classList.add('on');
-  document.getElementById('budgetFixedBtn').classList.remove('on');
-  document.getElementById('postBudget').style.display = 'none';
-  validatePostForm();
-});
-
-// Image upload
-document.getElementById('uploadArea').addEventListener('click', () => {
-  const inp = document.createElement('input');
-  inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
-  inp.onchange = e => {
-    Array.from(e.target.files).forEach(f => {
-      if (f.size > 5*1024*1024) { showToast('File too large (max 5MB)','⚠️'); return; }
-      const r = new FileReader();
-      r.onload = ev => { uploadedImages.push(ev.target.result); renderImagePreviews(); };
-      r.readAsDataURL(f);
-    });
-  };
   inp.click();
 });
-
-function renderImagePreviews() {
-  const wrap = document.getElementById('imgPreviewWrap');
-  wrap.innerHTML = uploadedImages.map((url, i) => `
-    <div class="img-preview-item">
-      <img src="${url}" alt="Preview">
-      <button class="img-remove-btn" data-idx="${i}">×</button>
-    </div>`).join('');
-  wrap.querySelectorAll('.img-remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => { uploadedImages.splice(+btn.dataset.idx, 1); renderImagePreviews(); });
-  });
+function renderImgGrid(){
+  document.getElementById('img-grid').innerHTML=uploadedImgs.map((u,i)=>`
+    <div class="img-item"><img src="${u}" alt=""><button class="img-rm" data-i="${i}">×</button></div>`).join('');
+  document.querySelectorAll('.img-rm').forEach(b=>b.addEventListener('click',()=>{uploadedImgs.splice(+b.dataset.i,1);renderImgGrid()}));
 }
 
-function validatePostForm() {
-  const title = document.getElementById('postTaskTitle').value.trim();
-  let budgetOk = !postBudgetFixed || (document.getElementById('postBudget').value.trim() !== '' && Number(document.getElementById('postBudget').value) > 0);
-  let whenOk = postWhenNow || (document.getElementById('postDate').value !== '' && document.getElementById('postTime').value !== '');
-  document.getElementById('postTaskBtn').disabled = !(title && budgetOk && whenOk);
+function validatePost(){
+  const title=document.getElementById('p-title').value.trim();
+  const budgetOk=!postBudgetFixed||(document.getElementById('p-budget').value.trim()!==''&&Number(document.getElementById('p-budget').value)>0);
+  const whenOk=postWhenNow||(document.getElementById('p-date').value!==''&&document.getElementById('p-time').value!=='');
+  document.getElementById('post-btn').disabled=!(title&&budgetOk&&whenOk);
 }
-
-['postTaskTitle','postBudget','postTaskDesc','postTaskLocation','postDate','postTime','postDuration','postNotes'].forEach(id => {
-  document.getElementById(id)?.addEventListener('input', validatePostForm);
+['p-title','p-budget','p-desc','p-location','p-date','p-time','p-duration','p-notes'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',validatePost);
 });
 
-document.getElementById('postTaskBtn').addEventListener('click', async () => {
-  if (!currentUser) { showToast('Log in to post tasks','🔒'); navigate('profile'); return; }
-
-  const title = document.getElementById('postTaskTitle').value.trim();
-  const desc = document.getElementById('postTaskDesc').value.trim();
-  const location = document.getElementById('postTaskLocation').value.trim() || 'Johannesburg';
-  const budget = postBudgetFixed ? (Number(document.getElementById('postBudget').value) || 0) : 'open';
-  const duration = document.getElementById('postDuration').value.trim();
-  const notes = document.getElementById('postNotes').value.trim();
-  const selCat = document.querySelector('.cat-item.on');
-  const category = title;
-  const now = new Date();
-  const taskDate = postWhenNow ? now.toISOString().split('T')[0] : document.getElementById('postDate').value;
-  const taskTime = postWhenNow ? now.toTimeString().slice(0,5) : document.getElementById('postTime').value;
-  const isLater = !postWhenNow && taskDate;
-  const taskState = isLater ? 'future' : 'current';
-
-  showLoading('Posting your task…');
-  try {
-    const taskRef = db.ref('tasks/' + currentUser.uid).push();
-    const taskId = taskRef.key;
-    const task = {
-      taskId, posterId: currentUser.uid,
-      posterName: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-      posterEmail: currentUser.email || '',
-      category: title, description: desc,
-      address: location,
-      location: { city: location, lat: currentLat, lng: currentLng },
-      budget, duration, date: taskDate, time: taskTime,
-      status: 'open', taskState, priority: 'normal',
-      assignedHelperId: null, assignedHelperName: null,
-      notes, images: uploadedImages,
-      createdAt: Date.now(), updatedAt: Date.now()
+document.getElementById('post-btn').addEventListener('click',async()=>{
+  if(!me){toast('Log in to post tasks','🔒');navigate('profile');return}
+  const title=document.getElementById('p-title').value.trim();
+  const desc=document.getElementById('p-desc').value.trim();
+  const location=document.getElementById('p-location').value.trim()||'Johannesburg';
+  const budget=postBudgetFixed?(Number(document.getElementById('p-budget').value)||0):'open';
+  const duration=document.getElementById('p-duration').value.trim();
+  const notes=document.getElementById('p-notes').value.trim();
+  const now=new Date();
+  const taskDate=postWhenNow?now.toISOString().split('T')[0]:document.getElementById('p-date').value;
+  const taskTime=postWhenNow?now.toTimeString().slice(0,5):document.getElementById('p-time').value;
+  showLoad('Posting task…');
+  try{
+    const ref=db.ref('tasks/'+me.uid).push();
+    const taskId=ref.key;
+    const task={
+      taskId,posterId:me.uid,
+      posterName:myProfile?.name||me.displayName||me.email?.split('@')[0]||'User',
+      posterEmail:me.email||'',category:title,description:desc,
+      address:location,location:{city:location,lat,lng},
+      budget,duration,date:taskDate,time:taskTime,
+      status:'open',taskState:postWhenNow?'current':'future',priority:'normal',
+      assignedHelperId:null,assignedHelperName:null,
+      notes,images:uploadedImgs,createdAt:Date.now(),updatedAt:Date.now()
     };
-    await taskRef.set(task);
-    hideLoading();
-    showToast('Task posted! Searching for helpers…','🎉');
-    // reset form
-    document.getElementById('postTaskTitle').value = '';
-    document.getElementById('postTaskDesc').value = '';
-    document.getElementById('postBudget').value = '';
-    document.getElementById('postDuration').value = '';
-    document.getElementById('postNotes').value = '';
-    uploadedImages = [];
-    renderImagePreviews();
-    document.getElementById('whenNowBtn').click();
-    document.getElementById('budgetFixedBtn').click();
-    validatePostForm();
-    // find matching helpers
-    await findMatchingHelpers(taskId, title, task.location);
-    loadPublicTasks();
-    navigate('home');
-  } catch(e) {
-    hideLoading();
-    console.error('[Post]', e);
-    showToast('Error posting task','❌');
-  }
+    await ref.set(task);
+    hideLoad();toast('Task posted!','🎉');
+    // reset
+    ['p-title','p-desc','p-budget','p-duration','p-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+    uploadedImgs=[];renderImgGrid();
+    document.getElementById('when-now').click();
+    document.getElementById('budget-fixed').click();
+    validatePost();
+    await matchHelpers(taskId,title,{lat,lng});
+    loadTasks();navigate('home');
+  }catch(e){hideLoad();console.error('[Post]',e);toast('Error posting task','❌')}
 });
 
-/* ══════════════════════════════════════════
-   HELPER MATCHING & NOTIFICATIONS
-══════════════════════════════════════════ */
-async function findMatchingHelpers(taskId, category, location) {
-  if (!db) return;
-  try {
-    const snap = await db.ref('users').once('value');
-    const users = snap.val() || {};
-    let matched = 0;
-    for (const [uid, u] of Object.entries(users)) {
-      if (u.role !== 'helper' || !u.location?.lat || !u.location?.lng) continue;
-      const dist = haversineKm(location.lat, location.lng, u.location.lat, u.location.lng);
-      if (dist > 15) continue;
-      const skills = Object.values(u.skills || {}).map(s => s.toLowerCase());
-      const match = skills.some(s => s.includes(category.toLowerCase()) || category.toLowerCase().includes(s));
-      if (!match && skills.length > 0) continue;
-      const notifRef = db.ref('notifications/' + uid).push();
-      await notifRef.set({
-        taskId, posterId: currentUser.uid,
-        posterName: userProfile?.name || currentUser.displayName || 'Someone',
-        category, distance: Math.round(dist*10)/10,
-        status: 'pending', createdAt: Date.now(), type: 'new_task'
-      });
-      matched++;
+async function matchHelpers(taskId,category,loc){
+  if(!db||!me)return;
+  try{
+    const snap=await db.ref('users').once('value');
+    const users=snap.val()||{};let count=0;
+    for(const[uid,u]of Object.entries(users)){
+      if(u.role!=='helper'||!u.location?.lat)continue;
+      if(haversine(loc.lat,loc.lng,u.location.lat,u.location.lng)>15)continue;
+      await db.ref('notifications/'+uid).push().set({
+        taskId,posterId:me.uid,
+        posterName:myProfile?.name||me.displayName||'Someone',
+        category,type:'new_task',status:'pending',createdAt:Date.now()
+      });count++;
     }
-    if (matched > 0) showToast(`Notified ${matched} nearby helper${matched>1?'s':''}!`,'📢');
-  } catch(e) { console.error('[Match]', e); }
+    if(count>0)toast(`Notified ${count} helper${count>1?'s':''}!`,'📢');
+  }catch(e){console.error('[Match]',e)}
 }
 
-/* ══════════════════════════════════════════
-   CONVERSATIONS / CHAT
-══════════════════════════════════════════ */
-function loadConversations() {
-  if (!currentUser || !db) {
-    document.getElementById('convList').innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="ph ph-chat-circle-dots"></i></div><div class="empty-state-title">Log in to view messages</div></div>`;
+/* ══ CONVERSATIONS ════════════════════════ */
+function loadConversations(){
+  if(!me||!db){
+    document.getElementById('conv-list').innerHTML='<div class="empty"><i class="ph ph-chat-circle-dots"></i><h3>Log in to view messages</h3></div>';
     return;
   }
-  document.getElementById('convLoading').style.display = 'block';
-
-  db.ref('chats').orderByChild('updatedAt').once('value').then(snap => {
-    document.getElementById('convLoading').style.display = 'none';
-    const all = snap.val() || {};
-    const myConvs = Object.entries(all)
-      .filter(([id, c]) => c.participants?.[currentUser.uid])
-      .sort(([,a],[,b]) => (b.updatedAt||0)-(a.updatedAt||0));
-
-    if (myConvs.length === 0) {
-      document.getElementById('convList').innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="ph ph-chat-circle-dots"></i></div><div class="empty-state-title">No messages yet</div><div class="empty-state-sub">Accept a task or post one to start chatting.</div></div>`;
+  document.getElementById('conv-loading').style.display='block';
+  db.ref('chats').orderByChild('updatedAt').once('value').then(snap=>{
+    document.getElementById('conv-loading').style.display='none';
+    const all=snap.val()||{};
+    const mine=Object.entries(all)
+      .filter(([,c])=>c.participants?.[me.uid])
+      .sort(([,a],[,b])=>(b.updatedAt||0)-(a.updatedAt||0));
+    if(!mine.length){
+      document.getElementById('conv-list').innerHTML='<div class="empty"><i class="ph ph-chat-circle-dots"></i><h3>No messages yet</h3><p>Accept a task to start chatting.</p></div>';
       return;
     }
-
-    document.getElementById('convList').innerHTML = myConvs.map(([id, c]) => {
-      const isHelper = c.helperId === currentUser.uid;
-      const otherName = isHelper ? (c.posterName || 'Poster') : (c.helperName || 'Helper');
-      const avaColor = avatarColor(otherName);
-      const avaInit = avatarInitials(otherName);
-      const preview = c.lastMessage || 'No messages yet';
-      const when = timeAgo(c.updatedAt);
-      const unread = (c.unread?.[currentUser.uid] || 0) > 0;
-      return `
-        <div class="conv-item" data-conv-id="${esc(id)}" data-other-name="${esc(otherName)}" data-task="${esc(c.taskCategory||'Task')}" data-budget="${esc(c.taskBudget||'')}">
-          <div class="conv-ava" style="background:${avaColor}">${avaInit}</div>
-          <div class="conv-body">
-            <div class="conv-top-row">
-              <span class="conv-name">${esc(otherName)}</span>
-              <span class="conv-time">${when}</span>
-            </div>
-            <div class="conv-task-label">${esc(c.taskCategory||'Task')} · ${c.taskBudget === 'open' ? 'Open offer' : 'R'+(c.taskBudget||'—')}</div>
-            <div class="conv-preview">${esc(preview)}</div>
-          </div>
-          ${unread ? '<div class="conv-unread">1</div>' : ''}
-        </div>`;
-    }).join('');
-
-    document.querySelectorAll('.conv-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const cid = item.dataset.convId;
-        const oName = item.dataset.otherName;
-        const task = item.dataset.task;
-        const budget = item.dataset.budget;
-        openChatById(cid, oName, task, budget);
-      });
-    });
-  }).catch(e => {
-    document.getElementById('convLoading').style.display = 'none';
-    console.error('[Convs]', e);
-  });
-}
-
-function checkConvBadge() {
-  if (!currentUser || !db) return;
-  db.ref('chats').once('value').then(snap => {
-    const all = snap.val() || {};
-    const hasUnread = Object.entries(all).some(([,c]) =>
-      c.participants?.[currentUser.uid] && (c.unread?.[currentUser.uid] || 0) > 0
-    );
-    document.getElementById('msgBadge').classList.toggle('show', hasUnread);
-  }).catch(() => {});
-}
-
-function openChatById(convId, otherName, taskTitle, taskBudget) {
-  activeChatConvId = convId;
-  document.getElementById('chatContactName').textContent = otherName || '—';
-  document.getElementById('chatTaskTitle').textContent = taskTitle || 'Task';
-  document.getElementById('chatTaskPrice').textContent = taskBudget === 'open' ? 'Open offer' : (taskBudget ? 'R'+taskBudget : '—');
-
-  // mark read
-  if (db && currentUser) {
-    db.ref('chats/' + convId + '/unread/' + currentUser.uid).set(0).catch(() => {});
-  }
-
-  loadChatMessages(convId);
-  document.getElementById('chatView').classList.add('open');
-}
-
-function loadChatMessages(convId) {
-  if (chatListener) chatListener(); // detach old listener
-  const area = document.getElementById('messagesArea');
-  area.innerHTML = `<div style="text-align:center;padding:16px;color:var(--grey-400);font-size:12px"><div class="spinner" style="margin:0 auto 6px"></div>Loading…</div>`;
-
-  chatListener = db.ref('chats/' + convId + '/messages').on('value', snap => {
-    const msgs = snap.val() || {};
-    const sorted = Object.entries(msgs).sort(([,a],[,b]) => a.ts - b.ts);
-    if (sorted.length === 0) {
-      area.innerHTML = `<div class="msg-date-div">Start the conversation</div>`;
-      return;
-    }
-    area.innerHTML = sorted.map(([id, m]) => {
-      const isSent = m.senderId === currentUser?.uid;
-      return `<div class="msg ${isSent ? 'sent' : 'recv'}">
-        <div class="bubble">${esc(m.text)}</div>
-        <div class="msg-time">${timeAgo(m.ts)}</div>
+    document.getElementById('conv-list').innerHTML=mine.map(([id,c])=>{
+      const isHelper=c.helperId===me.uid;
+      const other=isHelper?(c.posterName||'Poster'):(c.helperName||'Helper');
+      const unread=(c.unread?.[me.uid]||0)>0;
+      return`<div class="conv-item" data-cid="${esc(id)}" data-name="${esc(other)}" data-task="${esc(c.taskCategory||'Task')}" data-budget="${esc(c.taskBudget||'')}">
+        <div class="conv-ava" style="background:${avaColor(other)}">${avaInit(other)}</div>
+        <div class="conv-body">
+          <div class="conv-top"><span class="conv-name">${esc(other)}</span><span class="conv-time">${timeAgo(c.updatedAt)}</span></div>
+          <div class="conv-task">${esc(c.taskCategory||'Task')} · ${c.taskBudget==='open'?'Open':c.taskBudget?'R'+c.taskBudget:'—'}</div>
+          <div class="conv-preview">${esc(c.lastMessage||'No messages yet')}</div>
+        </div>
+        ${unread?'<div class="unread-dot"></div>':''}
       </div>`;
     }).join('');
-    area.scrollTop = area.scrollHeight;
+    document.querySelectorAll('.conv-item').forEach(item=>{
+      item.addEventListener('click',()=>openChatById(item.dataset.cid,item.dataset.name,item.dataset.task,item.dataset.budget));
+    });
+  }).catch(e=>console.error('[Convs]',e));
+}
+
+function checkConvBadge(){
+  if(!me||!db)return;
+  db.ref('chats').once('value').then(snap=>{
+    const all=snap.val()||{};
+    const has=Object.entries(all).some(([,c])=>c.participants?.[me.uid]&&(c.unread?.[me.uid]||0)>0);
+    document.getElementById('nb-msg-dot').classList.toggle('on',has);
+  }).catch(()=>{});
+}
+
+/* ─── Chat ──────────────────────────────── */
+function openChatById(cid,otherName,taskTitle,taskBudget){
+  activeChatId=cid;
+  document.getElementById('chat-contact-name').textContent=otherName||'—';
+  document.getElementById('chat-task-title').textContent=taskTitle||'Task';
+  document.getElementById('chat-task-price').textContent=taskBudget==='open'?'Open offer':taskBudget?'R'+taskBudget:'—';
+  if(me&&db)db.ref('chats/'+cid+'/unread/'+me.uid).set(0).catch(()=>{});
+  loadChatMsgs(cid);
+  document.getElementById('chat-view').classList.add('open');
+}
+function loadChatMsgs(cid){
+  if(chatUnsub){chatUnsub();chatUnsub=null}
+  const area=document.getElementById('msgs-area');
+  area.innerHTML='<div style="text-align:center;padding:14px;color:var(--g400);font-size:12px"><div class="spin spin-sm" style="margin:0 auto 5px"></div>Loading…</div>';
+  chatUnsub=db.ref('chats/'+cid+'/messages').on('value',snap=>{
+    const msgs=snap.val()||{};
+    const sorted=Object.entries(msgs).sort(([,a],[,b])=>a.ts-b.ts);
+    if(!sorted.length){area.innerHTML='<div class="msg-divider">Start the conversation</div>';return}
+    area.innerHTML=sorted.map(([,m])=>{
+      const sent=m.senderId===me?.uid;
+      return`<div class="msg-wrap ${sent?'sent':'recv'}"><div class="bubble">${esc(m.text)}</div><div class="msg-ts">${timeAgo(m.ts)}</div></div>`;
+    }).join('');
+    area.scrollTop=area.scrollHeight;
   });
 }
-
-document.getElementById('chatBackBtn').addEventListener('click', () => {
-  document.getElementById('chatView').classList.remove('open');
-  if (chatListener) { chatListener(); chatListener = null; }
-  activeChatConvId = null;
+document.getElementById('chat-back-btn').addEventListener('click',()=>{
+  document.getElementById('chat-view').classList.remove('open');
+  if(chatUnsub){chatUnsub();chatUnsub=null}
+  activeChatId=null;
   loadConversations();
 });
-
-document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
-document.getElementById('chatInputField').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
-
-async function sendChatMessage() {
-  const input = document.getElementById('chatInputField');
-  const text = input.value.trim();
-  if (!text || !activeChatConvId || !currentUser || !db) return;
-  input.value = '';
-  try {
-    const msgRef = db.ref('chats/' + activeChatConvId + '/messages').push();
-    await msgRef.set({ text, senderId: currentUser.uid, ts: Date.now() });
-    await db.ref('chats/' + activeChatConvId).update({
-      lastMessage: text, updatedAt: Date.now()
-    });
-  } catch(e) { console.error('[Chat send]', e); showToast('Failed to send message','❌'); }
+document.getElementById('send-btn').addEventListener('click',sendMsg);
+document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
+async function sendMsg(){
+  const inp=document.getElementById('chat-input');
+  const txt=inp.value.trim();
+  if(!txt||!activeChatId||!me||!db)return;
+  inp.value='';
+  try{
+    await db.ref('chats/'+activeChatId+'/messages').push().set({text:txt,senderId:me.uid,ts:Date.now()});
+    await db.ref('chats/'+activeChatId).update({lastMessage:txt,updatedAt:Date.now()});
+  }catch(e){toast('Failed to send','❌')}
 }
 
-/* ══════════════════════════════════════════
-   MY TASKS & EARNINGS (for profile stats)
-══════════════════════════════════════════ */
-function loadMyTasksEarnings() {
-  if (!currentUser || !db) return;
-  db.ref('tasks/' + currentUser.uid).once('value').then(snap => {
-    const raw = snap.val() || {};
-    allMyTasks = Object.entries(raw).map(([id, t]) => ({ ...t, id }));
-    const completed = allMyTasks.filter(t => t.status === 'completed');
-    const total = completed.reduce((s, t) => s + (Number(t.budget)||0), 0);
-    const now = Date.now(), weekMs = 7*24*3600*1000;
-    const thisWeek = completed.filter(t => (now - (t.completedAt||0)) < weekMs);
-    const weekTotal = thisWeek.reduce((s, t) => s + (Number(t.budget)||0), 0);
-    const avg = completed.length > 0 ? Math.round(total / completed.length) : 0;
-
-    document.getElementById('earningsThisWeek').textContent = 'R' + weekTotal;
-    document.getElementById('earningsTotal').textContent = 'R' + total;
-    document.getElementById('earningsWeek').textContent = 'R' + weekTotal;
-    document.getElementById('earningsTaskCount').textContent = completed.length;
-    document.getElementById('earningsAvg').textContent = 'R' + avg;
-    document.getElementById('statTasksDone').textContent = completed.length;
-    document.getElementById('statCompletion').textContent = allMyTasks.length > 0 ? Math.round(completed.length/allMyTasks.length*100)+'%' : '—';
-
-    // earnings bar
-    const goal = 5000;
-    const pct = Math.min(100, Math.round(total/goal*100));
-    setTimeout(() => { document.getElementById('earningsFill').style.width = pct+'%'; }, 300);
-  }).catch(e => console.error('[MyTasks]', e));
+/* ══ MY TASKS & EARNINGS ══════════════════ */
+function loadMyTasksEarnings(){
+  if(!me||!db)return;
+  db.ref('tasks/'+me.uid).once('value').then(snap=>{
+    const raw=snap.val()||{};
+    myTasks=Object.entries(raw).map(([id,t])=>({...t,id}));
+    const done=myTasks.filter(t=>t.status==='completed');
+    const total=done.reduce((s,t)=>s+Number(t.budget||0),0);
+    const wkMs=7*24*3600*1000;const now=Date.now();
+    const week=done.filter(t=>(now-(t.completedAt||0))<wkMs).reduce((s,t)=>s+Number(t.budget||0),0);
+    const avg=done.length?Math.round(total/done.length):0;
+    document.getElementById('stat-earnings').textContent='R'+week;
+    document.getElementById('e-total').textContent='R'+total;
+    document.getElementById('e-week').textContent='R'+week;
+    document.getElementById('e-tasks').textContent=done.length;
+    document.getElementById('e-avg').textContent='R'+avg;
+    document.getElementById('s-done').textContent=done.length;
+    document.getElementById('s-comp').textContent=myTasks.length?Math.round(done.length/myTasks.length*100)+'%':'—';
+    setTimeout(()=>{document.getElementById('e-fill').style.width=Math.min(100,Math.round(total/5000*100))+'%'},300);
+  }).catch(e=>console.error('[MyTasks]',e));
 }
 
-/* ══════════════════════════════════════════
-   PROFILE RENDER
-══════════════════════════════════════════ */
-function renderProfile() {
-  if (!currentUser) { renderProfileGuest(); return; }
-  const name = userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'User';
-  const email = currentUser.email || '—';
-  const role = userProfile?.role || 'poster';
-  const city = userProfile?.city || 'Johannesburg, SA';
-  const bio = userProfile?.bio || 'TaskMart member';
-  const skills = Object.values(userProfile?.skills || {});
-  const rating = userProfile?.rating || 4.0;
-  const reviewCount = userProfile?.reviewCount || 0;
+/* ══ PROFILE ══════════════════════════════ */
+function renderProfile(){
+  if(!me){renderProfileGuest();return}
+  const name=myProfile?.name||me.displayName||me.email?.split('@')[0]||'User';
+  const email=me.email||'—';
+  const role=myProfile?.role||'poster';
+  const city=myProfile?.city||myProfile?.location?.city||'—';
+  const bio=myProfile?.bio||'TaskMart member';
+  const skills=Object.values(myProfile?.skills||{});
+  const rating=Number(myProfile?.rating||0)||0;
+  const reviewCount=Number(myProfile?.reviewCount||0);
+  const since=me.metadata?.creationTime?fmtDate(new Date(me.metadata.creationTime).getTime()):'—';
 
-  document.getElementById('profileName').textContent = name;
-  document.getElementById('profileEmail').textContent = email;
-  document.getElementById('profileRole').textContent = capFirst(role);
-  document.getElementById('profileCity').textContent = city;
-  document.getElementById('profileBio').textContent = bio;
-  document.getElementById('profileAva').textContent = avatarInitials(name);
-  document.getElementById('profileAva').style.background = avatarColor(name);
-  document.getElementById('statRating').textContent = rating.toFixed(1);
-  document.getElementById('profileRatingVal').textContent = rating.toFixed(1);
-  document.getElementById('profileRatingCount').textContent = '(' + reviewCount + ' reviews)';
+  document.getElementById('p-name').textContent=name;
+  document.getElementById('acct-email').textContent=email;
+  document.getElementById('acct-role').textContent=capFirst(role);
+  document.getElementById('acct-since').textContent=since;
+  document.getElementById('p-city').textContent=city;
+  document.getElementById('p-bio').textContent=bio;
+  document.getElementById('p-rating').textContent=rating.toFixed(1);
+  document.getElementById('p-review-ct').textContent='('+reviewCount+' reviews)';
+  document.getElementById('s-rating').textContent=rating.toFixed(1);
+  document.getElementById('s-done').textContent='—';
+  document.getElementById('s-comp').textContent='—';
+
+  // avatar
+  const avaEl=document.getElementById('profile-ava');
+  const avaImg=document.getElementById('profile-ava-img');
+  const avaInit_=document.getElementById('profile-ava-initials');
+  if(myProfile?.photoURL||me.photoURL){
+    avaImg.src=myProfile?.photoURL||me.photoURL;
+    avaImg.style.display='block';avaInit_.style.display='none';
+  }else{
+    avaEl.style.background=avaColor(name);
+    avaInit_.textContent=avaInit(name);
+    avaImg.style.display='none';avaInit_.style.display='block';
+  }
+
+  // cover
+  if(myProfile?.coverURL){
+    document.getElementById('cover-img').style.backgroundImage=`url(${myProfile.coverURL})`;
+  }
 
   // stars
-  const starsEl = document.getElementById('profileStars');
-  starsEl.innerHTML = Array.from({length:5},(_,i) =>
-    `<span class="${i < Math.round(rating) ? 'star-filled' : 'star-empty'}">★</span>`
-  ).join('') + `<span class="rating-val">${rating.toFixed(1)}</span><span class="rating-count">(${reviewCount} reviews)</span>`;
+  const starsEl=document.getElementById('p-stars');
+  starsEl.innerHTML=Array.from({length:5},(_,i)=>`<span class="${i<Math.round(rating)?'st-f':'st-e'}">★</span>`).join('')
+    +`<span class="rating-val">${rating.toFixed(1)}</span><span class="rating-ct">(${reviewCount} reviews)</span>`;
 
   // skills
-  const skillsEl = document.getElementById('profileSkills');
-  skillsEl.innerHTML = skills.length > 0
-    ? skills.map(s => `<span class="skill-tag">${esc(capFirst(s))}</span>`).join('')
-    : '<span class="skill-tag" style="color:var(--grey-400)">No skills added yet</span>';
+  const skillsEl=document.getElementById('p-skills-row');
+  const skillTags=skills.map(s=>`<span class="skill-tag">${esc(capFirst(s))}</span>`).join('');
+  skillsEl.innerHTML=skillTags+'<button class="skill-tag skill-tag-edit" id="edit-skills-btn"><i class="ph ph-pencil-simple"></i> Edit</button>';
+  document.getElementById('edit-skills-btn')?.addEventListener('click',openSkillsModal);
 
-  // reviews
+  document.getElementById('logout-btn').style.display='block';
+  document.getElementById('login-btn').style.display='none';
   loadProfileReviews();
-
-  document.getElementById('logoutBtn').style.display = 'block';
-  document.getElementById('loginBtn').style.display = 'none';
-
   loadMyTasksEarnings();
 }
 
-function renderProfileGuest() {
-  document.getElementById('profileName').textContent = 'Guest User';
-  document.getElementById('profileEmail').textContent = 'Not signed in';
-  document.getElementById('profileRole').textContent = '—';
-  document.getElementById('profileCity').textContent = 'South Africa';
-  document.getElementById('profileBio').textContent = 'Sign in to access your full profile';
-  document.getElementById('profileAva').textContent = 'G';
-  document.getElementById('profileAva').style.background = '#667eea';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('loginBtn').style.display = 'block';
-  document.getElementById('earningsTotal').textContent = 'R0';
-  document.getElementById('earningsWeek').textContent = 'R0';
-  document.getElementById('earningsTaskCount').textContent = '0';
-  document.getElementById('earningsAvg').textContent = 'R0';
-  document.getElementById('statTasksDone').textContent = '—';
-  document.getElementById('statRating').textContent = '—';
-  document.getElementById('statCompletion').textContent = '—';
+function renderProfileGuest(){
+  document.getElementById('p-name').textContent='Guest User';
+  document.getElementById('acct-email').textContent='Not signed in';
+  document.getElementById('acct-role').textContent='—';
+  document.getElementById('acct-since').textContent='—';
+  document.getElementById('p-city').textContent='South Africa';
+  document.getElementById('p-bio').textContent='Sign in to access your full profile';
+  document.getElementById('profile-ava-initials').textContent='G';
+  document.getElementById('logout-btn').style.display='none';
+  document.getElementById('login-btn').style.display='block';
+  ['e-total','e-week','e-avg'].forEach(id=>document.getElementById(id).textContent='R0');
+  document.getElementById('e-tasks').textContent='0';
+  document.getElementById('s-done').textContent='—';document.getElementById('s-rating').textContent='—';document.getElementById('s-comp').textContent='—';
 }
 
-function loadProfileReviews() {
-  if (!currentUser || !db) return;
-  db.ref('reviews/' + currentUser.uid).limitToLast(5).once('value').then(snap => {
-    const reviews = snap.val() || {};
-    const list = Object.values(reviews).sort((a,b) => (b.createdAt||0)-(a.createdAt||0));
-    const el = document.getElementById('reviewsList');
-    if (list.length === 0) return;
-    el.innerHTML = list.map(r => `
+function loadProfileReviews(){
+  if(!me||!db)return;
+  db.ref('reviews/'+me.uid).limitToLast(5).once('value').then(snap=>{
+    const rv=snap.val()||{};
+    const list=Object.values(rv).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const el=document.getElementById('reviews-list');
+    if(!list.length)return;
+    el.innerHTML=list.map(r=>`
       <div class="review-card">
-        <div class="review-hdr">
-          <span class="review-name">${esc(r.reviewerName || 'Anonymous')}</span>
-          <span class="review-date">${timeAgo(r.createdAt)}</span>
-        </div>
-        <div class="review-stars-row">${Array.from({length:5},(_,i)=>`<span>${i<(r.rating||5)?'★':'☆'}</span>`).join('')}</div>
-        <div class="review-text">${esc(r.text || '')}</div>
+        <div class="rv-hdr"><span class="rv-name">${esc(r.reviewerName||'Anonymous')}</span><span class="rv-date">${timeAgo(r.createdAt)}</span></div>
+        <div class="rv-stars">${Array.from({length:5},(_,i)=>`<span style="color:${i<(r.rating||5)?'#F59E0B':'var(--g200)'}">★</span>`).join('')}</div>
+        <div class="rv-text">${esc(r.text||'')}</div>
       </div>`).join('');
-    document.getElementById('reviewCount').textContent = 'See all ' + list.length;
-  }).catch(() => {});
+    document.getElementById('review-see-all').textContent='See all '+list.length;
+  }).catch(()=>{});
 }
 
-// logout
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  auth.signOut().then(() => {
-    currentUser = null; userProfile = null;
-    allMyTasks = [];
-    showToast('Signed out', 'ℹ️');
-    renderProfileGuest();
-    setGreeting('Guest');
-    document.getElementById('earningsThisWeek').textContent = '—';
-    document.getElementById('nearbyCount').textContent = '—';
-  }).catch(e => { console.error(e); showToast('Error signing out','❌'); });
+/* ─── Profile editing ────────────────────── */
+document.getElementById('edit-name-btn').addEventListener('click',()=>{
+  document.getElementById('modal-name-input').value=myProfile?.name||me?.displayName||'';
+  openModal('modal-name');
 });
-document.getElementById('loginBtn').addEventListener('click', () => {
-  showToast('Redirecting to login…','🔑');
-  // In a real deployment, this would go to login.html
+document.getElementById('edit-bio-btn').addEventListener('click',()=>{
+  document.getElementById('modal-bio-input').value=myProfile?.bio||'';
+  openModal('modal-bio');
 });
+function openSkillsModal(){
+  const skills=Object.values(myProfile?.skills||{});
+  document.getElementById('modal-skills-input').value=skills.join(', ');
+  openModal('modal-skills');
+}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
 
-/* ══════════════════════════════════════════
-   NOTIFICATION DOT (home topbar)
-══════════════════════════════════════════ */
-function checkNotifDot() {
-  if (!currentUser || !db) return;
-  db.ref('notifications/' + currentUser.uid)
-    .orderByChild('status').equalTo('pending').once('value').then(snap => {
-      const has = snap.numChildren() > 0;
-      document.getElementById('topbarNotifDot').classList.toggle('show', has);
-    }).catch(() => {});
+async function saveBio(){
+  const val=document.getElementById('modal-bio-input').value.trim();
+  if(!me||!db)return;
+  try{
+    await db.ref('users/'+me.uid+'/bio').set(val);
+    myProfile={...myProfile,bio:val};
+    document.getElementById('p-bio').textContent=val||'TaskMart member';
+    closeModal('modal-bio');toast('Bio updated','✅');
+  }catch(e){toast('Error saving','❌')}
+}
+async function saveName(){
+  const val=document.getElementById('modal-name-input').value.trim();
+  if(!val||!me||!db)return;
+  try{
+    await db.ref('users/'+me.uid+'/name').set(val);
+    myProfile={...myProfile,name:val};
+    document.getElementById('p-name').textContent=val;
+    setGreeting(val);
+    closeModal('modal-name');toast('Name updated','✅');
+  }catch(e){toast('Error saving','❌')}
+}
+async function saveSkills(){
+  const raw=document.getElementById('modal-skills-input').value;
+  const skills=raw.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!me||!db)return;
+  try{
+    const skillObj={};skills.forEach((s,i)=>skillObj['skill'+i]=s);
+    await db.ref('users/'+me.uid+'/skills').set(skillObj);
+    myProfile={...myProfile,skills:skillObj};
+    closeModal('modal-skills');toast('Skills updated','✅');
+    renderProfile();
+  }catch(e){toast('Error saving','❌')}
 }
 
-document.getElementById('notifBtn').addEventListener('click', () => {
-  if (!currentUser) { showToast('Log in to see notifications','🔒'); return; }
-  showToast('Notifications coming soon','🔔');
+// Avatar edit
+document.getElementById('ava-edit-btn').addEventListener('click',()=>{
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    if(f.size>5*1024*1024){toast('File too large','⚠️');return}
+    const r=new FileReader();
+    r.onload=async ev=>{
+      const url=ev.target.result;
+      try{
+        await db.ref('users/'+me.uid+'/photoURL').set(url);
+        myProfile={...myProfile,photoURL:url};
+        document.getElementById('profile-ava-img').src=url;
+        document.getElementById('profile-ava-img').style.display='block';
+        document.getElementById('profile-ava-initials').style.display='none';
+        toast('Photo updated','✅');
+      }catch{toast('Error saving photo','❌')}
+    };r.readAsDataURL(f);
+  };inp.click();
 });
 
-/* ══════════════════════════════════════════
-   BOOT SEQUENCE
-══════════════════════════════════════════ */
-// Init map first (it's always visible on home)
+// Cover edit
+document.getElementById('cover-edit-btn').addEventListener('click',()=>{
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    if(f.size>5*1024*1024){toast('File too large','⚠️');return}
+    const r=new FileReader();
+    r.onload=async ev=>{
+      const url=ev.target.result;
+      try{
+        await db.ref('users/'+me.uid+'/coverURL').set(url);
+        myProfile={...myProfile,coverURL:url};
+        document.getElementById('cover-img').style.backgroundImage=`url(${url})`;
+        toast('Cover updated','✅');
+      }catch{toast('Error saving cover','❌')}
+    };r.readAsDataURL(f);
+  };inp.click();
+});
+
+/* ─── Logout ──────────────────────────────── */
+document.getElementById('logout-btn').addEventListener('click',()=>{
+  auth.signOut().then(()=>{me=null;myProfile=null;myTasks=[];setGreeting('Guest');renderProfileGuest();toast('Signed out','ℹ️')}).catch(()=>{});
+});
+document.getElementById('login-btn').addEventListener('click',()=>{toast('Redirecting to login…','🔑')});
+
+/* Close modals on backdrop click */
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});
+});
+
+/* ══ BOOT ════════════════════════════════ */
 initMiniMap();
-geolocationSetup();
-
-// Load public tasks with small delay to let map settle
-setTimeout(() => { loadPublicTasks(); }, 1200);
+geoSetup();
+setTimeout(loadTasks,800);
 
 })();
 </script>
